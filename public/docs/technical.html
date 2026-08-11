@@ -19,6 +19,8 @@
 <a class="toc-2" href="#http-api">HTTP API</a>
 <a class="toc-3" href="#authentication">Authentication</a>
 <a class="toc-3" href="#collection">Collection</a>
+<a class="toc-3" href="#local-administrator-api">Local administrator API</a>
+<a class="toc-3" href="#version-file">Version file</a>
 <a class="toc-2" href="#pegi-integration">PEGI integration</a>
 <a class="toc-2" href="#cover-art-integration">Cover-art integration</a>
 <a class="toc-2" href="#browser-application">Browser application</a>
@@ -26,6 +28,7 @@
 <a class="toc-3" href="#rendering">Rendering</a>
 <a class="toc-3" href="#dialog-pointer-safety">Dialog pointer safety</a>
 <a class="toc-2" href="#static-serving">Static serving</a>
+<a class="toc-3" href="#search-and-social-metadata">Search and social metadata</a>
 <a class="toc-2" href="#documentation-workflow">Documentation workflow</a>
 <a class="toc-2" href="#testing">Testing</a>
 <a class="toc-2" href="#operations-and-backups">Operations and backups</a>
@@ -36,30 +39,49 @@
 <pre data-language="text"><code>games-app/
   server.js                 HTTP entrypoint, static serving, route dispatch
   server/
+    admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
+    backup.js               hourly compressed SQLite snapshots and retention
     db.js                   schema, migrations, validation, scoped game queries
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     covers.js               SteamGridDB client, throttling, matching, artwork selection
+    version.js              validated atomic reads/writes of the VERSION file
+  admin/
+    index.html              localhost control-panel markup
+    style.css               dense terminal-style admin theme
+    js/                     dashboard, accounts, catalogue, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
   public/
     index.html              application and authentication markup
     app.js                  browser state, rendering, auth, forms, API calls
+    js/platforms.js         grouped platform catalogue and release-name matching
     style.css               dense dark responsive theme
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
+    icon-192.png            installable-app icon
+    icon-512.png            high-resolution installable-app icon
+    social-preview.*        source SVG and rendered 1200x630 social card
+    robots.txt              crawler policy for public and private surfaces
+    sitemap.xml             canonical public URLs for gameskat.net
     docs/                   generated standalone HTML documentation
   docs/
     user-guide.md           user documentation source
     technical.md            this file
   test/
     auth.test.js            sessions, password changes, isolation
+    backup.test.js          hourly ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
     covers.test.js          conservative cover-title normalization
+    seo.test.js             canonical metadata, crawler policy, image dimensions
+    admin.test.js           localhost gate and cross-account admin summaries
+    version.test.js         arbitrary release-string persistence and validation
+  VERSION                   release string displayed in the application header
   games.db                  runtime SQLite database</code></pre>
 <h3 id="request-flow">Request flow<a class="anchor" href="#request-flow" aria-label="Link to section">#</a></h3>
 <pre data-language="text"><code>Browser
   -&gt; static file request ----------------------&gt; server.js -&gt; public/
+  -&gt; localhost /admin/* -----------------------&gt; admin.js -&gt; admin/ + SQLite/VERSION
   -&gt; POST /api/login or /api/register --------&gt; server.js -&gt; auth.js -&gt; SQLite
   -&gt; authenticated /api/* + Bearer token -----&gt; auth.js -&gt; user identity
                                                     |
@@ -75,7 +97,7 @@
 <li>Port <code>3005</code> and host <code>0.0.0.0</code> by default</li>
 </ul>
 <p>Environment variables:</p>
-<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead><tbody><tr><td><code>PORT</code></td><td><code>3005</code></td><td>HTTP listen port</td></tr><tr><td><code>HOST</code></td><td><code>0.0.0.0</code></td><td>Listen address</td></tr><tr><td><code>DB_PATH</code></td><td><code>./games.db</code></td><td>SQLite database path</td></tr><tr><td><code>STEAMGRIDDB_API_KEY</code></td><td>blank</td><td>Optional server-wide cover API key; per-account keys can instead be configured in the UI</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead><tbody><tr><td><code>PORT</code></td><td><code>3005</code></td><td>HTTP listen port</td></tr><tr><td><code>HOST</code></td><td><code>0.0.0.0</code></td><td>Listen address</td></tr><tr><td><code>DB_PATH</code></td><td><code>./games.db</code></td><td>SQLite database path</td></tr><tr><td><code>VERSION_FILE</code></td><td><code>./VERSION</code></td><td>Release-string file; primarily useful for isolated tests or custom deployments</td></tr><tr><td><code>BACKUP_DIR</code></td><td><code>./backups</code></td><td>Hourly ZIP backup destination</td></tr><tr><td><code>STEAMGRIDDB_API_KEY</code></td><td>blank</td><td>Optional server-wide cover API key; per-account keys can instead be configured in the UI</td></tr></tbody></table></div>
 <p>Start the server with <code>npm start</code>. Development watch mode is available through <code>npm run dev</code>.</p>
 <hr>
 <h2 id="database">Database<a class="anchor" href="#database" aria-label="Link to section">#</a></h2>
@@ -120,13 +142,20 @@
 <p>The client never sends or selects <code>user_id</code>.</p>
 <hr>
 <h2 id="http-api">HTTP API<a class="anchor" href="#http-api" aria-label="Link to section">#</a></h2>
-<p>All JSON responses use <code>Cache-Control: no-store</code>. All routes below except registration and login require a valid bearer token.</p>
+<p>All JSON responses use <code>Cache-Control: no-store</code>. Registration, login, public configuration, and the cover-only showcase route are public. Collection routes require a valid bearer token. Admin routes use a separate loopback-only boundary and do not accept normal account sessions as a substitute.</p>
 <h3 id="authentication">Authentication<a class="anchor" href="#authentication" aria-label="Link to section">#</a></h3>
-<div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/register</code></td><td>Create an isolated account with password confirmation and optional email</td></tr><tr><td>POST</td><td><code>/api/login</code></td><td>Verify credentials and create session</td></tr><tr><td>POST</td><td><code>/api/logout</code></td><td>Delete current session</td></tr><tr><td>GET</td><td><code>/api/auth/me</code></td><td>Resolve current user</td></tr><tr><td>PUT</td><td><code>/api/account</code></td><td>Change username and/or password after current-password verification</td></tr><tr><td>POST</td><td><code>/api/account/avatar</code></td><td>Upload a browser-cropped JPEG avatar, maximum 256 KB</td></tr><tr><td>DELETE</td><td><code>/api/account/avatar</code></td><td>Remove the current avatar and restore the initial fallback</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/register</code></td><td>Create an isolated account with password confirmation and optional email</td></tr><tr><td>POST</td><td><code>/api/login</code></td><td>Verify credentials and create session</td></tr><tr><td>GET</td><td><code>/api/config</code></td><td>Return the current public version string</td></tr><tr><td>GET</td><td><code>/api/showcase/covers</code></td><td>Return randomized cover URLs for the public authentication-page artwork</td></tr><tr><td>POST</td><td><code>/api/logout</code></td><td>Delete current session</td></tr><tr><td>GET</td><td><code>/api/auth/me</code></td><td>Resolve current user</td></tr><tr><td>PUT</td><td><code>/api/account</code></td><td>Change username and/or password after current-password verification</td></tr><tr><td>POST</td><td><code>/api/account/avatar</code></td><td>Upload a browser-cropped JPEG avatar, maximum 256 KB</td></tr><tr><td>DELETE</td><td><code>/api/account/avatar</code></td><td>Remove the current avatar and restore the initial fallback</td></tr></tbody></table></div>
 <h3 id="collection">Collection<a class="anchor" href="#collection" aria-label="Link to section">#</a></h3>
 <div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/games</code></td><td>List current user&#39;s games with query filters</td></tr><tr><td>POST</td><td><code>/api/games</code></td><td>Create a game for current user</td></tr><tr><td>GET</td><td><code>/api/games/:id</code></td><td>Read owned game</td></tr><tr><td>PUT</td><td><code>/api/games/:id</code></td><td>Replace editable metadata on owned game</td></tr><tr><td>DELETE</td><td><code>/api/games/:id</code></td><td>Delete owned game</td></tr><tr><td>GET</td><td><code>/api/stats</code></td><td>Account-scoped aggregates</td></tr><tr><td>GET</td><td><code>/api/meta</code></td><td>Platforms, version, PEGI capability, current user</td></tr><tr><td>GET</td><td><code>/api/pegi/search?q=...</code></td><td>Explicit server-side PEGI search</td></tr><tr><td>GET</td><td><code>/api/covers/status</code></td><td>Provider configuration, missing count, and bulk progress</td></tr><tr><td>PUT</td><td><code>/api/covers/config</code></td><td>Validate and store the account&#39;s SteamGridDB key</td></tr><tr><td>DELETE</td><td><code>/api/covers/config</code></td><td>Remove the account-specific provider key</td></tr><tr><td>GET</td><td><code>/api/covers/search?q=...</code></td><td>Search portrait covers for manual selection</td></tr><tr><td>POST</td><td><code>/api/covers/bulk</code></td><td>Start an account-scoped exact-title scan for missing covers</td></tr></tbody></table></div>
 <p>List query parameters are <code>q</code>, <code>platform</code>, <code>ownership</code>, <code>playStatus</code>, <code>pegi</code>, <code>favorite</code>, and <code>sort</code>.</p>
 <p>Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath <code>public/avatars/</code>; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.</p>
+<h3 id="local-administrator-api">Local administrator API<a class="anchor" href="#local-administrator-api" aria-label="Link to section">#</a></h3>
+<p>The admin interface is available at <code>http://127.0.0.1:3005/admin/</code>. It is intentionally not an account role. A request is accepted only when the TCP peer is loopback. If nginx-style <code>X-Real-IP</code> or <code>X-Forwarded-For</code> headers are present, the first reported client must also be loopback. This prevents the public reverse proxy from exposing admin merely because it connects to Node locally.</p>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/admin/stats</code></td><td>Runtime and whole-database counts</td></tr><tr><td>GET</td><td><code>/api/admin/accounts</code></td><td>Account, collection, cover, and session counts</td></tr><tr><td>DELETE</td><td><code>/api/admin/accounts/:id/sessions</code></td><td>Revoke every active session for one account</td></tr><tr><td>DELETE</td><td><code>/api/admin/accounts/:id</code></td><td>Delete an account, its avatar, and cascaded games, sessions, and integration settings</td></tr><tr><td>GET</td><td><code>/api/admin/games?q=...</code></td><td>Search up to 250 games across accounts</td></tr><tr><td>DELETE</td><td><code>/api/admin/games/:id</code></td><td>Permanently remove one explicitly selected game</td></tr><tr><td>GET, PUT</td><td><code>/api/admin/version</code></td><td>Read or atomically replace the release string</td></tr><tr><td>POST</td><td><code>/api/admin/database/checkpoint</code></td><td>Truncate-checkpoint the SQLite WAL</td></tr><tr><td>POST</td><td><code>/api/admin/database/optimize</code></td><td>Run SQLite planner optimization</td></tr><tr><td>POST</td><td><code>/api/admin/database/vacuum</code></td><td>Rebuild the SQLite database file</td></tr><tr><td>GET, POST</td><td><code>/api/admin/backups</code></td><td>List or trigger the current hour&#39;s compressed SQLite backup</td></tr><tr><td>DELETE</td><td><code>/api/admin/backups/:name</code></td><td>Delete one validated backup filename</td></tr></tbody></table></div>
+<p>Admin static files and API responses use restrictive security headers. Backup names are server-generated and deletion accepts only that exact filename shape. Backups are stored in <code>backups/</code>, which is excluded from Git.</p>
+<p><code>server/backup.js</code> creates one consistent SQLite snapshot at process startup and then exactly on each hour. The snapshot is compressed with the host <code>zip</code> command, published by atomic rename, and its temporary raw SQLite file is always removed. A second attempt in the same hour is a no-op. Archives older than 15 days are pruned during each run.</p>
+<h3 id="version-file">Version file<a class="anchor" href="#version-file" aria-label="Link to section">#</a></h3>
+<p><code>VERSION</code> contains one nonempty, arbitrary single-line string of at most 80 characters. It is not limited to semantic versions. The admin writes a temporary sibling and atomically renames it over the target; the main header fetches the value through <code>/api/config</code> on page load. Changing the version does not require restarting Node, though already-open app tabs refresh it on their next reload.</p>
 <hr>
 <h2 id="pegi-integration">PEGI integration<a class="anchor" href="#pegi-integration" aria-label="Link to section">#</a></h2>
 <p>PEGI exposes a public catalogue search but no documented public developer API. <code>server/pegi.js</code> therefore performs an opt-in HTTPS GET only after the user selects <strong>Look up title</strong>.</p>
@@ -140,7 +169,7 @@
 <p>Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks&#39; cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.</p>
 <hr>
 <h2 id="browser-application">Browser application<a class="anchor" href="#browser-application" aria-label="Link to section">#</a></h2>
-<p><code>public/app.js</code> is a zero-dependency browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state.</p>
+<p><code>public/app.js</code> is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in <code>public/js/platforms.js</code>.</p>
 <h3 id="startup">Startup<a class="anchor" href="#startup" aria-label="Link to section">#</a></h3>
 <ol>
 <li>Read the bearer token from local storage.</li>
@@ -153,15 +182,21 @@
 <p>Game cards are generated from escaped values. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms debounce. Rendering is batched in groups of 120.</p>
 <h3 id="dialog-pointer-safety">Dialog pointer safety<a class="anchor" href="#dialog-pointer-safety" aria-label="Link to section">#</a></h3>
 <p>Backdrop dismissal tracks <code>pointerdown</code> and <code>pointerup</code>. It closes only when both events target the dialog backdrop. This prevents a text-selection drag that begins inside the form and ends outside from dismissing the dialog.</p>
+<p>Destructive actions use themed HTML dialogs in both the public application and localhost admin. Native browser <code>alert</code>, <code>confirm</code>, and <code>prompt</code> APIs are not used.</p>
 <hr>
 <h2 id="static-serving">Static serving<a class="anchor" href="#static-serving" aria-label="Link to section">#</a></h2>
 <p><code>server.js</code> resolves requested paths beneath <code>public/</code>, rejects traversal outside that directory, assigns MIME types, and serves static content with <code>Cache-Control: no-cache</code>. API content uses <code>no-store</code>.</p>
+<p>Admin assets are not beneath the public directory. <code>server/admin.js</code> serves an explicit file allowlist only after the request passes the loopback check.</p>
 <p>Generated documentation is available at:</p>
 <ul>
 <li><code>/docs/</code></li>
 <li><code>/docs/user-guide.html</code></li>
 <li><code>/docs/technical.html</code></li>
 </ul>
+<h3 id="search-and-social-metadata">Search and social metadata<a class="anchor" href="#search-and-social-metadata" aria-label="Link to section">#</a></h3>
+<p>The public landing page uses <code>https://gameskat.net/</code> as its canonical URL. It includes a focused title and description, Open Graph and Twitter large-image metadata, and <code>WebApplication</code> JSON-LD. The social image is authored as <code>public/social-preview.svg</code> and rendered to the crawler-compatible <code>public/social-preview.png</code> at 1200×630.</p>
+<p><code>robots.txt</code> permits the landing page and public guide while excluding <code>/api/</code>, <code>/admin/</code>, and account avatars. <code>sitemap.xml</code> lists only the canonical landing page and user guide. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.</p>
+<p>The authentication landing markup contains six visible, descriptive feature cards. This gives non-JavaScript crawlers useful product content without exposing any private collection data.</p>
 <hr>
 <h2 id="documentation-workflow">Documentation workflow<a class="anchor" href="#documentation-workflow" aria-label="Link to section">#</a></h2>
 <p>Markdown files in <code>docs/</code> are the source of truth.</p>
@@ -170,13 +205,13 @@ npm run docs:check   # fail if generated HTML is stale</code></pre>
 <p><code>npm test</code> runs both the Node test suite and the documentation consistency check.</p>
 <hr>
 <h2 id="testing">Testing<a class="anchor" href="#testing" aria-label="Link to section">#</a></h2>
-<div class="table-wrap"><table><thead><tr><th>Test file</th><th>Contract</th></tr></thead><tbody><tr><td><code>test/auth.test.js</code></td><td>Account isolation, sessions, password invalidation</td></tr><tr><td><code>test/pegi.test.js</code></td><td>PEGI HTML parsing</td></tr><tr><td><code>test/covers.test.js</code></td><td>Conservative cover-title normalization</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Test file</th><th>Contract</th></tr></thead><tbody><tr><td><code>test/auth.test.js</code></td><td>Account isolation, sessions, password invalidation</td></tr><tr><td><code>test/pegi.test.js</code></td><td>PEGI HTML parsing</td></tr><tr><td><code>test/covers.test.js</code></td><td>Conservative cover-title normalization</td></tr><tr><td><code>test/seo.test.js</code></td><td>Canonical/social metadata, crawler policy, and asset dimensions</td></tr><tr><td><code>test/admin.test.js</code></td><td>Loopback/proxy boundary and whole-database admin summaries</td></tr><tr><td><code>test/backup.test.js</code></td><td>Hourly ZIP creation, deduplication, cleanup, and scheduler timing</td></tr><tr><td><code>test/version.test.js</code></td><td>Version-file persistence and input validation</td></tr></tbody></table></div>
 <p>Run all checks with <code>npm test</code>.</p>
 <p>The authentication test uses a disposable SQLite database under <code>/tmp</code> and removes its main, WAL, and shared-memory files afterward.</p>
 <hr>
 <h2 id="operations-and-backups">Operations and backups<a class="anchor" href="#operations-and-backups" aria-label="Link to section">#</a></h2>
 <p>Stop with <code>Ctrl+C</code> or send SIGTERM. The server closes SQLite before exiting.</p>
-<p>For a simple offline backup:</p>
+<p>The server automatically creates compressed, consistent live backups at startup and hourly, retaining 15 days. The admin <strong>Tools</strong> tab lists, triggers, and removes those archives and can checkpoint the WAL. For a simple offline backup:</p>
 <ol>
 <li>Stop the server.</li>
 <li>Copy <code>games.db</code> to a dated backup location.</li>
@@ -188,10 +223,10 @@ npm run docs:check   # fail if generated HTML is stale</code></pre>
 <h2 id="known-boundaries">Known boundaries<a class="anchor" href="#known-boundaries" aria-label="Link to section">#</a></h2>
 <ul>
 <li>No email recovery flow is configured; account passwords must be retained.</li>
-<li>No administrator panel exists.</li>
+<li>The administrator panel is deliberately available only through a direct loopback request; remote administration requires an explicit, separately secured transport such as an SSH tunnel.</li>
 <li>Login throttling is in-memory rather than persisted.</li>
 <li>PEGI parsing depends on public page structure and can require maintenance.</li>
 <li>Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.</li>
 <li>The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.</li>
-<li>Application JavaScript is intentionally compact and remains in one browser entry module until feature growth justifies further splitting.</li>
+<li>The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.</li>
 </ul><p class="source">Generated from docs/technical.md. Do not edit this HTML directly.</p></article></div></body></html>

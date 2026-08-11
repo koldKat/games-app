@@ -1,14 +1,12 @@
+import { CUSTOM_PLATFORM, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
+
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const TOKEN_KEY = 'games_shelf_auth_token';
 const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null };
 const filters = {
   q: $('#search'), platform: $('#platform-filter'), ownership: $('#ownership-filter'),
-  pegi: $('#pegi-filter'), playStatus: $('#status-filter'), sort: $('#sort-filter'),
-};
-const platformColors = {
-  'Nintendo 3DS': '#d68b31', 'Nintendo Switch': '#d84b48', 'Nintendo Switch 2': '#e46a49',
-  'PlayStation 4': '#3676b9', Evercade: '#8c65b4',
+  pegi: $('#pegi-filter'), playStatus: $('#status-filter'), favorite: $('#favorite-filter'), sort: $('#sort-filter'),
 };
 const labels = {
   owned: 'Owned', wanted: 'Wishlisted', unavailable: 'Unavailable', backlog: 'Backlog',
@@ -34,6 +32,28 @@ function toast(message) {
   const element = $('#toast'); element.textContent = message; element.classList.add('show');
   clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), 2600);
 }
+async function loadAuthCovers() {
+  try {
+    const response = await fetch(`/api/showcase/covers?v=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) return;
+    const { covers = [] } = await response.json();
+    const slots = [...$$('.promo-cover-deck i'), $('.promo-loose-cover'), ...$$('.auth-cover-field i')].filter(Boolean);
+    slots.forEach((slot, index) => {
+      if (!covers[index]) return;
+      const preload = new Image();
+      preload.onload = () => { slot.style.backgroundImage = `url(${JSON.stringify(preload.src)})`; slot.classList.add('has-art'); };
+      preload.src = covers[index];
+    });
+  } catch {}
+}
+async function loadConfig() {
+  try {
+    const response = await fetch('/api/config', { cache: 'no-store' });
+    if (!response.ok) return;
+    const config = await response.json();
+    $('#app-version').textContent = config.version || 'dev';
+  } catch { $('#app-version').textContent = 'dev'; }
+}
 function showAuth(message = '') {
   state.user = null;
   $('#app-shell').hidden = true;
@@ -55,7 +75,10 @@ function setAvatar(element, user) {
   if (user?.avatarUrl) {
     const image = document.createElement('img'); image.src = user.avatarUrl; image.alt = '';
     element.append(image);
-  } else element.textContent = user?.username?.slice(0, 1).toUpperCase() || '?';
+  } else {
+    const initial = document.createElement('span'); initial.className = 'avatar-initial';
+    initial.textContent = user?.username?.slice(0, 1).toUpperCase() || '?'; element.append(initial);
+  }
 }
 function updateAvatarUI() {
   setAvatar($('#account-avatar'), state.user);
@@ -100,21 +123,44 @@ function renderStats() {
   $('#stat-total').textContent = state.stats?.total?.toLocaleString() || '0';
   $('#stat-owned').textContent = count(state.stats?.ownership, 'owned').toLocaleString();
   $('#stat-wanted').textContent = count(state.stats?.ownership, 'wanted').toLocaleString();
+  $('#stat-unavailable').textContent = count(state.stats?.ownership, 'unavailable').toLocaleString();
+  $('#stat-backlog').textContent = count(state.stats?.play, 'backlog').toLocaleString();
+  $('#stat-playing').textContent = count(state.stats?.play, 'playing').toLocaleString();
   $('#stat-completed').textContent = count(state.stats?.play, 'completed').toLocaleString();
+  $('#stat-paused').textContent = count(state.stats?.play, 'paused').toLocaleString();
+  $('#stat-abandoned').textContent = count(state.stats?.play, 'abandoned').toLocaleString();
+  $('#stat-favorites').textContent = Number(state.stats?.favorites || 0).toLocaleString();
 }
 function renderPlatforms() {
   const current = filters.platform.value;
   filters.platform.innerHTML = '<option value="">All platforms</option>' + state.platforms.map(platform => `<option>${escapeHtml(platform)}</option>`).join('');
   filters.platform.value = current;
-  $('#platforms').innerHTML = state.platforms.map(platform => `<option value="${escapeHtml(platform)}"></option>`).join('');
 }
+function renderPlatformChoices() {
+  $('#game-platform').innerHTML = Object.entries(platformGroups).map(([group, platforms]) => `<optgroup label="${escapeHtml(group)}">${platforms.map(platform => `<option value="${escapeHtml(platform)}">${escapeHtml(platform)}</option>`).join('')}</optgroup>`).join('') + `<optgroup label="Other"><option value="${CUSTOM_PLATFORM}">Custom…</option></optgroup>`;
+}
+function toggleCustomPlatform(focus = true) {
+  const custom = $('#game-platform').value === CUSTOM_PLATFORM;
+  $('#game-platform-custom-label').hidden = !custom;
+  $('#game-platform-custom').required = custom;
+  if (custom && focus) setTimeout(() => $('#game-platform-custom').focus(), 0);
+}
+function setPlatformValue(platform) {
+  const value = String(platform || '').trim();
+  if (knownPlatforms.has(value)) { $('#game-platform').value = value; $('#game-platform-custom').value = ''; }
+  else { $('#game-platform').value = CUSTOM_PLATFORM; $('#game-platform-custom').value = value; }
+  toggleCustomPlatform(false);
+}
+function selectedPlatform() { return $('#game-platform').value === CUSTOM_PLATFORM ? $('#game-platform-custom').value.trim() : $('#game-platform').value; }
+renderPlatformChoices();
+$('#game-platform').addEventListener('change', () => toggleCustomPlatform());
 function badge(text, className = '') { return `<span class="badge ${className}">${escapeHtml(text)}</span>`; }
 function gameCard(game) {
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
   const quick = game.ownership === 'wanted' ? '<button class="quick-button" data-action="own">Mark owned</button>' : '';
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
-  return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--platform-color:${platformColors[game.platform] || '#697386'}">${cover}
+  return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag"><i class="platform-dot"></i>${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${game.coverSource === 'steamgriddb' ? badge('SGDB art') : ''}</div>
@@ -130,6 +176,21 @@ function renderGames() {
   $('#result-count').textContent = state.loading ? 'Loading collection…' : `${state.games.length.toLocaleString()} ${state.games.length === 1 ? 'game' : 'games'} found`;
   $('#clear-filters').hidden = !Object.entries(filters).some(([key, el]) => key !== 'sort' && el.value);
 }
+function loadHeroCovers() {
+  const slots = $$('.hero-cover');
+  if (!slots.length || slots.some(slot => slot.classList.contains('has-art'))) return;
+  const covers = [...new Set(state.games.map(game => game.coverUrl).filter(url => /^https:\/\//i.test(url)))];
+  for (let index = covers.length - 1; index > 0; index--) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [covers[index], covers[swap]] = [covers[swap], covers[index]];
+  }
+  slots.forEach((slot, index) => {
+    if (!covers[index]) return;
+    const preload = new Image();
+    preload.onload = () => { slot.style.backgroundImage = `url(${JSON.stringify(preload.src)})`; slot.classList.add('has-art'); };
+    preload.src = covers[index];
+  });
+}
 function queryString() {
   const params = new URLSearchParams();
   for (const [key, element] of Object.entries(filters)) if (element.value) params.set(key, element.value);
@@ -137,7 +198,7 @@ function queryString() {
 }
 async function loadGames() {
   state.loading = true; renderGames();
-  try { state.games = await api(`/api/games?${queryString()}`); state.limit = 120; }
+  try { state.games = await api(`/api/games?${queryString()}`); state.limit = 120; loadHeroCovers(); }
   catch (error) { toast(error.message); }
   finally { state.loading = false; renderGames(); }
 }
@@ -148,17 +209,28 @@ async function loadStatsAndMeta() {
   } catch (error) { toast(error.message); }
 }
 let searchTimer;
-filters.q.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, 220); });
-Object.entries(filters).filter(([key]) => key !== 'q').forEach(([, element]) => element.addEventListener('change', loadGames));
-$('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); loadGames(); });
+filters.q.addEventListener('input', () => { renderQuickFilter(); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, 220); });
+Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); loadGames(); }));
+$('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); loadGames(); });
 $('#load-more').addEventListener('click', () => { state.limit += 120; renderGames(); });
-$$('[data-stat-filter]').forEach(button => button.addEventListener('click', () => {
-  const target = button.dataset.statFilter;
-  if (target === 'completed') filters.playStatus.value = 'completed';
-  else filters.ownership.value = target === 'all' ? '' : target;
-  if (target !== 'completed') filters.playStatus.value = '';
+function renderQuickFilter() {
+  $$('[data-stat-kind]').forEach(button => {
+    const { statKind: kind, statValue: value = '' } = button.dataset;
+    const active = kind === 'all'
+      ? !Object.entries(filters).some(([key, element]) => key !== 'sort' && element.value)
+      : filters[kind].value === value;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+$$('[data-stat-kind]').forEach(button => button.addEventListener('click', () => {
+  if (button.dataset.statKind === 'all') Object.entries(filters).forEach(([key, element]) => { if (key !== 'sort') element.value = ''; });
+  else { filters.ownership.value = ''; filters.playStatus.value = ''; filters.favorite.value = ''; }
+  if (button.dataset.statKind !== 'all') filters[button.dataset.statKind].value = button.dataset.statValue;
+  renderQuickFilter();
   loadGames(); document.querySelector('.library').scrollIntoView({ behavior: 'smooth' });
 }));
+renderQuickFilter();
 function setView(view) {
   state.view = view; localStorage.setItem('games-view', view);
   $('#grid-view').classList.toggle('active', view === 'grid'); $('#list-view').classList.toggle('active', view === 'list'); renderGames();
@@ -174,7 +246,7 @@ function openForm(game = null) {
   $('#game-form').dataset.coverSource = game?.coverSource || '';
   $('#game-form').dataset.coverMatchTitle = game?.coverMatchTitle || '';
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
-  $('#game-title').value = formValue(game, 'title'); $('#game-platform').value = formValue(game, 'platform', filters.platform.value || 'Nintendo Switch');
+  $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
@@ -192,11 +264,32 @@ function closeOnTrueBackdrop(targetDialog, close) {
   });
   targetDialog.addEventListener('pointercancel', () => { startedOnBackdrop = false; });
 }
+function confirmAction({ title = 'Confirm action', message = '', confirmLabel = 'Confirm', kicker = 'Destructive action' } = {}) {
+  const actionDialog = $('#action-dialog');
+  if (actionDialog.open) return Promise.resolve(false);
+  $('#action-title').textContent = title; $('#action-message').textContent = message;
+  $('#action-kicker').textContent = kicker; $('#action-confirm').textContent = confirmLabel;
+  return new Promise(resolve => {
+    let startedOnBackdrop = false; let settled = false;
+    const finish = value => {
+      if (settled) return; settled = true;
+      actionDialog.oncancel = null; actionDialog.onpointerdown = null; actionDialog.onpointerup = null; actionDialog.onpointercancel = null;
+      $('#action-close').onclick = null; $('#action-cancel').onclick = null; $('#action-confirm').onclick = null;
+      actionDialog.close(); resolve(value);
+    };
+    $('#action-close').onclick = () => finish(false); $('#action-cancel').onclick = () => finish(false); $('#action-confirm').onclick = () => finish(true);
+    actionDialog.oncancel = event => { event.preventDefault(); finish(false); };
+    actionDialog.onpointerdown = event => { startedOnBackdrop = event.target === actionDialog; };
+    actionDialog.onpointerup = event => { if (startedOnBackdrop && event.target === actionDialog) finish(false); startedOnBackdrop = false; };
+    actionDialog.onpointercancel = () => { startedOnBackdrop = false; };
+    actionDialog.showModal(); requestAnimationFrame(() => $('#action-cancel').focus());
+  });
+}
 $$('[data-add-game]').forEach(button => button.addEventListener('click', () => openForm()));
 $$('[data-close]').forEach(button => button.addEventListener('click', closeForm));
 closeOnTrueBackdrop(dialog, closeForm);
 function payload() {
-  return { title: $('#game-title').value, platform: $('#game-platform').value, pegi: $('#game-pegi').value,
+  return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value,
     notes: $('#game-notes').value, favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
@@ -212,7 +305,7 @@ $('#game-form').addEventListener('submit', async event => {
 });
 $('#delete-game').addEventListener('click', async () => {
   const id = $('#game-id').value; const title = $('#game-title').value;
-  if (!id || !confirm(`Delete “${title}” from the collection?`)) return;
+  if (!id || !await confirmAction({ title: 'Delete game?', message: `Permanently delete “${title}” from the collection?`, confirmLabel: 'Delete game', kicker: 'Destructive // game' })) return;
   try { await api(`/api/games/${id}`, { method: 'DELETE' }); closeForm(); toast('Game deleted.'); await Promise.all([loadGames(), loadStatsAndMeta()]); }
   catch (error) { toast(error.message); }
 });
@@ -241,8 +334,8 @@ $('#pegi-results').addEventListener('click', event => {
   const button = event.target.closest('[data-pegi-index]'); if (!button) return;
   const result = $('#pegi-results')._results?.[Number(button.dataset.pegiIndex)]; if (!result) return;
   $('#game-title').value = result.title; $('#game-pegi').value = result.pegi || ''; $('#game-publisher').value = result.publisher || ''; $('#game-year').value = result.releaseYear || '';
-  const releaseText = result.releases.join(' '); const mapped = state.platforms.find(platform => releaseText.includes(platform.replace('Nintendo 3DS', 'Nintendo Handheld').replace('PlayStation 4', 'PlayStation 4')));
-  if (mapped) $('#game-platform').value = mapped; $('#game-form').dataset.pegiUrl = result.pegiUrl; $('#pegi-results').hidden = true; toast('PEGI details applied.');
+  const mapped = platformFromReleaseText(result.releases.join(' '));
+  if (mapped) setPlatformValue(mapped); $('#game-form').dataset.pegiUrl = result.pegiUrl; $('#pegi-results').hidden = true; toast('PEGI details applied.');
 });
 
 function renderCoverSelection() {
@@ -373,6 +466,8 @@ $('#account-form').addEventListener('submit', async event => {
 
 (async function boot() {
   setAuthMode('login');
+  loadConfig();
+  loadAuthCovers();
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return showAuth();
   try { const result = await api('/api/auth/me'); await enterApp(result.user); }

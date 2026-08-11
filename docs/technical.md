@@ -10,26 +10,44 @@ Games Shelf follows the same lightweight family architecture as the other local 
 games-app/
   server.js                 HTTP entrypoint, static serving, route dispatch
   server/
+    admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
+    backup.js               hourly compressed SQLite snapshots and retention
     db.js                   schema, migrations, validation, scoped game queries
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     covers.js               SteamGridDB client, throttling, matching, artwork selection
+    version.js              validated atomic reads/writes of the VERSION file
+  admin/
+    index.html              localhost control-panel markup
+    style.css               dense terminal-style admin theme
+    js/                     dashboard, accounts, catalogue, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
   public/
     index.html              application and authentication markup
     app.js                  browser state, rendering, auth, forms, API calls
+    js/platforms.js         grouped platform catalogue and release-name matching
     style.css               dense dark responsive theme
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
+    icon-192.png            installable-app icon
+    icon-512.png            high-resolution installable-app icon
+    social-preview.*        source SVG and rendered 1200x630 social card
+    robots.txt              crawler policy for public and private surfaces
+    sitemap.xml             canonical public URLs for gameskat.net
     docs/                   generated standalone HTML documentation
   docs/
     user-guide.md           user documentation source
     technical.md            this file
   test/
     auth.test.js            sessions, password changes, isolation
+    backup.test.js          hourly ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
     covers.test.js          conservative cover-title normalization
+    seo.test.js             canonical metadata, crawler policy, image dimensions
+    admin.test.js           localhost gate and cross-account admin summaries
+    version.test.js         arbitrary release-string persistence and validation
+  VERSION                   release string displayed in the application header
   games.db                  runtime SQLite database
 ```
 
@@ -38,6 +56,7 @@ games-app/
 ```text
 Browser
   -> static file request ----------------------> server.js -> public/
+  -> localhost /admin/* -----------------------> admin.js -> admin/ + SQLite/VERSION
   -> POST /api/login or /api/register --------> server.js -> auth.js -> SQLite
   -> authenticated /api/* + Bearer token -----> auth.js -> user identity
                                                     |
@@ -63,6 +82,8 @@ Environment variables:
 | `PORT` | `3005` | HTTP listen port |
 | `HOST` | `0.0.0.0` | Listen address |
 | `DB_PATH` | `./games.db` | SQLite database path |
+| `VERSION_FILE` | `./VERSION` | Release-string file; primarily useful for isolated tests or custom deployments |
+| `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
 | `STEAMGRIDDB_API_KEY` | blank | Optional server-wide cover API key; per-account keys can instead be configured in the UI |
 
 Start the server with `npm start`. Development watch mode is available through `npm run dev`.
@@ -158,7 +179,7 @@ The client never sends or selects `user_id`.
 
 ## HTTP API
 
-All JSON responses use `Cache-Control: no-store`. All routes below except registration and login require a valid bearer token.
+All JSON responses use `Cache-Control: no-store`. Registration, login, public configuration, and the cover-only showcase route are public. Collection routes require a valid bearer token. Admin routes use a separate loopback-only boundary and do not accept normal account sessions as a substitute.
 
 ### Authentication
 
@@ -166,6 +187,8 @@ All JSON responses use `Cache-Control: no-store`. All routes below except regist
 |---|---|---|
 | POST | `/api/register` | Create an isolated account with password confirmation and optional email |
 | POST | `/api/login` | Verify credentials and create session |
+| GET | `/api/config` | Return the current public version string |
+| GET | `/api/showcase/covers` | Return randomized cover URLs for the public authentication-page artwork |
 | POST | `/api/logout` | Delete current session |
 | GET | `/api/auth/me` | Resolve current user |
 | PUT | `/api/account` | Change username and/or password after current-password verification |
@@ -194,6 +217,33 @@ List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `f
 
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
+### Local administrator API
+
+The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intentionally not an account role. A request is accepted only when the TCP peer is loopback. If nginx-style `X-Real-IP` or `X-Forwarded-For` headers are present, the first reported client must also be loopback. This prevents the public reverse proxy from exposing admin merely because it connects to Node locally.
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/api/admin/stats` | Runtime and whole-database counts |
+| GET | `/api/admin/accounts` | Account, collection, cover, and session counts |
+| DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
+| DELETE | `/api/admin/accounts/:id` | Delete an account, its avatar, and cascaded games, sessions, and integration settings |
+| GET | `/api/admin/games?q=...` | Search up to 250 games across accounts |
+| DELETE | `/api/admin/games/:id` | Permanently remove one explicitly selected game |
+| GET, PUT | `/api/admin/version` | Read or atomically replace the release string |
+| POST | `/api/admin/database/checkpoint` | Truncate-checkpoint the SQLite WAL |
+| POST | `/api/admin/database/optimize` | Run SQLite planner optimization |
+| POST | `/api/admin/database/vacuum` | Rebuild the SQLite database file |
+| GET, POST | `/api/admin/backups` | List or trigger the current hour's compressed SQLite backup |
+| DELETE | `/api/admin/backups/:name` | Delete one validated backup filename |
+
+Admin static files and API responses use restrictive security headers. Backup names are server-generated and deletion accepts only that exact filename shape. Backups are stored in `backups/`, which is excluded from Git.
+
+`server/backup.js` creates one consistent SQLite snapshot at process startup and then exactly on each hour. The snapshot is compressed with the host `zip` command, published by atomic rename, and its temporary raw SQLite file is always removed. A second attempt in the same hour is a no-op. Archives older than 15 days are pruned during each run.
+
+### Version file
+
+`VERSION` contains one nonempty, arbitrary single-line string of at most 80 characters. It is not limited to semantic versions. The admin writes a temporary sibling and atomically renames it over the target; the main header fetches the value through `/api/config` on page load. Changing the version does not require restarting Node, though already-open app tabs refresh it on their next reload.
+
 ---
 
 ## PEGI integration
@@ -220,7 +270,7 @@ Cards use a centred, full-card image with a dark left-to-right gradient, mirrori
 
 ## Browser application
 
-`public/app.js` is a zero-dependency browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state.
+`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`.
 
 ### Startup
 
@@ -239,17 +289,29 @@ Game cards are generated from escaped values. Filters are sent to the server rat
 
 Backdrop dismissal tracks `pointerdown` and `pointerup`. It closes only when both events target the dialog backdrop. This prevents a text-selection drag that begins inside the form and ends outside from dismissing the dialog.
 
+Destructive actions use themed HTML dialogs in both the public application and localhost admin. Native browser `alert`, `confirm`, and `prompt` APIs are not used.
+
 ---
 
 ## Static serving
 
 `server.js` resolves requested paths beneath `public/`, rejects traversal outside that directory, assigns MIME types, and serves static content with `Cache-Control: no-cache`. API content uses `no-store`.
 
+Admin assets are not beneath the public directory. `server/admin.js` serves an explicit file allowlist only after the request passes the loopback check.
+
 Generated documentation is available at:
 
 - `/docs/`
 - `/docs/user-guide.html`
 - `/docs/technical.html`
+
+### Search and social metadata
+
+The public landing page uses `https://gameskat.net/` as its canonical URL. It includes a focused title and description, Open Graph and Twitter large-image metadata, and `WebApplication` JSON-LD. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
+
+`robots.txt` permits the landing page and public guide while excluding `/api/`, `/admin/`, and account avatars. `sitemap.xml` lists only the canonical landing page and user guide. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
+
+The authentication landing markup contains six visible, descriptive feature cards. This gives non-JavaScript crawlers useful product content without exposing any private collection data.
 
 ---
 
@@ -273,6 +335,10 @@ npm run docs:check   # fail if generated HTML is stale
 | `test/auth.test.js` | Account isolation, sessions, password invalidation |
 | `test/pegi.test.js` | PEGI HTML parsing |
 | `test/covers.test.js` | Conservative cover-title normalization |
+| `test/seo.test.js` | Canonical/social metadata, crawler policy, and asset dimensions |
+| `test/admin.test.js` | Loopback/proxy boundary and whole-database admin summaries |
+| `test/backup.test.js` | Hourly ZIP creation, deduplication, cleanup, and scheduler timing |
+| `test/version.test.js` | Version-file persistence and input validation |
 
 Run all checks with `npm test`.
 
@@ -284,7 +350,7 @@ The authentication test uses a disposable SQLite database under `/tmp` and remov
 
 Stop with `Ctrl+C` or send SIGTERM. The server closes SQLite before exiting.
 
-For a simple offline backup:
+The server automatically creates compressed, consistent live backups at startup and hourly, retaining 15 days. The admin **Tools** tab lists, triggers, and removes those archives and can checkpoint the WAL. For a simple offline backup:
 
 1. Stop the server.
 2. Copy `games.db` to a dated backup location.
@@ -299,9 +365,9 @@ The database is excluded from Git. Source code, generated documentation, and tes
 ## Known boundaries
 
 - No email recovery flow is configured; account passwords must be retained.
-- No administrator panel exists.
+- The administrator panel is deliberately available only through a direct loopback request; remote administration requires an explicit, separately secured transport such as an SSH tunnel.
 - Login throttling is in-memory rather than persisted.
 - PEGI parsing depends on public page structure and can require maintenance.
 - Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.
 - The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.
-- Application JavaScript is intentionally compact and remains in one browser entry module until feature growth justifies further splitting.
+- The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.

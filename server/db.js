@@ -152,13 +152,21 @@ function updateGameCover(userId, id, cover) {
   return result.changes ? getGame(userId, id) : null;
 }
 
+function randomShowcaseCovers(limit = 14) {
+  const count = Math.max(1, Math.min(48, Number.parseInt(limit, 10) || 14));
+  return db.prepare(`SELECT cover_url AS coverUrl FROM games
+    WHERE cover_url LIKE 'https://%'
+    GROUP BY cover_url ORDER BY RANDOM() LIMIT ?`).all(count).map(row => row.coverUrl);
+}
+
 function stats(userId) {
   const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=?').get(userId).n;
   const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? GROUP BY ownership').all(userId);
   const platforms = db.prepare('SELECT platform label, COUNT(*) count FROM games WHERE user_id=? GROUP BY platform ORDER BY count DESC, platform').all(userId);
   const pegi = db.prepare("SELECT COALESCE(CAST(pegi AS TEXT), 'Unrated') label, COUNT(*) count FROM games WHERE user_id=? GROUP BY pegi ORDER BY pegi").all(userId);
   const play = db.prepare('SELECT play_status label, COUNT(*) count FROM games WHERE user_id=? GROUP BY play_status').all(userId);
-  return { total, ownership, platforms, pegi, play };
+  const favorites = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND favorite=1').get(userId).n;
+  return { total, favorites, ownership, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, stats };
+module.exports = { db, normalizeGame, listGames, getGame, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, randomShowcaseCovers, stats };

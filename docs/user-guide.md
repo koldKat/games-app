@@ -29,16 +29,22 @@ Every account has an isolated library. Game ownership is attached to the account
 
 ## Dashboard
 
-The four compact cards summarize the current account only:
+The ten compact cards summarize the current account and act as one-click major filters:
 
 | Card | Meaning |
 |---|---|
-| **Total games** | Every title in the account's library |
+| **Total** | Every title in the account's library and clears all filters |
 | **Owned** | Games currently owned |
 | **Wishlisted** | Games wanted but not yet owned |
+| **Unavailable** | Entries unavailable on the tracked platform |
+| **Backlog** | Games waiting to be played |
+| **Playing** | Games currently in progress |
 | **Completed** | Games with play status set to Completed |
+| **Paused** | Games intentionally put on hold |
+| **Abandoned** | Games no longer being pursued |
+| **Favourites** | Games marked as favourites |
 
-Selecting a summary card applies its corresponding library filter. **Total games** clears the ownership filter.
+Selecting a summary card applies its corresponding library filter and highlights the active card. **Total** clears search and every library filter while retaining the selected sort order.
 
 ---
 
@@ -68,8 +74,12 @@ Use the two view buttons beside **Your games**:
 
 - **Card view** gives titles more space and is the default.
 - **Compact view** places each game on a denser horizontal row.
+- The left card rail uses the PEGI colour: green for 3/7, amber for 12/16, red for 18, and muted grey when unrated.
+- The platform appears inside each card as its own label.
 
 The preference is stored in the browser.
+
+The small release string beside **Games Shelf** comes from the project's `VERSION` file and can be changed from the local administrator panel.
 
 ---
 
@@ -84,7 +94,7 @@ Only **Title** and **Platform** are required. Every other field can be added lat
 | Field | Purpose |
 |---|---|
 | **Title** | Display name of the game |
-| **Platform** | Console or platform; existing values are suggested |
+| **Platform** | Choose from the grouped platform catalogue, or select Custom to enter any other platform |
 | **PEGI rating** | 3, 7, 12, 16, 18, or blank |
 | **Collection** | Owned, Wishlisted, or Unavailable |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
@@ -143,6 +153,7 @@ Open **Edit details**, select **Delete**, and confirm. Deletion is permanent for
 - Select **×**, **Cancel**, press **Escape**, or click directly on the backdrop to close a dialog.
 - Selecting text and releasing the pointer outside the dialog does not close it.
 - A backdrop close occurs only when the pointer starts and ends on the backdrop.
+- Destructive actions use application-themed confirmation dialogs. Games Shelf never invokes the browser's native alert, confirm, or prompt interface.
 
 ---
 
@@ -186,6 +197,23 @@ The app manifest allows supported browsers to install Games Shelf as a standalon
 
 ---
 
+## Local administrator panel
+
+On the computer running Games Shelf, open `http://127.0.0.1:3005/admin/`. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.
+
+The compact terminal-style panel provides:
+
+- Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.
+- Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, and integration settings.
+- Cross-account catalogue search and deliberate, confirmed game deletion.
+- An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
+- SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
+- Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.
+
+The admin panel is not a normal user account and has no public login screen. Its security boundary is the local machine itself. If remote administration is ever needed, use an explicitly secured tunnel rather than publishing `/admin/` in nginx.
+
+---
+
 ## Troubleshooting
 
 ### A session expired
@@ -214,6 +242,6 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 ## Data safety
 
-All persistent data lives in `games.db`. Back up that file while the server is stopped, or use SQLite's backup facilities while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.
+All persistent collection data lives in `games.db`. Back up that file while the server is stopped, or use **Create backup** in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.
 
 The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.

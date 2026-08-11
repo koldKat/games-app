@@ -1,12 +1,16 @@
 # Games Shelf
 
-A responsive, local-first game collection manager built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
+A responsive, local-first, multi-platform game collection manager built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
+
+Games Shelf tracks physical and digital games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry ownership, wishlist, availability, play-state, PEGI, format, cover-art, and favourite metadata.
 
 ## Accounts
 
 Registration and login use scrypt-hashed passwords and random bearer-token sessions with a rolling two-week expiry. Each account has an isolated library and can change its own username or password from the account menu.
 
 New accounts begin with isolated, empty libraries. Existing game ownership is stored by immutable numeric account ID, so renaming an account does not affect its collection.
+
+The add/edit form includes a broad grouped platform catalogue plus a custom-platform escape hatch. PEGI rating colours provide the card rail identity; the platform remains visible on each card.
 
 ## Run
 
@@ -22,6 +26,18 @@ Optional environment variables:
 ```bash
 PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 ```
+
+## Local admin
+
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes collection/account summaries, session revocation, cross-account catalogue inspection, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+
+The server makes one ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. The host `zip` command is required.
+
+The panel is loopback-only. Requests forwarded by nginx with a non-loopback client address are rejected even though nginx itself connects locally.
+
+## Public landing and SEO
+
+The authentication landing page doubles as a crawler-readable product page for `https://gameskat.net/`, with canonical, Open Graph, Twitter, and structured application metadata. `robots.txt` excludes API, admin, and avatar paths; the sitemap contains only public pages. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## PEGI lookup
 

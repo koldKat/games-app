@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /avatars/
+
+Sitemap: https://gameskat.net/sitemap.xml

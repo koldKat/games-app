@@ -3,42 +3,119 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Catalog your video games, manage wishlists and backlogs, track PEGI ratings, and add box art in a fast personal game collection manager.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="application-name" content="Games Shelf">
+  <meta name="apple-mobile-web-app-title" content="Games Shelf">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#080b10">
-  <title>Games Shelf</title>
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://gameskat.net/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Games Shelf">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:url" content="https://gameskat.net/">
+  <meta property="og:title" content="Games Shelf — Personal Video Game Collection Manager">
+  <meta property="og:description" content="Catalog games across every platform, manage your backlog and wishlist, track PEGI ratings, and pull in box art.">
+  <meta property="og:image" content="https://gameskat.net/social-preview.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Games Shelf personal game collection manager">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Games Shelf — Personal Video Game Collection Manager">
+  <meta name="twitter:description" content="Catalog games, manage your backlog and wishlist, track PEGI ratings, and add box art.">
+  <meta name="twitter:image" content="https://gameskat.net/social-preview.png">
+  <meta name="twitter:image:alt" content="Games Shelf personal game collection manager">
+  <title>Games Shelf — Personal Video Game Collection &amp; Backlog Manager</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/style.css">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Games Shelf","url":"https://gameskat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI-assisted metadata and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <main id="auth-screen" class="auth-screen">
-    <section class="auth-card">
-      <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span><span>GAMES_SHELF // AUTH</span><em>● SECURE</em></div>
-      <div class="auth-body">
-        <p class="kicker">Identity required</p>
-        <h1 id="auth-title">Access your library</h1>
-        <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
-        <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
-        <form id="auth-form">
-          <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
-          <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
-          <label><span>Password</span><input id="auth-password" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></label>
-          <label id="auth-confirm-label" hidden><span>Confirm password</span><input id="auth-password-confirm" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat password"></label>
-          <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
-          <p id="auth-error" class="form-error" hidden></p>
-          <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
-        </form>
-      </div>
-    </section>
+    <div class="auth-cover-field" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="auth-showcase">
+      <aside class="auth-promo-rail" aria-label="Collection features">
+        <article class="auth-promo promo-library">
+          <span class="promo-code">CATALOG // 01</span>
+          <h2>One shelf.<br>Every system.</h2>
+          <p>Keep physical, digital, owned, and wanted games in one fast private catalogue.</p>
+          <div class="promo-platforms"><span>SWITCH</span><span>PS4</span><span>3DS</span><span>EVERCADE</span></div>
+          <i class="promo-loose-cover" aria-hidden="true"></i>
+        </article>
+        <article class="auth-promo promo-query">
+          <span class="promo-code">QUERY // READY</span>
+          <h2>Find anything fast.</h2>
+          <div class="promo-command"><b>&gt;</b> filter --status backlog</div>
+          <div class="promo-result"><span>PLATFORM</span><i></i><strong>ANY</strong></div><div class="promo-result"><span>SORT</span><i></i><strong>TITLE_ASC</strong></div>
+        </article>
+        <article class="auth-promo promo-metadata">
+          <span class="promo-code">METADATA // ASSISTED</span>
+          <h2>Ratings without busywork.</h2>
+          <p>Request PEGI details when adding a title, then review every field before it reaches your shelf.</p>
+          <div class="promo-pegi" aria-label="Supported PEGI ratings"><b>3</b><b>7</b><b>12</b><b>16</b><b>18</b></div>
+        </article>
+      </aside>
+
+      <section class="auth-card">
+        <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span><span>GAMES_SHELF // AUTH</span><em>● SECURE</em></div>
+        <div class="auth-body">
+          <p class="kicker">Identity required</p>
+          <h1 id="auth-title">Access your library</h1>
+          <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
+          <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
+          <form id="auth-form">
+            <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
+            <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
+            <label><span>Password</span><input id="auth-password" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></label>
+            <label id="auth-confirm-label" hidden><span>Confirm password</span><input id="auth-password-confirm" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat password"></label>
+            <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
+            <p id="auth-error" class="form-error" hidden></p>
+            <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
+          </form>
+        </div>
+      </section>
+
+      <aside class="auth-promo-rail" aria-label="Artwork and tracking features">
+        <article class="auth-promo promo-covers">
+          <span class="promo-code">BOX_ART // ONLINE</span>
+          <div class="promo-cover-deck" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <h2>Your covers on deck.</h2>
+          <p>Pull portrait artwork from SteamGridDB and let every card look like the game it tracks.</p>
+        </article>
+        <article class="auth-promo promo-track">
+          <span class="promo-code">STATE // SYNCED</span>
+          <h2>Backlog under control.</h2>
+          <p>Track playing, paused, completed, and wishlisted titles without turning it into a spreadsheet.</p>
+          <div class="promo-progress"><span><i style="--value:68%"></i></span><b>68% indexed</b></div>
+        </article>
+        <article class="auth-promo promo-private">
+          <span class="promo-code">DATA // YOURS</span>
+          <h2>Private by construction.</h2>
+          <p>Account-scoped libraries, local SQLite storage, and hourly compressed backups keep the collection under your control.</p>
+          <div class="promo-system"><span><i></i>ACCOUNT ISOLATED</span><span><i></i>HOURLY ZIP</span><span><i></i>LOCAL DB</span></div>
+        </article>
+      </aside>
+      <footer class="auth-footer"><span>GAMESKAT.NET // PERSONAL GAME INDEX</span><nav aria-label="Public information"><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a></nav></footer>
+    </div>
   </main>
 
   <div class="shell" id="app-shell" hidden>
     <header class="topbar">
       <a class="brand" href="/" aria-label="Games Shelf home">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
-        <span><strong>Games Shelf</strong><small>Your collection, one place</small></span>
+        <span><strong>Games Shelf <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span>＋</span> Add a game</button></div>
+      <div class="top-actions"><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
     </header>
 
     <main>
@@ -58,10 +135,16 @@
       </section>
 
       <section class="stats" aria-label="Collection summary">
-        <button class="stat-card stat-total" data-stat-filter="all"><span class="stat-icon">▦</span><span><b id="stat-total">—</b><small>Total games</small></span></button>
-        <button class="stat-card" data-stat-filter="owned"><span class="stat-icon green">✓</span><span><b id="stat-owned">—</b><small>Owned</small></span></button>
-        <button class="stat-card" data-stat-filter="wanted"><span class="stat-icon amber">◎</span><span><b id="stat-wanted">—</b><small>Wishlisted</small></span></button>
-        <button class="stat-card" data-stat-filter="completed"><span class="stat-icon violet">★</span><span><b id="stat-completed">—</b><small>Completed</small></span></button>
+        <button class="stat-card stat-total" data-stat-kind="all"><span class="stat-icon">▦</span><span><b id="stat-total">—</b><small>Total</small></span></button>
+        <button class="stat-card" data-stat-kind="ownership" data-stat-value="owned"><span class="stat-icon green">✓</span><span><b id="stat-owned">—</b><small>Owned</small></span></button>
+        <button class="stat-card" data-stat-kind="ownership" data-stat-value="wanted"><span class="stat-icon amber">◎</span><span><b id="stat-wanted">—</b><small>Wishlisted</small></span></button>
+        <button class="stat-card" data-stat-kind="ownership" data-stat-value="unavailable"><span class="stat-icon red">×</span><span><b id="stat-unavailable">—</b><small>Unavailable</small></span></button>
+        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="backlog"><span class="stat-icon blue">≡</span><span><b id="stat-backlog">—</b><small>Backlog</small></span></button>
+        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="playing"><span class="stat-icon cyan">▶</span><span><b id="stat-playing">—</b><small>Playing</small></span></button>
+        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="completed"><span class="stat-icon violet">★</span><span><b id="stat-completed">—</b><small>Completed</small></span></button>
+        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="paused"><span class="stat-icon orange">‖</span><span><b id="stat-paused">—</b><small>Paused</small></span></button>
+        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="abandoned"><span class="stat-icon grey">⌁</span><span><b id="stat-abandoned">—</b><small>Abandoned</small></span></button>
+        <button class="stat-card" data-stat-kind="favorite" data-stat-value="1"><span class="stat-icon pink">♥</span><span><b id="stat-favorites">—</b><small>Favourites</small></span></button>
       </section>
 
       <section class="library">
@@ -74,6 +157,7 @@
         </div>
 
         <div class="filter-panel">
+          <input id="favorite-filter" type="hidden">
           <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, publisher, or notes…" autocomplete="off"></label>
           <div class="filters">
             <label><span>Platform</span><select id="platform-filter"><option value="">All platforms</option></select></label>
@@ -112,7 +196,8 @@
       <div id="cover-results" class="cover-results" hidden></div>
       <div class="form-grid">
         <label class="span-2"><span>Title *</span><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4"></label>
-        <label><span>Platform *</span><input id="game-platform" required list="platforms" maxlength="80" placeholder="Nintendo Switch"></label>
+        <label><span>Platform *</span><select id="game-platform" required></select></label>
+        <label id="game-platform-custom-label" hidden><span>Custom platform *</span><input id="game-platform-custom" maxlength="80" autocomplete="off" placeholder="Enter platform name"></label>
         <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>
         <label><span>Collection</span><select id="game-ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
         <label><span>Play status</span><select id="game-status"><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
@@ -151,7 +236,13 @@
       <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><span></span><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
     </form>
   </dialog>
-  <datalist id="platforms"></datalist>
-  <script src="/app.js" defer></script>
+  <dialog id="action-dialog" class="action-dialog">
+    <section class="modal-card action-modal" role="document">
+      <header class="modal-head"><div><p class="kicker" id="action-kicker">Confirm action</p><h2 id="action-title">Are you sure?</h2></div><button type="button" class="close-button" id="action-close" aria-label="Close">×</button></header>
+      <p id="action-message" class="action-message"></p>
+      <footer class="modal-actions"><span></span><button type="button" class="button ghost" id="action-cancel">Cancel</button><button type="button" class="button action-danger" id="action-confirm">Confirm</button></footer>
+    </section>
+  </dialog>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>

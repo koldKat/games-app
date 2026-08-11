@@ -9,6 +9,7 @@ games.db-wal
 !.env.example
 *.log
 coverage/
+backups/
 .DS_Store
 public/avatars/*
 !public/avatars/.gitkeep

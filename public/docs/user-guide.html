@@ -28,6 +28,7 @@
 <a class="toc-3" href="#add-or-change-email">Add or change email</a>
 <a class="toc-3" href="#change-password">Change password</a>
 <a class="toc-2" href="#mobile-use">Mobile use</a>
+<a class="toc-2" href="#local-administrator-panel">Local administrator panel</a>
 <a class="toc-2" href="#troubleshooting">Troubleshooting</a>
 <a class="toc-3" href="#a-session-expired">A session expired</a>
 <a class="toc-3" href="#pegi-lookup-failed">PEGI lookup failed</a>
@@ -56,9 +57,9 @@
 </ul>
 <hr>
 <h2 id="dashboard">Dashboard<a class="anchor" href="#dashboard" aria-label="Link to section">#</a></h2>
-<p>The four compact cards summarize the current account only:</p>
-<div class="table-wrap"><table><thead><tr><th>Card</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Total games</strong></td><td>Every title in the account&#39;s library</td></tr><tr><td><strong>Owned</strong></td><td>Games currently owned</td></tr><tr><td><strong>Wishlisted</strong></td><td>Games wanted but not yet owned</td></tr><tr><td><strong>Completed</strong></td><td>Games with play status set to Completed</td></tr></tbody></table></div>
-<p>Selecting a summary card applies its corresponding library filter. <strong>Total games</strong> clears the ownership filter.</p>
+<p>The ten compact cards summarize the current account and act as one-click major filters:</p>
+<div class="table-wrap"><table><thead><tr><th>Card</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Total</strong></td><td>Every title in the account&#39;s library and clears all filters</td></tr><tr><td><strong>Owned</strong></td><td>Games currently owned</td></tr><tr><td><strong>Wishlisted</strong></td><td>Games wanted but not yet owned</td></tr><tr><td><strong>Unavailable</strong></td><td>Entries unavailable on the tracked platform</td></tr><tr><td><strong>Backlog</strong></td><td>Games waiting to be played</td></tr><tr><td><strong>Playing</strong></td><td>Games currently in progress</td></tr><tr><td><strong>Completed</strong></td><td>Games with play status set to Completed</td></tr><tr><td><strong>Paused</strong></td><td>Games intentionally put on hold</td></tr><tr><td><strong>Abandoned</strong></td><td>Games no longer being pursued</td></tr><tr><td><strong>Favourites</strong></td><td>Games marked as favourites</td></tr></tbody></table></div>
+<p>Selecting a summary card applies its corresponding library filter and highlights the active card. <strong>Total</strong> clears search and every library filter while retaining the selected sort order.</p>
 <hr>
 <h2 id="finding-games">Finding games<a class="anchor" href="#finding-games" aria-label="Link to section">#</a></h2>
 <p>The library updates as filters change.</p>
@@ -72,14 +73,17 @@
 <ul>
 <li><strong>Card view</strong> gives titles more space and is the default.</li>
 <li><strong>Compact view</strong> places each game on a denser horizontal row.</li>
+<li>The left card rail uses the PEGI colour: green for 3/7, amber for 12/16, red for 18, and muted grey when unrated.</li>
+<li>The platform appears inside each card as its own label.</li>
 </ul>
 <p>The preference is stored in the browser.</p>
+<p>The small release string beside <strong>Games Shelf</strong> comes from the project&#39;s <code>VERSION</code> file and can be changed from the local administrator panel.</p>
 <hr>
 <h2 id="adding-a-game">Adding a game<a class="anchor" href="#adding-a-game" aria-label="Link to section">#</a></h2>
 <p>Select <strong>Add a game</strong> on desktop or the <strong>+</strong> floating button on mobile.</p>
 <h3 id="manual-entry">Manual entry<a class="anchor" href="#manual-entry" aria-label="Link to section">#</a></h3>
 <p>Only <strong>Title</strong> and <strong>Platform</strong> are required. Every other field can be added later.</p>
-<div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Title</strong></td><td>Display name of the game</td></tr><tr><td><strong>Platform</strong></td><td>Console or platform; existing values are suggested</td></tr><tr><td><strong>PEGI rating</strong></td><td>3, 7, 12, 16, 18, or blank</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Format</strong></td><td>Physical, Digital, or Unknown</td></tr><tr><td><strong>Cartridge no.</strong></td><td>Mainly used for Evercade cartridge numbering</td></tr><tr><td><strong>Publisher</strong></td><td>Optional publisher or label</td></tr><tr><td><strong>Release year</strong></td><td>Four-digit release year</td></tr><tr><td><strong>Notes</strong></td><td>Edition, condition, storage location, purchase notes, or anything else</td></tr><tr><td><strong>Favourite</strong></td><td>Adds a visible favourite marker</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Title</strong></td><td>Display name of the game</td></tr><tr><td><strong>Platform</strong></td><td>Choose from the grouped platform catalogue, or select Custom to enter any other platform</td></tr><tr><td><strong>PEGI rating</strong></td><td>3, 7, 12, 16, 18, or blank</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Format</strong></td><td>Physical, Digital, or Unknown</td></tr><tr><td><strong>Cartridge no.</strong></td><td>Mainly used for Evercade cartridge numbering</td></tr><tr><td><strong>Publisher</strong></td><td>Optional publisher or label</td></tr><tr><td><strong>Release year</strong></td><td>Four-digit release year</td></tr><tr><td><strong>Notes</strong></td><td>Edition, condition, storage location, purchase notes, or anything else</td></tr><tr><td><strong>Favourite</strong></td><td>Adds a visible favourite marker</td></tr></tbody></table></div>
 <h3 id="pegi-assisted-entry">PEGI-assisted entry<a class="anchor" href="#pegi-assisted-entry" aria-label="Link to section">#</a></h3>
 <ol>
 <li>Type at least two characters in <strong>Title</strong>.</li>
@@ -114,6 +118,7 @@
 <li>Select <strong>×</strong>, <strong>Cancel</strong>, press <strong>Escape</strong>, or click directly on the backdrop to close a dialog.</li>
 <li>Selecting text and releasing the pointer outside the dialog does not close it.</li>
 <li>A backdrop close occurs only when the pointer starts and ends on the backdrop.</li>
+<li>Destructive actions use application-themed confirmation dialogs. Games Shelf never invokes the browser&#39;s native alert, confirm, or prompt interface.</li>
 </ul>
 <hr>
 <h2 id="account-management">Account management<a class="anchor" href="#account-management" aria-label="Link to section">#</a></h2>
@@ -140,6 +145,19 @@
 </ul>
 <p>The app manifest allows supported browsers to install Games Shelf as a standalone home-screen app.</p>
 <hr>
+<h2 id="local-administrator-panel">Local administrator panel<a class="anchor" href="#local-administrator-panel" aria-label="Link to section">#</a></h2>
+<p>On the computer running Games Shelf, open <code>http://127.0.0.1:3005/admin/</code>. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.</p>
+<p>The compact terminal-style panel provides:</p>
+<ul>
+<li>Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.</li>
+<li>Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, and integration settings.</li>
+<li>Cross-account catalogue search and deliberate, confirmed game deletion.</li>
+<li>An arbitrary release-string editor. Saving writes directly to <code>VERSION</code>; reload the main app to see the new string in its header.</li>
+<li>SQLite WAL checkpoint, query-planner optimization, and vacuum actions.</li>
+<li>Hourly compressed live backups stored in the ignored <code>backups/</code> directory. One runs at startup and then on the hour; archives are retained for 15 days.</li>
+</ul>
+<p>The admin panel is not a normal user account and has no public login screen. Its security boundary is the local machine itself. If remote administration is ever needed, use an explicitly secured tunnel rather than publishing <code>/admin/</code> in nginx.</p>
+<hr>
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to section">#</a></h2>
 <h3 id="a-session-expired">A session expired<a class="anchor" href="#a-session-expired" aria-label="Link to section">#</a></h3>
 <p>Sign in again. Sessions expire after two weeks of inactivity. A password change also invalidates all sessions.</p>
@@ -153,5 +171,5 @@
 <p>Confirm port 3005 is free and that the device can reach the host machine.</p>
 <hr>
 <h2 id="data-safety">Data safety<a class="anchor" href="#data-safety" aria-label="Link to section">#</a></h2>
-<p>All persistent data lives in <code>games.db</code>. Back up that file while the server is stopped, or use SQLite&#39;s backup facilities while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.</p>
+<p>All persistent collection data lives in <code>games.db</code>. Back up that file while the server is stopped, or use <strong>Create backup</strong> in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.</p>
 <p>The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div></body></html>

@@ -6,6 +6,9 @@ const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
 const covers = require('./server/covers');
 const auth = require('./server/auth');
+const admin = require('./server/admin');
+const { readVersion } = require('./server/version');
+const backup = require('./server/backup');
 
 const PORT = Number(process.env.PORT || 3005);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -15,7 +18,8 @@ fs.mkdirSync(AVATARS_DIR, { recursive: true });
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 const coverJobs = new Map();
 
@@ -96,6 +100,12 @@ function serveStatic(requestPath, response) {
 }
 
 async function handleApi(request, response, url) {
+  if (request.method === 'GET' && url.pathname === '/api/config') {
+    return sendJson(response, 200, { version: readVersion() });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/showcase/covers') {
+    return sendJson(response, 200, { covers: db.randomShowcaseCovers(38) });
+  }
   if (request.method === 'POST' && url.pathname === '/api/register') {
     const ip = auth.clientIp(request);
     if (auth.isRateLimited(ip)) return sendJson(response, 429, { error: 'Too many attempts. Try again later.' });
@@ -178,7 +188,7 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/stats') return sendJson(response, 200, db.stats(user.id));
   if (request.method === 'GET' && url.pathname === '/api/meta') {
-    return sendJson(response, 200, { platforms: db.stats(user.id).platforms.map(row => row.label), version: '1.1.0', pegiLookup: true, user });
+    return sendJson(response, 200, { platforms: db.stats(user.id).platforms.map(row => row.label), version: readVersion(), pegiLookup: true, user });
   }
   if (request.method === 'GET' && url.pathname === '/api/pegi/search') {
     try { return sendJson(response, 200, await searchPegi(url.searchParams.get('q'))); }
@@ -209,8 +219,10 @@ async function handleApi(request, response, url) {
   sendJson(response, 404, { error: 'API route not found.' });
 }
 
-const server = http.createServer((request, response) => {
+const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  try { if (await admin.handle(request, response, url)) return; }
+  catch (error) { return sendJson(response, 500, { error: error.message || 'Admin request failed.' }); }
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));
   } else {
@@ -219,7 +231,10 @@ const server = http.createServer((request, response) => {
 });
 
 auth.purgeExpiredSessions();
-server.listen(PORT, HOST, () => console.log(`Games Shelf is running at http://localhost:${PORT}`));
+server.listen(PORT, HOST, () => {
+  console.log(`Games Shelf is running at http://localhost:${PORT}`);
+  backup.start();
+});
 
 function shutdown() {
   server.close(() => { db.db.close(); process.exit(0); });

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b10">
+  <title>Games Shelf // Admin</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+  <header class="admin-head">
+    <div><span class="prompt">&gt;_</span><span><strong>GAMES_SHELF</strong><small>LOCAL CONTROL PLANE</small></span></div>
+    <div class="head-actions"><span class="local-state"><i></i>LOOPBACK</span><span id="header-version" class="version">…</span><a href="/">RETURN TO APP</a></div>
+  </header>
+
+  <nav class="tabs" aria-label="Admin sections">
+    <button class="active" data-tab="dashboard">01 / DASHBOARD</button>
+    <button data-tab="accounts">02 / ACCOUNTS</button>
+    <button data-tab="catalogue">03 / CATALOGUE</button>
+    <button data-tab="tools">04 / TOOLS</button>
+  </nav>
+
+  <main>
+    <section id="panel-dashboard" class="panel active">
+      <header class="section-head"><div><span>RUNTIME OVERVIEW</span><h1>Dashboard</h1></div><button id="refresh-dashboard" class="button">Refresh</button></header>
+      <div class="metric-grid">
+        <article><span>GAMES</span><strong id="metric-games">—</strong></article>
+        <article><span>ACCOUNTS</span><strong id="metric-users">—</strong></article>
+        <article><span>COVERS</span><strong id="metric-covers">—</strong><small id="metric-covers-sub"></small></article>
+        <article><span>SESSIONS</span><strong id="metric-sessions">—</strong></article>
+        <article><span>FAVOURITES</span><strong id="metric-favorites">—</strong></article>
+        <article><span>DATABASE</span><strong id="metric-database">—</strong></article>
+        <article><span>UPTIME</span><strong id="metric-uptime">—</strong></article>
+        <article><span>VERSION</span><strong id="metric-version">—</strong></article>
+      </div>
+      <div class="split-grid">
+        <article class="block"><header><span>OWNERSHIP</span><b>STATE COUNTS</b></header><div id="ownership-bars" class="bars"></div></article>
+        <article class="block"><header><span>PEGI</span><b>RATING COUNTS</b></header><div id="pegi-bars" class="bars"></div></article>
+        <article class="block wide"><header><span>PLATFORMS</span><b>TOP 12</b></header><div id="platform-bars" class="bars columns"></div></article>
+      </div>
+    </section>
+
+    <section id="panel-accounts" class="panel">
+      <header class="section-head"><div><span>IDENTITY CONTROL</span><h1>Accounts</h1></div><button id="refresh-accounts" class="button">Refresh</button></header>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th></th></tr></thead><tbody id="accounts-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-catalogue" class="panel">
+      <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Catalogue</h1></div><span id="catalogue-count" class="quiet"></span></header>
+      <form id="catalogue-search" class="search-row"><input id="catalogue-query" type="search" placeholder="Search title, platform, or account" autocomplete="off"><button class="button primary">Search</button></form>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th></th></tr></thead><tbody id="catalogue-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-tools" class="panel">
+      <header class="section-head"><div><span>FILE + DATABASE</span><h1>Tools</h1></div></header>
+      <div class="tools-grid">
+        <article class="block tool-block">
+          <header><span>RELEASE STRING</span><b>VERSION FILE</b></header>
+          <p>Writes one arbitrary string to <code>VERSION</code>. The main header reads it through public config.</p>
+          <form id="version-form" class="inline-form"><input id="version-input" maxlength="80" required spellcheck="false" placeholder="e.g. 1.2.0-beta or night shift"><button class="button primary">Write version</button></form>
+          <small id="version-path">PROJECT_ROOT/VERSION</small>
+        </article>
+        <article class="block tool-block">
+          <header><span>SQLITE</span><b>MAINTENANCE</b></header>
+          <p>Checkpoint the WAL, refresh query-planner data, or rebuild the database file.</p>
+          <div class="tool-actions"><button class="button" data-db-action="checkpoint">Checkpoint WAL</button><button class="button" data-db-action="optimize">Optimize</button><button class="button danger" data-db-action="vacuum">Vacuum</button></div>
+        </article>
+        <article class="block tool-block wide">
+          <header><span>RECOVERY</span><b>LOCAL BACKUPS</b><button id="create-backup" class="button primary">Create backup</button></header>
+          <p>Hourly ZIP snapshots kept for 15 days under <code>backups/</code>. A backup runs at startup and then on the hour; the directory is excluded from Git.</p>
+          <div class="table-shell compact"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th></th></tr></thead><tbody id="backups-body"></tbody></table></div>
+        </article>
+      </div>
+    </section>
+  </main>
+  <dialog id="confirm-dialog" class="confirm-dialog">
+    <section class="confirm-card" role="document">
+      <header><span id="confirm-kicker">CONFIRM ACTION</span><button id="confirm-close" type="button" aria-label="Close">×</button></header>
+      <h2 id="confirm-title">Confirm action</h2>
+      <p id="confirm-message"></p>
+      <label id="confirm-input-label" hidden><span id="confirm-input-caption"></span><input id="confirm-input" autocomplete="off" spellcheck="false"></label>
+      <footer><button id="confirm-cancel" class="button" type="button">Cancel</button><button id="confirm-accept" class="button danger" type="button">Confirm</button></footer>
+    </section>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/admin/js/boot.js"></script>
+</body>
+</html>
