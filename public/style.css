@@ -194,3 +194,10 @@ body{font-size:14px}
 /* Directional physical depth instead of diffuse black halos. */
 .auth-cover-field i{box-shadow:8px 14px 24px #0009,1px 2px 0 #06100e}.auth-card{box-shadow:0 16px 42px #000b,0 0 0 1px #35d6b20b}.auth-promo{box-shadow:0 8px 22px #0006}.promo-loose-cover{box-shadow:-5px 8px 16px #0009}.promo-cover-deck i{box-shadow:4px 7px 12px #0009}
 .action-dialog{width:min(430px,calc(100% - 16px))}.action-modal{width:100%}.action-message{margin:3px 0 2px;color:#8d9aa8;font-size:11px;line-height:1.55}.button.action-danger{border-color:#703b38;background:#2c1718;color:#ff8a80}.button.action-danger:hover{border-color:#a6534d;background:#3a1d1f}.action-dialog .modal-actions{margin-top:12px}.action-dialog .modal-actions .button{min-width:92px}
+
+/* Login and registration share one stable frame; field changes never reflow the landing page. */
+.auth-card{height:510px}.auth-card .auth-body{height:calc(100% - 31px);overflow-y:auto;scrollbar-gutter:stable}
+
+/* Promo copy is supporting text, not microscopic decoration. */
+.auth-promo p{font-size:12px;line-height:1.5;color:#92a0ae}.promo-system{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}.promo-system span,.promo-system span:last-child{grid-column:auto;padding:5px 4px;white-space:nowrap}.promo-system span{font-size:6px}
+@media(max-width:580px){.promo-library,.promo-covers,.promo-metadata,.promo-track,.promo-private{min-height:170px}.auth-promo p{font-size:12px}}

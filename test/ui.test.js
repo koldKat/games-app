@@ -23,3 +23,13 @@ test('authentication landing keeps a dense real-cover background', () => {
   const field = html.match(/<div class="auth-cover-field"[\s\S]*?<\/div>/)?.[0] || '';
   assert.equal((field.match(/<i><\/i>/g) || []).length, 32);
 });
+
+test('login and registration use a stable authentication frame', () => {
+  const css = read('public/style.css');
+  assert.match(css, /\.auth-card\{height:510px\}/);
+  assert.match(css, /\.auth-card \.auth-body\{height:calc\(100% - 31px\);overflow-y:auto/);
+});
+
+test('landing promo descriptions remain readable', () => {
+  assert.match(read('public/style.css'), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
+});
