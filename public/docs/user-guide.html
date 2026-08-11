@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b10"><title>Games Shelf // User Guide</title>
+<style>
+:root{color-scheme:dark;--bg:#080b10;--panel:#0d1219;--line:#222c38;--text:#dce5ef;--muted:#8491a0;--accent:#35d6b2;--amber:#e9b949;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;line-height:1.65}a{color:#5fe4c5}header{height:48px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#080b10ed;backdrop-filter:blur(10px)}header strong{font-size:12px}header span{color:var(--muted);font-size:9px}header nav{margin-left:auto;display:flex;gap:5px}header nav a{padding:5px 8px;border:1px solid var(--line);text-decoration:none;font-size:9px}.layout{width:min(1240px,100%);margin:auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;padding:18px}.toc{position:sticky;top:66px;align-self:start;max-height:calc(100vh - 82px);overflow:auto;border:1px solid var(--line);background:var(--panel);padding:10px}.toc b{display:block;color:var(--accent);font-size:9px;letter-spacing:.12em;margin-bottom:7px}.toc a{display:block;padding:3px 5px;color:#93a0af;text-decoration:none;font-size:9px;border-left:1px solid #283440}.toc a:hover{color:var(--accent);border-color:var(--accent)}.toc .toc-3{padding-left:15px;color:#6f7d8b}.content{min-width:0;border:1px solid var(--line);background:var(--panel);padding:clamp(15px,3vw,34px)}h1,h2,h3,h4{line-height:1.2;scroll-margin-top:65px}h1{font-size:28px;margin:0 0 28px;color:#f0f5fa}h1:before{content:'> ';color:var(--accent)}h2{font-size:18px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}h3{font-size:14px;margin:24px 0 8px;color:#b9c7d5}h4{font-size:12px;color:var(--amber)}.anchor{opacity:0;text-decoration:none;margin-left:7px;font-size:.7em}h2:hover .anchor,h3:hover .anchor{opacity:1}p{margin:8px 0 13px;color:#b6c0cb}strong{color:#eef4f8}code{background:#111c24;border:1px solid #263542;padding:1px 4px;color:#6ee6cb;font-size:.9em}pre{overflow:auto;background:#070a0e;border:1px solid #273441;padding:12px;margin:12px 0}pre code{border:0;background:none;padding:0;color:#b9c7d5}.table-wrap{overflow:auto;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{text-align:left;padding:7px 8px;border:1px solid #25313d;vertical-align:top}th{background:#111a23;color:#62e2c4}td{color:#aeb9c5}ul,ol{padding-left:22px;color:#b6c0cb}li{margin:3px 0}blockquote{margin:12px 0;padding:8px 11px;border-left:2px solid var(--amber);background:#17150e;color:#d3c594}hr{border:0;border-top:1px solid var(--line);margin:28px 0}.source{margin-top:35px;color:#63707e;font-size:8px}
+@media(max-width:760px){header{padding:0 8px}.layout{display:block;padding:7px}.toc{display:none}.content{padding:14px}h1{font-size:21px}h2{font-size:16px;margin-top:25px}body{font-size:11px}header span{display:none}}
+</style></head><body><header><strong>GAMES_SHELF // DOCS</strong><span>User Guide</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#getting-started">Getting started</a>
+<a class="toc-3" href="#creating-an-account">Creating an account</a>
+<a class="toc-3" href="#signing-in-and-out">Signing in and out</a>
+<a class="toc-2" href="#dashboard">Dashboard</a>
+<a class="toc-2" href="#finding-games">Finding games</a>
+<a class="toc-3" href="#search">Search</a>
+<a class="toc-3" href="#filters">Filters</a>
+<a class="toc-3" href="#card-and-compact-views">Card and compact views</a>
+<a class="toc-2" href="#adding-a-game">Adding a game</a>
+<a class="toc-3" href="#manual-entry">Manual entry</a>
+<a class="toc-3" href="#pegi-assisted-entry">PEGI-assisted entry</a>
+<a class="toc-3" href="#cover-assisted-entry">Cover-assisted entry</a>
+<a class="toc-3" href="#fill-existing-games">Fill existing games</a>
+<a class="toc-2" href="#managing-games">Managing games</a>
+<a class="toc-3" href="#editing">Editing</a>
+<a class="toc-3" href="#favourites">Favourites</a>
+<a class="toc-3" href="#moving-a-wishlist-game-to-owned">Moving a wishlist game to owned</a>
+<a class="toc-3" href="#deleting">Deleting</a>
+<a class="toc-3" href="#dialog-behaviour">Dialog behaviour</a>
+<a class="toc-2" href="#account-management">Account management</a>
+<a class="toc-3" href="#add-or-change-avatar">Add or change avatar</a>
+<a class="toc-3" href="#change-username">Change username</a>
+<a class="toc-3" href="#add-or-change-email">Add or change email</a>
+<a class="toc-3" href="#change-password">Change password</a>
+<a class="toc-2" href="#mobile-use">Mobile use</a>
+<a class="toc-2" href="#troubleshooting">Troubleshooting</a>
+<a class="toc-3" href="#a-session-expired">A session expired</a>
+<a class="toc-3" href="#pegi-lookup-failed">PEGI lookup failed</a>
+<a class="toc-3" href="#the-page-still-shows-an-older-design">The page still shows an older design</a>
+<a class="toc-3" href="#the-server-is-not-reachable">The server is not reachable</a>
+<a class="toc-2" href="#data-safety">Data safety</a></aside><article class="content"><h1 id="games-shelf-user-guide">Games Shelf - User Guide<a class="anchor" href="#games-shelf-user-guide" aria-label="Link to section">#</a></h1>
+<p>Games Shelf is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.</p>
+<hr>
+<h2 id="getting-started">Getting started<a class="anchor" href="#getting-started" aria-label="Link to section">#</a></h2>
+<p>Open <code>http://localhost:3005</code> in a browser. To use another device on the same network, replace <code>localhost</code> with the server computer&#39;s LAN address.</p>
+<h3 id="creating-an-account">Creating an account<a class="anchor" href="#creating-an-account" aria-label="Link to section">#</a></h3>
+<ol>
+<li>Select <strong>Register</strong>.</li>
+<li>Choose a username. Matching is case-insensitive.</li>
+<li>Optionally enter an email address.</li>
+<li>Choose a password with at least eight characters and enter it again for confirmation.</li>
+<li>Select <strong>Create account</strong>.</li>
+</ol>
+<p>Every account has an isolated library. Game ownership is attached to the account&#39;s internal numeric ID, so changing a username does not affect its collection.</p>
+<h3 id="signing-in-and-out">Signing in and out<a class="anchor" href="#signing-in-and-out" aria-label="Link to section">#</a></h3>
+<ul>
+<li>Use <strong>Login</strong> with an existing username and password.</li>
+<li>The browser remembers a random session token, not the password.</li>
+<li>Sessions remain valid for two weeks and are extended while used.</li>
+<li>Select the username in the top-right corner, then <strong>Log out</strong>, to end the current session.</li>
+</ul>
+<hr>
+<h2 id="dashboard">Dashboard<a class="anchor" href="#dashboard" aria-label="Link to section">#</a></h2>
+<p>The four compact cards summarize the current account only:</p>
+<div class="table-wrap"><table><thead><tr><th>Card</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Total games</strong></td><td>Every title in the account&#39;s library</td></tr><tr><td><strong>Owned</strong></td><td>Games currently owned</td></tr><tr><td><strong>Wishlisted</strong></td><td>Games wanted but not yet owned</td></tr><tr><td><strong>Completed</strong></td><td>Games with play status set to Completed</td></tr></tbody></table></div>
+<p>Selecting a summary card applies its corresponding library filter. <strong>Total games</strong> clears the ownership filter.</p>
+<hr>
+<h2 id="finding-games">Finding games<a class="anchor" href="#finding-games" aria-label="Link to section">#</a></h2>
+<p>The library updates as filters change.</p>
+<h3 id="search">Search<a class="anchor" href="#search" aria-label="Link to section">#</a></h3>
+<p>Search matches the game title, publisher, and notes. It is case-insensitive and starts after a short typing delay.</p>
+<h3 id="filters">Filters<a class="anchor" href="#filters" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Filter</th><th>Options</th></tr></thead><tbody><tr><td><strong>Platform</strong></td><td>Platforms currently present in the account</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>PEGI</strong></td><td>3, 7, 12, 16, 18, or Unrated</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Sort by</strong></td><td>Title, platform, PEGI rating, recently added, or cartridge number</td></tr></tbody></table></div>
+<p>Select <strong>Clear filters</strong> to return to the complete library. Large result sets initially render 120 cards; <strong>Show more</strong> renders the next batch.</p>
+<h3 id="card-and-compact-views">Card and compact views<a class="anchor" href="#card-and-compact-views" aria-label="Link to section">#</a></h3>
+<p>Use the two view buttons beside <strong>Your games</strong>:</p>
+<ul>
+<li><strong>Card view</strong> gives titles more space and is the default.</li>
+<li><strong>Compact view</strong> places each game on a denser horizontal row.</li>
+</ul>
+<p>The preference is stored in the browser.</p>
+<hr>
+<h2 id="adding-a-game">Adding a game<a class="anchor" href="#adding-a-game" aria-label="Link to section">#</a></h2>
+<p>Select <strong>Add a game</strong> on desktop or the <strong>+</strong> floating button on mobile.</p>
+<h3 id="manual-entry">Manual entry<a class="anchor" href="#manual-entry" aria-label="Link to section">#</a></h3>
+<p>Only <strong>Title</strong> and <strong>Platform</strong> are required. Every other field can be added later.</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Title</strong></td><td>Display name of the game</td></tr><tr><td><strong>Platform</strong></td><td>Console or platform; existing values are suggested</td></tr><tr><td><strong>PEGI rating</strong></td><td>3, 7, 12, 16, 18, or blank</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Format</strong></td><td>Physical, Digital, or Unknown</td></tr><tr><td><strong>Cartridge no.</strong></td><td>Mainly used for Evercade cartridge numbering</td></tr><tr><td><strong>Publisher</strong></td><td>Optional publisher or label</td></tr><tr><td><strong>Release year</strong></td><td>Four-digit release year</td></tr><tr><td><strong>Notes</strong></td><td>Edition, condition, storage location, purchase notes, or anything else</td></tr><tr><td><strong>Favourite</strong></td><td>Adds a visible favourite marker</td></tr></tbody></table></div>
+<h3 id="pegi-assisted-entry">PEGI-assisted entry<a class="anchor" href="#pegi-assisted-entry" aria-label="Link to section">#</a></h3>
+<ol>
+<li>Type at least two characters in <strong>Title</strong>.</li>
+<li>Select <strong>Look up title</strong>.</li>
+<li>Choose the correct result.</li>
+<li>Review the filled fields, especially platform and release year.</li>
+<li>Select <strong>Save game</strong>.</li>
+</ol>
+<p>The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Games Shelf reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.</p>
+<h3 id="cover-assisted-entry">Cover-assisted entry<a class="anchor" href="#cover-assisted-entry" aria-label="Link to section">#</a></h3>
+<ol>
+<li>Open <strong>Account Settings</strong>, obtain a personal SteamGridDB API key from the linked preferences page, paste it, and select <strong>Connect</strong>.</li>
+<li>Type a title in the game form and select <strong>Request cover</strong>.</li>
+<li>Review the portrait artwork and game names, then select the correct edition.</li>
+<li>Save the game. Select <strong>Remove cover</strong> before saving if the match is wrong.</li>
+</ol>
+<p>The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Games Shelf stores its URL and match title.</p>
+<h3 id="fill-existing-games">Fill existing games<a class="anchor" href="#fill-existing-games" aria-label="Link to section">#</a></h3>
+<p>After connecting SteamGridDB, select <strong>Fill missing covers</strong> in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.</p>
+<hr>
+<h2 id="managing-games">Managing games<a class="anchor" href="#managing-games" aria-label="Link to section">#</a></h2>
+<h3 id="editing">Editing<a class="anchor" href="#editing" aria-label="Link to section">#</a></h3>
+<p>Select <strong>Edit details</strong> on a game. Change any field and select <strong>Save game</strong>.</p>
+<h3 id="favourites">Favourites<a class="anchor" href="#favourites" aria-label="Link to section">#</a></h3>
+<p>Select the star in the top-right corner of a card. The change is saved immediately.</p>
+<h3 id="moving-a-wishlist-game-to-owned">Moving a wishlist game to owned<a class="anchor" href="#moving-a-wishlist-game-to-owned" aria-label="Link to section">#</a></h3>
+<p>Wishlisted cards include <strong>Mark owned</strong>. It changes only the collection state; other metadata is preserved.</p>
+<h3 id="deleting">Deleting<a class="anchor" href="#deleting" aria-label="Link to section">#</a></h3>
+<p>Open <strong>Edit details</strong>, select <strong>Delete</strong>, and confirm. Deletion is permanent for that account and cannot affect another user&#39;s library.</p>
+<h3 id="dialog-behaviour">Dialog behaviour<a class="anchor" href="#dialog-behaviour" aria-label="Link to section">#</a></h3>
+<ul>
+<li>Select <strong>×</strong>, <strong>Cancel</strong>, press <strong>Escape</strong>, or click directly on the backdrop to close a dialog.</li>
+<li>Selecting text and releasing the pointer outside the dialog does not close it.</li>
+<li>A backdrop close occurs only when the pointer starts and ends on the backdrop.</li>
+</ul>
+<hr>
+<h2 id="account-management">Account management<a class="anchor" href="#account-management" aria-label="Link to section">#</a></h2>
+<p>Select the username in the top-right corner.</p>
+<h3 id="add-or-change-avatar">Add or change avatar<a class="anchor" href="#add-or-change-avatar" aria-label="Link to section">#</a></h3>
+<p>Select the avatar or <strong>Change avatar</strong>, then choose an image. The browser centre-crops it to a 512×512 square and compresses it before upload. The stored JPEG is limited to 256 KB. Select <strong>Remove</strong> to return to the username initial.</p>
+<h3 id="change-username">Change username<a class="anchor" href="#change-username" aria-label="Link to section">#</a></h3>
+<p>Enter the new username and current password, then select <strong>Save account</strong>. Usernames are case-insensitively unique and may contain letters, numbers, dots, dashes, and underscores.</p>
+<p>Changing the username does not change ownership of existing games.</p>
+<h3 id="add-or-change-email">Add or change email<a class="anchor" href="#add-or-change-email" aria-label="Link to section">#</a></h3>
+<p>Enter an optional email address and current password, then save. Email addresses are case-insensitively unique. Email is stored for account identification and future recovery support; the app does not currently send mail or provide automated password recovery.</p>
+<h3 id="change-password">Change password<a class="anchor" href="#change-password" aria-label="Link to section">#</a></h3>
+<p>Enter the current password, enter the new password twice, and save. The new password must contain at least eight characters.</p>
+<p>Changing a password invalidates all existing sessions for that account. Sign in again with the new password.</p>
+<hr>
+<h2 id="mobile-use">Mobile use<a class="anchor" href="#mobile-use" aria-label="Link to section">#</a></h2>
+<p>The interface automatically changes for narrow screens:</p>
+<ul>
+<li>Summary cards become a single compact row.</li>
+<li>Filters use two columns.</li>
+<li>Games use one card per row.</li>
+<li>The desktop add button becomes a floating <strong>+</strong> button.</li>
+<li>Account and form dialogs fit within the visible screen and scroll internally.</li>
+</ul>
+<p>The app manifest allows supported browsers to install Games Shelf as a standalone home-screen app.</p>
+<hr>
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to section">#</a></h2>
+<h3 id="a-session-expired">A session expired<a class="anchor" href="#a-session-expired" aria-label="Link to section">#</a></h3>
+<p>Sign in again. Sessions expire after two weeks of inactivity. A password change also invalidates all sessions.</p>
+<h3 id="pegi-lookup-failed">PEGI lookup failed<a class="anchor" href="#pegi-lookup-failed" aria-label="Link to section">#</a></h3>
+<p>Continue with manual entry. The failure does not prevent saving a game.</p>
+<h3 id="the-page-still-shows-an-older-design">The page still shows an older design<a class="anchor" href="#the-page-still-shows-an-older-design" aria-label="Link to section">#</a></h3>
+<p>Perform a hard refresh so the browser reloads <code>style.css</code> and <code>app.js</code>.</p>
+<h3 id="the-server-is-not-reachable">The server is not reachable<a class="anchor" href="#the-server-is-not-reachable" aria-label="Link to section">#</a></h3>
+<p>From the project directory run:</p>
+<pre data-language="bash"><code>npm start</code></pre>
+<p>Confirm port 3005 is free and that the device can reach the host machine.</p>
+<hr>
+<h2 id="data-safety">Data safety<a class="anchor" href="#data-safety" aria-label="Link to section">#</a></h2>
+<p>All persistent data lives in <code>games.db</code>. Back up that file while the server is stopped, or use SQLite&#39;s backup facilities while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.</p>
+<p>The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div></body></html>

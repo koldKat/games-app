@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b10"><title>Games Shelf // Technical Reference</title>
+<style>
+:root{color-scheme:dark;--bg:#080b10;--panel:#0d1219;--line:#222c38;--text:#dce5ef;--muted:#8491a0;--accent:#35d6b2;--amber:#e9b949;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;line-height:1.65}a{color:#5fe4c5}header{height:48px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#080b10ed;backdrop-filter:blur(10px)}header strong{font-size:12px}header span{color:var(--muted);font-size:9px}header nav{margin-left:auto;display:flex;gap:5px}header nav a{padding:5px 8px;border:1px solid var(--line);text-decoration:none;font-size:9px}.layout{width:min(1240px,100%);margin:auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;padding:18px}.toc{position:sticky;top:66px;align-self:start;max-height:calc(100vh - 82px);overflow:auto;border:1px solid var(--line);background:var(--panel);padding:10px}.toc b{display:block;color:var(--accent);font-size:9px;letter-spacing:.12em;margin-bottom:7px}.toc a{display:block;padding:3px 5px;color:#93a0af;text-decoration:none;font-size:9px;border-left:1px solid #283440}.toc a:hover{color:var(--accent);border-color:var(--accent)}.toc .toc-3{padding-left:15px;color:#6f7d8b}.content{min-width:0;border:1px solid var(--line);background:var(--panel);padding:clamp(15px,3vw,34px)}h1,h2,h3,h4{line-height:1.2;scroll-margin-top:65px}h1{font-size:28px;margin:0 0 28px;color:#f0f5fa}h1:before{content:'> ';color:var(--accent)}h2{font-size:18px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}h3{font-size:14px;margin:24px 0 8px;color:#b9c7d5}h4{font-size:12px;color:var(--amber)}.anchor{opacity:0;text-decoration:none;margin-left:7px;font-size:.7em}h2:hover .anchor,h3:hover .anchor{opacity:1}p{margin:8px 0 13px;color:#b6c0cb}strong{color:#eef4f8}code{background:#111c24;border:1px solid #263542;padding:1px 4px;color:#6ee6cb;font-size:.9em}pre{overflow:auto;background:#070a0e;border:1px solid #273441;padding:12px;margin:12px 0}pre code{border:0;background:none;padding:0;color:#b9c7d5}.table-wrap{overflow:auto;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{text-align:left;padding:7px 8px;border:1px solid #25313d;vertical-align:top}th{background:#111a23;color:#62e2c4}td{color:#aeb9c5}ul,ol{padding-left:22px;color:#b6c0cb}li{margin:3px 0}blockquote{margin:12px 0;padding:8px 11px;border-left:2px solid var(--amber);background:#17150e;color:#d3c594}hr{border:0;border-top:1px solid var(--line);margin:28px 0}.source{margin-top:35px;color:#63707e;font-size:8px}
+@media(max-width:760px){header{padding:0 8px}.layout{display:block;padding:7px}.toc{display:none}.content{padding:14px}h1{font-size:21px}h2{font-size:16px;margin-top:25px}body{font-size:11px}header span{display:none}}
+</style></head><body><header><strong>GAMES_SHELF // DOCS</strong><span>Technical Reference</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#architecture">Architecture</a>
+<a class="toc-3" href="#request-flow">Request flow</a>
+<a class="toc-2" href="#runtime-and-dependencies">Runtime and dependencies</a>
+<a class="toc-2" href="#database">Database</a>
+<a class="toc-3" href="#users">`users`</a>
+<a class="toc-3" href="#sessions">`sessions`</a>
+<a class="toc-3" href="#games">`games`</a>
+<a class="toc-2" href="#authentication-and-authorization">Authentication and authorization</a>
+<a class="toc-3" href="#passwords">Passwords</a>
+<a class="toc-3" href="#usernames">Usernames</a>
+<a class="toc-3" href="#sessions-2">Sessions</a>
+<a class="toc-3" href="#login-throttling">Login throttling</a>
+<a class="toc-3" href="#isolation-invariant">Isolation invariant</a>
+<a class="toc-2" href="#http-api">HTTP API</a>
+<a class="toc-3" href="#authentication">Authentication</a>
+<a class="toc-3" href="#collection">Collection</a>
+<a class="toc-2" href="#pegi-integration">PEGI integration</a>
+<a class="toc-2" href="#cover-art-integration">Cover-art integration</a>
+<a class="toc-2" href="#browser-application">Browser application</a>
+<a class="toc-3" href="#startup">Startup</a>
+<a class="toc-3" href="#rendering">Rendering</a>
+<a class="toc-3" href="#dialog-pointer-safety">Dialog pointer safety</a>
+<a class="toc-2" href="#static-serving">Static serving</a>
+<a class="toc-2" href="#documentation-workflow">Documentation workflow</a>
+<a class="toc-2" href="#testing">Testing</a>
+<a class="toc-2" href="#operations-and-backups">Operations and backups</a>
+<a class="toc-2" href="#known-boundaries">Known boundaries</a></aside><article class="content"><h1 id="games-shelf-technical-reference">Games Shelf - Technical Reference<a class="anchor" href="#games-shelf-technical-reference" aria-label="Link to section">#</a></h1>
+<hr>
+<h2 id="architecture">Architecture<a class="anchor" href="#architecture" aria-label="Link to section">#</a></h2>
+<p>Games Shelf follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.</p>
+<pre data-language="text"><code>games-app/
+  server.js                 HTTP entrypoint, static serving, route dispatch
+  server/
+    auth.js                 scrypt passwords, sessions, account changes, throttling
+    db.js                   schema, migrations, validation, scoped game queries
+    pegi.js                 opt-in PEGI HTTP lookup and result parser
+    covers.js               SteamGridDB client, throttling, matching, artwork selection
+  scripts/
+    generate-docs.js        Markdown-to-HTML documentation generator/checker
+  public/
+    index.html              application and authentication markup
+    app.js                  browser state, rendering, auth, forms, API calls
+    style.css               dense dark responsive theme
+    manifest.webmanifest    installable-app metadata
+    favicon.svg             application icon
+    docs/                   generated standalone HTML documentation
+  docs/
+    user-guide.md           user documentation source
+    technical.md            this file
+  test/
+    auth.test.js            sessions, password changes, isolation
+    pegi.test.js            PEGI result parsing
+    covers.test.js          conservative cover-title normalization
+  games.db                  runtime SQLite database</code></pre>
+<h3 id="request-flow">Request flow<a class="anchor" href="#request-flow" aria-label="Link to section">#</a></h3>
+<pre data-language="text"><code>Browser
+  -&gt; static file request ----------------------&gt; server.js -&gt; public/
+  -&gt; POST /api/login or /api/register --------&gt; server.js -&gt; auth.js -&gt; SQLite
+  -&gt; authenticated /api/* + Bearer token -----&gt; auth.js -&gt; user identity
+                                                    |
+                                                    +-&gt; db.js (user-scoped query)
+                                                    +-&gt; pegi.js (explicit lookup only)
+                                                    +-&gt; covers.js (configured lookup/bulk scan)</code></pre>
+<p>All authenticated routes resolve the session before dispatching feature logic. They pass the numeric user ID into every database operation rather than trusting a client-provided owner ID.</p>
+<hr>
+<h2 id="runtime-and-dependencies">Runtime and dependencies<a class="anchor" href="#runtime-and-dependencies" aria-label="Link to section">#</a></h2>
+<ul>
+<li>Node.js 20 or newer</li>
+<li><code>better-sqlite3</code> as the only production package</li>
+<li>Port <code>3005</code> and host <code>0.0.0.0</code> by default</li>
+</ul>
+<p>Environment variables:</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead><tbody><tr><td><code>PORT</code></td><td><code>3005</code></td><td>HTTP listen port</td></tr><tr><td><code>HOST</code></td><td><code>0.0.0.0</code></td><td>Listen address</td></tr><tr><td><code>DB_PATH</code></td><td><code>./games.db</code></td><td>SQLite database path</td></tr><tr><td><code>STEAMGRIDDB_API_KEY</code></td><td>blank</td><td>Optional server-wide cover API key; per-account keys can instead be configured in the UI</td></tr></tbody></table></div>
+<p>Start the server with <code>npm start</code>. Development watch mode is available through <code>npm run dev</code>.</p>
+<hr>
+<h2 id="database">Database<a class="anchor" href="#database" aria-label="Link to section">#</a></h2>
+<p>SQLite runs in WAL mode with foreign keys enabled.</p>
+<h3 id="users"><code>users</code><a class="anchor" href="#users" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Notes</th></tr></thead><tbody><tr><td><code>id</code></td><td>Integer primary key</td></tr><tr><td><code>username</code></td><td>Case-insensitively unique</td></tr><tr><td><code>email</code></td><td>Optional and case-insensitively unique</td></tr><tr><td><code>password_hash</code></td><td>64-byte scrypt result encoded as hex</td></tr><tr><td><code>salt</code></td><td>Random 16-byte salt encoded as hex</td></tr><tr><td><code>created_at</code>, <code>updated_at</code></td><td>SQLite timestamps</td></tr></tbody></table></div>
+<h3 id="sessions"><code>sessions</code><a class="anchor" href="#sessions" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Notes</th></tr></thead><tbody><tr><td><code>token</code></td><td>Random 32-byte token encoded as 64 hex characters; primary key</td></tr><tr><td><code>user_id</code></td><td>Foreign key to <code>users</code>, cascading on account deletion</td></tr><tr><td><code>expires_at</code></td><td>Unix timestamp</td></tr><tr><td><code>created_at</code></td><td>SQLite timestamp</td></tr></tbody></table></div>
+<p>Expired sessions are purged when the server starts. Valid sessions receive a rolling two-week expiry on authenticated use.</p>
+<h3 id="games"><code>games</code><a class="anchor" href="#games" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Notes</th></tr></thead><tbody><tr><td><code>id</code></td><td>Integer primary key</td></tr><tr><td><code>user_id</code></td><td>Owner account foreign key</td></tr><tr><td><code>title</code>, <code>platform</code></td><td>Required identification</td></tr><tr><td><code>pegi</code></td><td>Null or 3, 7, 12, 16, 18</td></tr><tr><td><code>ownership</code></td><td><code>owned</code>, <code>wanted</code>, or <code>unavailable</code></td></tr><tr><td><code>play_status</code></td><td><code>backlog</code>, <code>playing</code>, <code>completed</code>, <code>paused</code>, or <code>abandoned</code></td></tr><tr><td><code>media_format</code></td><td><code>physical</code>, <code>digital</code>, or <code>unknown</code></td></tr><tr><td><code>cartridge_number</code></td><td>Optional integer</td></tr><tr><td><code>publisher</code>, <code>release_year</code>, <code>notes</code></td><td>Optional metadata</td></tr><tr><td><code>favorite</code></td><td>Boolean integer</td></tr><tr><td><code>pegi_url</code></td><td>Source search URL when PEGI-assisted</td></tr><tr><td><code>cover_url</code>, <code>cover_source</code>, <code>cover_match_title</code></td><td>Selected artwork and match provenance</td></tr><tr><td><code>created_at</code>, <code>updated_at</code></td><td>SQLite timestamps</td></tr></tbody></table></div>
+<p>Indexes cover owner, platform, ownership, PEGI, and case-insensitive title.</p>
+<p>Username comparison is case-insensitive. Renaming an account later does not alter ownership because all collection queries use the immutable numeric user ID.</p>
+<hr>
+<h2 id="authentication-and-authorization">Authentication and authorization<a class="anchor" href="#authentication-and-authorization" aria-label="Link to section">#</a></h2>
+<p>The authentication design is a reduced version of the gamebooks app&#39;s model.</p>
+<h3 id="passwords">Passwords<a class="anchor" href="#passwords" aria-label="Link to section">#</a></h3>
+<ul>
+<li><code>crypto.scrypt</code> derives a 64-byte hash.</li>
+<li>Every password receives a random 16-byte salt.</li>
+<li>Verification uses <code>crypto.timingSafeEqual</code>.</li>
+<li>Passwords must contain 8–200 characters.</li>
+</ul>
+<h3 id="usernames">Usernames<a class="anchor" href="#usernames" aria-label="Link to section">#</a></h3>
+<ul>
+<li>Length: 3–32 characters.</li>
+<li>Allowed: Unicode letters and numbers, dot, dash, and underscore.</li>
+<li>SQLite enforces case-insensitive uniqueness.</li>
+</ul>
+<h3 id="sessions-2">Sessions<a class="anchor" href="#sessions-2" aria-label="Link to section">#</a></h3>
+<ul>
+<li>The server creates a random 256-bit bearer token.</li>
+<li>The browser stores it under <code>games_shelf_auth_token</code> in local storage.</li>
+<li>API requests send <code>Authorization: Bearer TOKEN</code>.</li>
+<li>Sessions expire after two inactive weeks and refresh on use.</li>
+<li>Password changes delete every session for the account.</li>
+</ul>
+<h3 id="login-throttling">Login throttling<a class="anchor" href="#login-throttling" aria-label="Link to section">#</a></h3>
+<p>The process keeps recent failed login/registration attempts by client IP. Eight failures within 15 minutes produce HTTP 429. Successful authentication clears that IP&#39;s failure list. The throttle resets when the Node.js process restarts.</p>
+<h3 id="isolation-invariant">Isolation invariant<a class="anchor" href="#isolation-invariant" aria-label="Link to section">#</a></h3>
+<p>Every collection query includes <code>user_id = authenticatedUserId</code>. Updates and deletes use both game ID and user ID. A game belonging to another account therefore behaves as nonexistent and returns HTTP 404.</p>
+<p>The client never sends or selects <code>user_id</code>.</p>
+<hr>
+<h2 id="http-api">HTTP API<a class="anchor" href="#http-api" aria-label="Link to section">#</a></h2>
+<p>All JSON responses use <code>Cache-Control: no-store</code>. All routes below except registration and login require a valid bearer token.</p>
+<h3 id="authentication">Authentication<a class="anchor" href="#authentication" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/register</code></td><td>Create an isolated account with password confirmation and optional email</td></tr><tr><td>POST</td><td><code>/api/login</code></td><td>Verify credentials and create session</td></tr><tr><td>POST</td><td><code>/api/logout</code></td><td>Delete current session</td></tr><tr><td>GET</td><td><code>/api/auth/me</code></td><td>Resolve current user</td></tr><tr><td>PUT</td><td><code>/api/account</code></td><td>Change username and/or password after current-password verification</td></tr><tr><td>POST</td><td><code>/api/account/avatar</code></td><td>Upload a browser-cropped JPEG avatar, maximum 256 KB</td></tr><tr><td>DELETE</td><td><code>/api/account/avatar</code></td><td>Remove the current avatar and restore the initial fallback</td></tr></tbody></table></div>
+<h3 id="collection">Collection<a class="anchor" href="#collection" aria-label="Link to section">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/games</code></td><td>List current user&#39;s games with query filters</td></tr><tr><td>POST</td><td><code>/api/games</code></td><td>Create a game for current user</td></tr><tr><td>GET</td><td><code>/api/games/:id</code></td><td>Read owned game</td></tr><tr><td>PUT</td><td><code>/api/games/:id</code></td><td>Replace editable metadata on owned game</td></tr><tr><td>DELETE</td><td><code>/api/games/:id</code></td><td>Delete owned game</td></tr><tr><td>GET</td><td><code>/api/stats</code></td><td>Account-scoped aggregates</td></tr><tr><td>GET</td><td><code>/api/meta</code></td><td>Platforms, version, PEGI capability, current user</td></tr><tr><td>GET</td><td><code>/api/pegi/search?q=...</code></td><td>Explicit server-side PEGI search</td></tr><tr><td>GET</td><td><code>/api/covers/status</code></td><td>Provider configuration, missing count, and bulk progress</td></tr><tr><td>PUT</td><td><code>/api/covers/config</code></td><td>Validate and store the account&#39;s SteamGridDB key</td></tr><tr><td>DELETE</td><td><code>/api/covers/config</code></td><td>Remove the account-specific provider key</td></tr><tr><td>GET</td><td><code>/api/covers/search?q=...</code></td><td>Search portrait covers for manual selection</td></tr><tr><td>POST</td><td><code>/api/covers/bulk</code></td><td>Start an account-scoped exact-title scan for missing covers</td></tr></tbody></table></div>
+<p>List query parameters are <code>q</code>, <code>platform</code>, <code>ownership</code>, <code>playStatus</code>, <code>pegi</code>, <code>favorite</code>, and <code>sort</code>.</p>
+<p>Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath <code>public/avatars/</code>; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.</p>
+<hr>
+<h2 id="pegi-integration">PEGI integration<a class="anchor" href="#pegi-integration" aria-label="Link to section">#</a></h2>
+<p>PEGI exposes a public catalogue search but no documented public developer API. <code>server/pegi.js</code> therefore performs an opt-in HTTPS GET only after the user selects <strong>Look up title</strong>.</p>
+<p>The parser extracts displayed title, publisher, rating, descriptors, releases, platforms, and year. Results are cached in process memory for one hour per normalized query. The request has a 12-second timeout and a 4 MB response limit.</p>
+<p>This integration is deliberately nonessential. Parsing or network failure returns HTTP 502 with a PEGI fallback URL; manual game creation remains available.</p>
+<hr>
+<h2 id="cover-art-integration">Cover-art integration<a class="anchor" href="#cover-art-integration" aria-label="Link to section">#</a></h2>
+<p>SteamGridDB was selected because its API is dedicated to game artwork and exposes portrait grid images suitable for box-art cards. It requires a personal bearer API key. Account keys are stored in <code>user_integrations</code>; an optional <code>STEAMGRIDDB_API_KEY</code> environment value acts as a server-wide fallback. Keys are never returned to the browser after configuration.</p>
+<p>Manual lookup searches up to four title candidates and returns portrait static grids. Results are cached in memory for 30 minutes. Provider calls are serialized below four requests per second, have a 15-second timeout, and retry HTTP 429 once.</p>
+<p>Bulk lookup considers only games without a cover. Title comparison is Unicode-normalized, case-insensitive, punctuation-insensitive, and conservative: auto-selection requires exactly one exact normalized title candidate. The highest-scoring portrait grid is stored; ambiguous titles remain unmatched. Five consecutive provider errors trip a circuit breaker and mark the job failed instead of hammering the remaining catalogue. Job state is in memory and therefore does not survive a server restart, while already matched covers remain in SQLite.</p>
+<p>Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks&#39; cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.</p>
+<hr>
+<h2 id="browser-application">Browser application<a class="anchor" href="#browser-application" aria-label="Link to section">#</a></h2>
+<p><code>public/app.js</code> is a zero-dependency browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state.</p>
+<h3 id="startup">Startup<a class="anchor" href="#startup" aria-label="Link to section">#</a></h3>
+<ol>
+<li>Read the bearer token from local storage.</li>
+<li>Call <code>/api/auth/me</code> when a token exists.</li>
+<li>Show authentication on absence/failure, or mount the library on success.</li>
+<li>Load games, statistics, and metadata in parallel.</li>
+</ol>
+<p>An HTTP 401 on a protected request removes the token and returns to login.</p>
+<h3 id="rendering">Rendering<a class="anchor" href="#rendering" aria-label="Link to section">#</a></h3>
+<p>Game cards are generated from escaped values. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms debounce. Rendering is batched in groups of 120.</p>
+<h3 id="dialog-pointer-safety">Dialog pointer safety<a class="anchor" href="#dialog-pointer-safety" aria-label="Link to section">#</a></h3>
+<p>Backdrop dismissal tracks <code>pointerdown</code> and <code>pointerup</code>. It closes only when both events target the dialog backdrop. This prevents a text-selection drag that begins inside the form and ends outside from dismissing the dialog.</p>
+<hr>
+<h2 id="static-serving">Static serving<a class="anchor" href="#static-serving" aria-label="Link to section">#</a></h2>
+<p><code>server.js</code> resolves requested paths beneath <code>public/</code>, rejects traversal outside that directory, assigns MIME types, and serves static content with <code>Cache-Control: no-cache</code>. API content uses <code>no-store</code>.</p>
+<p>Generated documentation is available at:</p>
+<ul>
+<li><code>/docs/</code></li>
+<li><code>/docs/user-guide.html</code></li>
+<li><code>/docs/technical.html</code></li>
+</ul>
+<hr>
+<h2 id="documentation-workflow">Documentation workflow<a class="anchor" href="#documentation-workflow" aria-label="Link to section">#</a></h2>
+<p>Markdown files in <code>docs/</code> are the source of truth.</p>
+<pre data-language="bash"><code>npm run docs:build   # regenerate public/docs/*.html
+npm run docs:check   # fail if generated HTML is stale</code></pre>
+<p><code>npm test</code> runs both the Node test suite and the documentation consistency check.</p>
+<hr>
+<h2 id="testing">Testing<a class="anchor" href="#testing" aria-label="Link to section">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Test file</th><th>Contract</th></tr></thead><tbody><tr><td><code>test/auth.test.js</code></td><td>Account isolation, sessions, password invalidation</td></tr><tr><td><code>test/pegi.test.js</code></td><td>PEGI HTML parsing</td></tr><tr><td><code>test/covers.test.js</code></td><td>Conservative cover-title normalization</td></tr></tbody></table></div>
+<p>Run all checks with <code>npm test</code>.</p>
+<p>The authentication test uses a disposable SQLite database under <code>/tmp</code> and removes its main, WAL, and shared-memory files afterward.</p>
+<hr>
+<h2 id="operations-and-backups">Operations and backups<a class="anchor" href="#operations-and-backups" aria-label="Link to section">#</a></h2>
+<p>Stop with <code>Ctrl+C</code> or send SIGTERM. The server closes SQLite before exiting.</p>
+<p>For a simple offline backup:</p>
+<ol>
+<li>Stop the server.</li>
+<li>Copy <code>games.db</code> to a dated backup location.</li>
+<li>Restart the server.</li>
+</ol>
+<p>When backing up a live WAL database, use SQLite&#39;s backup API or include a proper checkpoint procedure. Copying only <code>games.db</code> during an active write can omit transactions still present in <code>games.db-wal</code>.</p>
+<p>The database is excluded from Git. Source code, generated documentation, and tests can be versioned normally.</p>
+<hr>
+<h2 id="known-boundaries">Known boundaries<a class="anchor" href="#known-boundaries" aria-label="Link to section">#</a></h2>
+<ul>
+<li>No email recovery flow is configured; account passwords must be retained.</li>
+<li>No administrator panel exists.</li>
+<li>Login throttling is in-memory rather than persisted.</li>
+<li>PEGI parsing depends on public page structure and can require maintenance.</li>
+<li>Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.</li>
+<li>The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.</li>
+<li>Application JavaScript is intentionally compact and remains in one browser entry module until feature growth justifies further splitting.</li>
+</ul><p class="source">Generated from docs/technical.md. Do not edit this HTML directly.</p></article></div></body></html>

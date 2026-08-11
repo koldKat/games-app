@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b10">
+  <title>Games Shelf</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main id="auth-screen" class="auth-screen">
+    <section class="auth-card">
+      <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span><span>GAMES_SHELF // AUTH</span><em>● SECURE</em></div>
+      <div class="auth-body">
+        <p class="kicker">Identity required</p>
+        <h1 id="auth-title">Access your library</h1>
+        <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
+        <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
+        <form id="auth-form">
+          <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
+          <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
+          <label><span>Password</span><input id="auth-password" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></label>
+          <label id="auth-confirm-label" hidden><span>Confirm password</span><input id="auth-password-confirm" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat password"></label>
+          <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
+          <p id="auth-error" class="form-error" hidden></p>
+          <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <div class="shell" id="app-shell" hidden>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Games Shelf home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
+        <span><strong>Games Shelf</strong><small>Your collection, one place</small></span>
+      </a>
+      <div class="top-actions"><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span>＋</span> Add a game</button></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="kicker">Personal game library</p>
+          <h1>What are we playing next?</h1>
+          <p class="hero-copy">Browse the collection, track the backlog, and keep future finds close.</p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <span class="hero-cover hero-cover-1"></span>
+          <span class="hero-cover hero-cover-2"></span>
+          <span class="hero-cover hero-cover-3"></span>
+          <span class="hero-cover hero-cover-4"></span>
+          <span class="hero-cover hero-cover-5"></span>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Collection summary">
+        <button class="stat-card stat-total" data-stat-filter="all"><span class="stat-icon">▦</span><span><b id="stat-total">—</b><small>Total games</small></span></button>
+        <button class="stat-card" data-stat-filter="owned"><span class="stat-icon green">✓</span><span><b id="stat-owned">—</b><small>Owned</small></span></button>
+        <button class="stat-card" data-stat-filter="wanted"><span class="stat-icon amber">◎</span><span><b id="stat-wanted">—</b><small>Wishlisted</small></span></button>
+        <button class="stat-card" data-stat-filter="completed"><span class="stat-icon violet">★</span><span><b id="stat-completed">—</b><small>Completed</small></span></button>
+      </section>
+
+      <section class="library">
+        <div class="library-head">
+          <div><p class="kicker">The library</p><h2>Your games</h2></div>
+          <div class="view-buttons" aria-label="View style">
+            <button class="icon-button active" id="grid-view" title="Card view" aria-label="Card view">▦</button>
+            <button class="icon-button" id="list-view" title="Compact view" aria-label="Compact view">☷</button>
+          </div>
+        </div>
+
+        <div class="filter-panel">
+          <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, publisher, or notes…" autocomplete="off"></label>
+          <div class="filters">
+            <label><span>Platform</span><select id="platform-filter"><option value="">All platforms</option></select></label>
+            <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
+            <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
+            <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
+            <label><span>Sort by</span><select id="sort-filter"><option value="title">Title A–Z</option><option value="platform">Platform</option><option value="pegi">PEGI rating</option><option value="newest">Recently added</option><option value="cartridge">Cartridge no.</option></select></label>
+          </div>
+          <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
+        </div>
+
+        <div id="games" class="game-grid" aria-live="polite"></div>
+        <div id="empty" class="empty-state" hidden><span>⌁</span><h3>No games found</h3><p>Try clearing a filter, or add a new title.</p><button class="button primary" data-add-game>Add a game</button></div>
+        <button id="load-more" class="button load-more" hidden>Show more</button>
+      </section>
+    </main>
+  </div>
+
+  <button class="fab" data-add-game aria-label="Add a game">＋</button>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="game-dialog">
+    <form id="game-form" class="modal-card">
+      <header class="modal-head"><div><p class="kicker" id="form-kicker">Grow the shelf</p><h2 id="form-title">Add a game</h2></div><button type="button" class="close-button" data-close aria-label="Close">×</button></header>
+      <input type="hidden" id="game-id">
+      <div class="pegi-assist">
+        <div><strong>PEGI-assisted entry</strong><small>Search PEGI's public catalogue and pick a match to fill the basics.</small></div>
+        <button type="button" class="button secondary" id="pegi-search-button">Look up title</button>
+      </div>
+      <div id="pegi-results" class="pegi-results" hidden></div>
+      <div class="cover-assist">
+        <div><strong>Box-art lookup</strong><small>Search portrait artwork on SteamGridDB and choose the exact edition.</small></div>
+        <div class="cover-assist-actions"><button type="button" class="button ghost" id="cover-remove-button" hidden>Remove cover</button><button type="button" class="button secondary" id="cover-search-button">Request cover</button></div>
+      </div>
+      <div id="cover-selection" class="cover-selection" hidden></div>
+      <div id="cover-results" class="cover-results" hidden></div>
+      <div class="form-grid">
+        <label class="span-2"><span>Title *</span><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4"></label>
+        <label><span>Platform *</span><input id="game-platform" required list="platforms" maxlength="80" placeholder="Nintendo Switch"></label>
+        <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>
+        <label><span>Collection</span><select id="game-ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
+        <label><span>Play status</span><select id="game-status"><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
+        <label><span>Format</span><select id="game-format"><option value="physical">Physical</option><option value="digital">Digital</option><option value="unknown">Unknown</option></select></label>
+        <label><span>Cartridge no.</span><input id="game-cartridge" type="number" min="0" step="1" placeholder="Evercade #"></label>
+        <label><span>Publisher</span><input id="game-publisher" maxlength="160" placeholder="Optional"></label>
+        <label><span>Release year</span><input id="game-year" type="number" min="1970" max="2100" placeholder="2026"></label>
+        <label class="span-2"><span>Notes</span><textarea id="game-notes" rows="3" maxlength="2000" placeholder="Edition, condition, where to find it…"></textarea></label>
+        <label class="check-label span-2"><input id="game-favorite" type="checkbox"><span>Mark as a favourite</span></label>
+      </div>
+      <p id="form-error" class="form-error" hidden></p>
+      <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><span></span><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
+    </form>
+  </dialog>
+  <dialog id="account-dialog">
+    <form id="account-form" class="modal-card account-modal">
+      <header class="modal-head"><div><p class="kicker">Identity control</p><h2>Account settings</h2></div><button type="button" class="close-button" data-account-close aria-label="Close">×</button></header>
+      <div class="account-summary">
+        <button type="button" class="account-avatar-picker" id="avatar-picker" aria-label="Change avatar"><span class="account-avatar" id="account-avatar">K</span><span class="avatar-plus">+</span></button>
+        <span class="account-identity"><strong id="account-current-name">account</strong><small>Authenticated library owner</small><span class="avatar-actions"><button type="button" class="text-button" id="avatar-upload">Change avatar</button><button type="button" class="text-button avatar-remove" id="avatar-remove" hidden>Remove</button></span></span>
+        <input id="avatar-file" type="file" accept="image/*" hidden>
+      </div>
+      <section class="integration-panel">
+        <div class="integration-head"><span><strong>SteamGridDB covers</strong><small id="cover-provider-status">Checking configuration…</small></span><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">Get API key ↗</a></div>
+        <div class="integration-key"><input id="cover-api-key" type="password" autocomplete="off" aria-label="SteamGridDB API key" placeholder="Paste personal API key"><button type="button" class="button secondary" id="cover-api-save">Connect</button></div>
+        <div class="integration-bulk"><span id="cover-bulk-status">Cover scan idle.</span><button type="button" class="button ghost" id="cover-bulk-start">Fill missing covers</button></div>
+      </section>
+      <div class="form-grid account-grid">
+        <label class="span-2"><span>Username</span><input id="account-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
+        <label class="span-2"><span>Email (optional)</span><input id="account-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
+        <label class="span-2"><span>Current password *</span><input id="account-current-password" type="password" required autocomplete="current-password" placeholder="Required to save changes"></label>
+        <label class="span-2"><span>New password</span><input id="account-new-password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Leave blank to keep current password"></label>
+        <label class="span-2"><span>Confirm new password</span><input id="account-confirm-password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat new password"></label>
+      </div>
+      <p id="account-error" class="form-error" hidden></p>
+      <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><span></span><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
+    </form>
+  </dialog>
+  <datalist id="platforms"></datalist>
+  <script src="/app.js" defer></script>
+</body>
+</html>

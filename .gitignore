@@ -1,0 +1,14 @@
+node_modules/
+.agents/
+.codex/
+games.db
+games.db-shm
+games.db-wal
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+.DS_Store
+public/avatars/*
+!public/avatars/.gitkeep

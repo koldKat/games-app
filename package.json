@@ -1,0 +1,20 @@
+{
+  "name": "games-app",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Responsive personal video game collection and wishlist manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "docs:build": "node scripts/generate-docs.js",
+    "docs:check": "node scripts/generate-docs.js --check",
+    "test": "node --test && node scripts/generate-docs.js --check"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
