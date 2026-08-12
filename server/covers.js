@@ -1,5 +1,6 @@
 const API_ROOT = 'https://www.steamgriddb.com/api/v2';
 const cache = new Map();
+const titleCache = new Map();
 let lastRequestAt = 0;
 
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
@@ -27,6 +28,28 @@ async function searchGames(key, query) {
   const clean = String(query || '').trim().slice(0, 160);
   if (clean.length < 2) throw new Error('Enter at least two title characters.');
   return request(key, `/search/autocomplete/${encodeURIComponent(clean)}`);
+}
+
+function titleSuggestions(rows, limit = 10) {
+  const unique = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const title = String(row?.name || '').trim();
+    const key = title.toLocaleLowerCase();
+    if (title && !unique.has(key)) unique.set(key, title);
+    if (unique.size >= limit) break;
+  }
+  return [...unique.values()];
+}
+
+async function searchTitles(key, query) {
+  const clean = String(query || '').trim().slice(0, 160);
+  if (clean.length < 3) return [];
+  const cacheKey = `${key.slice(0, 8)}:${normalizeTitle(clean)}`;
+  const cached = titleCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.results;
+  const results = titleSuggestions(await searchGames(key, clean));
+  titleCache.set(cacheKey, { at: Date.now(), results });
+  return results;
 }
 
 async function gridsForGame(key, game) {
@@ -70,4 +93,4 @@ async function verifyKey(key) {
   return true;
 }
 
-module.exports = { normalizeTitle, searchCovers, bestExactCover, verifyKey, wait };
+module.exports = { normalizeTitle, titleSuggestions, searchTitles, searchCovers, bestExactCover, verifyKey, wait };

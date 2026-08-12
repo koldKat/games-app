@@ -30,6 +30,7 @@ games-app/
     app.js                  browser state, rendering, auth, forms, API calls
     js/events.js            bearer-authenticated SSE stream parser and reconnect
     js/platforms.js         grouped platform catalogue and release-name matching
+    js/title-autocomplete.js local/provider suggestions and duplicate warnings
     style.css               dense dark responsive theme
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
@@ -122,6 +123,8 @@ SQLite runs in WAL mode with foreign keys enabled.
 | `created_at` | SQLite timestamp |
 
 Expired sessions are purged when the server starts. Valid sessions receive a rolling two-week expiry on authenticated use.
+
+An inline pre-render token-presence check adds the `resuming-session` document class before the body is painted. That class hides the public authentication surface and exposes a non-sensitive session-resume screen only while `/api/auth/me` validates the stored token. Successful validation reveals the application immediately in its loading state; collection, statistics, metadata, and decorative artwork continue asynchronously. Failed authentication reveals the login screen. The inline check does not validate or transmit the token—it only prevents logged-out UI from flashing before the authenticated API check completes.
 
 ### `games`
 
@@ -224,9 +227,10 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
 | DELETE | `/api/covers/config` | Remove the account-specific provider key |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
+| GET | `/api/titles/autocomplete?q=...` | Return account-local matches and up to ten SteamGridDB suggestions; `local=1` skips the provider and `exact=1&platform=...` performs the save-time duplicate check |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
 
-List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `favorite`, and `sort`.
+List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `missing` accepts `pegi`, `cover`, `either`, or `both`. The PEGI condition follows batch eligibility and excludes Evercade; the cover condition requires an empty cover URL. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
 
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
@@ -277,11 +281,17 @@ This integration is deliberately nonessential. Parsing or network failure return
 
 SteamGridDB was selected because its API is dedicated to game artwork and exposes portrait grid images suitable for box-art cards. It requires a personal bearer API key. Account keys are stored in `user_integrations`; an optional `STEAMGRIDDB_API_KEY` environment value acts as a server-wide fallback. Keys are never returned to the browser after configuration.
 
+The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local matching is account-scoped and uses escaped SQL `LIKE` input.
+
+An exact case-insensitive, whitespace-normalized title-and-platform pair is treated as a possible duplicate. Save-time validation uses a dedicated account-scoped exact lookup rather than the autocomplete result limit, so spacing variants and collections with many editions cannot bypass the warning. The warning can open the existing record. Creating another entry requires an explicit themed confirmation, but remains permitted for multiple copies or editions; another platform is never treated as the same record. The authenticated autocomplete route deliberately returns local results plus an empty remote list when no key is configured or SteamGridDB fails. The interface shows no provider warning, toast, empty state, or loading indicator: remote autocomplete is optional assistance and manual entry always remains available.
+
 Manual lookup searches up to four title candidates and returns portrait static grids. Results are cached in memory for 30 minutes. Provider calls are serialized below four requests per second, have a 15-second timeout, and retry HTTP 429 once.
 
 Bulk lookup considers only games without a cover and reloads each queued record before contacting SteamGridDB. Games deleted or manually covered after the job began are skipped rather than queried or overwritten; the database update also requires the cover to remain empty, closing the race while a provider request is in flight. Title comparison is Unicode-normalized, case-insensitive, punctuation-insensitive, and conservative: auto-selection requires exactly one exact normalized title candidate. The highest-scoring portrait grid is stored; ambiguous titles remain unmatched. Five consecutive provider errors trip a circuit breaker and mark the job failed instead of hammering the remaining catalogue. Job state is in memory and therefore does not survive a server restart, while already matched covers remain in SQLite.
 
 Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
+
+On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and preloads the five header covers and fixed 32-slot decorative field in parallel. Each set is applied atomically, preventing placeholder-by-placeholder flicker without making either library data or remote images part of the authenticated-shell render path. Individual image loads time out after 1.8 seconds; stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
 
 ---
 

@@ -25,6 +25,8 @@ Every account has an isolated library. Game ownership is attached to the account
 - Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.
 - Select the username in the top-right corner, then **Log out**, to end the current session.
 
+When a stored session is present during refresh, a compact **Mounting authenticated library…** screen remains visible only while the token is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.
+
 ---
 
 ## Dashboard
@@ -64,6 +66,7 @@ Search matches the game title, publisher, and notes. It is case-insensitive and 
 | **Collection** | Owned, Wishlisted, or Unavailable |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
+| **Data gaps** | No PEGI info, no cover, either missing, or both missing; Evercade is treated as PEGI-not-applicable |
 | **Sort by** | Title, platform, PEGI rating, recently added, or cartridge number |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -79,6 +82,8 @@ Use the two view buttons beside **My library**:
 
 The preference is stored in the browser.
 
+The signed-in workspace keeps the login screen's scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes artwork from the current account when the app is entered; the decorative layer is non-interactive and does not affect the cards or controls.
+
 The small release string beside **Game Kat·a·log** comes from the project's `VERSION` file and can be changed from the local administrator panel.
 
 ---
@@ -90,6 +95,10 @@ Select **Add a game** on desktop or the **+** floating button on mobile.
 ### Manual entry
 
 Only **Title** and **Platform** are required. Every other field can be added later.
+
+After three title characters, matching games already in the current account appear first, with their platform and collection state, followed by SteamGridDB suggestions when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
+
+An exact title-and-platform match shows an **Already in your library** warning and an **Open existing** action. Saving a new game with that same pair requires a themed **Add anyway** confirmation because multiple copies or editions can be legitimate. The same title on another platform is not considered a duplicate. Suggestions are optional: any title can still be entered manually. If SteamGridDB is unavailable or not configured, its suggestions disappear silently while local duplicate detection and ordinary title entry continue working.
 
 | Field | Purpose |
 |---|---|
@@ -260,4 +269,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 All persistent collection data lives in `games.db`. Back up that file while the server is stopped, or use **Create backup** in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup similarly sends titles only to the configured SteamGridDB provider.
+The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends titles to the configured SteamGridDB provider, and title autocomplete sends the text currently being typed after the third character.

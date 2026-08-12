@@ -1,5 +1,6 @@
 import { CUSTOM_PLATFORM, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
 import { openEventStream } from './js/events.js';
+import { createTitleAutocomplete } from './js/title-autocomplete.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -7,9 +8,11 @@ const TOKEN_KEY = 'games_shelf_auth_token';
 const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
+let decorationSequence = 0;
 const filters = {
   q: $('#search'), platform: $('#platform-filter'), ownership: $('#ownership-filter'),
-  pegi: $('#pegi-filter'), playStatus: $('#status-filter'), favorite: $('#favorite-filter'), sort: $('#sort-filter'),
+  pegi: $('#pegi-filter'), playStatus: $('#status-filter'), missing: $('#missing-filter'),
+  favorite: $('#favorite-filter'), sort: $('#sort-filter'),
 };
 const labels = {
   owned: 'Owned', wanted: 'Wishlisted', unavailable: 'Unavailable', backlog: 'Backlog',
@@ -35,19 +38,39 @@ function toast(message) {
   const element = $('#toast'); element.textContent = message; element.classList.add('show');
   clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), 2600);
 }
+function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
+async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
+  for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
+  if (!covers.length) return;
+  const loaded = await Promise.all(slots.map((_, index) => new Promise(resolve => {
+    const preload = new Image(); let settled = false;
+    const finish = value => { if (settled) return; settled = true; clearTimeout(timeout); resolve(value); };
+    const timeout = setTimeout(() => finish(''), 1800);
+    preload.onload = () => finish(preload.src); preload.onerror = () => finish('');
+    preload.src = covers[index % covers.length];
+  })));
+  if (!isCurrent()) return;
+  slots.forEach((slot, index) => {
+    if (!loaded[index]) return;
+    slot.style.backgroundImage = `url(${JSON.stringify(loaded[index])})`; slot.classList.add('has-art');
+  });
+}
 async function loadAuthCovers() {
   try {
     const response = await fetch(`/api/showcase/covers?v=${Date.now()}`, { cache: 'no-store' });
     if (!response.ok) return;
     const { covers = [] } = await response.json();
-    const slots = [...$$('.promo-cover-deck i'), $('.promo-loose-cover'), ...$$('.auth-cover-field i')].filter(Boolean);
-    slots.forEach((slot, index) => {
-      if (!covers[index]) return;
-      const preload = new Image();
-      preload.onload = () => { slot.style.backgroundImage = `url(${JSON.stringify(preload.src)})`; slot.classList.add('has-art'); };
-      preload.src = covers[index];
-    });
+    const slots = [...$$('.promo-cover-deck i'), $('.promo-loose-cover'), ...$$('#auth-screen .auth-cover-field i')].filter(Boolean);
+    await applyDecorativeCovers(slots, covers);
   } catch {}
+}
+async function loadAppBackgroundCovers(isCurrent) {
+  const covers = [...new Set(state.games.map(game => game.coverUrl).filter(url => /^https:\/\//i.test(url)))];
+  for (let index = covers.length - 1; index > 0; index--) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [covers[index], covers[swap]] = [covers[swap], covers[index]];
+  }
+  await applyDecorativeCovers($$('.app-cover-field i'), covers, isCurrent);
 }
 async function loadConfig() {
   try {
@@ -58,15 +81,17 @@ async function loadConfig() {
   } catch { $('#app-version').textContent = 'dev'; }
 }
 function showAuth(message = '') {
+  decorationSequence += 1;
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
   state.coverStatus = null; state.pegiStatus = null;
   state.games = []; state.stats = null; state.platforms = []; state.limit = 120;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
-  for (const slot of $$('.hero-cover')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
+  for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
   state.user = null;
   $('#app-shell').hidden = true;
   $('#auth-screen').hidden = false;
+  endSessionResume();
   if (message) { $('#auth-error').textContent = message; $('#auth-error').hidden = false; }
   setTimeout(() => $('#auth-username').focus(), 40);
 }
@@ -75,10 +100,14 @@ async function enterApp(user) {
   $('#account-name').textContent = user.username;
   $('#account-current-name').textContent = user.username;
   updateAvatarUI();
+  const dataReady = Promise.all([loadGames(), loadStatsAndMeta()]);
   $('#auth-screen').hidden = true;
   $('#app-shell').hidden = false;
-  await Promise.all([loadGames(), loadStatsAndMeta()]);
+  endSessionResume();
   connectEventStream();
+  await dataReady;
+  if (state.user?.id !== user.id) return;
+  void stageAppDecorations(user.id).catch(() => {});
 }
 function setAvatar(element, user) {
   element.replaceChildren();
@@ -165,6 +194,11 @@ function selectedPlatform() { return $('#game-platform').value === CUSTOM_PLATFO
 renderPlatformChoices();
 $('#game-platform').addEventListener('change', () => toggleCustomPlatform());
 function badge(text, className = '') { return `<span class="badge ${className}">${escapeHtml(text)}</span>`; }
+function isMissingPegiInfo(game) {
+  return !/^Evercade/i.test(String(game.platform || '')) && !game.pegiUrl
+    && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
+    && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
+}
 function gameCard(game) {
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
@@ -186,6 +220,11 @@ function gameMatchesFilters(game) {
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
+  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl;
+  if (filters.missing.value === 'pegi' && !missingPegi) return false;
+  if (filters.missing.value === 'cover' && !missingCover) return false;
+  if (filters.missing.value === 'either' && !missingPegi && !missingCover) return false;
+  if (filters.missing.value === 'both' && (!missingPegi || !missingCover)) return false;
   if (filters.favorite.value === '1' && !game.favorite) return false;
   return true;
 }
@@ -251,7 +290,7 @@ function renderGames() {
   if (state.loading) $('#result-count').textContent = 'Loading collection…';
   $('#clear-filters').hidden = !Object.entries(filters).some(([key, el]) => key !== 'sort' && el.value);
 }
-function loadHeroCovers() {
+async function loadHeroCovers(isCurrent) {
   const slots = $$('.hero-cover');
   if (!slots.length || slots.some(slot => slot.classList.contains('has-art'))) return;
   const covers = [...new Set(state.games.map(game => game.coverUrl).filter(url => /^https:\/\//i.test(url)))];
@@ -259,12 +298,12 @@ function loadHeroCovers() {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
   }
-  slots.forEach((slot, index) => {
-    if (!covers[index]) return;
-    const preload = new Image();
-    preload.onload = () => { slot.style.backgroundImage = `url(${JSON.stringify(preload.src)})`; slot.classList.add('has-art'); };
-    preload.src = covers[index];
-  });
+  await applyDecorativeCovers(slots, covers.slice(0, slots.length), isCurrent);
+}
+async function stageAppDecorations(userId) {
+  const sequence = ++decorationSequence;
+  const isCurrent = () => sequence === decorationSequence && state.user?.id === userId;
+  await Promise.all([loadHeroCovers(isCurrent), loadAppBackgroundCovers(isCurrent)]);
 }
 function queryString() {
   const params = new URLSearchParams();
@@ -277,7 +316,7 @@ async function loadGames() {
   try {
     const games = await api(`/api/games?${queryString()}`);
     if (sequence !== gameLoadSequence || state.user?.id !== userId) return;
-    state.games = games; state.limit = 120; loadHeroCovers();
+    state.games = games; state.limit = 120;
   } catch (error) { if (sequence === gameLoadSequence && state.user?.id === userId) toast(error.message); }
   finally {
     if (sequence === gameLoadSequence && state.user?.id === userId) { state.loading = false; renderGames(); flushPendingGamePatches(); }
@@ -351,6 +390,7 @@ function renderPegiDetails() {
   const source = $('#game-form').dataset.pegiUrl; $('#game-pegi-source').hidden = !source; if (source) $('#game-pegi-source').href = source;
 }
 function openForm(game = null) {
+  titleAutocomplete.reset();
   $('#game-form').reset(); $('#game-id').value = game?.id || '';
   $('#game-form').dataset.pegiUrl = game?.pegiUrl || '';
   $('#game-form').dataset.coverUrl = game?.coverUrl || '';
@@ -363,10 +403,11 @@ function openForm(game = null) {
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; renderCoverSelection(); renderPegiDetails();
-  dialog.showModal(); setTimeout(() => $('#game-title').focus(), 60);
+  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); renderCoverSelection(); renderPegiDetails();
+  if (!dialog.open) dialog.showModal();
+  setTimeout(() => $('#game-title').focus(), 60);
 }
-function closeForm() { dialog.close(); }
+function closeForm() { titleAutocomplete.close(); dialog.close(); }
 function closeOnTrueBackdrop(targetDialog, close) {
   let startedOnBackdrop = false;
   targetDialog.addEventListener('pointerdown', event => { startedOnBackdrop = event.target === targetDialog; });
@@ -400,6 +441,16 @@ function confirmAction({ title = 'Confirm action', message = '', confirmLabel = 
 $$('[data-add-game]').forEach(button => button.addEventListener('click', () => openForm()));
 $$('[data-close]').forEach(button => button.addEventListener('click', closeForm));
 closeOnTrueBackdrop(dialog, closeForm);
+
+async function openExistingGame(id) {
+  try { const game = await api(`/api/games/${id}`); openForm(game); }
+  catch {}
+}
+const titleAutocomplete = createTitleAutocomplete({
+  input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
+  openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
+  api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
+});
 function payload() {
   return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
@@ -409,7 +460,13 @@ function payload() {
     coverUrl: $('#game-form').dataset.coverUrl || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
 $('#game-form').addEventListener('submit', async event => {
-  event.preventDefault(); const id = $('#game-id').value; const save = $('#save-game'); save.disabled = true; save.textContent = 'Saving…';
+  event.preventDefault(); const id = $('#game-id').value; const save = $('#save-game');
+  save.disabled = true; save.textContent = 'Checking…';
+  const duplicate = await titleAutocomplete.duplicateBeforeSave();
+  if (!id && duplicate && !await confirmAction({ title: 'Add another copy?', message: `“${duplicate.title}” is already in your ${duplicate.platform} library. Add another entry anyway?`, confirmLabel: 'Add anyway', kicker: 'Duplicate // game' })) {
+    save.disabled = false; save.textContent = 'Save game'; return;
+  }
+  save.textContent = 'Saving…';
   try {
     await api(id ? `/api/games/${id}` : '/api/games', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
     closeForm(); toast(id ? 'Game updated.' : 'Game added to the shelf.'); await Promise.all([loadGames(), loadStatsAndMeta()]);

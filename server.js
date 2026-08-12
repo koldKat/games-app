@@ -191,6 +191,17 @@ async function handleApi(request, response, url) {
     try { return sendJson(response, 200, await covers.searchCovers(key, url.searchParams.get('q'))); }
     catch (error) { return sendJson(response, 502, { error: error.message }); }
   }
+  if (request.method === 'GET' && url.pathname === '/api/titles/autocomplete') {
+    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
+    const query = String(url.searchParams.get('q') || '').trim();
+    if (url.searchParams.get('exact') === '1') {
+      return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform')), suggestions: [] });
+    }
+    const existing = db.searchGameTitles(user.id, query);
+    if (!key || query.length < 3 || url.searchParams.get('local') === '1') return sendJson(response, 200, { existing, suggestions: [] });
+    try { return sendJson(response, 200, { existing, suggestions: await covers.searchTitles(key, query) }); }
+    catch { return sendJson(response, 200, { existing, suggestions: [] }); }
+  }
   if (request.method === 'POST' && url.pathname === '/api/covers/bulk') {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
     if (!key) return sendJson(response, 409, { error: 'Configure a SteamGridDB API key in Account Settings first.' });

@@ -110,6 +110,14 @@ const update = db.prepare(`
     cover_match_title=@coverMatchTitle, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
+const searchTitles = db.prepare(`
+  SELECT id, title, platform, ownership FROM games
+  WHERE user_id=? AND title LIKE ? ESCAPE '\\'
+  ORDER BY CASE WHEN title = ? COLLATE NOCASE THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
+  LIMIT ?
+`);
+const accountTitles = db.prepare('SELECT id, title, platform, ownership FROM games WHERE user_id=?');
+
 function normalizeGame(input = {}) {
   const title = String(input.title || '').trim();
   const platform = String(input.platform || '').trim();
@@ -160,6 +168,13 @@ function listGames(userId, filters = {}) {
   if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
   if (filters.pegi === 'none') clauses.push('pegi IS NULL');
   else if (filters.pegi) { clauses.push('pegi = @pegi'); params.pegi = Number(filters.pegi); }
+  const missingPegi = `(platform NOT LIKE 'Evercade%'
+    AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
+    AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='')`;
+  if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
+  if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
+  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='')`);
+  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url=''`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
   const sortMap = {
     title: 'title COLLATE NOCASE ASC',
@@ -173,6 +188,18 @@ function listGames(userId, filters = {}) {
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
+function searchGameTitles(userId, query, limit = 10) {
+  const clean = String(query || '').trim().slice(0, 220);
+  if (clean.length < 2) return [];
+  const pattern = `%${clean.replace(/[\\%_]/g, character => `\\${character}`)}%`;
+  return searchTitles.all(userId, pattern, clean, Math.max(1, Math.min(20, Number(limit) || 10)));
+}
+const normalizeIdentity = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+function findDuplicateGames(userId, title, platform) {
+  const wantedTitle = normalizeIdentity(title); const wantedPlatform = normalizeIdentity(platform);
+  if (!wantedTitle || !wantedPlatform) return [];
+  return accountTitles.all(userId).filter(game => normalizeIdentity(game.title) === wantedTitle && normalizeIdentity(game.platform) === wantedPlatform);
+}
 function createGame(userId, input) { const game = normalizeGame(input); return getGame(userId, insert.run({ ...game, userId }).lastInsertRowid); }
 function updateGame(userId, id, input) { const game = normalizeGame(input); const result = update.run({ ...game, id, userId }); return result.changes ? getGame(userId, id) : null; }
 function deleteGame(userId, id) { return db.prepare('DELETE FROM games WHERE id=? AND user_id=?').run(id, userId).changes > 0; }
@@ -241,4 +268,4 @@ function stats(userId) {
   return { total, favorites, ownership, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, randomShowcaseCovers, stats };
+module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, randomShowcaseCovers, stats };

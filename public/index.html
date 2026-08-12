@@ -31,11 +31,16 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
+  <script>try{if(localStorage.getItem('games_shelf_auth_token'))document.documentElement.classList.add('resuming-session')}catch{}</script>
   <link rel="stylesheet" href="/style.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Game Kat·a·log","url":"https://gamekat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI-assisted metadata and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <div id="session-resume" class="session-resume-screen" role="status" aria-live="polite">
+    <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
+    <span><strong>Game Kat·a·log</strong><small>Mounting authenticated library…</small></span>
+  </div>
   <main id="auth-screen" class="auth-screen">
     <div class="auth-cover-field" aria-hidden="true">
       <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
@@ -110,6 +115,12 @@
   </main>
 
   <div class="shell" id="app-shell" hidden>
+    <div class="auth-cover-field app-cover-field" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
     <header class="topbar">
       <a class="brand" href="/" aria-label="Game Kat·a·log home">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
@@ -164,6 +175,7 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="either">Either missing</option><option value="both">Both missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter"><option value="title">Title A–Z</option><option value="platform">Platform</option><option value="pegi">PEGI rating</option><option value="newest">Recently added</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -195,7 +207,7 @@
       <div id="cover-selection" class="cover-selection" hidden></div>
       <div id="cover-results" class="cover-results" hidden></div>
       <div class="form-grid">
-        <label class="span-2"><span>Title *</span><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4"></label>
+        <div class="span-2 title-autocomplete"><label for="game-title"><span>Title *</span></label><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="title-suggestions"><div id="title-suggestions" class="title-suggestions" role="listbox" hidden></div><div id="duplicate-warning" class="duplicate-warning" hidden><span><strong>Already in your library</strong><small id="duplicate-summary"></small></span><button type="button" id="open-duplicate" class="button ghost">Open existing</button></div></div>
         <label><span>Platform *</span><select id="game-platform" required></select></label>
         <label id="game-platform-custom-label" hidden><span>Custom platform *</span><input id="game-platform-custom" maxlength="80" autocomplete="off" placeholder="Enter platform name"></label>
         <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>

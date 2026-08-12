@@ -64,6 +64,20 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(data.updateGameCover(other.id, coverCandidate.id, { url: 'https://example.com/first.jpg', source: 'test', matchTitle: 'Cover Race' }));
   assert.equal(data.updateGameCover(other.id, coverCandidate.id, { url: 'https://example.com/second.jpg', source: 'test', matchTitle: 'Wrong' }), null);
   assert.equal(data.getGame(other.id, coverCandidate.id).coverUrl, 'https://example.com/first.jpg');
+  assert.deepEqual(data.listGames(other.id, { missing: 'pegi' }).map(game => game.id), [coverCandidate.id]);
+  assert.ok(data.listGames(other.id, { missing: 'cover' }).some(game => game.id === pending.id));
+  assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));
+  assert.ok(!data.listGames(other.id, { missing: 'pegi' }).some(game => game.platform === 'Evercade'));
+  assert.ok(data.listGames(other.id, { missing: 'either' }).length > data.listGames(other.id, { missing: 'both' }).length);
+  const switchCopy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'Nintendo Switch' });
+  data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
+  const titleMatches = data.searchGameTitles(other.id, 'shared adventure');
+  assert.equal(titleMatches.length, 2);
+  assert.ok(titleMatches.some(game => game.id === switchCopy.id && game.platform === 'Nintendo Switch'));
+  assert.deepEqual(data.searchGameTitles(owner.id, 'shared adventure'), []);
+  assert.equal(data.findDuplicateGames(other.id, '  SHARED   Adventure ', 'nintendo switch').length, 1);
+  assert.equal(data.findDuplicateGames(other.id, 'Shared Adventure', 'Xbox Series X|S').length, 0);
+  assert.equal(data.findDuplicateGames(owner.id, 'Shared Adventure', 'Nintendo Switch').length, 0);
   await assert.rejects(() => auth.register('third_user', 'third-password', 'other@example.com'), /already in use/);
 });
 

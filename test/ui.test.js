@@ -24,6 +24,36 @@ test('authentication landing keeps a dense real-cover background', () => {
   assert.equal((field.match(/<i><\/i>/g) || []).length, 32);
 });
 
+test('authenticated app matches the login account-cover background visibility', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
+  const field = html.match(/<div class="auth-cover-field app-cover-field"[\s\S]*?<\/div>/)?.[0] || '';
+  assert.equal((field.match(/<i><\/i>/g) || []).length, 32);
+  assert.match(application, /state\.games\.map\(game => game\.coverUrl\)/);
+  assert.match(application, /#auth-screen[^\n]*hidden = true;[\s\S]*#app-shell[^\n]*hidden = false;[\s\S]*void stageAppDecorations\(user\.id\)\.catch/);
+  assert.doesNotMatch(application, /state\.games = games;[^\n]*await loadHeroCovers/);
+  assert.match(application, /Promise\.all\(\[loadHeroCovers\(isCurrent\), loadAppBackgroundCovers\(isCurrent\)\]\)/);
+  assert.match(application, /const loaded = await Promise\.all/);
+  assert.match(css, /\.app-cover-field\{[^}]*opacity:\.075/);
+  assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
+  assert.match(css, /#app-shell>\.topbar,#app-shell>main\{position:relative;z-index:1\}/);
+});
+
+test('stored sessions use a resume screen instead of flashing authentication', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
+  assert.match(html, /games_shelf_auth_token[^<]*resuming-session/);
+  assert.match(html, /id="session-resume"[^>]*role="status"/);
+  assert.match(css, /\.resuming-session #auth-screen\{visibility:hidden\}/);
+  assert.match(css, /\.resuming-session \.session-resume-screen\{display:grid\}/);
+  assert.match(application, /function endSessionResume\(\)/);
+  assert.match(application, /#app-shell'\)\.hidden = false;[\s\S]*endSessionResume\(\);/);
+});
+
+test('authenticated shell renders before library data and artwork finish', () => {
+  const application = read('public/app.js');
+  assert.match(application, /const dataReady = Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\);[\s\S]*#app-shell'\)\.hidden = false;[\s\S]*endSessionResume\(\);[\s\S]*await dataReady;[\s\S]*stageAppDecorations/);
+  assert.doesNotMatch(application, /await Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\)[\s\S]*#app-shell'\)\.hidden = false/);
+});
+
 test('login and registration use a stable authentication frame', () => {
   const css = read('public/style.css');
   assert.match(css, /\.auth-card\{height:510px\}/);
@@ -37,6 +67,34 @@ test('landing promo descriptions remain readable', () => {
 test('common filters never move the viewport', () => {
   const application = read('public/app.js');
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
+});
+
+test('one data-gaps filter handles missing PEGI metadata and covers', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*Either missing[\s\S]*Both missing/);
+  assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
+  assert.match(application, /filters\.missing\.value === 'either'/);
+  assert.match(application, /filters\.missing\.value === 'both'/);
+  assert.match(database, /filters\.missing === 'either'/);
+  assert.match(database, /filters\.missing === 'both'/);
+});
+
+test('title autocomplete is themed and silently degrades when SteamGridDB fails', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js'); const css = read('public/style.css'); const server = read('server.js');
+  assert.match(html, /id="game-title"[\s\S]*role="combobox"[\s\S]*id="title-suggestions"[^>]*role="listbox"/);
+  assert.match(application, /createTitleAutocomplete/);
+  assert.match(autocomplete, /api\(`\/api\/titles\/autocomplete/);
+  assert.match(autocomplete, /catch \{\}/);
+  assert.match(autocomplete, /\}, 100\);/);
+  assert.match(server, /pathname === '\/api\/titles\/autocomplete'[\s\S]*catch \{ return sendJson\(response, 200, \{ existing, suggestions: \[\] \}\); \}/);
+  assert.match(css, /\.title-suggestions\{[^}]*background:#080d12/);
+  assert.match(html, /id="duplicate-warning"[\s\S]*id="open-duplicate"/);
+  assert.match(autocomplete, /kind: 'existing'/);
+  assert.match(autocomplete, /autocomplete\?exact=1/);
+  assert.match(application, /title: 'Add another copy\?'/);
+  assert.match(application, /confirmLabel: 'Add anyway'/);
+  assert.match(server, /db\.searchGameTitles\(user\.id, query\)/);
+  assert.match(server, /db\.findDuplicateGames\(user\.id, query/);
 });
 
 test('cover processing uses compact text with a themed detail tooltip', () => {
