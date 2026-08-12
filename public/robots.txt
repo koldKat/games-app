@@ -4,4 +4,4 @@ Disallow: /api/
 Disallow: /admin/
 Disallow: /avatars/
 
-Sitemap: https://gameskat.net/sitemap.xml
+Sitemap: https://gamekat.net/sitemap.xml

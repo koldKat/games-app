@@ -201,3 +201,7 @@ body{font-size:14px}
 /* Promo copy is supporting text, not microscopic decoration. */
 .auth-promo p{font-size:12px;line-height:1.5;color:#92a0ae}.promo-system{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}.promo-system span,.promo-system span:last-child{grid-column:auto;padding:5px 4px;white-space:nowrap}.promo-system span{font-size:6px}
 @media(max-width:580px){.promo-library,.promo-covers,.promo-metadata,.promo-track,.promo-private{min-height:170px}.auth-promo p{font-size:12px}}
+.integration-bulk #cover-bulk-status{position:relative;cursor:help;outline:none}.integration-bulk #cover-bulk-status:after{content:attr(data-tooltip);position:absolute;z-index:8;left:0;bottom:calc(100% + 7px);width:min(320px,75vw);padding:7px 8px;border:1px solid #3a4b59;background:#111923;color:#c4d0da;font-size:9px;line-height:1.45;white-space:normal;box-shadow:4px 7px 16px #000a;opacity:0;visibility:hidden;transform:translateY(3px);transition:.12s;pointer-events:none}.integration-bulk #cover-bulk-status:hover:after,.integration-bulk #cover-bulk-status:focus-visible:after{opacity:1;visibility:visible;transform:none}.integration-bulk #cover-bulk-status:focus-visible{color:#61e3c5}
+
+.library-title{font-size:14px;margin:0}
+@media(max-width:520px){.library-title{font-size:12px}}

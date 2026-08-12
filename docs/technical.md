@@ -1,10 +1,10 @@
-# Games Shelf - Technical Reference
+# Game Kat·a·log - Technical Reference
 
 ---
 
 ## Architecture
 
-Games Shelf follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.
+Game Kat·a·log follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.
 
 ```text
 games-app/
@@ -34,7 +34,7 @@ games-app/
     icon-512.png            high-resolution installable-app icon
     social-preview.*        source SVG and rendered 1200x630 social card
     robots.txt              crawler policy for public and private surfaces
-    sitemap.xml             canonical public URLs for gameskat.net
+    sitemap.xml             canonical public URLs for gamekat.net
     docs/                   generated standalone HTML documentation
   docs/
     user-guide.md           user documentation source
@@ -307,7 +307,7 @@ Generated documentation is available at:
 
 ### Search and social metadata
 
-The public landing page uses `https://gameskat.net/` as its canonical URL. It includes a focused title and description, Open Graph and Twitter large-image metadata, and `WebApplication` JSON-LD. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
+The public landing page uses `https://gamekat.net/` as its canonical URL. It includes a focused title and description, Open Graph and Twitter large-image metadata, and `WebApplication` JSON-LD. The domain inspires the **Game Kat·a·log** wordmark, whose separators are true middle dots. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
 
 `robots.txt` permits the landing page and public guide while excluding `/api/`, `/admin/`, and account avatars. `sitemap.xml` lists only the canonical landing page and user guide. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
 

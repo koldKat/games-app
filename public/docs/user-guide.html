@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b10"><title>Games Shelf // User Guide</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b10"><title>Game Kat·a·log // User Guide</title>
 <style>
-:root{color-scheme:dark;--bg:#080b10;--panel:#0d1219;--line:#222c38;--text:#dce5ef;--muted:#8491a0;--accent:#35d6b2;--amber:#e9b949;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;line-height:1.65}a{color:#5fe4c5}header{height:48px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#080b10ed;backdrop-filter:blur(10px)}header strong{font-size:12px}header span{color:var(--muted);font-size:9px}header nav{margin-left:auto;display:flex;gap:5px}header nav a{padding:5px 8px;border:1px solid var(--line);text-decoration:none;font-size:9px}.layout{width:min(1240px,100%);margin:auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;padding:18px}.toc{position:sticky;top:66px;align-self:start;max-height:calc(100vh - 82px);overflow:auto;border:1px solid var(--line);background:var(--panel);padding:10px}.toc b{display:block;color:var(--accent);font-size:9px;letter-spacing:.12em;margin-bottom:7px}.toc a{display:block;padding:3px 5px;color:#93a0af;text-decoration:none;font-size:9px;border-left:1px solid #283440}.toc a:hover{color:var(--accent);border-color:var(--accent)}.toc .toc-3{padding-left:15px;color:#6f7d8b}.content{min-width:0;border:1px solid var(--line);background:var(--panel);padding:clamp(15px,3vw,34px)}h1,h2,h3,h4{line-height:1.2;scroll-margin-top:65px}h1{font-size:28px;margin:0 0 28px;color:#f0f5fa}h1:before{content:'> ';color:var(--accent)}h2{font-size:18px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}h3{font-size:14px;margin:24px 0 8px;color:#b9c7d5}h4{font-size:12px;color:var(--amber)}.anchor{opacity:0;text-decoration:none;margin-left:7px;font-size:.7em}h2:hover .anchor,h3:hover .anchor{opacity:1}p{margin:8px 0 13px;color:#b6c0cb}strong{color:#eef4f8}code{background:#111c24;border:1px solid #263542;padding:1px 4px;color:#6ee6cb;font-size:.9em}pre{overflow:auto;background:#070a0e;border:1px solid #273441;padding:12px;margin:12px 0}pre code{border:0;background:none;padding:0;color:#b9c7d5}.table-wrap{overflow:auto;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{text-align:left;padding:7px 8px;border:1px solid #25313d;vertical-align:top}th{background:#111a23;color:#62e2c4}td{color:#aeb9c5}ul,ol{padding-left:22px;color:#b6c0cb}li{margin:3px 0}blockquote{margin:12px 0;padding:8px 11px;border-left:2px solid var(--amber);background:#17150e;color:#d3c594}hr{border:0;border-top:1px solid var(--line);margin:28px 0}.source{margin-top:35px;color:#63707e;font-size:8px}
+:root{color-scheme:dark;--bg:#080b10;--panel:#0d1219;--line:#222c38;--text:#dce5ef;--muted:#8491a0;--accent:#35d6b2;--amber:#e9b949;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-size:13px;line-height:1.65}a{color:#5fe4c5}header{height:48px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#080b10ed;backdrop-filter:blur(10px)}header strong{font-size:12px}header span{color:var(--muted);font-size:9px}header nav{margin-left:auto;display:flex;gap:5px}header nav a{padding:5px 8px;border:1px solid var(--line);text-decoration:none;font-size:9px}.layout{width:min(1240px,100%);margin:auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px;padding:18px}.toc{position:sticky;top:66px;align-self:start;max-height:calc(100vh - 82px);overflow:auto;border:1px solid var(--line);background:var(--panel);padding:10px}.toc b{display:block;color:var(--accent);font-size:9px;letter-spacing:.12em;margin-bottom:7px}.toc a{display:block;padding:3px 5px;color:#93a0af;text-decoration:none;font-size:9px;border-left:1px solid #283440;transition:color .12s}.toc a:hover{color:var(--accent)}.toc .toc-3{padding-left:15px;color:#6f7d8b}.toc a.active,.toc .toc-3.active{color:var(--accent);font-weight:700}.content{min-width:0;border:1px solid var(--line);background:var(--panel);padding:clamp(15px,3vw,34px)}h1,h2,h3,h4{line-height:1.2;scroll-margin-top:65px}h1{font-size:28px;margin:0 0 28px;color:#f0f5fa}h1:before{content:'> ';color:var(--accent)}h2{font-size:18px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}h3{font-size:14px;margin:24px 0 8px;color:#b9c7d5}h4{font-size:12px;color:var(--amber)}.anchor{opacity:0;text-decoration:none;margin-left:7px;font-size:.7em}h2:hover .anchor,h3:hover .anchor{opacity:1}p{margin:8px 0 13px;color:#b6c0cb}strong{color:#eef4f8}code{background:#111c24;border:1px solid #263542;padding:1px 4px;color:#6ee6cb;font-size:.9em}pre{overflow:auto;background:#070a0e;border:1px solid #273441;padding:12px;margin:12px 0}pre code{border:0;background:none;padding:0;color:#b9c7d5}.table-wrap{overflow:auto;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:10px}th,td{text-align:left;padding:7px 8px;border:1px solid #25313d;vertical-align:top}th{background:#111a23;color:#62e2c4}td{color:#aeb9c5}ul,ol{padding-left:22px;color:#b6c0cb}li{margin:3px 0}blockquote{margin:12px 0;padding:8px 11px;border-left:2px solid var(--amber);background:#17150e;color:#d3c594}hr{border:0;border-top:1px solid var(--line);margin:28px 0}.source{margin-top:35px;color:#63707e;font-size:8px}
 @media(max-width:760px){header{padding:0 8px}.layout{display:block;padding:7px}.toc{display:none}.content{padding:14px}h1{font-size:21px}h2{font-size:16px;margin-top:25px}body{font-size:11px}header span{display:none}}
-</style></head><body><header><strong>GAMES_SHELF // DOCS</strong><span>User Guide</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#getting-started">Getting started</a>
+</style></head><body><header><strong>GAME KAT·A·LOG // DOCS</strong><span>User Guide</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#getting-started">Getting started</a>
 <a class="toc-3" href="#creating-an-account">Creating an account</a>
 <a class="toc-3" href="#signing-in-and-out">Signing in and out</a>
 <a class="toc-2" href="#dashboard">Dashboard</a>
@@ -34,8 +34,8 @@
 <a class="toc-3" href="#pegi-lookup-failed">PEGI lookup failed</a>
 <a class="toc-3" href="#the-page-still-shows-an-older-design">The page still shows an older design</a>
 <a class="toc-3" href="#the-server-is-not-reachable">The server is not reachable</a>
-<a class="toc-2" href="#data-safety">Data safety</a></aside><article class="content"><h1 id="games-shelf-user-guide">Games Shelf - User Guide<a class="anchor" href="#games-shelf-user-guide" aria-label="Link to section">#</a></h1>
-<p>Games Shelf is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.</p>
+<a class="toc-2" href="#data-safety">Data safety</a></aside><article class="content"><h1 id="game-kat-a-log-user-guide">Game Kat·a·log - User Guide<a class="anchor" href="#game-kat-a-log-user-guide" aria-label="Link to section">#</a></h1>
+<p>Game Kat·a·log is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.</p>
 <hr>
 <h2 id="getting-started">Getting started<a class="anchor" href="#getting-started" aria-label="Link to section">#</a></h2>
 <p>Open <code>http://localhost:3005</code> in a browser. To use another device on the same network, replace <code>localhost</code> with the server computer&#39;s LAN address.</p>
@@ -69,7 +69,7 @@
 <div class="table-wrap"><table><thead><tr><th>Filter</th><th>Options</th></tr></thead><tbody><tr><td><strong>Platform</strong></td><td>Platforms currently present in the account</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>PEGI</strong></td><td>3, 7, 12, 16, 18, or Unrated</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Sort by</strong></td><td>Title, platform, PEGI rating, recently added, or cartridge number</td></tr></tbody></table></div>
 <p>Select <strong>Clear filters</strong> to return to the complete library. Large result sets initially render 120 cards; <strong>Show more</strong> renders the next batch.</p>
 <h3 id="card-and-compact-views">Card and compact views<a class="anchor" href="#card-and-compact-views" aria-label="Link to section">#</a></h3>
-<p>Use the two view buttons beside <strong>Your games</strong>:</p>
+<p>Use the two view buttons beside <strong>My library</strong>:</p>
 <ul>
 <li><strong>Card view</strong> gives titles more space and is the default.</li>
 <li><strong>Compact view</strong> places each game on a denser horizontal row.</li>
@@ -77,7 +77,7 @@
 <li>The platform appears inside each card as its own label.</li>
 </ul>
 <p>The preference is stored in the browser.</p>
-<p>The small release string beside <strong>Games Shelf</strong> comes from the project&#39;s <code>VERSION</code> file and can be changed from the local administrator panel.</p>
+<p>The small release string beside <strong>Game Kat·a·log</strong> comes from the project&#39;s <code>VERSION</code> file and can be changed from the local administrator panel.</p>
 <hr>
 <h2 id="adding-a-game">Adding a game<a class="anchor" href="#adding-a-game" aria-label="Link to section">#</a></h2>
 <p>Select <strong>Add a game</strong> on desktop or the <strong>+</strong> floating button on mobile.</p>
@@ -92,7 +92,7 @@
 <li>Review the filled fields, especially platform and release year.</li>
 <li>Select <strong>Save game</strong>.</li>
 </ol>
-<p>The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Games Shelf reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.</p>
+<p>The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Game Kat·a·log reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.</p>
 <h3 id="cover-assisted-entry">Cover-assisted entry<a class="anchor" href="#cover-assisted-entry" aria-label="Link to section">#</a></h3>
 <ol>
 <li>Open <strong>Account Settings</strong>, obtain a personal SteamGridDB API key from the linked preferences page, paste it, and select <strong>Connect</strong>.</li>
@@ -100,7 +100,7 @@
 <li>Review the portrait artwork and game names, then select the correct edition.</li>
 <li>Save the game. Select <strong>Remove cover</strong> before saving if the match is wrong.</li>
 </ol>
-<p>The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Games Shelf stores its URL and match title.</p>
+<p>The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.</p>
 <h3 id="fill-existing-games">Fill existing games<a class="anchor" href="#fill-existing-games" aria-label="Link to section">#</a></h3>
 <p>After connecting SteamGridDB, select <strong>Fill missing covers</strong> in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.</p>
 <hr>
@@ -118,7 +118,7 @@
 <li>Select <strong>×</strong>, <strong>Cancel</strong>, press <strong>Escape</strong>, or click directly on the backdrop to close a dialog.</li>
 <li>Selecting text and releasing the pointer outside the dialog does not close it.</li>
 <li>A backdrop close occurs only when the pointer starts and ends on the backdrop.</li>
-<li>Destructive actions use application-themed confirmation dialogs. Games Shelf never invokes the browser&#39;s native alert, confirm, or prompt interface.</li>
+<li>Destructive actions use application-themed confirmation dialogs. Game Kat·a·log never invokes the browser&#39;s native alert, confirm, or prompt interface.</li>
 </ul>
 <hr>
 <h2 id="account-management">Account management<a class="anchor" href="#account-management" aria-label="Link to section">#</a></h2>
@@ -143,10 +143,10 @@
 <li>The desktop add button becomes a floating <strong>+</strong> button.</li>
 <li>Account and form dialogs fit within the visible screen and scroll internally.</li>
 </ul>
-<p>The app manifest allows supported browsers to install Games Shelf as a standalone home-screen app.</p>
+<p>The app manifest allows supported browsers to install Game Kat·a·log as a standalone home-screen app.</p>
 <hr>
 <h2 id="local-administrator-panel">Local administrator panel<a class="anchor" href="#local-administrator-panel" aria-label="Link to section">#</a></h2>
-<p>On the computer running Games Shelf, open <code>http://127.0.0.1:3005/admin/</code>. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.</p>
+<p>On the computer running Game Kat·a·log, open <code>http://127.0.0.1:3005/admin/</code>. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.</p>
 <p>The compact terminal-style panel provides:</p>
 <ul>
 <li>Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.</li>
@@ -172,4 +172,4 @@
 <hr>
 <h2 id="data-safety">Data safety<a class="anchor" href="#data-safety" aria-label="Link to section">#</a></h2>
 <p>All persistent collection data lives in <code>games.db</code>. Back up that file while the server is stopped, or use <strong>Create backup</strong> in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.</p>
-<p>The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div></body></html>
+<p>The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div><script>(()=>{const menu=document.querySelector('.toc');const entries=[...menu.querySelectorAll('a[href^="#"]')].map(link=>({link,section:document.getElementById(decodeURIComponent(link.hash.slice(1)))})).filter(entry=>entry.section);let active=null;const select=entry=>{if(!entry||entry===active)return;if(active){active.link.classList.remove('active');active.link.removeAttribute('aria-current')}active=entry;active.link.classList.add('active');active.link.setAttribute('aria-current','location');const top=active.link.offsetTop;const bottom=top+active.link.offsetHeight;if(top<menu.scrollTop+10)menu.scrollTop=Math.max(0,top-10);else if(bottom>menu.scrollTop+menu.clientHeight-10)menu.scrollTop=bottom-menu.clientHeight+10};const update=()=>{let current=entries[0];for(const entry of entries){if(entry.section.getBoundingClientRect().top<=72)current=entry;else break}if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2)current=entries[entries.length-1];select(current)};let queued=false;const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;update()})};addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule);addEventListener('hashchange',schedule);for(const entry of entries)entry.link.addEventListener('click',()=>select(entry));update()})()</script></body></html>

@@ -232,7 +232,7 @@ const server = http.createServer(async (request, response) => {
 
 auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
-  console.log(`Games Shelf is running at http://localhost:${PORT}`);
+  console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
   backup.start();
 });
 

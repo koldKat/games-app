@@ -8,8 +8,8 @@ const read = filename => fs.readFileSync(path.join(publicDir, filename), 'utf8')
 
 test('landing page publishes canonical, social, and structured metadata', () => {
   const html = read('index.html');
-  assert.match(html, /<link rel="canonical" href="https:\/\/gameskat\.net\/">/);
-  assert.match(html, /property="og:image" content="https:\/\/gameskat\.net\/social-preview\.png"/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/">/);
+  assert.match(html, /property="og:image" content="https:\/\/gamekat\.net\/social-preview\.png"/);
   assert.match(html, /name="twitter:card" content="summary_large_image"/);
   assert.match(html, /type="application\/ld\+json"/);
   assert.match(html, /"@type":"WebApplication"/);
@@ -21,8 +21,8 @@ test('crawler files expose the landing page without indexing private surfaces', 
   const sitemap = read('sitemap.xml');
   assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Disallow: \/admin\//);
-  assert.match(robots, /Sitemap: https:\/\/gameskat\.net\/sitemap\.xml/);
-  assert.match(sitemap, /<loc>https:\/\/gameskat\.net\/<\/loc>/);
+  assert.match(robots, /Sitemap: https:\/\/gamekat\.net\/sitemap\.xml/);
+  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/<\/loc>/);
   assert.equal((sitemap.match(/<loc>/g) || []).length, 2);
 });
 

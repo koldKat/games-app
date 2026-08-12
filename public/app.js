@@ -228,7 +228,7 @@ $$('[data-stat-kind]').forEach(button => button.addEventListener('click', () => 
   else { filters.ownership.value = ''; filters.playStatus.value = ''; filters.favorite.value = ''; }
   if (button.dataset.statKind !== 'all') filters[button.dataset.statKind].value = button.dataset.statValue;
   renderQuickFilter();
-  loadGames(); document.querySelector('.library').scrollIntoView({ behavior: 'smooth' });
+  loadGames();
 }));
 renderQuickFilter();
 function setView(view) {
@@ -380,7 +380,18 @@ async function loadCoverStatus() {
     $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString()} games still need covers.` : 'API key not configured.';
     $('#cover-bulk-start').disabled = !status.configured || status.job?.state === 'running' || status.missing === 0;
     const job = status.job;
-    $('#cover-bulk-status').textContent = job?.state === 'running' ? `${job.processed.toLocaleString()}/${job.total.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.current}` : job?.state === 'complete' ? `Complete: ${job.matched.toLocaleString()} matched, ${job.unmatched.toLocaleString()} unmatched, ${job.errors.toLocaleString()} errors.` : job?.state === 'failed' ? `Paused after repeated errors: ${job.lastError || job.error || 'provider unavailable'}` : 'Conservative exact-title matching only.';
+    const bulkStatus = $('#cover-bulk-status');
+    let shortStatus = 'Exact-title matches only.'; let detail = 'Only exact normalized title matches receive covers automatically.';
+    if (job?.state === 'running') {
+      shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
+      detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${job.errors.toLocaleString()} errors`;
+    } else if (job?.state === 'complete') {
+      shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.errors.toLocaleString()} errors`;
+      detail = `${job.processed.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.unmatched.toLocaleString()} unmatched · ${job.errors.toLocaleString()} errors`;
+    } else if (job?.state === 'failed') {
+      shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'Cover provider unavailable.';
+    }
+    bulkStatus.textContent = shortStatus; bulkStatus.dataset.tooltip = detail; bulkStatus.setAttribute('aria-label', `${shortStatus}. ${detail}`);
     if (job?.state === 'running') { clearTimeout(loadCoverStatus.timer); loadCoverStatus.timer = setTimeout(loadCoverStatus, 1800); }
     else if (job?.state === 'complete' && !loadCoverStatus.refreshed) { loadCoverStatus.refreshed = true; await loadGames(); }
   } catch (error) { $('#cover-provider-status').textContent = error.message; }

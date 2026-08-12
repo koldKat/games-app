@@ -1,6 +1,6 @@
-# Games Shelf - User Guide
+# Game Kat·a·log - User Guide
 
-Games Shelf is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.
+Game Kat·a·log is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.
 
 ---
 
@@ -70,7 +70,7 @@ Select **Clear filters** to return to the complete library. Large result sets in
 
 ### Card and compact views
 
-Use the two view buttons beside **Your games**:
+Use the two view buttons beside **My library**:
 
 - **Card view** gives titles more space and is the default.
 - **Compact view** places each game on a denser horizontal row.
@@ -79,7 +79,7 @@ Use the two view buttons beside **Your games**:
 
 The preference is stored in the browser.
 
-The small release string beside **Games Shelf** comes from the project's `VERSION` file and can be changed from the local administrator panel.
+The small release string beside **Game Kat·a·log** comes from the project's `VERSION` file and can be changed from the local administrator panel.
 
 ---
 
@@ -113,7 +113,7 @@ Only **Title** and **Platform** are required. Every other field can be added lat
 4. Review the filled fields, especially platform and release year.
 5. Select **Save game**.
 
-The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Games Shelf reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
+The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Game Kat·a·log reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
 
 ### Cover-assisted entry
 
@@ -122,7 +122,7 @@ The lookup can fill title, PEGI rating, publisher, release year, descriptors, an
 3. Review the portrait artwork and game names, then select the correct edition.
 4. Save the game. Select **Remove cover** before saving if the match is wrong.
 
-The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Games Shelf stores its URL and match title.
+The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.
 
 ### Fill existing games
 
@@ -153,7 +153,7 @@ Open **Edit details**, select **Delete**, and confirm. Deletion is permanent for
 - Select **×**, **Cancel**, press **Escape**, or click directly on the backdrop to close a dialog.
 - Selecting text and releasing the pointer outside the dialog does not close it.
 - A backdrop close occurs only when the pointer starts and ends on the backdrop.
-- Destructive actions use application-themed confirmation dialogs. Games Shelf never invokes the browser's native alert, confirm, or prompt interface.
+- Destructive actions use application-themed confirmation dialogs. Game Kat·a·log never invokes the browser's native alert, confirm, or prompt interface.
 
 ---
 
@@ -193,13 +193,13 @@ The interface automatically changes for narrow screens:
 - The desktop add button becomes a floating **+** button.
 - Account and form dialogs fit within the visible screen and scroll internally.
 
-The app manifest allows supported browsers to install Games Shelf as a standalone home-screen app.
+The app manifest allows supported browsers to install Game Kat·a·log as a standalone home-screen app.
 
 ---
 
 ## Local administrator panel
 
-On the computer running Games Shelf, open `http://127.0.0.1:3005/admin/`. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.
+On the computer running Game Kat·a·log, open `http://127.0.0.1:3005/admin/`. The panel deliberately refuses LAN and internet clients, including requests arriving through the public nginx proxy.
 
 The compact terminal-style panel provides:
 

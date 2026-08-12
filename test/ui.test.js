@@ -33,3 +33,29 @@ test('login and registration use a stable authentication frame', () => {
 test('landing promo descriptions remain readable', () => {
   assert.match(read('public/style.css'), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
 });
+
+test('common filters never move the viewport', () => {
+  const application = read('public/app.js');
+  assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
+});
+
+test('cover processing uses compact text with a themed detail tooltip', () => {
+  const application = read('public/app.js'); const css = read('public/style.css');
+  assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
+  assert.match(application, /bulkStatus\.dataset\.tooltip = detail/);
+  assert.match(css, /#cover-bulk-status:after\{content:attr\(data-tooltip\)/);
+});
+
+test('the product wordmark uses middle dots and no header cat artwork', () => {
+  const html = read('public/index.html'); const css = read('public/style.css');
+  assert.match(html, /Game Kat·a·log/);
+  assert.doesNotMatch(html, /header-kat|header-kat\.svg/);
+  assert.doesNotMatch(css, /\.header-kat/);
+});
+
+test('generated documentation highlights the section currently in view', () => {
+  const generator = read('scripts/generate-docs.js');
+  assert.match(generator, /\.toc a\.active/);
+  assert.match(generator, /aria-current/);
+  assert.match(generator, /getBoundingClientRect\(\)\.top<=72/);
+});
