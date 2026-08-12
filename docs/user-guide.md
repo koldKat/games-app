@@ -251,7 +251,7 @@ If a background PEGI scan encounters five consecutive provider errors, it stops 
 
 ### The page still shows an older design
 
-Perform a hard refresh so the browser reloads `style.css` and `app.js`.
+Perform a hard refresh so the browser reloads the modular stylesheets and `app.js`.
 
 ### The server is not reachable
 

@@ -31,7 +31,12 @@ games-app/
     js/events.js            bearer-authenticated SSE stream parser and reconnect
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
-    style.css               dense dark responsive theme
+    css/
+      foundation.css       reset, structural layout, and baseline responsive rules
+      theme.css            dense dark operator theme and primary components
+      library.css          legible typography, header art, cards, and game tools
+      landing.css          authentication landing page and promotional modules
+      features.css         later feature-specific components and viewport rules
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
     icon-192.png            installable-app icon
@@ -291,13 +296,15 @@ Bulk lookup considers only games without a cover and reloads each queued record 
 
 Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
 
-On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and preloads the five header covers and fixed 32-slot decorative field in parallel. Each set is applied atomically, preventing placeholder-by-placeholder flicker without making either library data or remote images part of the authenticated-shell render path. Individual image loads time out after 1.8 seconds; stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
+On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and preloads the five header covers and fixed 32-slot decorative field in parallel. The HTML declares each decorative field once with `data-cover-slots="32"`; the browser module generates the non-semantic positioning slots instead of hardcoding repeated empty elements into the document. Each set is applied atomically, preventing placeholder-by-placeholder flicker without making either library data or remote images part of the authenticated-shell render path. Individual image loads time out after 1.8 seconds; stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
 
 ---
 
 ## Browser application
 
 `public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`.
+
+Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
 Because native `EventSource` cannot attach the existing bearer token header, the event client reads an SSE response through `fetch()` and a `ReadableStream`. It reconnects after interruption and stops immediately on local logout. The server disables nginx buffering, revalidates the bearer session on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
 

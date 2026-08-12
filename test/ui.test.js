@@ -5,6 +5,9 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const publicStylesheets = ['foundation.css', 'theme.css', 'library.css', 'landing.css', 'features.css'];
+const readPublicCss = () => publicStylesheets.map(file => read(`public/css/${file}`)).join('')
+  .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}').replace(/\s+/g, ' ').trim();
 
 test('destructive actions never invoke native browser dialogs', () => {
   const sources = ['public/app.js', 'admin/js/accounts.js', 'admin/js/catalogue.js', 'admin/js/tools.js', 'admin/js/core.js'];
@@ -18,28 +21,40 @@ test('public and admin interfaces include themed confirmation dialogs', () => {
   assert.match(read('admin/js/core.js'), /requiredText/);
 });
 
-test('authentication landing keeps a dense real-cover background', () => {
+test('public styles are readable responsibility-based modules', () => {
   const html = read('public/index.html');
-  const field = html.match(/<div class="auth-cover-field"[\s\S]*?<\/div>/)?.[0] || '';
-  assert.equal((field.match(/<i><\/i>/g) || []).length, 32);
+  for (const file of publicStylesheets) {
+    assert.match(html, new RegExp(`<link rel="stylesheet" href="/css/${file.replace('.', '\\.')}"`));
+    assert.ok(read(`public/css/${file}`).split('\n').length > 100, file);
+  }
+  assert.doesNotMatch(html, /href="\/style\.css"/);
+  assert.equal(fs.existsSync(path.join(root, 'public/style.css')), false);
+});
+
+test('authentication landing keeps a dense real-cover background', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  assert.match(html, /class="auth-cover-field" data-cover-slots="32" aria-hidden="true"><\/div>/);
+  assert.match(application, /function mountDecorativeCoverSlots\(\)/);
+  assert.match(application, /document\.createElement\('i'\)/);
 });
 
 test('authenticated app matches the login account-cover background visibility', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
-  const field = html.match(/<div class="auth-cover-field app-cover-field"[\s\S]*?<\/div>/)?.[0] || '';
-  assert.equal((field.match(/<i><\/i>/g) || []).length, 32);
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
+  assert.match(html, /class="auth-cover-field app-cover-field" data-cover-slots="32" aria-hidden="true"><\/div>/);
+  assert.equal((html.match(/data-cover-slots="32"/g) || []).length, 2);
+  assert.doesNotMatch(html, /(?:<i><\/i>){8}/);
   assert.match(application, /state\.games\.map\(game => game\.coverUrl\)/);
   assert.match(application, /#auth-screen[^\n]*hidden = true;[\s\S]*#app-shell[^\n]*hidden = false;[\s\S]*void stageAppDecorations\(user\.id\)\.catch/);
   assert.doesNotMatch(application, /state\.games = games;[^\n]*await loadHeroCovers/);
   assert.match(application, /Promise\.all\(\[loadHeroCovers\(isCurrent\), loadAppBackgroundCovers\(isCurrent\)\]\)/);
   assert.match(application, /const loaded = await Promise\.all/);
-  assert.match(css, /\.app-cover-field\{[^}]*opacity:\.075/);
+  assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.075/);
   assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
   assert.match(css, /#app-shell>\.topbar,#app-shell>main\{position:relative;z-index:1\}/);
 });
 
 test('stored sessions use a resume screen instead of flashing authentication', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /games_shelf_auth_token[^<]*resuming-session/);
   assert.match(html, /id="session-resume"[^>]*role="status"/);
   assert.match(css, /\.resuming-session #auth-screen\{visibility:hidden\}/);
@@ -55,13 +70,13 @@ test('authenticated shell renders before library data and artwork finish', () =>
 });
 
 test('login and registration use a stable authentication frame', () => {
-  const css = read('public/style.css');
+  const css = readPublicCss();
   assert.match(css, /\.auth-card\{height:510px\}/);
   assert.match(css, /\.auth-card \.auth-body\{height:calc\(100% - 31px\);overflow-y:auto/);
 });
 
 test('landing promo descriptions remain readable', () => {
-  assert.match(read('public/style.css'), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
+  assert.match(readPublicCss(), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
 });
 
 test('common filters never move the viewport', () => {
@@ -80,7 +95,7 @@ test('one data-gaps filter handles missing PEGI metadata and covers', () => {
 });
 
 test('title autocomplete is themed and silently degrades when SteamGridDB fails', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js'); const css = read('public/style.css'); const server = read('server.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js'); const css = readPublicCss(); const server = read('server.js');
   assert.match(html, /id="game-title"[\s\S]*role="combobox"[\s\S]*id="title-suggestions"[^>]*role="listbox"/);
   assert.match(application, /createTitleAutocomplete/);
   assert.match(autocomplete, /api\(`\/api\/titles\/autocomplete/);
@@ -98,7 +113,7 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
 });
 
 test('cover processing uses compact text with a themed detail tooltip', () => {
-  const application = read('public/app.js'); const css = read('public/style.css');
+  const application = read('public/app.js'); const css = readPublicCss();
   assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
   assert.match(application, /element\.dataset\.tooltip = detail/);
   assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
@@ -119,7 +134,7 @@ test('batch updates use authenticated SSE and patch individual cards', () => {
 });
 
 test('the product wordmark uses middle dots and no header cat artwork', () => {
-  const html = read('public/index.html'); const css = read('public/style.css');
+  const html = read('public/index.html'); const css = readPublicCss();
   assert.match(html, /Game Kat·a·log/);
   assert.doesNotMatch(html, /header-kat|header-kat\.svg/);
   assert.doesNotMatch(css, /\.header-kat/);
@@ -133,7 +148,7 @@ test('generated documentation highlights the section currently in view', () => {
 });
 
 test('rich PEGI metadata is shown with themed progressive disclosure', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /id="game-pegi-details" class="game-pegi-details"/);
   assert.match(html, /Advice for consumers[\s\S]*Brief outline[\s\S]*Content-specific issues[\s\S]*Other issues/);
   assert.match(application, /pegiDescriptors[\s\S]*pegiReleases[\s\S]*pegiAdvice[\s\S]*pegiOutline/);
@@ -143,7 +158,7 @@ test('rich PEGI metadata is shown with themed progressive disclosure', () => {
 });
 
 test('dialogs stay inside the viewport and scrollbars are themed', () => {
-  const publicCss = read('public/style.css'); const adminCss = read('admin/style.css');
+  const publicCss = readPublicCss(); const adminCss = read('admin/style.css');
   assert.match(publicCss, /dialog\{max-height:80dvh;overflow:hidden\}/);
   assert.match(publicCss, /\.modal-card\{max-height:80dvh;overflow:auto/);
   assert.match(publicCss, /\.modal-card\{[^}]*scrollbar-gutter:auto/);

@@ -4,6 +4,13 @@ import { createTitleAutocomplete } from './js/title-autocomplete.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+function mountDecorativeCoverSlots() {
+  $$('[data-cover-slots]').forEach(field => {
+    const count = Math.max(0, Math.min(64, Number(field.dataset.coverSlots) || 0));
+    field.replaceChildren(...Array.from({ length: count }, () => document.createElement('i')));
+  });
+}
+mountDecorativeCoverSlots();
 const TOKEN_KEY = 'games_shelf_auth_token';
 const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;

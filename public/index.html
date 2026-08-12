@@ -32,7 +32,11 @@
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <script>try{if(localStorage.getItem('games_shelf_auth_token'))document.documentElement.classList.add('resuming-session')}catch{}</script>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/css/foundation.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/library.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <link rel="stylesheet" href="/css/features.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Game Kat·a·log","url":"https://gamekat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI-assisted metadata and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
 </head>
 <body>
@@ -42,12 +46,7 @@
     <span><strong>Game Kat·a·log</strong><small>Mounting authenticated library…</small></span>
   </div>
   <main id="auth-screen" class="auth-screen">
-    <div class="auth-cover-field" aria-hidden="true">
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-    </div>
+    <div class="auth-cover-field" data-cover-slots="32" aria-hidden="true"></div>
     <div class="auth-showcase">
       <aside class="auth-promo-rail" aria-label="Collection features">
         <article class="auth-promo promo-library">
@@ -115,12 +114,7 @@
   </main>
 
   <div class="shell" id="app-shell" hidden>
-    <div class="auth-cover-field app-cover-field" aria-hidden="true">
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-    </div>
+    <div class="auth-cover-field app-cover-field" data-cover-slots="32" aria-hidden="true"></div>
     <header class="topbar">
       <a class="brand" href="/" aria-label="Game Kat·a·log home">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>

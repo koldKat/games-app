@@ -1,0 +1,660 @@
+/* Card identity: PEGI owns the rail; platform stays an in-card label. */
+.game-card:before {
+  background: var(--rating-color, #526170);
+}
+.platform-dot {
+  background: #708399;
+}
+.brand strong em {
+  margin-left: 5px;
+  color: #48daba;
+  font-style: normal;
+  font-size: 0.65em;
+  font-weight: 600;
+}
+.brand strong em:before {
+  content: "// ";
+}
+.platform-tag {
+  padding: 3px 5px;
+  border: 1px solid #2b3946;
+  background: #111923;
+  color: #9eacba;
+}
+
+/* Major collection filters: dense on desktop, two rows on smaller screens. */
+.stats {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+.stat-card {
+  min-width: 0;
+}
+.stat-card.active {
+  border-color: #36b99e;
+  background: #10231f;
+  box-shadow: inset 0 -2px #35d6b2;
+}
+.stat-icon.red {
+  background: #2d1719;
+  color: #ff756b;
+}
+.stat-icon.blue {
+  background: #142238;
+  color: #78aee7;
+}
+.stat-icon.cyan {
+  background: #10272c;
+  color: #58d4df;
+}
+.stat-icon.orange {
+  background: #2d2017;
+  color: #e99b57;
+}
+.stat-icon.grey {
+  background: #20242a;
+  color: #9aa5b1;
+}
+.stat-icon.pink {
+  background: #2c1925;
+  color: #ee87bc;
+}
+@media (max-width: 1400px) {
+  .stats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .stats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .stat-card small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Public landing page: six equal feature modules plus crawlable public links. */
+.auth-screen {
+  overflow: auto;
+}
+.auth-showcase {
+  grid-template-rows: auto 30px;
+}
+.auth-promo-rail {
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+.auth-promo {
+  padding: 11px 12px;
+}
+.promo-code {
+  margin-bottom: 7px;
+}
+.auth-promo h2 {
+  font-size: 15px;
+}
+.auth-promo p {
+  font-size: 9px;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+.promo-query h2 {
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+.promo-query .promo-command {
+  padding: 6px 7px;
+  margin-bottom: 4px;
+}
+.promo-query .promo-result {
+  padding: 3px 1px;
+}
+.promo-metadata,
+.promo-private {
+  background: #0a1218;
+}
+.promo-pegi {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+.promo-pegi b {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #315446;
+  background: #10231d;
+  color: #67d6a1;
+  font-size: 8px;
+}
+.promo-pegi b:nth-child(3),
+.promo-pegi b:nth-child(4) {
+  border-color: #665327;
+  background: #28220f;
+  color: #e2b84e;
+}
+.promo-pegi b:last-child {
+  border-color: #63302f;
+  background: #291516;
+  color: #f17a71;
+}
+.promo-system {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 9px;
+}
+.promo-system span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #21303a;
+  background: #080d12;
+  padding: 5px;
+  color: #6f817f;
+  font-size: 7px;
+}
+.promo-system span:last-child {
+  grid-column: 1/-1;
+}
+.promo-system i {
+  width: 5px;
+  height: 5px;
+  background: #47ddbb;
+  box-shadow: 0 0 6px #47ddbb77;
+}
+.promo-covers .promo-cover-deck {
+  height: 52px;
+  margin: -5px 0 4px;
+  transform: scale(0.8);
+  transform-origin: 50% 100%;
+}
+.promo-covers h2 {
+  font-size: 14px;
+}
+.promo-covers p {
+  margin-top: 4px;
+}
+.promo-track .promo-progress {
+  margin-top: 9px;
+}
+.auth-footer {
+  grid-column: 1/-1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  border: 1px solid #19282f;
+  background: #080d12;
+  color: #52616d;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+.auth-footer nav {
+  display: flex;
+  gap: 4px;
+}
+.auth-footer a {
+  padding: 4px 6px;
+  border: 1px solid #22313b;
+  color: #799087;
+  text-decoration: none;
+}
+.auth-footer a:hover {
+  border-color: #47ddbb;
+  color: #5de5c6;
+}
+@media (max-width: 900px) {
+  .auth-showcase {
+    grid-template-rows: auto;
+  }
+  .auth-footer {
+    order: 10;
+    flex: 1 0 100%;
+  }
+  .auth-promo {
+    min-height: 150px;
+  }
+  .promo-covers {
+    min-height: 165px;
+  }
+}
+@media (max-width: 580px) {
+  .auth-promo-rail {
+    grid-template-rows: none;
+  }
+  .auth-promo {
+    min-height: 0;
+  }
+  .promo-library,
+  .promo-covers {
+    min-height: 155px;
+  }
+  .auth-footer {
+    height: auto;
+    min-height: 34px;
+  }
+  .auth-footer > span {
+    display: none;
+  }
+  .auth-footer nav {
+    width: 100%;
+  }
+  .auth-footer a {
+    flex: 1;
+    text-align: center;
+  }
+}
+.avatar-initial {
+  display: block;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+/* Directional physical depth instead of diffuse black halos. */
+.auth-cover-field i {
+  box-shadow:
+    8px 14px 24px #0009,
+    1px 2px 0 #06100e;
+}
+.auth-card {
+  box-shadow:
+    0 16px 42px #000b,
+    0 0 0 1px #35d6b20b;
+}
+.auth-promo {
+  box-shadow: 0 8px 22px #0006;
+}
+.promo-loose-cover {
+  box-shadow: -5px 8px 16px #0009;
+}
+.promo-cover-deck i {
+  box-shadow: 4px 7px 12px #0009;
+}
+.app-cover-field {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  opacity: 0.075;
+}
+#app-shell > .topbar,
+#app-shell > main {
+  position: relative;
+  z-index: 1;
+}
+.session-resume-screen {
+  display: none;
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  background: radial-gradient(
+    circle at 50% 42%,
+    #112a26 0,
+    #080d11 31%,
+    #05070a 72%
+  );
+  color: #dce5ef;
+  text-align: center;
+}
+.session-resume-screen > .brand-mark {
+  width: 42px;
+  height: 32px;
+  margin: auto;
+}
+.session-resume-screen strong,
+.session-resume-screen small {
+  display: block;
+}
+.session-resume-screen strong {
+  font-size: 14px;
+}
+.session-resume-screen small {
+  margin-top: 5px;
+  color: #5fddc0;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.resuming-session .session-resume-screen {
+  display: grid;
+}
+.resuming-session #auth-screen {
+  visibility: hidden;
+}
+.action-dialog {
+  width: min(430px, calc(100% - 16px));
+}
+.action-modal {
+  width: 100%;
+}
+.action-message {
+  margin: 3px 0 2px;
+  color: #8d9aa8;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.button.action-danger {
+  border-color: #703b38;
+  background: #2c1718;
+  color: #ff8a80;
+}
+.button.action-danger:hover {
+  border-color: #a6534d;
+  background: #3a1d1f;
+}
+.action-dialog .modal-actions {
+  margin-top: 12px;
+}
+.action-dialog .modal-actions .button {
+  min-width: 92px;
+}
+
+/* Login and registration share one stable frame; field changes never reflow the landing page. */
+.auth-card {
+  height: 510px;
+}
+.auth-card .auth-body {
+  height: calc(100% - 31px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* Promo copy is supporting text, not microscopic decoration. */
+.auth-promo p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #92a0ae;
+}
+.promo-system {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+.promo-system span,
+.promo-system span:last-child {
+  grid-column: auto;
+  padding: 5px 4px;
+  white-space: nowrap;
+}
+.promo-system span {
+  font-size: 6px;
+}
+@media (max-width: 580px) {
+  .promo-library,
+  .promo-covers,
+  .promo-metadata,
+  .promo-track,
+  .promo-private {
+    min-height: 170px;
+  }
+  .auth-promo p {
+    font-size: 12px;
+  }
+}
+.integration-bulk .bulk-status {
+  position: relative;
+  cursor: help;
+  outline: none;
+}
+.integration-bulk .bulk-status:after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  bottom: calc(100% + 7px);
+  width: min(320px, 75vw);
+  padding: 7px 8px;
+  border: 1px solid #3a4b59;
+  background: #111923;
+  color: #c4d0da;
+  font-size: 9px;
+  line-height: 1.45;
+  white-space: normal;
+  box-shadow: 4px 7px 16px #000a;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(3px);
+  transition: 0.12s;
+  pointer-events: none;
+}
+.integration-bulk .bulk-status:hover:after,
+.integration-bulk .bulk-status:focus-visible:after {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.integration-bulk .bulk-status:focus-visible {
+  color: #61e3c5;
+}
+
+.library-title {
+  font-size: 14px;
+  margin: 0;
+}
+@media (max-width: 520px) {
+  .library-title {
+    font-size: 12px;
+  }
+}
+
+/* Rich PEGI metadata stays compact on cards and expands only when requested. */
+.badge.descriptor {
+  background: #121d25;
+  color: #8ea4b5;
+  border: 1px solid #263845;
+}
+.badge.descriptor.purchase {
+  background: #2a2110;
+  color: #f0c35d;
+  border-color: #604c21;
+}
+.game-pegi-details {
+  grid-column: 1/-1;
+  margin-top: 10px;
+  border: 1px solid #263542;
+  background: #091017;
+  color: #b8c4cf;
+}
+.game-pegi-details summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 36px 8px 11px;
+  cursor: pointer;
+  list-style: none;
+  color: #64e8ca;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  user-select: none;
+}
+.game-pegi-details summary::-webkit-details-marker {
+  display: none;
+}
+.game-pegi-details summary:after {
+  content: "+";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6f8090;
+  font-size: 15px;
+  font-weight: 400;
+}
+.game-pegi-details[open] summary:after {
+  content: "−";
+}
+.game-pegi-details summary:hover {
+  background: #0d171f;
+}
+.game-pegi-details summary small {
+  margin-left: auto;
+  color: #8293a2;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.pegi-detail-body {
+  padding: 0 11px 12px;
+  border-top: 1px solid #202d38;
+}
+.pegi-detail-descriptors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 11px 0 3px;
+}
+.pegi-detail-tag {
+  padding: 4px 6px;
+  border: 1px solid #2c414e;
+  background: #101b24;
+  color: #b5c5d1;
+  font-size: 10px;
+}
+.pegi-detail-tag.purchase {
+  border-color: #695321;
+  background: #2b220f;
+  color: #f0c35d;
+}
+.pegi-purchase-warning {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0;
+  padding: 9px;
+  border: 1px solid #5d4b25;
+  background: #211b0f;
+}
+.pegi-purchase-warning > b {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border: 1px solid #98782d;
+  color: #efbd50;
+}
+.pegi-purchase-warning span {
+  min-width: 0;
+}
+.pegi-purchase-warning strong,
+.pegi-purchase-warning small {
+  display: block;
+}
+.pegi-purchase-warning strong {
+  font-size: 11px;
+  color: #f0c35d;
+}
+.pegi-purchase-warning small {
+  margin-top: 2px;
+  color: #b29a67;
+  font-size: 10px;
+}
+.pegi-detail-body section {
+  padding: 11px 0 4px;
+  border-top: 1px solid #1d2a34;
+}
+.pegi-detail-body h3 {
+  margin: 0 0 6px;
+  color: #91a2b1;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pegi-detail-body p {
+  margin: 0;
+  color: #c3cdd6;
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-line;
+}
+.pegi-detail-body ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pegi-detail-body li {
+  padding: 6px 8px;
+  background: #0d151d;
+  color: #bac7d2;
+  font-size: 11px;
+}
+.pegi-source {
+  display: inline-block;
+  margin-top: 12px;
+  color: #55d9bc;
+  font-size: 10px;
+  text-decoration: none;
+}
+.pegi-source:hover {
+  text-decoration: underline;
+}
+@media (max-width: 520px) {
+  .pegi-detail-body ul {
+    grid-template-columns: 1fr;
+  }
+  .game-pegi-details summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .game-pegi-details summary small {
+    margin-left: 0;
+  }
+}
+
+/* Dialogs remain comfortably inside the viewport; every scroll surface uses the app theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #376e61 #080d12;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: #080d12;
+  border-left: 1px solid #17242c;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2f5e54;
+  border: 2px solid #080d12;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #438878;
+}
+*::-webkit-scrollbar-corner {
+  background: #080d12;
+}
+dialog {
+  max-height: 80dvh;
+  overflow: hidden;
+}
+.modal-card {
+  max-height: 80dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: auto;
+}
+.pegi-result-count {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  border-bottom: 1px solid #26313e;
+  background: #0d151d;
+  color: #7f918f;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
