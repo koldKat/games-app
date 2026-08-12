@@ -291,6 +291,24 @@ Cards use a centred, full-card image with a dark left-to-right gradient, mirrori
 
 Because native `EventSource` cannot attach the existing bearer token header, the event client reads an SSE response through `fetch()` and a `ReadableStream`. It reconnects after interruption and stops immediately on local logout. The server disables nginx buffering, revalidates the bearer session on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
 
+The public nginx location should explicitly support the long-lived stream:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:3005;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 3600s;
+}
+```
+
+An isolated `net::ERR_INCOMPLETE_CHUNKED_ENCODING` entry means the proxy or upstream ended an open event stream without a normal HTTP terminator. The browser client catches that interruption and reconnects after 2.5 seconds with its last event ID. Repeated warnings indicate a proxy timeout or unstable upstream process; they do not require reloading the library grid.
+
 Cover and PEGI workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can clear only the same bearer token it actually used, never a newer login token. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
 
 ### Startup

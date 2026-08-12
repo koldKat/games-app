@@ -323,7 +323,10 @@ $('#grid-view').addEventListener('click', () => setView('grid')); $('#list-view'
 const dialog = $('#game-dialog');
 function formValue(game, key, fallback = '') { return game?.[key] ?? fallback; }
 const pegiFields = ['pegiDescriptors', 'pegiReleases', 'pegiAdvice', 'pegiOutline', 'pegiContentIssues', 'pegiOtherIssues'];
-function pegiMetadata(game = {}) { return Object.fromEntries(pegiFields.map(key => [key, Array.isArray(game[key]) ? [...game[key]] : String(game[key] || '')])); }
+function pegiMetadata(game = {}) {
+  const source = game || {};
+  return Object.fromEntries(pegiFields.map(key => [key, Array.isArray(source[key]) ? [...source[key]] : String(source[key] || '')]));
+}
 function renderPegiDetails() {
   const metadata = $('#game-form')._pegiMetadata || pegiMetadata();
   const descriptors = metadata.pegiDescriptors || []; const releases = metadata.pegiReleases || [];

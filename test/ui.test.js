@@ -81,6 +81,7 @@ test('rich PEGI metadata is shown with themed progressive disclosure', () => {
   assert.match(application, /pegiDescriptors[\s\S]*pegiReleases[\s\S]*pegiAdvice[\s\S]*pegiOutline/);
   assert.match(application, /Purchase warning|purchase-warning/);
   assert.match(css, /summary::-webkit-details-marker\{display:none\}/);
+  assert.match(application, /const source = game \|\| \{\}/);
 });
 
 test('dialogs stay inside the viewport and scrollbars are themed', () => {
