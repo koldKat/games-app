@@ -52,7 +52,7 @@
 <ul>
 <li>Use <strong>Login</strong> with an existing username and password.</li>
 <li>The browser remembers a random session token, not the password.</li>
-<li>Sessions remain valid for two weeks and are extended while used.</li>
+<li>Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.</li>
 <li>Select the username in the top-right corner, then <strong>Log out</strong>, to end the current session.</li>
 </ul>
 <hr>
@@ -92,7 +92,16 @@
 <li>Review the filled fields, especially platform and release year.</li>
 <li>Select <strong>Save game</strong>.</li>
 </ol>
-<p>The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Game Kat·a·log reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.</p>
+<p>The lookup can fill title, PEGI rating, publisher, release year, descriptors, exact platform release dates, consumer advice, a brief outline, content-specific issues, and other issues. When PEGI divides matches across multiple result pages, Game Kat·a·log retrieves up to the first 10 pages and presents the merged result count above the choices. PEGI has no documented public developer API, so the app reads its public search pages only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.</p>
+<p>After selecting a result, <strong>PEGI details</strong> opens beneath the form. It contains:</p>
+<ul>
+<li>Content descriptors, also shown as compact badges on the saved game card.</li>
+<li>An amber warning when PEGI identifies in-game purchases or paid random items.</li>
+<li>Every exact platform and release date listed for that PEGI record.</li>
+<li>PEGI&#39;s consumer advice, brief outline, content-specific issues, and other issues.</li>
+<li>A link back to the PEGI source search.</li>
+</ul>
+<p>The longer material stays collapsed when a saved game is opened, keeping routine edits compact. Select <strong>PEGI details</strong> to reveal it.</p>
 <h3 id="cover-assisted-entry">Cover-assisted entry<a class="anchor" href="#cover-assisted-entry" aria-label="Link to section">#</a></h3>
 <ol>
 <li>Open <strong>Account Settings</strong>, obtain a personal SteamGridDB API key from the linked preferences page, paste it, and select <strong>Connect</strong>.</li>
@@ -103,6 +112,8 @@
 <p>The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.</p>
 <h3 id="fill-existing-games">Fill existing games<a class="anchor" href="#fill-existing-games" aria-label="Link to section">#</a></h3>
 <p>After connecting SteamGridDB, select <strong>Fill missing covers</strong> in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.</p>
+<p>Select <strong>Fill PEGI details</strong> in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game&#39;s platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.</p>
+<p>Both scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover or PEGI record while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.</p>
 <hr>
 <h2 id="managing-games">Managing games<a class="anchor" href="#managing-games" aria-label="Link to section">#</a></h2>
 <h3 id="editing">Editing<a class="anchor" href="#editing" aria-label="Link to section">#</a></h3>
@@ -163,6 +174,7 @@
 <p>Sign in again. Sessions expire after two weeks of inactivity. A password change also invalidates all sessions.</p>
 <h3 id="pegi-lookup-failed">PEGI lookup failed<a class="anchor" href="#pegi-lookup-failed" aria-label="Link to section">#</a></h3>
 <p>Continue with manual entry. The failure does not prevent saving a game.</p>
+<p>If a background PEGI scan encounters five consecutive provider errors, it stops to avoid hammering a failing service. Open Account Settings after PEGI is available again and restart the scan; already enriched games are not repeated.</p>
 <h3 id="the-page-still-shows-an-older-design">The page still shows an older design<a class="anchor" href="#the-page-still-shows-an-older-design" aria-label="Link to section">#</a></h3>
 <p>Perform a hard refresh so the browser reloads <code>style.css</code> and <code>app.js</code>.</p>
 <h3 id="the-server-is-not-reachable">The server is not reachable<a class="anchor" href="#the-server-is-not-reachable" aria-label="Link to section">#</a></h3>
@@ -172,4 +184,4 @@
 <hr>
 <h2 id="data-safety">Data safety<a class="anchor" href="#data-safety" aria-label="Link to section">#</a></h2>
 <p>All persistent collection data lives in <code>games.db</code>. Back up that file while the server is stopped, or use <strong>Create backup</strong> in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.</p>
-<p>The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div><script>(()=>{const menu=document.querySelector('.toc');const entries=[...menu.querySelectorAll('a[href^="#"]')].map(link=>({link,section:document.getElementById(decodeURIComponent(link.hash.slice(1)))})).filter(entry=>entry.section);let active=null;const select=entry=>{if(!entry||entry===active)return;if(active){active.link.classList.remove('active');active.link.removeAttribute('aria-current')}active=entry;active.link.classList.add('active');active.link.setAttribute('aria-current','location');const top=active.link.offsetTop;const bottom=top+active.link.offsetHeight;if(top<menu.scrollTop+10)menu.scrollTop=Math.max(0,top-10);else if(bottom>menu.scrollTop+menu.clientHeight-10)menu.scrollTop=bottom-menu.clientHeight+10};const update=()=>{let current=entries[0];for(const entry of entries){if(entry.section.getBoundingClientRect().top<=72)current=entry;else break}if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2)current=entries[entries.length-1];select(current)};let queued=false;const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;update()})};addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule);addEventListener('hashchange',schedule);for(const entry of entries)entry.link.addEventListener('click',()=>select(entry));update()})()</script></body></html>
+<p>The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game&#39;s title to PEGI in turn. Cover lookup similarly sends titles only to the configured SteamGridDB provider.</p><p class="source">Generated from docs/user-guide.md. Do not edit this HTML directly.</p></article></div><script>(()=>{const menu=document.querySelector('.toc');const entries=[...menu.querySelectorAll('a[href^="#"]')].map(link=>({link,section:document.getElementById(decodeURIComponent(link.hash.slice(1)))})).filter(entry=>entry.section);let active=null;const select=entry=>{if(!entry||entry===active)return;if(active){active.link.classList.remove('active');active.link.removeAttribute('aria-current')}active=entry;active.link.classList.add('active');active.link.setAttribute('aria-current','location');const top=active.link.offsetTop;const bottom=top+active.link.offsetHeight;if(top<menu.scrollTop+10)menu.scrollTop=Math.max(0,top-10);else if(bottom>menu.scrollTop+menu.clientHeight-10)menu.scrollTop=bottom-menu.clientHeight+10};const update=()=>{let current=entries[0];for(const entry of entries){if(entry.section.getBoundingClientRect().top<=72)current=entry;else break}if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2)current=entries[entries.length-1];select(current)};let queued=false;const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;update()})};addEventListener('scroll',schedule,{passive:true});addEventListener('resize',schedule);addEventListener('hashchange',schedule);for(const entry of entries)entry.link.addEventListener('click',()=>select(entry));update()})()</script></body></html>

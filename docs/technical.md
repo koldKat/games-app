@@ -15,6 +15,8 @@ games-app/
     backup.js               hourly compressed SQLite snapshots and retention
     db.js                   schema, migrations, validation, scoped game queries
     pegi.js                 opt-in PEGI HTTP lookup and result parser
+    pegi-bulk.js            account-scoped conservative PEGI enrichment jobs
+    events.js               authenticated server-sent event fan-out
     covers.js               SteamGridDB client, throttling, matching, artwork selection
     version.js              validated atomic reads/writes of the VERSION file
   admin/
@@ -26,6 +28,7 @@ games-app/
   public/
     index.html              application and authentication markup
     app.js                  browser state, rendering, auth, forms, API calls
+    js/events.js            bearer-authenticated SSE stream parser and reconnect
     js/platforms.js         grouped platform catalogue and release-name matching
     style.css               dense dark responsive theme
     manifest.webmanifest    installable-app metadata
@@ -43,6 +46,8 @@ games-app/
     auth.test.js            sessions, password changes, isolation
     backup.test.js          hourly ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
+    pegi-bulk.test.js       exact-title matching, skips, and job notifications
+    events.test.js          SSE framing, replay isolation, and session revocation
     covers.test.js          conservative cover-title normalization
     seo.test.js             canonical metadata, crawler policy, image dimensions
     admin.test.js           localhost gate and cross-account admin summaries
@@ -61,8 +66,10 @@ Browser
   -> authenticated /api/* + Bearer token -----> auth.js -> user identity
                                                     |
                                                     +-> db.js (user-scoped query)
-                                                    +-> pegi.js (explicit lookup only)
+                                                    +-> pegi.js + pegi-bulk.js (lookup/jobs)
                                                     +-> covers.js (configured lookup/bulk scan)
+
+  <- authenticated /api/events event stream <------ events.js <- job progress/game changes
 ```
 
 All authenticated routes resolve the session before dispatching feature logic. They pass the numeric user ID into every database operation rather than trusting a client-provided owner ID.
@@ -131,6 +138,9 @@ Expired sessions are purged when the server starts. Valid sessions receive a rol
 | `publisher`, `release_year`, `notes` | Optional metadata |
 | `favorite` | Boolean integer |
 | `pegi_url` | Source search URL when PEGI-assisted |
+| `pegi_descriptors`, `pegi_releases` | JSON arrays containing content labels and exact platform/date strings |
+| `pegi_advice`, `pegi_outline` | PEGI consumer guidance and synopsis |
+| `pegi_content_issues`, `pegi_other_issues` | Detailed rating rationale and additional concerns |
 | `cover_url`, `cover_source`, `cover_match_title` | Selected artwork and match provenance |
 | `created_at`, `updated_at` | SQLite timestamps |
 
@@ -206,7 +216,10 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | DELETE | `/api/games/:id` | Delete owned game |
 | GET | `/api/stats` | Account-scoped aggregates |
 | GET | `/api/meta` | Platforms, version, PEGI capability, current user |
+| GET | `/api/events` | Authenticated SSE stream for job progress and changed games |
 | GET | `/api/pegi/search?q=...` | Explicit server-side PEGI search |
+| GET | `/api/pegi/status` | Missing-metadata count and current account job state |
+| POST | `/api/pegi/bulk` | Start an account-scoped conservative metadata scan |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
 | PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
 | DELETE | `/api/covers/config` | Remove the account-specific provider key |
@@ -248,9 +261,13 @@ Admin static files and API responses use restrictive security headers. Backup na
 
 ## PEGI integration
 
-PEGI exposes a public catalogue search but no documented public developer API. `server/pegi.js` therefore performs an opt-in HTTPS GET only after the user selects **Look up title**.
+PEGI exposes a public catalogue search but no documented public developer API. `server/pegi.js` therefore performs opt-in HTTPS requests after the user selects either **Look up title** or the account-level **Fill PEGI details** batch action.
 
-The parser extracts displayed title, publisher, rating, descriptors, releases, platforms, and year. Results are cached in process memory for one hour per normalized query. The request has a 12-second timeout and a 4 MB response limit.
+The parser extracts displayed title, publisher, rating, descriptors, exact platform releases, year, consumer advice, brief outline, content-specific issues, and other issues. A lookup reads PEGI's reported result count and requests subsequent zero-based result pages, up to a hard limit of 10 pages. Later pages are fetched concurrently, individual later-page failures do not discard successful results, and duplicate records are removed using title, publisher, rating, and release data. Descriptor and release arrays are stored as validated JSON; long PEGI text is length-limited before persistence. Merged results are cached in process memory for one hour per normalized query. Each request has a 12-second timeout and a 4 MB response limit.
+
+The client renders descriptors as compact card badges, with purchase and paid-random-item labels receiving a distinct warning treatment. The complete record uses a themed `<details>` disclosure inside the game form so lengthy guidance does not increase every card's footprint.
+
+The **Fill PEGI details** action in Account Settings starts an in-memory, account-scoped job. It considers non-Evercade games that have neither a saved PEGI source record nor extended PEGI metadata. Before each external request it reloads the game and skips it if it was deleted or enriched since the job began. Every remaining title is searched across the same paginated catalogue, then accepted only through normalized exact-title matching; an unambiguous exact platform release is preferred. Ambiguous results remain unchanged for manual review. The enrichment update touches only PEGI fields, publisher, and release year, preserving ownership, play state, notes, format, favourite state, platform, title, and cover. Requests are paced by 500 ms, and five consecutive lookup failures stop the job instead of repeatedly hitting a failing provider. Completed metadata remains in SQLite; active job state itself is intentionally process-local.
 
 This integration is deliberately nonessential. Parsing or network failure returns HTTP 502 with a PEGI fallback URL; manual game creation remains available.
 
@@ -262,7 +279,7 @@ SteamGridDB was selected because its API is dedicated to game artwork and expose
 
 Manual lookup searches up to four title candidates and returns portrait static grids. Results are cached in memory for 30 minutes. Provider calls are serialized below four requests per second, have a 15-second timeout, and retry HTTP 429 once.
 
-Bulk lookup considers only games without a cover. Title comparison is Unicode-normalized, case-insensitive, punctuation-insensitive, and conservative: auto-selection requires exactly one exact normalized title candidate. The highest-scoring portrait grid is stored; ambiguous titles remain unmatched. Five consecutive provider errors trip a circuit breaker and mark the job failed instead of hammering the remaining catalogue. Job state is in memory and therefore does not survive a server restart, while already matched covers remain in SQLite.
+Bulk lookup considers only games without a cover and reloads each queued record before contacting SteamGridDB. Games deleted or manually covered after the job began are skipped rather than queried or overwritten; the database update also requires the cover to remain empty, closing the race while a provider request is in flight. Title comparison is Unicode-normalized, case-insensitive, punctuation-insensitive, and conservative: auto-selection requires exactly one exact normalized title candidate. The highest-scoring portrait grid is stored; ambiguous titles remain unmatched. Five consecutive provider errors trip a circuit breaker and mark the job failed instead of hammering the remaining catalogue. Job state is in memory and therefore does not survive a server restart, while already matched covers remain in SQLite.
 
 Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
 
@@ -270,7 +287,11 @@ Cards use a centred, full-card image with a dark left-to-right gradient, mirrori
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`.
+`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`.
+
+Because native `EventSource` cannot attach the existing bearer token header, the event client reads an SSE response through `fetch()` and a `ReadableStream`. It reconnects after interruption and stops immediately on local logout. The server disables nginx buffering, revalidates the bearer session on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
+
+Cover and PEGI workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can clear only the same bearer token it actually used, never a newer login token. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
 
 ### Startup
 
@@ -334,6 +355,8 @@ npm run docs:check   # fail if generated HTML is stale
 |---|---|
 | `test/auth.test.js` | Account isolation, sessions, password invalidation |
 | `test/pegi.test.js` | PEGI HTML parsing |
+| `test/pegi-bulk.test.js` | Exact-title/platform selection, late-change skipping, and account job events |
+| `test/events.test.js` | SSE framing, account-isolated replay, and revoked-session closure |
 | `test/covers.test.js` | Conservative cover-title normalization |
 | `test/seo.test.js` | Canonical/social metadata, crawler policy, and asset dimensions |
 | `test/admin.test.js` | Loopback/proxy boundary and whole-database admin summaries |
@@ -367,7 +390,7 @@ The database is excluded from Git. Source code, generated documentation, and tes
 - No email recovery flow is configured; account passwords must be retained.
 - The administrator panel is deliberately available only through a direct loopback request; remote administration requires an explicit, separately secured transport such as an SSH tunnel.
 - Login throttling is in-memory rather than persisted.
-- PEGI parsing depends on public page structure and can require maintenance.
+- PEGI parsing depends on public page structure and can require maintenance; running batch jobs are not resumed after a process restart.
 - Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.
 - The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.
 - The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.

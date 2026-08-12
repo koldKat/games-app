@@ -4,7 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
+const { createPegiBulkManager } = require('./server/pegi-bulk');
 const covers = require('./server/covers');
+const events = require('./server/events');
 const auth = require('./server/auth');
 const admin = require('./server/admin');
 const { readVersion } = require('./server/version');
@@ -22,27 +24,38 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 const coverJobs = new Map();
+const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: events.publish });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
-  const job = { state: 'running', total: games.length, processed: 0, matched: 0, unmatched: 0, errors: 0, current: '', startedAt: new Date().toISOString() };
+  const job = { state: 'running', total: games.length, processed: 0, matched: 0, unmatched: 0, skipped: 0, errors: 0, current: '', startedAt: new Date().toISOString() };
   coverJobs.set(userId, job);
+  events.publish(userId, 'cover-job', { job });
   let consecutiveErrors = 0;
   for (const game of games) {
-    job.current = game.title;
+    const current = db.getGame(userId, game.id);
+    if (!current || current.coverUrl) {
+      job.current = ''; job.skipped++; job.processed++; events.publish(userId, 'cover-job', { job }); continue;
+    }
+    job.current = current.title;
     try {
-      const match = await covers.bestExactCover(key, game.title);
-      if (match) { db.updateGameCover(userId, game.id, { url: match.url, source: 'steamgriddb', matchTitle: match.gameTitle }); job.matched++;
+      const match = await covers.bestExactCover(key, current.title);
+      if (match) {
+        const updated = db.updateGameCover(userId, game.id, { url: match.url, source: 'steamgriddb', matchTitle: match.gameTitle });
+        if (updated) { job.matched++; events.publish(userId, 'game-updated', { source: 'covers', game: updated }); }
+        else job.skipped++;
       } else job.unmatched++;
       consecutiveErrors = 0;
     } catch (error) {
       job.errors++; job.lastError = error.message; consecutiveErrors++;
-      if (consecutiveErrors >= 5) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); return; }
+      if (consecutiveErrors >= 5) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); events.publish(userId, 'cover-job', { job }); return; }
     }
     job.processed++;
+    events.publish(userId, 'cover-job', { job });
     await covers.wait(150);
   }
   job.state = 'complete'; job.current = ''; job.finishedAt = new Date().toISOString();
+  events.publish(userId, 'cover-job', { job });
 }
 
 function sendJson(response, status, value) {
@@ -133,6 +146,9 @@ async function handleApi(request, response, url) {
   }
   const user = auth.authenticate(request);
   if (!user) return sendJson(response, 401, { error: 'Unauthorized.' });
+  if (request.method === 'GET' && url.pathname === '/api/events') {
+    return events.subscribe(request, response, user.id, () => Boolean(auth.authenticate(request)));
+  }
   if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user });
   if (request.method === 'PUT' && url.pathname === '/api/account') {
     try { return sendJson(response, 200, { user: await auth.updateAccount(user.id, await readJson(request)) }); }
@@ -180,7 +196,13 @@ async function handleApi(request, response, url) {
     if (!key) return sendJson(response, 409, { error: 'Configure a SteamGridDB API key in Account Settings first.' });
     const active = coverJobs.get(user.id);
     if (active?.state === 'running') return sendJson(response, 409, { error: 'A cover scan is already running.', job: active });
-    runCoverJob(user.id, key).catch(error => coverJobs.set(user.id, { state: 'failed', error: error.message }));
+    runCoverJob(user.id, key).catch(error => {
+      const previous = coverJobs.get(user.id) || {};
+      const job = { ...previous, state: 'failed', total: previous.total ?? 0, processed: previous.processed ?? 0,
+        matched: previous.matched ?? 0, unmatched: previous.unmatched ?? 0, skipped: previous.skipped ?? 0, errors: (previous.errors ?? 0) + 1,
+        error: error.message, lastError: error.message, current: '', finishedAt: new Date().toISOString() };
+      coverJobs.set(user.id, job); events.publish(user.id, 'cover-job', { job });
+    });
     return sendJson(response, 202, { started: true, missing: db.gamesMissingCovers(user.id).length });
   }
   if (request.method === 'GET' && url.pathname === '/api/games') {
@@ -193,6 +215,11 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/api/pegi/search') {
     try { return sendJson(response, 200, await searchPegi(url.searchParams.get('q'))); }
     catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: `https://pegi.info/search-pegi?q=${encodeURIComponent(url.searchParams.get('q') || '')}` }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/pegi/status') return sendJson(response, 200, pegiJobs.status(user.id));
+  if (request.method === 'POST' && url.pathname === '/api/pegi/bulk') {
+    try { return sendJson(response, 202, pegiJobs.start(user.id)); }
+    catch (error) { return sendJson(response, 409, { error: error.message, job: pegiJobs.status(user.id).job }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/games') {
     try { return sendJson(response, 201, db.createGame(user.id, await readJson(request))); }

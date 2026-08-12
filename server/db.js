@@ -43,6 +43,12 @@ db.exec(`
     notes TEXT NOT NULL DEFAULT '',
     favorite INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0, 1)),
     pegi_url TEXT NOT NULL DEFAULT '',
+    pegi_descriptors TEXT NOT NULL DEFAULT '[]',
+    pegi_releases TEXT NOT NULL DEFAULT '[]',
+    pegi_advice TEXT NOT NULL DEFAULT '',
+    pegi_outline TEXT NOT NULL DEFAULT '',
+    pegi_content_issues TEXT NOT NULL DEFAULT '',
+    pegi_other_issues TEXT NOT NULL DEFAULT '',
     cover_url TEXT NOT NULL DEFAULT '',
     cover_source TEXT NOT NULL DEFAULT '',
     cover_match_title TEXT NOT NULL DEFAULT '',
@@ -59,6 +65,12 @@ if (!gameColumns.includes('user_id')) db.exec('ALTER TABLE games ADD COLUMN user
 if (!gameColumns.includes('cover_url')) db.exec("ALTER TABLE games ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('cover_source')) db.exec("ALTER TABLE games ADD COLUMN cover_source TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('cover_match_title')) db.exec("ALTER TABLE games ADD COLUMN cover_match_title TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('pegi_descriptors')) db.exec("ALTER TABLE games ADD COLUMN pegi_descriptors TEXT NOT NULL DEFAULT '[]'");
+if (!gameColumns.includes('pegi_releases')) db.exec("ALTER TABLE games ADD COLUMN pegi_releases TEXT NOT NULL DEFAULT '[]'");
+if (!gameColumns.includes('pegi_advice')) db.exec("ALTER TABLE games ADD COLUMN pegi_advice TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('pegi_outline')) db.exec("ALTER TABLE games ADD COLUMN pegi_outline TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('pegi_content_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_content_issues TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('pegi_other_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_other_issues TEXT NOT NULL DEFAULT ''");
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
@@ -72,22 +84,29 @@ db.exec(`
 const selectFields = `id, title, platform, pegi, ownership, play_status AS playStatus,
   media_format AS mediaFormat, cartridge_number AS cartridgeNumber, publisher,
   release_year AS releaseYear, notes, favorite, pegi_url AS pegiUrl,
+  pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
+  pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
+  pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
   cover_url AS coverUrl, cover_source AS coverSource, cover_match_title AS coverMatchTitle,
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
   INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, media_format,
-    cartridge_number, publisher, release_year, notes, favorite, pegi_url,
+    cartridge_number, publisher, release_year, notes, favorite, pegi_url, pegi_descriptors,
+    pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     cover_url, cover_source, cover_match_title)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @mediaFormat,
-    @cartridgeNumber, @publisher, @releaseYear, @notes, @favorite, @pegiUrl,
+    @cartridgeNumber, @publisher, @releaseYear, @notes, @favorite, @pegiUrl, @pegiDescriptorsJson,
+    @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @coverUrl, @coverSource, @coverMatchTitle)
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
     play_status=@playStatus, media_format=@mediaFormat, cartridge_number=@cartridgeNumber,
     publisher=@publisher, release_year=@releaseYear, notes=@notes, favorite=@favorite,
-    pegi_url=@pegiUrl, cover_url=@coverUrl, cover_source=@coverSource,
+    pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
+    pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
+    pegi_other_issues=@pegiOtherIssues, cover_url=@coverUrl, cover_source=@coverSource,
     cover_match_title=@coverMatchTitle, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
@@ -105,14 +124,31 @@ function normalizeGame(input = {}) {
   const releaseYear = input.releaseYear === '' || input.releaseYear == null ? null : Number.parseInt(input.releaseYear, 10);
   if (cartridgeNumber != null && (!Number.isInteger(cartridgeNumber) || cartridgeNumber < 0)) throw new Error('Cartridge number must be a positive whole number.');
   if (releaseYear != null && (!Number.isInteger(releaseYear) || releaseYear < 1970 || releaseYear > 2100)) throw new Error('Release year is invalid.');
+  const safeList = value => (Array.isArray(value) ? value : []).map(item => String(item || '').trim().slice(0, 180)).filter(Boolean).slice(0, 24);
+  const safeText = (value, limit = 8000) => String(value || '').trim().slice(0, limit);
   return {
     title, platform, pegi, ownership, playStatus, mediaFormat, cartridgeNumber,
     publisher: String(input.publisher || '').trim(), releaseYear,
     notes: String(input.notes || '').trim(), favorite: input.favorite ? 1 : 0,
-    pegiUrl: String(input.pegiUrl || '').trim(), coverUrl: String(input.coverUrl || '').trim().slice(0, 2000),
+    pegiUrl: String(input.pegiUrl || '').trim(),
+    pegiDescriptorsJson: JSON.stringify(safeList(input.pegiDescriptors)),
+    pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
+    pegiAdvice: safeText(input.pegiAdvice), pegiOutline: safeText(input.pegiOutline),
+    pegiContentIssues: safeText(input.pegiContentIssues), pegiOtherIssues: safeText(input.pegiOtherIssues),
+    coverUrl: String(input.coverUrl || '').trim().slice(0, 2000),
     coverSource: String(input.coverSource || '').trim().slice(0, 80),
     coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, 300),
   };
+}
+
+function parseStoredList(value) {
+  try { const parsed = JSON.parse(value || '[]'); return Array.isArray(parsed) ? parsed : []; }
+  catch { return []; }
+}
+function hydrateGame(row) {
+  if (!row) return row;
+  const { pegiDescriptorsJson, pegiReleasesJson, ...game } = row;
+  return { ...game, pegiDescriptors: parseStoredList(pegiDescriptorsJson), pegiReleases: parseStoredList(pegiReleasesJson) };
 }
 
 function listGames(userId, filters = {}) {
@@ -133,10 +169,10 @@ function listGames(userId, filters = {}) {
     cartridge: 'cartridge_number IS NULL, cartridge_number ASC, title COLLATE NOCASE ASC',
   };
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${sortMap[filters.sort] || sortMap.title}`).all(params);
+  return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${sortMap[filters.sort] || sortMap.title}`).all(params).map(hydrateGame);
 }
 
-function getGame(userId, id) { return db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId); }
+function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
 function createGame(userId, input) { const game = normalizeGame(input); return getGame(userId, insert.run({ ...game, userId }).lastInsertRowid); }
 function updateGame(userId, id, input) { const game = normalizeGame(input); const result = update.run({ ...game, id, userId }); return result.changes ? getGame(userId, id) : null; }
 function deleteGame(userId, id) { return db.prepare('DELETE FROM games WHERE id=? AND user_id=?').run(id, userId).changes > 0; }
@@ -148,7 +184,43 @@ function setCoverApiKey(userId, key) {
 }
 function gamesMissingCovers(userId) { return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND cover_url='' ORDER BY title COLLATE NOCASE`).all(userId); }
 function updateGameCover(userId, id, cover) {
-  const result = db.prepare(`UPDATE games SET cover_url=?, cover_source=?, cover_match_title=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
+  const result = db.prepare(`UPDATE games SET cover_url=?, cover_source=?, cover_match_title=?, updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND user_id=? AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
+  return result.changes ? getGame(userId, id) : null;
+}
+
+function gamesMissingPegiMetadata(userId) {
+  return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=?
+    AND platform NOT LIKE 'Evercade%'
+    AND pegi_url=''
+    AND pegi_descriptors='[]' AND pegi_releases='[]' AND pegi_advice=''
+    AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''
+    ORDER BY title COLLATE NOCASE`).all(userId);
+}
+
+function updateGamePegiMetadata(userId, id, metadata = {}) {
+  const safeList = value => (Array.isArray(value) ? value : []).map(item => String(item || '').trim().slice(0, 180)).filter(Boolean).slice(0, 24);
+  const safeText = (value, limit = 8000) => String(value || '').trim().slice(0, limit);
+  const ratingValue = metadata.pegi ?? metadata.rating;
+  const yearValue = metadata.releaseYear ?? metadata.year;
+  const pegi = [3, 7, 12, 16, 18].includes(Number(ratingValue)) ? Number(ratingValue) : null;
+  const releaseYear = Number.isInteger(Number(yearValue)) && Number(yearValue) >= 1970 && Number(yearValue) <= 2100 ? Number(yearValue) : null;
+  const result = db.prepare(`UPDATE games SET pegi=COALESCE(@pegi, pegi),
+    publisher=CASE WHEN @publisher<>'' THEN @publisher ELSE publisher END,
+    release_year=COALESCE(@releaseYear, release_year), pegi_url=@pegiUrl,
+    pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
+    pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline,
+    pegi_content_issues=@pegiContentIssues, pegi_other_issues=@pegiOtherIssues,
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
+    AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
+    AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''`).run({
+      id, userId, pegi, releaseYear,
+      publisher: safeText(metadata.publisher, 160), pegiUrl: safeText(metadata.pegiUrl ?? metadata.url, 2000),
+      pegiDescriptorsJson: JSON.stringify(safeList(metadata.descriptors)),
+      pegiReleasesJson: JSON.stringify(safeList(metadata.releases)),
+      pegiAdvice: safeText(metadata.advice), pegiOutline: safeText(metadata.outline),
+      pegiContentIssues: safeText(metadata.contentIssues), pegiOtherIssues: safeText(metadata.otherIssues),
+    });
   return result.changes ? getGame(userId, id) : null;
 }
 
@@ -169,4 +241,4 @@ function stats(userId) {
   return { total, favorites, ownership, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, randomShowcaseCovers, stats };
+module.exports = { db, normalizeGame, listGames, getGame, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, randomShowcaseCovers, stats };

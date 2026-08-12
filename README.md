@@ -41,7 +41,9 @@ The authentication landing page doubles as a crawler-readable product page for `
 
 ## PEGI lookup
 
-PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. Manual entry remains available if PEGI is offline or changes its page.
+PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
+
+Cover and PEGI batch progress is delivered over an authenticated server-sent event stream. Matching cards are patched in place as results arrive, without reloading or repositioning the complete library grid.
 
 ## Data and tests
 

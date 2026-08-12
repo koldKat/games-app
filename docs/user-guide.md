@@ -22,7 +22,7 @@ Every account has an isolated library. Game ownership is attached to the account
 
 - Use **Login** with an existing username and password.
 - The browser remembers a random session token, not the password.
-- Sessions remain valid for two weeks and are extended while used.
+- Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.
 - Select the username in the top-right corner, then **Log out**, to end the current session.
 
 ---
@@ -113,7 +113,17 @@ Only **Title** and **Platform** are required. Every other field can be added lat
 4. Review the filled fields, especially platform and release year.
 5. Select **Save game**.
 
-The lookup can fill title, PEGI rating, publisher, release year, descriptors, and release/platform information. PEGI has no documented public developer API, so Game Kat·a·log reads its public search result page only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
+The lookup can fill title, PEGI rating, publisher, release year, descriptors, exact platform release dates, consumer advice, a brief outline, content-specific issues, and other issues. When PEGI divides matches across multiple result pages, Game Kat·a·log retrieves up to the first 10 pages and presents the merged result count above the choices. PEGI has no documented public developer API, so the app reads its public search pages only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
+
+After selecting a result, **PEGI details** opens beneath the form. It contains:
+
+- Content descriptors, also shown as compact badges on the saved game card.
+- An amber warning when PEGI identifies in-game purchases or paid random items.
+- Every exact platform and release date listed for that PEGI record.
+- PEGI's consumer advice, brief outline, content-specific issues, and other issues.
+- A link back to the PEGI source search.
+
+The longer material stays collapsed when a saved game is opened, keeping routine edits compact. Select **PEGI details** to reveal it.
 
 ### Cover-assisted entry
 
@@ -127,6 +137,10 @@ The chosen cover flows from the centre of the card beneath a dark readability gr
 ### Fill existing games
 
 After connecting SteamGridDB, select **Fill missing covers** in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.
+
+Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
+
+Both scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover or PEGI record while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
 
 ---
 
@@ -224,6 +238,8 @@ Sign in again. Sessions expire after two weeks of inactivity. A password change 
 
 Continue with manual entry. The failure does not prevent saving a game.
 
+If a background PEGI scan encounters five consecutive provider errors, it stops to avoid hammering a failing service. Open Account Settings after PEGI is available again and restart the scan; already enriched games are not repeated.
+
 ### The page still shows an older design
 
 Perform a hard refresh so the browser reloads `style.css` and `app.js`.
@@ -244,4 +260,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 All persistent collection data lives in `games.db`. Back up that file while the server is stopped, or use **Create backup** in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization and does not send the collection to a third party. Only an explicit PEGI lookup sends the typed search title to PEGI.
+The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup similarly sends titles only to the configured SteamGridDB provider.

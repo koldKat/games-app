@@ -208,6 +208,19 @@
         <label class="span-2"><span>Notes</span><textarea id="game-notes" rows="3" maxlength="2000" placeholder="Edition, condition, where to find it…"></textarea></label>
         <label class="check-label span-2"><input id="game-favorite" type="checkbox"><span>Mark as a favourite</span></label>
       </div>
+      <details id="game-pegi-details" class="game-pegi-details" hidden>
+        <summary><span>PEGI details</span><small id="game-pegi-summary"></small></summary>
+        <div class="pegi-detail-body">
+          <div id="game-pegi-descriptors" class="pegi-detail-descriptors"></div>
+          <div id="game-pegi-purchase-warning" class="pegi-purchase-warning" hidden><b>!</b><span><strong>Purchase warning</strong><small id="game-pegi-purchase-text"></small></span></div>
+          <section id="game-pegi-releases-section"><h3>Release dates &amp; platforms</h3><ul id="game-pegi-releases"></ul></section>
+          <section id="game-pegi-advice-section"><h3>Advice for consumers</h3><p id="game-pegi-advice"></p></section>
+          <section id="game-pegi-outline-section"><h3>Brief outline</h3><p id="game-pegi-outline"></p></section>
+          <section id="game-pegi-content-section"><h3>Content-specific issues</h3><p id="game-pegi-content"></p></section>
+          <section id="game-pegi-other-section"><h3>Other issues</h3><p id="game-pegi-other"></p></section>
+          <a id="game-pegi-source" class="pegi-source" href="https://pegi.info/" target="_blank" rel="noopener">View source on PEGI ↗</a>
+        </div>
+      </details>
       <p id="form-error" class="form-error" hidden></p>
       <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><span></span><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
     </form>
@@ -223,7 +236,11 @@
       <section class="integration-panel">
         <div class="integration-head"><span><strong>SteamGridDB covers</strong><small id="cover-provider-status">Checking configuration…</small></span><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">Get API key ↗</a></div>
         <div class="integration-key"><input id="cover-api-key" type="password" autocomplete="off" aria-label="SteamGridDB API key" placeholder="Paste personal API key"><button type="button" class="button secondary" id="cover-api-save">Connect</button></div>
-        <div class="integration-bulk"><span id="cover-bulk-status" tabindex="0">Cover scan idle.</span><button type="button" class="button ghost" id="cover-bulk-start">Fill missing covers</button></div>
+        <div class="integration-bulk"><span id="cover-bulk-status" class="bulk-status" tabindex="0">Cover scan idle.</span><button type="button" class="button ghost" id="cover-bulk-start">Fill missing covers</button></div>
+      </section>
+      <section class="integration-panel pegi-integration">
+        <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>
+        <div class="integration-bulk"><span id="pegi-bulk-status" class="bulk-status" tabindex="0">PEGI scan idle.</span><button type="button" class="button ghost" id="pegi-bulk-start">Fill PEGI details</button></div>
       </section>
       <div class="form-grid account-grid">
         <label class="span-2"><span>Username</span><input id="account-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>

@@ -42,8 +42,22 @@ test('common filters never move the viewport', () => {
 test('cover processing uses compact text with a themed detail tooltip', () => {
   const application = read('public/app.js'); const css = read('public/style.css');
   assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
-  assert.match(application, /bulkStatus\.dataset\.tooltip = detail/);
-  assert.match(css, /#cover-bulk-status:after\{content:attr\(data-tooltip\)/);
+  assert.match(application, /element\.dataset\.tooltip = detail/);
+  assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
+});
+
+test('batch updates use authenticated SSE and patch individual cards', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/events.js'); const server = read('server.js');
+  assert.match(html, /id="pegi-bulk-start"[\s\S]*Fill PEGI details/);
+  assert.match(stream, /Authorization: `Bearer \$\{token\}`/);
+  assert.match(stream, /headers\['Last-Event-ID'\] = lastEventId/);
+  assert.match(server, /X-Accel-Buffering|events\.subscribe/);
+  assert.match(application, /event === 'game-updated'\) applyGamePatch\(data\.game\)/);
+  assert.match(application, /existingCard\?\.remove\(\)/);
+  assert.match(application, /pendingGamePatches\.set\(game\.id, game\)/);
+  assert.match(application, /renderGames\(\); flushPendingGamePatches\(\)/);
+  assert.match(application, /sequence !== gameLoadSequence \|\| state\.user\?\.id !== userId/);
+  assert.match(application, /localStorage\.getItem\(TOKEN_KEY\) === token/);
 });
 
 test('the product wordmark uses middle dots and no header cat artwork', () => {
@@ -58,4 +72,24 @@ test('generated documentation highlights the section currently in view', () => {
   assert.match(generator, /\.toc a\.active/);
   assert.match(generator, /aria-current/);
   assert.match(generator, /getBoundingClientRect\(\)\.top<=72/);
+});
+
+test('rich PEGI metadata is shown with themed progressive disclosure', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = read('public/style.css');
+  assert.match(html, /id="game-pegi-details" class="game-pegi-details"/);
+  assert.match(html, /Advice for consumers[\s\S]*Brief outline[\s\S]*Content-specific issues[\s\S]*Other issues/);
+  assert.match(application, /pegiDescriptors[\s\S]*pegiReleases[\s\S]*pegiAdvice[\s\S]*pegiOutline/);
+  assert.match(application, /Purchase warning|purchase-warning/);
+  assert.match(css, /summary::-webkit-details-marker\{display:none\}/);
+});
+
+test('dialogs stay inside the viewport and scrollbars are themed', () => {
+  const publicCss = read('public/style.css'); const adminCss = read('admin/style.css');
+  assert.match(publicCss, /dialog\{max-height:80dvh;overflow:hidden\}/);
+  assert.match(publicCss, /\.modal-card\{max-height:80dvh;overflow:auto/);
+  assert.match(publicCss, /\.modal-card\{[^}]*scrollbar-gutter:auto/);
+  for (const css of [publicCss, adminCss]) {
+    assert.match(css, /scrollbar-color:#376e61 #080d12/);
+    assert.match(css, /::-webkit-scrollbar-thumb\{background:#2f5e54/);
+  }
 });
