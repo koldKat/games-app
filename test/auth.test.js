@@ -77,6 +77,12 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.updateGameHltb(other.id, hltbCandidate.id, { id: 9999, title: 'Wrong' }), null);
   assert.ok(!data.listGames(other.id, { missing: 'hltb' }).some(game => game.id === hltbCandidate.id));
   assert.ok(data.listGames(owner.id, { missing: 'hltb' }).every(game => game.id !== hltbCandidate.id));
+  const shortGame = data.createGame(other.id, { title: 'Short Adventure', platform: 'PC (Windows)', releaseYear: 2024 });
+  data.updateGameHltb(other.id, shortGame.id, { id: 1235, title: 'Short Adventure', mainStory: 2,
+    mainExtra: 4, completionist: 7, allStyles: 3.5 });
+  assert.deepEqual(data.listGames(other.id, { sort: 'hltb_main_short' }).slice(0, 2).map(game => game.title), ['Short Adventure', 'Timed Adventure']);
+  assert.deepEqual(data.listGames(other.id, { sort: 'hltb_main_long' }).slice(0, 2).map(game => game.title), ['Timed Adventure', 'Short Adventure']);
+  assert.deepEqual(data.listGames(other.id, { sort: 'year_desc' }).slice(0, 2).map(game => game.title), ['Needs PEGI', 'Short Adventure']);
   const switchCopy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'Nintendo Switch' });
   data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
   const titleMatches = data.searchGameTitles(other.id, 'shared adventure');
@@ -99,6 +105,13 @@ test('login, sessions, and account password changes work', async () => {
   const token = auth.createSession(user.id);
   const request = { headers: { authorization: `Bearer ${token}` } };
   assert.equal(auth.authenticate(request).id, user.id);
+  const cookie = auth.sessionCookie(token, { headers: { 'x-forwarded-proto': 'https' }, socket: {} });
+  assert.match(cookie, /^games_session=[a-f0-9]{64}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=1209600; Secure$/);
+  assert.equal(auth.authenticate({ headers: { cookie }, socket: {} }).id, user.id);
+  assert.equal(auth.refreshSessionCookie({ headers: { authorization: `Bearer ${token}` }, socket: {} }), '');
+  assert.match(auth.refreshSessionCookie({ headers: { cookie }, socket: {} }), /^games_session=[a-f0-9]{64}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=1209600$/);
+  assert.match(auth.clearSessionCookie({ headers: {}, socket: {} }), /^games_session=; Path=\/; HttpOnly; SameSite=Strict; Max-Age=0$/);
+  assert.equal(auth.authenticate({ headers: { cookie: 'games_session=%E0%A4%A' }, socket: {} }), null);
   const updated = await auth.updateAccount(user.id, { username: 'library_owner', currentPassword: 'another-long-password', newPassword: 'replacement-password' });
   assert.equal(updated.sessionInvalidated, true);
   assert.equal(auth.authenticate(request), null);

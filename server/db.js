@@ -32,6 +32,19 @@ db.exec(`
     steamgriddb_key TEXT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    library_view TEXT NOT NULL DEFAULT 'grid',
+    search_query TEXT NOT NULL DEFAULT '',
+    platform_filter TEXT NOT NULL DEFAULT '',
+    ownership_filter TEXT NOT NULL DEFAULT '',
+    pegi_filter TEXT NOT NULL DEFAULT '',
+    status_filter TEXT NOT NULL DEFAULT '',
+    missing_filter TEXT NOT NULL DEFAULT '',
+    favorite_filter TEXT NOT NULL DEFAULT '',
+    sort_order TEXT NOT NULL DEFAULT 'title',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -215,12 +228,32 @@ function listGames(userId, filters = {}) {
   if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL)`);
   if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
+  const titleAsc = 'search_normalize(title) ASC, id ASC';
+  const titleDesc = 'search_normalize(title) DESC, id DESC';
   const sortMap = {
-    title: 'title COLLATE NOCASE ASC',
-    platform: 'platform COLLATE NOCASE ASC, title COLLATE NOCASE ASC',
-    pegi: 'pegi IS NULL, pegi ASC, title COLLATE NOCASE ASC',
+    title: titleAsc,
+    title_desc: titleDesc,
+    platform: `search_normalize(platform) ASC, ${titleAsc}`,
+    publisher: `publisher='' ASC, search_normalize(publisher) ASC, ${titleAsc}`,
+    year: `release_year IS NULL, release_year ASC, ${titleAsc}`,
+    year_desc: `release_year IS NULL, release_year DESC, ${titleAsc}`,
+    pegi: `pegi IS NULL, pegi ASC, ${titleAsc}`,
+    pegi_desc: `pegi IS NULL, pegi DESC, ${titleAsc}`,
+    ownership: `CASE ownership WHEN 'owned' THEN 0 WHEN 'wanted' THEN 1 ELSE 2 END, ${titleAsc}`,
+    status: `CASE play_status WHEN 'playing' THEN 0 WHEN 'backlog' THEN 1 WHEN 'paused' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END, ${titleAsc}`,
+    favorites: `favorite DESC, ${titleAsc}`,
     newest: 'created_at DESC, id DESC',
-    cartridge: 'cartridge_number IS NULL, cartridge_number ASC, title COLLATE NOCASE ASC',
+    oldest: 'created_at ASC, id ASC',
+    updated: 'updated_at DESC, id DESC',
+    hltb_main_short: `hltb_main_story IS NULL, hltb_main_story ASC, ${titleAsc}`,
+    hltb_main_long: `hltb_main_story IS NULL, hltb_main_story DESC, ${titleAsc}`,
+    hltb_extra_short: `hltb_main_extra IS NULL, hltb_main_extra ASC, ${titleAsc}`,
+    hltb_extra_long: `hltb_main_extra IS NULL, hltb_main_extra DESC, ${titleAsc}`,
+    hltb_100_short: `hltb_completionist IS NULL, hltb_completionist ASC, ${titleAsc}`,
+    hltb_100_long: `hltb_completionist IS NULL, hltb_completionist DESC, ${titleAsc}`,
+    hltb_all_short: `hltb_all_styles IS NULL, hltb_all_styles ASC, ${titleAsc}`,
+    hltb_all_long: `hltb_all_styles IS NULL, hltb_all_styles DESC, ${titleAsc}`,
+    cartridge: `cartridge_number IS NULL, cartridge_number ASC, ${titleAsc}`,
   };
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
   return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${sortMap[filters.sort] || sortMap.title}`).all(params).map(hydrateGame);

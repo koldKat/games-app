@@ -59,12 +59,25 @@ test('authenticated app matches the login account-cover background visibility', 
 
 test('stored sessions use a resume screen instead of flashing authentication', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
-  assert.match(html, /games_shelf_auth_token[^<]*resuming-session/);
+  assert.match(html, /document\.documentElement\.classList\.add\('resuming-session'\)/);
   assert.match(html, /id="session-resume"[^>]*role="status"/);
   assert.match(css, /\.resuming-session #auth-screen\{visibility:hidden\}/);
   assert.match(css, /\.resuming-session \.session-resume-screen\{display:grid\}/);
   assert.match(application, /function endSessionResume\(\)/);
   assert.match(application, /#app-shell'\)\.hidden = false;[\s\S]*endSessionResume\(\);/);
+  assert.doesNotMatch(html + application, /localStorage|sessionStorage/);
+});
+
+test('account preferences use SQLite-backed API state instead of browser storage', () => {
+  const application = read('public/app.js'); const server = read('server.js'); const preferences = read('server/preferences.js'); const database = read('server/db.js');
+  assert.match(database, /CREATE TABLE IF NOT EXISTS user_preferences/);
+  assert.match(server, /pathname === '\/api\/preferences'/);
+  assert.match(application, /api\('\/api\/preferences', \{ method: 'PUT'/);
+  assert.match(application, /applyPreferences\(savedPreferences\)/);
+  assert.match(application, /window\.addEventListener\('pagehide',[^\n]*savePreferences\(true\)/);
+  assert.match(application, /#logout-button'[\s\S]*await savePreferences\(\);[\s\S]*api\('\/api\/logout'/);
+  assert.match(preferences, /hltb_main_short/);
+  assert.doesNotMatch(application, /localStorage|sessionStorage/);
 });
 
 test('authenticated shell renders before library data and artwork finish', () => {
@@ -83,6 +96,12 @@ test('landing promo descriptions remain readable', () => {
   assert.match(readPublicCss(), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
 });
 
+test('landing footer links to the public repository without replacing the app', () => {
+  const html = read('public/index.html');
+  assert.match(html, /href="https:\/\/github\.com\/koldKat\/games-app" target="_blank" rel="noopener noreferrer">GITHUB/);
+  assert.doesNotMatch(readPublicCss(), /\.auth-footer \.repo-link\{/);
+});
+
 test('common filters never move the viewport', () => {
   const application = read('public/app.js');
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
@@ -96,6 +115,19 @@ test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times
   assert.match(application, /filters\.missing\.value === 'both'/);
   assert.match(database, /filters\.missing === 'either'/);
   assert.match(database, /filters\.missing === 'both'/);
+});
+
+test('sorting is modular and includes catalogue and HLTB duration orders', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const sorting = read('public/js/game-sorting.js'); const database = read('server/db.js');
+  assert.match(application, /import \{ compareGames \} from '\.\/js\/game-sorting\.js'/);
+  assert.doesNotMatch(application, /function compareGames\(/);
+  assert.match(html, /Title · Z–A[\s\S]*Release year · newest[\s\S]*Recently updated/);
+  assert.match(html, /HLTB main · shortest[\s\S]*HLTB main \+ sides · longest[\s\S]*HLTB completionist · shortest[\s\S]*HLTB all styles · longest/);
+  for (const value of ['hltb_main_short', 'hltb_main_long', 'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long']) {
+    assert.match(sorting, new RegExp(value)); assert.match(database, new RegExp(`${value}:`));
+  }
+  assert.match(application, /compareGames\(left, right, filters\.sort\.value\)/);
 });
 
 test('HLTB integration is native Node and exposes all four estimates', () => {
@@ -112,6 +144,14 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(hltbUi, /sequence !== searchSequence \|\| titleInput\.value\.trim\(\) !== title/);
   assert.match(hltbUi, /titleInput\.addEventListener\('input'/);
   assert.match(css, /\.card-hltb\{[^}]*display:grid/);
+  assert.match(css, /\.game-card\{display:flex;flex-direction:column/);
+  assert.match(css, /\.card-actions\{margin-top:auto/);
+  assert.match(css, /\.game-title\{font-size:14px;height:2\.44em/);
+  assert.match(css, /\.badges\{height:42px;align-content:flex-start;overflow:hidden/);
+  assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
+  assert.match(css, /\.card-hltb dt\{[^}]*font-size:10px/);
+  assert.match(css, /\.card-hltb dd\{[^}]*font-size:13px/);
+  assert.match(read('public/js/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);
 });
 
 test('title autocomplete is themed and silently degrades when SteamGridDB fails', () => {
@@ -139,10 +179,11 @@ test('cover processing uses compact text with a themed detail tooltip', () => {
   assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
 });
 
-test('batch updates use authenticated SSE and patch individual cards', () => {
+test('batch updates use cookie-authenticated SSE and patch individual cards', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/events.js'); const server = read('server.js');
   assert.match(html, /id="pegi-bulk-start"[\s\S]*Fill PEGI details/);
-  assert.match(stream, /Authorization: `Bearer \$\{token\}`/);
+  assert.match(stream, /credentials: 'same-origin'/);
+  assert.doesNotMatch(stream, /Authorization|Bearer/);
   assert.match(stream, /headers\['Last-Event-ID'\] = lastEventId/);
   assert.match(server, /X-Accel-Buffering|events\.subscribe/);
   assert.match(application, /event === 'game-updated'\) applyGamePatch\(data\.game\)/);
@@ -150,7 +191,7 @@ test('batch updates use authenticated SSE and patch individual cards', () => {
   assert.match(application, /pendingGamePatches\.set\(game\.id, game\)/);
   assert.match(application, /renderGames\(\); flushPendingGamePatches\(\)/);
   assert.match(application, /sequence !== gameLoadSequence \|\| state\.user\?\.id !== userId/);
-  assert.match(application, /localStorage\.getItem\(TOKEN_KEY\) === token/);
+  assert.match(application, /generation !== sessionGeneration/);
 });
 
 test('the product wordmark uses middle dots and no header cat artwork', () => {

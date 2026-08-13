@@ -2,6 +2,7 @@ import { CUSTOM_PLATFORM, knownPlatforms, pegiColors, platformFromReleaseText, p
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
+import { compareGames } from './js/game-sorting.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -12,11 +13,14 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
-const TOKEN_KEY = 'games_shelf_auth_token';
-const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], limit: 120, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
+let sessionGeneration = 0;
+let preferencesReady = false;
+let preferencesDirty = false;
+let preferenceSaveTimer;
 const filters = {
   q: $('#search'), platform: $('#platform-filter'), ownership: $('#ownership-filter'),
   pegi: $('#pegi-filter'), playStatus: $('#status-filter'), missing: $('#missing-filter'),
@@ -30,13 +34,11 @@ const labels = {
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
 async function api(url, options) {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const headers = { ...(options?.headers || {}) };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(url, { ...options, headers });
+  const generation = sessionGeneration;
+  const response = await fetch(url, { credentials: 'same-origin', ...options });
   const body = await response.json().catch(() => ({}));
-  if (response.status === 401 && token && localStorage.getItem(TOKEN_KEY) === token && !['/api/login', '/api/register'].includes(url)) {
-    localStorage.removeItem(TOKEN_KEY);
+  if (response.status === 401 && generation === sessionGeneration && !['/api/login', '/api/register'].includes(url)) {
+    sessionGeneration++;
     showAuth('Your session expired. Authenticate again.');
   }
   if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
@@ -102,6 +104,7 @@ function showAuth(message = '') {
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
   state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null;
+  preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   state.games = []; state.stats = null; state.platforms = []; state.limit = 120;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -112,11 +115,46 @@ function showAuth(message = '') {
   if (message) { $('#auth-error').textContent = message; $('#auth-error').hidden = false; }
   setTimeout(() => $('#auth-username').focus(), 40);
 }
-async function enterApp(user) {
+function preferencePayload() {
+  return { view: state.view, filters: Object.fromEntries(Object.entries(filters).map(([key, element]) => [key, element.value])) };
+}
+async function savePreferences(keepalive = false) {
+  if (!preferencesReady || !preferencesDirty || !state.user) return;
+  clearTimeout(preferenceSaveTimer);
+  const generation = sessionGeneration; const userId = state.user.id;
+  preferencesDirty = false;
+  try {
+    await api('/api/preferences', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(preferencePayload()), keepalive });
+  } catch {
+    if (generation === sessionGeneration && state.user?.id === userId) {
+      preferencesDirty = true;
+      if (!keepalive) preferenceSaveTimer = setTimeout(() => { void savePreferences(); }, 5000);
+    }
+  }
+}
+function schedulePreferenceSave(delay = 120) {
+  if (!preferencesReady || !state.user) return;
+  preferencesDirty = true;
+  clearTimeout(preferenceSaveTimer);
+  preferenceSaveTimer = setTimeout(() => { void savePreferences(); }, delay);
+}
+function applyPreferences(preferences = {}) {
+  preferencesReady = false;
+  const saved = preferences.filters || {};
+  for (const [key, element] of Object.entries(filters)) {
+    const value = String(saved[key] || (key === 'sort' ? 'title' : ''));
+    if (key === 'platform' && value && ![...element.options].some(option => option.value === value)) element.add(new Option(value, value));
+    element.value = value;
+  }
+  setView(preferences.view === 'list' ? 'list' : 'grid', false);
+  renderQuickFilter(); preferencesDirty = false; preferencesReady = true;
+}
+async function enterApp(user, savedPreferences) {
   state.user = user;
   $('#account-name').textContent = user.username;
   $('#account-current-name').textContent = user.username;
   updateAvatarUI();
+  applyPreferences(savedPreferences);
   const dataReady = Promise.all([loadGames(), loadStatsAndMeta()]);
   $('#auth-screen').hidden = true;
   $('#app-shell').hidden = false;
@@ -168,9 +206,9 @@ $('#auth-form').addEventListener('submit', async event => {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: $('#auth-username').value, email: state.authMode === 'register' ? $('#auth-email').value : '', password: $('#auth-password').value, passwordConfirm: state.authMode === 'register' ? $('#auth-password-confirm').value : undefined }),
     });
-    localStorage.setItem(TOKEN_KEY, result.token);
+    sessionGeneration++;
     $('#auth-error').hidden = true;
-    await enterApp(result.user);
+    await enterApp(result.user, result.preferences);
   } catch (error) { $('#auth-error').textContent = error.message; $('#auth-error').hidden = false; }
   finally { submit.disabled = false; submit.textContent = state.authMode === 'register' ? 'Create account' : 'Authenticate'; }
 });
@@ -248,14 +286,6 @@ function gameMatchesFilters(game) {
   if (filters.favorite.value === '1' && !game.favorite) return false;
   return true;
 }
-function compareGames(left, right) {
-  const title = () => String(left.title).localeCompare(String(right.title), undefined, { sensitivity: 'base' });
-  if (filters.sort.value === 'platform') return String(left.platform).localeCompare(String(right.platform), undefined, { sensitivity: 'base' }) || title();
-  if (filters.sort.value === 'pegi') return (left.pegi == null) - (right.pegi == null) || Number(left.pegi || 0) - Number(right.pegi || 0) || title();
-  if (filters.sort.value === 'newest') return String(right.createdAt).localeCompare(String(left.createdAt)) || right.id - left.id;
-  if (filters.sort.value === 'cartridge') return (left.cartridgeNumber == null) - (right.cartridgeNumber == null) || Number(left.cartridgeNumber || 0) - Number(right.cartridgeNumber || 0) || title();
-  return title();
-}
 function cardNode(game) {
   const template = document.createElement('template'); template.innerHTML = gameCard(game).trim(); return template.content.firstElementChild;
 }
@@ -272,7 +302,7 @@ function applyGamePatch(game) {
   const existingCard = $(`.game-card[data-id="${Number(game.id)}"]`); existingCard?.remove();
   if (existingIndex !== -1) state.games.splice(existingIndex, 1);
   if (gameMatchesFilters(game)) state.games.push(game);
-  state.games.sort(compareGames);
+  state.games.sort((left, right) => compareGames(left, right, filters.sort.value));
   const visible = state.games.slice(0, state.limit); const visibleIds = new Set(visible.map(item => item.id));
   for (const card of $$('#games .game-card')) if (!visibleIds.has(Number(card.dataset.id))) card.remove();
   visible.forEach((item, index) => {
@@ -287,16 +317,16 @@ function flushPendingGamePatches() {
 }
 function connectEventStream() {
   state.stopEvents?.();
-  const token = localStorage.getItem(TOKEN_KEY); if (!token) return;
-  state.stopEvents = openEventStream({ token, onEvent(event, data) {
+  const generation = sessionGeneration;
+  state.stopEvents = openEventStream({ onEvent(event, data) {
     if (event === 'game-updated') applyGamePatch(data.game);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
     else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); loadPegiStatus(); loadHltbStatus(); }
   }, onUnauthorized() {
-    if (localStorage.getItem(TOKEN_KEY) !== token) return;
-    localStorage.removeItem(TOKEN_KEY); showAuth('Your session expired. Authenticate again.');
+    if (generation !== sessionGeneration) return;
+    sessionGeneration++; showAuth('Your session expired. Authenticate again.');
   } });
 }
 function mergeLiveJobStatus(status, job) {
@@ -353,9 +383,9 @@ async function loadStatsAndMeta() {
   } catch (error) { if (sequence === metaLoadSequence && state.user?.id === userId) toast(error.message); }
 }
 let searchTimer;
-filters.q.addEventListener('input', () => { renderQuickFilter(); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, 220); });
-Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); loadGames(); }));
-$('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); loadGames(); });
+filters.q.addEventListener('input', () => { renderQuickFilter(); schedulePreferenceSave(260); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, 220); });
+Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); schedulePreferenceSave(); loadGames(); }));
+$('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); schedulePreferenceSave(); loadGames(); });
 $('#load-more').addEventListener('click', () => { state.limit += 120; renderGames(); });
 function renderQuickFilter() {
   $$('[data-stat-kind]').forEach(button => {
@@ -372,12 +402,14 @@ $$('[data-stat-kind]').forEach(button => button.addEventListener('click', () => 
   else { filters.ownership.value = ''; filters.playStatus.value = ''; filters.favorite.value = ''; }
   if (button.dataset.statKind !== 'all') filters[button.dataset.statKind].value = button.dataset.statValue;
   renderQuickFilter();
+  schedulePreferenceSave();
   loadGames();
 }));
 renderQuickFilter();
-function setView(view) {
-  state.view = view; localStorage.setItem('games-view', view);
+function setView(view, persist = true) {
+  state.view = view === 'list' ? 'list' : 'grid';
   $('#grid-view').classList.toggle('active', view === 'grid'); $('#list-view').classList.toggle('active', view === 'list'); renderGames();
+  if (persist) schedulePreferenceSave();
 }
 $('#grid-view').addEventListener('click', () => setView('grid')); $('#list-view').addEventListener('click', () => setView('list')); setView(state.view);
 
@@ -696,12 +728,14 @@ $('#avatar-remove').addEventListener('click', async () => {
 $$('[data-account-close]').forEach(button => button.addEventListener('click', () => accountDialog.close()));
 closeOnTrueBackdrop(accountDialog, () => accountDialog.close());
 $('#logout-button').addEventListener('click', async () => {
+  await savePreferences();
   await api('/api/logout', { method: 'POST' }).catch(() => {});
-  localStorage.removeItem(TOKEN_KEY);
+  sessionGeneration++;
   accountDialog.close();
   $('#auth-form').reset();
   showAuth();
 });
+window.addEventListener('pagehide', () => { void savePreferences(true); });
 $('#account-form').addEventListener('submit', async event => {
   event.preventDefault();
   const newPassword = $('#account-new-password').value;
@@ -715,7 +749,7 @@ $('#account-form').addEventListener('submit', async event => {
     }) });
     accountDialog.close();
     if (result.user.sessionInvalidated) {
-      localStorage.removeItem(TOKEN_KEY); showAuth('Password changed. Log in with the new password.');
+      sessionGeneration++; showAuth('Password changed. Log in with the new password.');
     } else {
       state.user = result.user; $('#account-name').textContent = result.user.username; $('#account-current-name').textContent = result.user.username; updateAvatarUI(); toast('Account updated.');
     }
@@ -727,8 +761,6 @@ $('#account-form').addEventListener('submit', async event => {
   setAuthMode('login');
   loadConfig();
   loadAuthCovers();
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return showAuth();
-  try { const result = await api('/api/auth/me'); await enterApp(result.user); }
+  try { const result = await api('/api/auth/me'); await enterApp(result.user, result.preferences); }
   catch { showAuth(); }
 })();

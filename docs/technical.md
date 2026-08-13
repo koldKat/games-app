@@ -14,6 +14,7 @@ games-app/
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
     db.js                   schema, migrations, validation, scoped game queries
+    preferences.js          validated per-account view, search, filter and sort state
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     pegi-bulk.js            account-scoped conservative PEGI enrichment jobs
     hltb.js                 native Node HLTB lookup, endpoint discovery, parsing
@@ -30,7 +31,8 @@ games-app/
   public/
     index.html              application and authentication markup
     app.js                  browser state, rendering, auth, forms, API calls
-    js/events.js            bearer-authenticated SSE stream parser and reconnect
+    js/events.js            cookie-authenticated SSE stream parser and reconnect
+    js/game-sorting.js      client ordering for live incremental card updates
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
@@ -58,6 +60,9 @@ games-app/
     pegi-bulk.test.js       exact-title matching, skips, and job notifications
     hltb.test.js            HLTB parsing, normalization, endpoint discovery
     hltb-bulk.test.js       exact-title matching, skips, and circuit breaker
+    hltb-ui.test.js         null-safe new/edit form metadata state
+    preferences.test.js     persistence, account isolation, validation and cascading
+    sorting.test.js         client sort behavior, null placement, accent parity
     events.test.js          SSE framing, replay isolation, and session revocation
     covers.test.js          conservative cover-title normalization
     seo.test.js             canonical metadata, crawler policy, image dimensions
@@ -74,7 +79,7 @@ Browser
   -> static file request ----------------------> server.js -> public/
   -> localhost /admin/* -----------------------> admin.js -> admin/ + SQLite/VERSION
   -> POST /api/login or /api/register --------> server.js -> auth.js -> SQLite
-  -> authenticated /api/* + Bearer token -----> auth.js -> user identity
+  -> authenticated /api/* + HttpOnly cookie --> auth.js -> user identity
                                                     |
                                                     +-> db.js (user-scoped query)
                                                     +-> pegi.js + pegi-bulk.js (lookup/jobs)
@@ -135,7 +140,21 @@ SQLite runs in WAL mode with foreign keys enabled.
 
 Expired sessions are purged when the server starts. Valid sessions receive a rolling two-week expiry on authenticated use.
 
-An inline pre-render token-presence check adds the `resuming-session` document class before the body is painted. That class hides the public authentication surface and exposes a non-sensitive session-resume screen only while `/api/auth/me` validates the stored token. Successful validation reveals the application immediately in its loading state; collection, statistics, metadata, and decorative artwork continue asynchronously. Failed authentication reveals the login screen. The inline check does not validate or transmit the token—it only prevents logged-out UI from flashing before the authenticated API check completes.
+An inline pre-render marker adds the `resuming-session` document class before the body is painted. Because the HttpOnly cookie is deliberately invisible to JavaScript, the marker cannot inspect it. The class hides the public authentication surface and exposes a non-sensitive session-resume screen only while `/api/auth/me` asks the server to validate the cookie. Successful validation reveals the application immediately in its loading state; collection, statistics, metadata, and decorative artwork continue asynchronously. Failed authentication reveals the login screen. This prevents logged-out UI from flashing for an authenticated account without putting session state into browser storage.
+
+### `user_preferences`
+
+| Column | Notes |
+|---|---|
+| `user_id` | Primary key and cascading foreign key to the owning account |
+| `library_view` | `grid` or `list` |
+| `search_query` | Current library search text |
+| `platform_filter`, `ownership_filter`, `pegi_filter` | Current catalogue filters |
+| `status_filter`, `missing_filter`, `favorite_filter` | Current workflow and data-gap filters |
+| `sort_order` | One of the server and client supported sort identifiers |
+| `updated_at` | SQLite timestamp of the latest persisted preference change |
+
+Missing rows produce safe defaults. `server/preferences.js` validates every enum, limits free-text fields, and upserts the complete preference snapshot. Rows cascade with account deletion. The browser never uses `localStorage` or `sessionStorage`; the account record is the single persistent source of workspace settings across devices.
 
 ### `games`
 
@@ -187,9 +206,11 @@ The authentication design is a reduced version of the gamebooks app's model.
 
 ### Sessions
 
-- The server creates a random 256-bit bearer token.
-- The browser stores it under `games_shelf_auth_token` in local storage.
-- API requests send `Authorization: Bearer TOKEN`.
+- The server creates a random 256-bit session token.
+- Registration and login return it only in a `games_session` cookie with `HttpOnly`, `SameSite=Strict`, `Path=/`, and a matching two-week maximum age.
+- HTTPS requests also receive the `Secure` attribute, detected directly or through nginx's `X-Forwarded-Proto` header.
+- Browser requests include the same-origin cookie automatically; application JavaScript cannot read the token and uses no web storage.
+- Bearer-token parsing remains supported for programmatic API compatibility, but the web client does not receive or use a bearer token.
 - Sessions expire after two inactive weeks and refresh on use.
 - Password changes delete every session for the account.
 
@@ -207,7 +228,7 @@ The client never sends or selects `user_id`.
 
 ## HTTP API
 
-All JSON responses use `Cache-Control: no-store`. Registration, login, public configuration, and the cover-only showcase route are public. Collection routes require a valid bearer token. Admin routes use a separate loopback-only boundary and do not accept normal account sessions as a substitute.
+All JSON responses use `Cache-Control: no-store`. Registration, login, public configuration, and the cover-only showcase route are public. Collection routes require a valid session cookie; bearer authentication remains a compatibility path for non-browser clients. Admin routes use a separate loopback-only boundary and do not accept normal account sessions as a substitute.
 
 ### Authentication
 
@@ -219,6 +240,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/showcase/covers` | Return randomized cover URLs for the public authentication-page artwork |
 | POST | `/api/logout` | Delete current session |
 | GET | `/api/auth/me` | Resolve current user |
+| GET, PUT | `/api/preferences` | Read or replace the current account's validated workspace settings |
 | PUT | `/api/account` | Change username and/or password after current-password verification |
 | POST | `/api/account/avatar` | Upload a browser-cropped JPEG avatar, maximum 256 KB |
 | DELETE | `/api/account/avatar` | Remove the current avatar and restore the initial fallback |
@@ -250,6 +272,8 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 
 List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `missing` accepts `pegi`, `cover`, `hltb`, `either`, or `both`; `either` means any of the three data sets is absent and `both` retains its legacy value while now meaning all three are absent. The PEGI condition follows batch eligibility and excludes Evercade, the cover condition requires an empty cover URL, and the HLTB condition requires no selected HLTB record. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
 
+Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favourites, creation/update timestamps, cartridge number, and ascending/descending values for all four HLTB estimates. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
+
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
 ### Local administrator API
@@ -261,7 +285,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET | `/api/admin/stats` | Runtime and whole-database counts |
 | GET | `/api/admin/accounts` | Account, collection, cover, and session counts |
 | DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
-| DELETE | `/api/admin/accounts/:id` | Delete an account, its avatar, and cascaded games, sessions, and integration settings |
+| DELETE | `/api/admin/accounts/:id` | Delete an account, its avatar, and cascaded games, sessions, integration settings, and preferences |
 | GET | `/api/admin/games?q=...` | Search up to 250 games across accounts |
 | DELETE | `/api/admin/games/:id` | Permanently remove one explicitly selected game |
 | GET, PUT | `/api/admin/version` | Read or atomically replace the release string |
@@ -303,7 +327,7 @@ Responses are reduced to a numeric record ID, title, source URL, similarity scor
 
 The **Fill HLTB times** account action runs an in-memory, account-scoped job over games with no selected HLTB record. Each queued game is reloaded before lookup, and the database update also requires its HLTB ID to remain null. Automatic selection requires exactly one punctuation-, case-, trademark-, whitespace-, and accent-normalized exact title. Ambiguous editions and fuzzy matches remain untouched for manual selection. Requests are spaced by 1.5 seconds; five consecutive provider failures pause the job. Successful records are persisted immediately and published as targeted `game-updated` SSE events.
 
-The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Lookup requests carry a local sequence guard: changing the title or reopening the dialog invalidates an older response so it cannot populate a different game form. Cards show a compact four-column estimate strip, while the form shows the complete labels and source link. The **No HLTB info** data-gap filter is available independently and participates in the combined any/all missing-data modes.
+The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Lookup requests carry a local sequence guard: changing the title or reopening the dialog invalidates an older response so it cannot populate a different game form. Cards show a compact four-column estimate strip, while the form shows the complete labels and source link. Grid cards use a column layout with consistent two-line title and two-row badge areas plus a bottom-anchored action row. Games without HLTB data retain a muted four-column timing frame with dashes, so optional metadata does not change the card or grid-row structure. Narrow single-column mobile cards release the title and badge height limits to keep their full content visible. Compact list view retains the same four-value strip in a dedicated desktop column; narrow list rows wrap it beneath the title rather than removing information. The **No HLTB info** data-gap filter is available independently and participates in the combined any/all missing-data modes.
 
 ---
 
@@ -327,11 +351,11 @@ On authenticated entry, the browser starts the core library requests and reveals
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`.
+`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions live in `public/js/title-autocomplete.js`; and HLTB form and card presentation lives in `public/js/hltb-ui.js`.
 
 Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
-Because native `EventSource` cannot attach the existing bearer token header, the event client reads an SSE response through `fetch()` and a `ReadableStream`. It reconnects after interruption and stops immediately on local logout. The server disables nginx buffering, revalidates the bearer session on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
+The event client reads SSE through `fetch()` and a `ReadableStream` so reconnects can send `Last-Event-ID` for replay while using the same-origin session cookie. It reconnects after interruption and stops immediately on local logout. The server disables nginx buffering, revalidates the session on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
 
 The public nginx location should explicitly support the long-lived stream:
 
@@ -351,20 +375,20 @@ location / {
 
 An isolated `net::ERR_INCOMPLETE_CHUNKED_ENCODING` entry means the proxy or upstream ended an open event stream without a normal HTTP terminator. The browser client catches that interruption and reconnects after 2.5 seconds with its last event ID. Repeated warnings indicate a proxy timeout or unstable upstream process; they do not require reloading the library grid.
 
-Cover, PEGI, and HLTB workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can clear only the same bearer token it actually used, never a newer login token. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
+Cover, PEGI, and HLTB workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can end only the same session generation that issued it, never a newer login. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
 
 ### Startup
 
-1. Read the bearer token from local storage.
-2. Call `/api/auth/me` when a token exists.
-3. Show authentication on absence/failure, or mount the library on success.
-4. Load games, statistics, and metadata in parallel.
+1. Show the neutral session-resume surface before first paint.
+2. Call `/api/auth/me`; the browser supplies any HttpOnly session cookie automatically.
+3. Show authentication on absence/failure, or apply the returned account preferences and mount the library on success.
+4. Load games, statistics, and metadata in parallel using those preferences.
 
-An HTTP 401 on a protected request removes the token and returns to login.
+An HTTP 401 on a protected request advances the client session generation and returns to login. No browser-stored token needs to be removed.
 
 ### Rendering
 
-Game cards are generated from escaped values. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms debounce. Rendering is batched in groups of 120.
+Game cards are generated from escaped values. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms query debounce. View, search, filter, and sort changes are separately debounced into `/api/preferences`, which stores the validated snapshot in SQLite. Dirty preference state retries after a transient failure and is flushed with a keepalive request when the page exits or before logout. Rendering is batched in groups of 120.
 
 ### Dialog pointer safety
 
@@ -388,11 +412,11 @@ Generated documentation is available at:
 
 ### Search and social metadata
 
-The public landing page uses `https://gamekat.net/` as its canonical URL. It includes a focused title and description, Open Graph and Twitter large-image metadata, and `WebApplication` JSON-LD. The domain inspires the **Game Kat·a·log** wordmark, whose separators are true middle dots. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
+The public landing page uses `https://gamekat.net/` as its canonical URL. Its focused title and description, Open Graph and Twitter large-image fields, install manifest, and `WebApplication` JSON-LD consistently describe multi-platform collection tracking, wishlists and backlogs, deep filtering, PEGI/HLTB assistance, cover art, and cross-device account preferences. Structured data also links the public guide and GitHub repository. The domain inspires the **Game Kat·a·log** wordmark, whose separators are true middle dots. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
 
 `robots.txt` permits the landing page and public guide while excluding `/api/`, `/admin/`, and account avatars. `sitemap.xml` lists only the canonical landing page and user guide. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
 
-The authentication landing markup contains six visible, descriptive feature cards. This gives non-JavaScript crawlers useful product content without exposing any private collection data.
+The authentication landing markup contains six visible, descriptive feature cards covering platform breadth, querying, PEGI/HLTB metadata, cover workflows, cross-device preference persistence, and live background enrichment. This gives non-JavaScript crawlers useful product content without exposing any private collection data. Backups and local administration remain documented operational features rather than headline public marketing claims.
 
 ---
 
@@ -418,6 +442,9 @@ npm run docs:check   # fail if generated HTML is stale
 | `test/pegi-bulk.test.js` | Exact-title/platform selection, late-change skipping, and account job events |
 | `test/hltb.test.js` | HLTB response parsing, title similarity, and dynamic route discovery |
 | `test/hltb-bulk.test.js` | Exact-title selection, late-change skipping, job events, and failure circuit breaker |
+| `test/hltb-ui.test.js` | Null-safe new-game and saved-game browser metadata normalization |
+| `test/preferences.test.js` | Per-account persistence, validation, isolation, and deletion cascade |
+| `test/sorting.test.js` | Client HLTB null-last ordering and deterministic accent-insensitive title sorting |
 | `test/events.test.js` | SSE framing, account-isolated replay, and revoked-session closure |
 | `test/covers.test.js` | Conservative cover-title normalization |
 | `test/seo.test.js` | Canonical/social metadata, crawler policy, and asset dimensions |
@@ -455,5 +482,5 @@ The database is excluded from Git. Source code, generated documentation, and tes
 - PEGI parsing depends on public page structure and can require maintenance; running batch jobs are not resumed after a process restart.
 - HLTB lookup depends on an undocumented private search route that can change; it is discovered dynamically, but may still require maintenance. Running batch jobs are not resumed after a process restart.
 - Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.
-- The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.
+- Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
 - The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.

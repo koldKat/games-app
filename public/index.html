@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Catalog video games across every platform, manage wishlists and backlogs, track PEGI ratings, HLTB playtime estimates, and box art.">
+  <meta name="description" content="Multi-platform video game collection manager with wishlists, backlogs, deep filters, PEGI data, HLTB playtimes, cover art, and synced account settings.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="application-name" content="Game Kat·a·log">
   <meta name="apple-mobile-web-app-title" content="Game Kat·a·log">
@@ -15,29 +15,59 @@
   <meta property="og:site_name" content="Game Kat·a·log">
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://gamekat.net/">
-  <meta property="og:title" content="Game Kat·a·log — Personal Video Game Collection Manager">
-  <meta property="og:description" content="Catalog games across every platform, manage your backlog and wishlist, and track PEGI ratings, HLTB estimates, and box art.">
+  <meta property="og:title" content="Game Kat·a·log — Game Collection, Backlog &amp; Wishlist Tracker">
+  <meta property="og:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
   <meta property="og:image" content="https://gamekat.net/social-preview.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Game Kat·a·log personal game collection manager">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Game Kat·a·log — Personal Video Game Collection Manager">
-  <meta name="twitter:description" content="Catalog games, manage your backlog and wishlist, and track PEGI ratings, HLTB estimates, and box art.">
+  <meta name="twitter:title" content="Game Kat·a·log — Game Collection, Backlog &amp; Wishlist Tracker">
+  <meta name="twitter:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
   <meta name="twitter:image" content="https://gamekat.net/social-preview.png">
   <meta name="twitter:image:alt" content="Game Kat·a·log personal game collection manager">
-  <title>Game Kat·a·log — Personal Video Game Collection &amp; Backlog Manager</title>
+  <title>Game Kat·a·log — Video Game Collection, Backlog &amp; Wishlist Tracker</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <script>try{if(localStorage.getItem('games_shelf_auth_token'))document.documentElement.classList.add('resuming-session')}catch{}</script>
+  <script>document.documentElement.classList.add('resuming-session')</script>
   <link rel="stylesheet" href="/css/foundation.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/library.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Game Kat·a·log","url":"https://gamekat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI metadata, HLTB playtime estimates, and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","HowLongToBeat estimates","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Game Kat·a·log",
+      "url": "https://gamekat.net/",
+      "description": "A multi-platform video game collection, wishlist, and backlog manager with deep filters, PEGI metadata, HLTB playtimes, cover art, and cross-device account settings.",
+      "applicationCategory": "UtilitiesApplication",
+      "applicationSubCategory": "Video game collection manager",
+      "operatingSystem": "Any modern web browser",
+      "browserRequirements": "Requires JavaScript",
+      "isAccessibleForFree": true,
+      "inLanguage": "en",
+      "sameAs": "https://github.com/koldKat/games-app",
+      "softwareHelp": { "@type": "WebPage", "url": "https://gamekat.net/docs/user-guide.html" },
+      "featureList": [
+        "Multi-platform and custom-platform game catalogue",
+        "Physical and digital collection tracking",
+        "Wishlist, backlog, and play-status management",
+        "PEGI-assisted ratings and metadata",
+        "HowLongToBeat playtime estimates",
+        "SteamGridDB cover-art lookup",
+        "Advanced filters, missing-data views, and playtime sorting",
+        "Live incremental batch updates",
+        "Cross-device account preferences",
+        "Responsive desktop and mobile interface",
+        "Private account-scoped libraries",
+        "Background metadata and cover enrichment with live card updates"
+      ]
+    }
+  </script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -52,20 +82,20 @@
         <article class="auth-promo promo-library">
           <span class="promo-code">LIBRARY // 01</span>
           <h2>One library.<br>Every system.</h2>
-          <p>Keep physical, digital, owned, and wanted games in one fast private catalogue.</p>
-          <div class="promo-platforms"><span>SWITCH</span><span>PS4</span><span>3DS</span><span>EVERCADE</span></div>
+          <p>Track physical, digital, owned, wishlisted, and unavailable games across built-in or custom platforms.</p>
+          <div class="promo-platforms"><span>NINTENDO</span><span>PLAYSTATION</span><span>XBOX</span><span>PC + CUSTOM</span></div>
           <i class="promo-loose-cover" aria-hidden="true"></i>
         </article>
         <article class="auth-promo promo-query">
           <span class="promo-code">QUERY // READY</span>
-          <h2>Find anything fast.</h2>
-          <div class="promo-command"><b>&gt;</b> filter --status backlog</div>
-          <div class="promo-result"><span>PLATFORM</span><i></i><strong>ANY</strong></div><div class="promo-result"><span>SORT</span><i></i><strong>TITLE_ASC</strong></div>
+          <h2>Interrogate the shelf.</h2>
+          <div class="promo-command"><b>&gt;</b> filter --missing hltb</div>
+          <div class="promo-result"><span>FILTERS</span><i></i><strong>COMBINED</strong></div><div class="promo-result"><span>SORT</span><i></i><strong>PLAYTIME_ASC</strong></div>
         </article>
         <article class="auth-promo promo-metadata">
           <span class="promo-code">METADATA // ASSISTED</span>
-          <h2>Ratings without busywork.</h2>
-          <p>Request PEGI details when adding a title, then review every field before it reaches your shelf.</p>
+          <h2>Ratings and runtimes.</h2>
+          <p>Request PEGI details and four HLTB estimates per title, or conservatively scan gaps across the library.</p>
           <div class="promo-pegi" aria-label="Supported PEGI ratings"><b>3</b><b>7</b><b>12</b><b>16</b><b>18</b></div>
         </article>
       </aside>
@@ -94,22 +124,22 @@
           <span class="promo-code">BOX_ART // ONLINE</span>
           <div class="promo-cover-deck" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
           <h2>Your covers on deck.</h2>
-          <p>Pull portrait artwork from SteamGridDB and let every card look like the game it tracks.</p>
+          <p>Request SteamGridDB box art per title or fill missing covers in a conservative account-wide scan.</p>
         </article>
         <article class="auth-promo promo-track">
-          <span class="promo-code">STATE // SYNCED</span>
-          <h2>Backlog under control.</h2>
-          <p>Track playing, paused, completed, and wishlisted titles without turning it into a spreadsheet.</p>
-          <div class="promo-progress"><span><i style="--value:68%"></i></span><b>68% indexed</b></div>
+          <span class="promo-code">WORKSPACE // SYNCED</span>
+          <h2>Your view follows you.</h2>
+          <p>Account-backed search, filters, sorting, and card layout stay consistent across desktop and mobile.</p>
+          <div class="promo-progress"><span><i style="--value:100%"></i></span><b>DB PERSISTED</b></div>
         </article>
         <article class="auth-promo promo-private">
-          <span class="promo-code">DATA // YOURS</span>
-          <h2>Private by construction.</h2>
-          <p>Account-scoped libraries, local SQLite storage, and hourly compressed backups keep the collection under your control.</p>
-          <div class="promo-system"><span><i></i>ACCOUNT ISOLATED</span><span><i></i>HOURLY ZIP</span><span><i></i>LOCAL DB</span></div>
+          <span class="promo-code">ENRICH // LIVE</span>
+          <h2>Scan without babysitting.</h2>
+          <p>Fill PEGI, cover, and HLTB gaps in the background while matching cards update without a grid reload.</p>
+          <div class="promo-system"><span><i></i>PEGI DETAILS</span><span><i></i>COVER ART</span><span><i></i>HLTB TIMES</span></div>
         </article>
       </aside>
-      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a></nav></footer>
+      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
     </div>
   </main>
 
@@ -170,7 +200,7 @@
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
             <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="either">Any missing</option><option value="both">All three missing</option></select></label>
-            <label><span>Sort by</span><select id="sort-filter"><option value="title">Title A–Z</option><option value="platform">Platform</option><option value="pegi">PEGI rating</option><option value="newest">Recently added</option><option value="cartridge">Cartridge no.</option></select></label>
+            <label><span>Sort by</span><select id="sort-filter"><option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option><option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option><option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favourites first</option><option value="newest">Recently added</option><option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option><option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option><option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
         </div>

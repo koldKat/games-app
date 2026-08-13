@@ -10,6 +10,7 @@ const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
 const events = require('./server/events');
 const auth = require('./server/auth');
+const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
@@ -61,9 +62,9 @@ async function runCoverJob(userId, key) {
   events.publish(userId, 'cover-job', { job });
 }
 
-function sendJson(response, status, value) {
+function sendJson(response, status, value, headers = {}) {
   const body = JSON.stringify(value);
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store' });
+  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store', ...headers });
   response.end(body);
 }
 
@@ -131,30 +132,46 @@ async function handleApi(request, response, url) {
       const user = await auth.register(input.username, input.password, input.email);
       const token = auth.createSession(user.id);
       auth.clearFailures(ip);
-      return sendJson(response, 201, { token, user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl } });
+      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl }, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) { auth.recordFailure(ip); return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/login') {
     const ip = auth.clientIp(request);
     if (auth.isRateLimited(ip)) return sendJson(response, 429, { error: 'Too many attempts. Try again later.' });
-    const input = await readJson(request);
-    const user = await auth.login(input.username, input.password);
-    if (!user) { auth.recordFailure(ip); return sendJson(response, 401, { error: 'Invalid username or password.' }); }
-    auth.clearFailures(ip);
-    return sendJson(response, 200, { token: auth.createSession(user.id), user });
+    try {
+      const input = await readJson(request);
+      const user = await auth.login(input.username, input.password);
+      if (!user) { auth.recordFailure(ip); return sendJson(response, 401, { error: 'Invalid username or password.' }); }
+      auth.clearFailures(ip);
+      const token = auth.createSession(user.id);
+      return sendJson(response, 200, { user, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
+    } catch (error) {
+      auth.recordFailure(ip);
+      return sendJson(response, 400, { error: error.message });
+    }
   }
   if (request.method === 'POST' && url.pathname === '/api/logout') {
     auth.logout(request);
-    return sendJson(response, 200, { ok: true });
+    return sendJson(response, 200, { ok: true }, { 'Set-Cookie': auth.clearSessionCookie(request) });
   }
   const user = auth.authenticate(request);
   if (!user) return sendJson(response, 401, { error: 'Unauthorized.' });
+  const refreshedCookie = auth.refreshSessionCookie(request);
+  if (refreshedCookie) response.setHeader('Set-Cookie', refreshedCookie);
   if (request.method === 'GET' && url.pathname === '/api/events') {
     return events.subscribe(request, response, user.id, () => Boolean(auth.authenticate(request)));
   }
-  if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user });
+  if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user, preferences: preferences.get(user.id) });
+  if (request.method === 'GET' && url.pathname === '/api/preferences') return sendJson(response, 200, preferences.get(user.id));
+  if (request.method === 'PUT' && url.pathname === '/api/preferences') {
+    try { return sendJson(response, 200, preferences.set(user.id, await readJson(request))); }
+    catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
   if (request.method === 'PUT' && url.pathname === '/api/account') {
-    try { return sendJson(response, 200, { user: await auth.updateAccount(user.id, await readJson(request)) }); }
+    try {
+      const updated = await auth.updateAccount(user.id, await readJson(request));
+      return sendJson(response, 200, { user: updated }, updated.sessionInvalidated ? { 'Set-Cookie': auth.clearSessionCookie(request) } : {});
+    }
     catch (error) { return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/account/avatar') {

@@ -52,11 +52,11 @@
 <h3 id="signing-in-and-out">Signing in and out<a class="anchor" href="#signing-in-and-out" aria-label="Link to section">#</a></h3>
 <ul>
 <li>Use <strong>Login</strong> with an existing username and password.</li>
-<li>The browser remembers a random session token, not the password.</li>
+<li>A secure HttpOnly cookie carries the random session identifier. Page scripts cannot read it, and the app puts no authentication data in local or session storage.</li>
 <li>Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.</li>
 <li>Select the username in the top-right corner, then <strong>Log out</strong>, to end the current session.</li>
 </ul>
-<p>When a stored session is present during refresh, a compact <strong>Mounting authenticated library…</strong> screen remains visible only while the token is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.</p>
+<p>During refresh, a compact <strong>Mounting authenticated library…</strong> screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.</p>
 <hr>
 <h2 id="dashboard">Dashboard<a class="anchor" href="#dashboard" aria-label="Link to section">#</a></h2>
 <p>The ten compact cards summarize the current account and act as one-click major filters:</p>
@@ -68,8 +68,9 @@
 <h3 id="search">Search<a class="anchor" href="#search" aria-label="Link to section">#</a></h3>
 <p>Search matches the game title, publisher, and notes. It is case- and accent-insensitive, so <code>Pokemon</code> also finds <code>Pokémon</code>, and starts after a short typing delay.</p>
 <h3 id="filters">Filters<a class="anchor" href="#filters" aria-label="Link to section">#</a></h3>
-<div class="table-wrap"><table><thead><tr><th>Filter</th><th>Options</th></tr></thead><tbody><tr><td><strong>Platform</strong></td><td>Platforms currently present in the account</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>PEGI</strong></td><td>3, 7, 12, 16, 18, or Unrated</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Data gaps</strong></td><td>No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable</td></tr><tr><td><strong>Sort by</strong></td><td>Title, platform, PEGI rating, recently added, or cartridge number</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Filter</th><th>Options</th></tr></thead><tbody><tr><td><strong>Platform</strong></td><td>Platforms currently present in the account</td></tr><tr><td><strong>Collection</strong></td><td>Owned, Wishlisted, or Unavailable</td></tr><tr><td><strong>PEGI</strong></td><td>3, 7, 12, 16, 18, or Unrated</td></tr><tr><td><strong>Play status</strong></td><td>Backlog, Playing, Completed, Paused, or Abandoned</td></tr><tr><td><strong>Data gaps</strong></td><td>No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable</td></tr><tr><td><strong>Sort by</strong></td><td>Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time</td></tr></tbody></table></div>
 <p>Select <strong>Clear filters</strong> to return to the complete library. Large result sets initially render 120 cards; <strong>Show more</strong> renders the next batch.</p>
+<p>HLTB duration sorts always place games without that particular estimate after games with a known time. This keeps missing data from appearing as zero-hour games. Live batch updates use the same selected order as a full library reload.</p>
 <h3 id="card-and-compact-views">Card and compact views<a class="anchor" href="#card-and-compact-views" aria-label="Link to section">#</a></h3>
 <p>Use the two view buttons beside <strong>My library</strong>:</p>
 <ul>
@@ -79,7 +80,7 @@
 <li>The platform appears inside each card as its own label.</li>
 <li>Games with saved HLTB data show compact Main, Main +, 100%, and All Styles estimates.</li>
 </ul>
-<p>The preference is stored in the browser.</p>
+<p>The selected view, search text, every filter, and the sort order are stored with the account in SQLite. They follow the account to another browser, desktop, or phone; nothing is kept in local or session storage.</p>
 <p>The signed-in workspace keeps the login screen&#39;s scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes artwork from the current account when the app is entered; the decorative layer is non-interactive and does not affect the cards or controls.</p>
 <p>The small release string beside <strong>Game Kat·a·log</strong> comes from the project&#39;s <code>VERSION</code> file and can be changed from the local administrator panel.</p>
 <hr>
@@ -176,7 +177,7 @@
 <p>The compact terminal-style panel provides:</p>
 <ul>
 <li>Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.</li>
-<li>Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, and integration settings.</li>
+<li>Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.</li>
 <li>Cross-account catalogue search and deliberate, confirmed game deletion.</li>
 <li>An arbitrary release-string editor. Saving writes directly to <code>VERSION</code>; reload the main app to see the new string in its header.</li>
 <li>SQLite WAL checkpoint, query-planner optimization, and vacuum actions.</li>

@@ -4,6 +4,7 @@ const { db } = require('./db');
 
 const scrypt = util.promisify(crypto.scrypt);
 const SESSION_SECONDS = 14 * 24 * 60 * 60;
+const SESSION_COOKIE = 'games_session';
 const failures = new Map();
 
 function publicUser(row) {
@@ -63,9 +64,31 @@ function createSession(userId) {
   return token;
 }
 
+function cookieTokenFromRequest(request) {
+  const cookie = String(request.headers.cookie || '').split(';').map(part => part.trim()).find(part => part.startsWith(`${SESSION_COOKIE}=`));
+  if (!cookie) return '';
+  try { return decodeURIComponent(cookie.slice(SESSION_COOKIE.length + 1)); }
+  catch { return ''; }
+}
 function tokenFromRequest(request) {
   const authorization = request.headers.authorization || '';
-  return authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+  if (authorization.startsWith('Bearer ')) return authorization.slice(7);
+  return cookieTokenFromRequest(request);
+}
+
+function sessionCookie(token, request) {
+  const forwarded = String(request.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const secure = forwarded === 'https' || Boolean(request.socket?.encrypted);
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_SECONDS}${secure ? '; Secure' : ''}`;
+}
+function clearSessionCookie(request) {
+  const forwarded = String(request.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const secure = forwarded === 'https' || Boolean(request.socket?.encrypted);
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure ? '; Secure' : ''}`;
+}
+function refreshSessionCookie(request) {
+  const token = cookieTokenFromRequest(request);
+  return token ? sessionCookie(token, request) : '';
 }
 
 function authenticate(request) {
@@ -122,4 +145,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { hashPassword, verifyPassword, register, login, createSession, authenticate, logout, updateAccount, avatarPath, updateAvatar, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { hashPassword, verifyPassword, register, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

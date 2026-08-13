@@ -6,18 +6,18 @@ function hoursLabel(value) {
 }
 
 function metadataFrom(game = {}) {
+  const source = game || {};
   return {
-    hltbId: game.hltbId || null, hltbTitle: game.hltbTitle || '', hltbUrl: game.hltbUrl || '',
-    hltbMainStory: game.hltbMainStory ?? null, hltbMainExtra: game.hltbMainExtra ?? null,
-    hltbCompletionist: game.hltbCompletionist ?? null, hltbAllStyles: game.hltbAllStyles ?? null,
-    hltbUpdatedAt: game.hltbUpdatedAt || null,
+    hltbId: source.hltbId || null, hltbTitle: source.hltbTitle || '', hltbUrl: source.hltbUrl || '',
+    hltbMainStory: source.hltbMainStory ?? null, hltbMainExtra: source.hltbMainExtra ?? null,
+    hltbCompletionist: source.hltbCompletionist ?? null, hltbAllStyles: source.hltbAllStyles ?? null,
+    hltbUpdatedAt: source.hltbUpdatedAt || null,
   };
 }
 
 function cardTimes(game, escapeHtml) {
-  if (!game.hltbId) return '';
   const items = [['Main', game.hltbMainStory], ['Main +', game.hltbMainExtra], ['100%', game.hltbCompletionist], ['Average', game.hltbAllStyles]];
-  return `<dl class="card-hltb" aria-label="HowLongToBeat estimates">${items.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(hoursLabel(value))}</dd></div>`).join('')}</dl>`;
+  return `<dl class="card-hltb${game.hltbId ? '' : ' is-empty'}" aria-label="${game.hltbId ? 'HowLongToBeat estimates' : 'No HowLongToBeat estimates'}">${items.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(hoursLabel(value))}</dd></div>`).join('')}</dl>`;
 }
 
 function createHltbLookup({ $, api, escapeHtml, toast }) {

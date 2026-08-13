@@ -12,16 +12,16 @@ function decodeFrame(frame) {
   catch { return null; }
 }
 
-export function openEventStream({ token, onEvent, onUnauthorized = () => {} }) {
+export function openEventStream({ onEvent, onUnauthorized = () => {} }) {
   let stopped = false; let controller = null; let lastEventId = null;
   (async function connect() {
     while (!stopped) {
       try {
         controller = new AbortController();
-        const headers = { Accept: 'text/event-stream', Authorization: `Bearer ${token}` };
+        const headers = { Accept: 'text/event-stream' };
         if (lastEventId != null) headers['Last-Event-ID'] = lastEventId;
         const response = await fetch('/api/events', {
-          headers,
+          headers, credentials: 'same-origin',
           cache: 'no-store', signal: controller.signal,
         });
         if (stopped) return;

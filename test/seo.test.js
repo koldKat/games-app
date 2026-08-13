@@ -12,8 +12,22 @@ test('landing page publishes canonical, social, and structured metadata', () => 
   assert.match(html, /property="og:image" content="https:\/\/gamekat\.net\/social-preview\.png"/);
   assert.match(html, /name="twitter:card" content="summary_large_image"/);
   assert.match(html, /type="application\/ld\+json"/);
-  assert.match(html, /"@type":"WebApplication"/);
+  assert.match(html, /"@type": "WebApplication"/);
+  assert.match(html, /"applicationCategory": "UtilitiesApplication"/);
+  assert.match(html, /"sameAs": "https:\/\/github\.com\/koldKat\/games-app"/);
+  assert.match(html, /"softwareHelp": \{ "@type": "WebPage", "url": "https:\/\/gamekat\.net\/docs\/user-guide\.html" \}/);
+  assert.match(html, /Cross-device account preferences/);
+  assert.match(html, /PEGI-assisted ratings and metadata/);
+  assert.match(html, /HowLongToBeat playtime estimates/);
   assert.match(html, /name="description" content="[^"]{100,170}"/);
+});
+
+test('landing feature copy reflects the current product surface', () => {
+  const html = read('index.html'); const manifest = JSON.parse(read('manifest.webmanifest'));
+  for (const phrase of ['Every system', 'Interrogate the shelf', 'Ratings and runtimes', 'missing covers', 'Your view follows you', 'Scan without babysitting']) {
+    assert.match(html, new RegExp(phrase));
+  }
+  assert.match(manifest.description, /multi-platform.*metadata.*playtime/i);
 });
 
 test('crawler files expose the landing page without indexing private surfaces', () => {

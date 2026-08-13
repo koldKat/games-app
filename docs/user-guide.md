@@ -21,11 +21,11 @@ Every account has an isolated library. Game ownership is attached to the account
 ### Signing in and out
 
 - Use **Login** with an existing username and password.
-- The browser remembers a random session token, not the password.
+- A secure HttpOnly cookie carries the random session identifier. Page scripts cannot read it, and the app puts no authentication data in local or session storage.
 - Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.
 - Select the username in the top-right corner, then **Log out**, to end the current session.
 
-When a stored session is present during refresh, a compact **Mounting authenticated library…** screen remains visible only while the token is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.
+During refresh, a compact **Mounting authenticated library…** screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.
 
 ---
 
@@ -67,9 +67,11 @@ Search matches the game title, publisher, and notes. It is case- and accent-inse
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable |
-| **Sort by** | Title, platform, PEGI rating, recently added, or cartridge number |
+| **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
+
+HLTB duration sorts always place games without that particular estimate after games with a known time. This keeps missing data from appearing as zero-hour games. Live batch updates use the same selected order as a full library reload.
 
 ### Card and compact views
 
@@ -81,7 +83,7 @@ Use the two view buttons beside **My library**:
 - The platform appears inside each card as its own label.
 - Games with saved HLTB data show compact Main, Main +, 100%, and All Styles estimates.
 
-The preference is stored in the browser.
+The selected view, search text, every filter, and the sort order are stored with the account in SQLite. They follow the account to another browser, desktop, or phone; nothing is kept in local or session storage.
 
 The signed-in workspace keeps the login screen's scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes artwork from the current account when the app is entered; the decorative layer is non-interactive and does not affect the cards or controls.
 
@@ -239,7 +241,7 @@ On the computer running Game Kat·a·log, open `http://127.0.0.1:3005/admin/`. T
 The compact terminal-style panel provides:
 
 - Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.
-- Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, and integration settings.
+- Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.
 - Cross-account catalogue search and deliberate, confirmed game deletion.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.

@@ -253,12 +253,29 @@ body {
 }
 .game-title {
   font-size: 14px;
+  height: 2.44em;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .badge {
   font-size: 9px;
 }
+.badges {
+  height: 42px;
+  align-content: flex-start;
+  overflow: hidden;
+}
 .card-actions button {
   font-size: 10px;
+}
+.game-card {
+  display: flex;
+  flex-direction: column;
+}
+.card-actions {
+  margin-top: auto;
 }
 .toast {
   font-size: 11px;
@@ -745,13 +762,13 @@ body {
   font-size: 12px;
 }
 .card-hltb {
-  margin: 2px 0 0;
+  margin: auto 0 0;
   border: 1px solid #35301f;
   background: rgba(13, 14, 10, .78);
 }
 .card-hltb > div {
   min-width: 0;
-  padding: 4px 5px;
+  padding: 3px 5px;
   border-right: 1px solid #2e291c;
 }
 .card-hltb > div:last-child {
@@ -760,18 +777,86 @@ body {
 .card-hltb dt {
   overflow: hidden;
   color: #8f866e;
-  font-size: 7px;
+  font-size: 10px;
+  line-height: 1.1;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
 .card-hltb dd {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   color: #dac58d;
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1.1;
   font-weight: 700;
 }
+.card-hltb.is-empty {
+  border-color: #252a26;
+  background: rgba(10, 12, 11, .58);
+}
+.card-hltb.is-empty dt,
+.card-hltb.is-empty dd {
+  color: #58615e;
+}
+.card-hltb + .card-actions {
+  margin-top: 8px;
+}
+.game-grid.list-view .game-title,
+.game-grid.list-view .badges {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+.game-grid.list-view .game-title {
+  display: block;
+}
+.game-grid.list-view .game-card {
+  grid-template-columns: 135px minmax(180px, 1fr) auto minmax(250px, 310px) auto;
+}
+.game-grid.list-view .badges {
+  grid-column: 3;
+  grid-row: 1;
+}
+.game-grid.list-view .card-hltb {
+  display: grid;
+  grid-column: 4;
+  grid-row: 1;
+  margin: 0;
+}
+.game-grid.list-view .card-actions {
+  grid-column: 5;
+  grid-row: 1;
+}
+@media (max-width: 1050px) {
+  .game-grid.list-view .game-card {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+  .game-grid.list-view .game-title {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .game-grid.list-view .card-hltb,
+  .game-grid.list-view .badges,
+  .game-grid.list-view .card-actions {
+    grid-column: 2;
+    grid-row: auto;
+  }
+}
 @media (max-width: 520px) {
+  .game-title {
+    height: auto;
+    min-height: 2.44em;
+    display: block;
+    overflow: visible;
+  }
+  .badges {
+    height: auto;
+    min-height: 42px;
+    overflow: visible;
+  }
+  .game-grid.list-view .game-card {
+    grid-template-columns: 85px minmax(0, 1fr);
+  }
   .pegi-assist {
     display: flex;
     align-items: flex-start;
