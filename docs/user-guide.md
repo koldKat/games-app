@@ -31,12 +31,13 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Dashboard
 
-The ten compact cards summarize the current account and act as one-click major filters:
+The eleven compact cards summarize the current account and act as one-click major filters:
 
 | Card | Meaning |
 |---|---|
 | **Total** | Every title in the account's library and clears all filters |
-| **Owned** | Games currently owned |
+| **Owned physical** | Owned games stored as physical copies |
+| **Owned digital** | Owned games stored as digital copies |
 | **Wishlisted** | Games wanted but not yet owned |
 | **Unavailable** | Entries unavailable on the tracked platform |
 | **Backlog** | Games waiting to be played |
@@ -63,7 +64,7 @@ Search matches the game title, publisher, and notes. It is case- and accent-inse
 | Filter | Options |
 |---|---|
 | **Platform** | Platforms currently present in the account |
-| **Collection** | Owned, Wishlisted, or Unavailable |
+| **Collection** | Owned physical, Owned digital, Wishlisted, or Unavailable |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable |

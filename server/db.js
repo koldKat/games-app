@@ -215,7 +215,10 @@ function listGames(userId, filters = {}) {
     params.q = searchPattern(filters.q);
   }
   if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
-  if (filters.ownership) { clauses.push('ownership = @ownership'); params.ownership = filters.ownership; }
+  if (filters.ownership === 'owned_physical' || filters.ownership === 'owned_digital') {
+    clauses.push('ownership = \'owned\' AND media_format = @ownedFormat');
+    params.ownedFormat = filters.ownership.slice('owned_'.length);
+  } else if (filters.ownership) { clauses.push('ownership = @ownership'); params.ownership = filters.ownership; }
   if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
   if (filters.pegi === 'none') clauses.push('pegi IS NULL');
   else if (filters.pegi) { clauses.push('pegi = @pegi'); params.pegi = Number(filters.pegi); }
@@ -353,11 +356,12 @@ function randomShowcaseCovers(limit = 14) {
 function stats(userId) {
   const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=?').get(userId).n;
   const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? GROUP BY ownership').all(userId);
+  const ownedFormats = db.prepare("SELECT media_format label, COUNT(*) count FROM games WHERE user_id=? AND ownership='owned' GROUP BY media_format").all(userId);
   const platforms = db.prepare('SELECT platform label, COUNT(*) count FROM games WHERE user_id=? GROUP BY platform ORDER BY count DESC, platform').all(userId);
   const pegi = db.prepare("SELECT COALESCE(CAST(pegi AS TEXT), 'Unrated') label, COUNT(*) count FROM games WHERE user_id=? GROUP BY pegi ORDER BY pegi").all(userId);
   const play = db.prepare('SELECT play_status label, COUNT(*) count FROM games WHERE user_id=? GROUP BY play_status').all(userId);
   const favorites = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND favorite=1').get(userId).n;
-  return { total, favorites, ownership, platforms, pegi, play };
+  return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
 }
 
 module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, randomShowcaseCovers, stats };

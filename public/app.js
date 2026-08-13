@@ -224,7 +224,8 @@ $('#auth-form').addEventListener('submit', async event => {
 function count(group, label) { return group?.find(row => row.label === label)?.count || 0; }
 function renderStats() {
   $('#stat-total').textContent = state.stats?.total?.toLocaleString() || '0';
-  $('#stat-owned').textContent = count(state.stats?.ownership, 'owned').toLocaleString();
+  $('#stat-owned-physical').textContent = count(state.stats?.ownedFormats, 'physical').toLocaleString();
+  $('#stat-owned-digital').textContent = count(state.stats?.ownedFormats, 'digital').toLocaleString();
   $('#stat-wanted').textContent = count(state.stats?.ownership, 'wanted').toLocaleString();
   $('#stat-unavailable').textContent = count(state.stats?.ownership, 'unavailable').toLocaleString();
   $('#stat-backlog').textContent = count(state.stats?.play, 'backlog').toLocaleString();
@@ -282,7 +283,9 @@ function gameMatchesFilters(game) {
   const query = filters.q.value.trim().toLocaleLowerCase();
   if (query && ![game.title, game.publisher, game.notes].some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
   if (filters.platform.value && game.platform !== filters.platform.value) return false;
-  if (filters.ownership.value && game.ownership !== filters.ownership.value) return false;
+  if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
+  if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
+  if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && game.ownership !== filters.ownership.value) return false;
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="total" viewBox="0 0 24 24">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/>
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/>
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>
+  </symbol>
+  <symbol id="physical" viewBox="0 0 24 24">
+    <path d="M6 3.5h10.5L20 7v13.5H6z"/>
+    <path d="M16.5 3.5V7H20M9 11h8v6H9zM11 11v2M15 11v2"/>
+  </symbol>
+  <symbol id="digital" viewBox="0 0 24 24">
+    <path d="M7 18.5h10a4 4 0 0 0 .5-8 5.7 5.7 0 0 0-10.8-1.7A4.9 4.9 0 0 0 7 18.5Z"/>
+    <path d="M12 8.5v7m-3-3 3 3 3-3"/>
+  </symbol>
+  <symbol id="wishlist" viewBox="0 0 24 24">
+    <path d="M6 3.5h12v17L12 17l-6 3.5z"/>
+    <path d="M12 7v6m-3-3h6"/>
+  </symbol>
+  <symbol id="unavailable" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5"/>
+    <path d="m6 18 12-12"/>
+  </symbol>
+  <symbol id="backlog" viewBox="0 0 24 24">
+    <path d="m4 8 8-4 8 4-8 4z"/>
+    <path d="m4 12 8 4 8-4M4 16l8 4 8-4"/>
+  </symbol>
+  <symbol id="playing" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5"/>
+    <path d="m10 8 6 4-6 4z"/>
+  </symbol>
+  <symbol id="completed" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5"/>
+    <path d="m8 12 2.7 2.7L16.5 9"/>
+  </symbol>
+  <symbol id="paused" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="8.5"/>
+    <path d="M9.5 8.5v7M14.5 8.5v7"/>
+  </symbol>
+  <symbol id="abandoned" viewBox="0 0 24 24">
+    <path d="M10 5H5v14h5M13 8l4 4-4 4M8 12h9"/>
+  </symbol>
+  <symbol id="favourite" viewBox="0 0 24 24">
+    <path d="M20 8.8c0 5.2-8 10.2-8 10.2S4 14 4 8.8A4.3 4.3 0 0 1 12 6.6 4.3 4.3 0 0 1 20 8.8Z"/>
+  </symbol>
+</svg>

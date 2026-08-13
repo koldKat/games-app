@@ -26,6 +26,11 @@ test('account libraries remain isolated and unowned rows are never claimed by us
 
   data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
   assert.equal(data.stats(owner.id).total, 1);
+  data.createGame(owner.id, { title: 'Digital Game', platform: 'PC (Windows)', mediaFormat: 'digital' });
+  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_physical' }).map(game => game.title), ['Owned Game']);
+  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_digital' }).map(game => game.title), ['Digital Game']);
+  assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'physical').count, 1);
+  assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'digital').count, 1);
 
   const created = data.createGame(other.id, {
     title: 'Private Game', platform: 'Evercade', pegiDescriptors: ['Fear', 'Paid random items'],

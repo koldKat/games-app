@@ -21,6 +21,7 @@ test('preferences persist per account and invalid values fall back safely', asyn
   const saved = preferences.set(first.id, { view: 'list', filters: { q: 'Pokémon', platform: 'Nintendo Switch 2',
     ownership: 'wanted', pegi: '7', playStatus: 'backlog', missing: 'hltb', favorite: '1', sort: 'hltb_main_short' } });
   assert.deepEqual(preferences.get(first.id), saved);
+  assert.equal(preferences.set(first.id, { filters: { ownership: 'owned_digital' } }).filters.ownership, 'owned_digital');
   assert.deepEqual(preferences.get(second.id), preferences.defaults());
   assert.deepEqual(preferences.set(second.id, { view: 'invalid', filters: { ownership: 'broken', sort: 'DROP TABLE games' } }), preferences.defaults());
 });

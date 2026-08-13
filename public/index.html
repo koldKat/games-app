@@ -162,16 +162,17 @@
       </section>
 
       <section class="stats" aria-label="Collection summary">
-        <button class="stat-card stat-total" data-stat-kind="all"><span class="stat-icon">▦</span><span><b id="stat-total">—</b><small>Total</small></span></button>
-        <button class="stat-card" data-stat-kind="ownership" data-stat-value="owned"><span class="stat-icon green">✓</span><span><b id="stat-owned">—</b><small>Owned</small></span></button>
-        <button class="stat-card" data-stat-kind="ownership" data-stat-value="wanted"><span class="stat-icon amber">◎</span><span><b id="stat-wanted">—</b><small>Wishlisted</small></span></button>
-        <button class="stat-card" data-stat-kind="ownership" data-stat-value="unavailable"><span class="stat-icon red">×</span><span><b id="stat-unavailable">—</b><small>Unavailable</small></span></button>
-        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="backlog"><span class="stat-icon blue">≡</span><span><b id="stat-backlog">—</b><small>Backlog</small></span></button>
-        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="playing"><span class="stat-icon cyan">▶</span><span><b id="stat-playing">—</b><small>Playing</small></span></button>
-        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="completed"><span class="stat-icon violet">★</span><span><b id="stat-completed">—</b><small>Completed</small></span></button>
-        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="paused"><span class="stat-icon orange">‖</span><span><b id="stat-paused">—</b><small>Paused</small></span></button>
-        <button class="stat-card" data-stat-kind="playStatus" data-stat-value="abandoned"><span class="stat-icon grey">⌁</span><span><b id="stat-abandoned">—</b><small>Abandoned</small></span></button>
-        <button class="stat-card" data-stat-kind="favorite" data-stat-value="1"><span class="stat-icon pink">♥</span><span><b id="stat-favorites">—</b><small>Favourites</small></span></button>
+        <button class="stat-card stat-tone-neutral" data-stat-kind="all"><span><b id="stat-total">—</b><small>Total</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#total"></use></svg></button>
+        <button class="stat-card stat-tone-green" data-stat-kind="ownership" data-stat-value="owned_physical"><span><b id="stat-owned-physical">—</b><small>Owned physical</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#physical"></use></svg></button>
+        <button class="stat-card stat-tone-cyan" data-stat-kind="ownership" data-stat-value="owned_digital"><span><b id="stat-owned-digital">—</b><small>Owned digital</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#digital"></use></svg></button>
+        <button class="stat-card stat-tone-amber" data-stat-kind="ownership" data-stat-value="wanted"><span><b id="stat-wanted">—</b><small>Wishlisted</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#wishlist"></use></svg></button>
+        <button class="stat-card stat-tone-red" data-stat-kind="ownership" data-stat-value="unavailable"><span><b id="stat-unavailable">—</b><small>Unavailable</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#unavailable"></use></svg></button>
+        <button class="stat-card stat-tone-blue" data-stat-kind="playStatus" data-stat-value="backlog"><span><b id="stat-backlog">—</b><small>Backlog</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#backlog"></use></svg></button>
+        <button class="stat-card stat-tone-cyan" data-stat-kind="playStatus" data-stat-value="playing"><span><b id="stat-playing">—</b><small>Playing</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#playing"></use></svg></button>
+        <button class="stat-card stat-tone-violet" data-stat-kind="playStatus" data-stat-value="completed"><span><b id="stat-completed">—</b><small>Completed</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#completed"></use></svg></button>
+        <button class="stat-card stat-tone-orange" data-stat-kind="playStatus" data-stat-value="paused"><span><b id="stat-paused">—</b><small>Paused</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#paused"></use></svg></button>
+        <button class="stat-card stat-tone-grey" data-stat-kind="playStatus" data-stat-value="abandoned"><span><b id="stat-abandoned">—</b><small>Abandoned</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#abandoned"></use></svg></button>
+        <button class="stat-card stat-tone-pink" data-stat-kind="favorite" data-stat-value="1"><span><b id="stat-favorites">—</b><small>Favourites</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#favourite"></use></svg></button>
       </section>
 
       <section class="library">
@@ -188,7 +189,7 @@
           <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, publisher, or notes…" autocomplete="off"></label>
           <div class="filters">
             <label><span>Platform</span><select id="platform-filter"><option value="">All platforms</option></select></label>
-            <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
+            <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
             <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="either">Any missing</option><option value="both">All three missing</option></select></label>

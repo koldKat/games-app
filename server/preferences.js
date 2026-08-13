@@ -5,7 +5,7 @@ const { db } = require('./db');
 const SORTS = new Set(['title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
   'ownership', 'status', 'favorites', 'newest', 'oldest', 'updated', 'hltb_main_short', 'hltb_main_long',
   'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long', 'cartridge']);
-const OWNERSHIP = new Set(['', 'owned', 'wanted', 'unavailable']);
+const OWNERSHIP = new Set(['', 'owned_physical', 'owned_digital', 'wanted', 'unavailable']);
 const PEGI = new Set(['', '3', '7', '12', '16', '18', 'none']);
 const STATUS = new Set(['', 'backlog', 'playing', 'completed', 'paused', 'abandoned']);
 const MISSING = new Set(['', 'pegi', 'cover', 'hltb', 'either', 'both']);

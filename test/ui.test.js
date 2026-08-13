@@ -119,6 +119,18 @@ test('common filters never move the viewport', () => {
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
 });
 
+test('collection filtering separates owned physical and digital games', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const database = read('server/db.js'); const preferences = read('server/preferences.js');
+  assert.match(html, /value="owned_physical">Owned · physical<\/option><option value="owned_digital">Owned · digital/);
+  assert.match(html, /id="stat-owned-physical"[\s\S]*id="stat-owned-digital"/);
+  assert.match(application, /filters\.ownership\.value === 'owned_physical'/);
+  assert.match(application, /filters\.ownership\.value === 'owned_digital'/);
+  assert.match(database, /media_format = @ownedFormat/);
+  assert.match(database, /const ownedFormats =/);
+  assert.match(preferences, /'owned_physical', 'owned_digital'/);
+});
+
 test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
   assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*Any missing[\s\S]*All three missing/);
