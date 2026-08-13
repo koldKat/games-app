@@ -14,9 +14,14 @@ const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
+const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants');
 
 const PORT = Number(process.env.PORT || 3005);
 const HOST = process.env.HOST || '0.0.0.0';
+const JSON_BODY_MAX_LENGTH = 1_000_000;
+const AVATAR_MAX_BYTES = 256 * 1024;
+const SHOWCASE_COVER_COUNT = 38;
+const SHUTDOWN_GRACE_MS = 2_500;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const AVATARS_DIR = path.join(PUBLIC_DIR, 'avatars');
 fs.mkdirSync(AVATARS_DIR, { recursive: true });
@@ -52,11 +57,11 @@ async function runCoverJob(userId, key) {
       consecutiveErrors = 0;
     } catch (error) {
       job.errors++; job.lastError = error.message; consecutiveErrors++;
-      if (consecutiveErrors >= 5) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); events.publish(userId, 'cover-job', { job }); return; }
+      if (consecutiveErrors >= BULK_JOB.maxConsecutiveErrors) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); events.publish(userId, 'cover-job', { job }); return; }
     }
     job.processed++;
     events.publish(userId, 'cover-job', { job });
-    await covers.wait(150);
+    await covers.wait(BULK_JOB.coverDelayMs);
   }
   job.state = 'complete'; job.current = ''; job.finishedAt = new Date().toISOString();
   events.publish(userId, 'cover-job', { job });
@@ -92,7 +97,7 @@ function readJson(request) {
     request.setEncoding('utf8');
     request.on('data', chunk => {
       body += chunk;
-      if (body.length > 1_000_000) request.destroy(new Error('Request body is too large.'));
+      if (body.length > JSON_BODY_MAX_LENGTH) request.destroy(new Error('Request body is too large.'));
     });
     request.on('end', () => {
       try { resolve(body ? JSON.parse(body) : {}); }
@@ -121,7 +126,7 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { version: readVersion() });
   }
   if (request.method === 'GET' && url.pathname === '/api/showcase/covers') {
-    return sendJson(response, 200, { covers: db.randomShowcaseCovers(38) });
+    return sendJson(response, 200, { covers: db.randomShowcaseCovers(SHOWCASE_COVER_COUNT) });
   }
   if (request.method === 'POST' && url.pathname === '/api/register') {
     const ip = auth.clientIp(request);
@@ -176,7 +181,7 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'POST' && url.pathname === '/api/account/avatar') {
     try {
-      const image = await readRaw(request, 256 * 1024);
+      const image = await readRaw(request, AVATAR_MAX_BYTES);
       if (image.length < 4 || image[0] !== 0xff || image[1] !== 0xd8 || image[2] !== 0xff) return sendJson(response, 415, { error: 'Avatar must be a JPEG image.' });
       const filename = `${user.id}_${Date.now()}_${require('node:crypto').randomBytes(4).toString('hex')}.jpg`;
       const old = auth.avatarPath(user.id);
@@ -218,7 +223,7 @@ async function handleApi(request, response, url) {
       return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform')), suggestions: [] });
     }
     const existing = db.searchGameTitles(user.id, query);
-    if (!key || query.length < 3 || url.searchParams.get('local') === '1') return sendJson(response, 200, { existing, suggestions: [] });
+    if (!key || query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') return sendJson(response, 200, { existing, suggestions: [] });
     try { return sendJson(response, 200, { existing, suggestions: await covers.searchTitles(key, query) }); }
     catch { return sendJson(response, 200, { existing, suggestions: [] }); }
   }
@@ -305,7 +310,7 @@ server.listen(PORT, HOST, () => {
 
 function shutdown() {
   server.close(() => { db.db.close(); process.exit(0); });
-  setTimeout(() => process.exit(1), 2500).unref();
+  setTimeout(() => process.exit(1), SHUTDOWN_GRACE_MS).unref();
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

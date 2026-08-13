@@ -1,13 +1,43 @@
 const path = require('node:path');
 const Database = require('better-sqlite3');
+const {
+  MEDIA_FORMAT_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
+} = require('./constants');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
+const RELEASE_YEAR_MIN = 1970;
+const RELEASE_YEAR_MAX = 2100;
+const METADATA_LIST_ITEM_MAX_LENGTH = 180;
+const METADATA_LIST_MAX_ITEMS = 24;
+const METADATA_TEXT_MAX_LENGTH = 8_000;
+const PUBLISHER_MAX_LENGTH = 160;
+const TITLE_MAX_LENGTH = 220;
+const URL_MAX_LENGTH = 2_000;
+const COVER_SOURCE_MAX_LENGTH = 80;
+const COVER_MATCH_TITLE_MAX_LENGTH = 300;
+const HLTB_TIMESTAMP_MAX_LENGTH = 40;
+const HLTB_HOURS_MAX = 100_000;
+const TITLE_SEARCH_LIMIT = 10;
+const TITLE_SEARCH_LIMIT_MAX = 20;
+const SHOWCASE_COVER_LIMIT = 14;
+const SHOWCASE_COVER_LIMIT_MAX = 48;
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 const normalizeSearchText = value => String(value || '').normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 const searchPattern = value => `%${normalizeSearchText(value).replace(/[\\%_]/g, character => `\\${character}`)}%`;
+const safeList = value => (Array.isArray(value) ? value : [])
+  .map(item => String(item || '').trim().slice(0, METADATA_LIST_ITEM_MAX_LENGTH))
+  .filter(Boolean).slice(0, METADATA_LIST_MAX_ITEMS);
+const safeText = (value, limit = METADATA_TEXT_MAX_LENGTH) => String(value || '').trim().slice(0, limit);
+const validReleaseYear = value => Number.isInteger(Number(value)) && Number(value) >= RELEASE_YEAR_MIN && Number(value) <= RELEASE_YEAR_MAX;
+const hltbHours = value => {
+  if (value === '' || value == null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 && number <= HLTB_HOURS_MAX ? Math.round(number * 100) / 100 : null;
+};
+const sqlTextValues = values => values.map(value => `'${value.replaceAll("'", "''")}'`).join(', ');
 db.function('search_normalize', { deterministic: true }, normalizeSearchText);
 
 db.exec(`
@@ -50,10 +80,10 @@ db.exec(`
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     title TEXT NOT NULL COLLATE NOCASE,
     platform TEXT NOT NULL,
-    pegi INTEGER CHECK (pegi IS NULL OR pegi IN (3, 7, 12, 16, 18)),
-    ownership TEXT NOT NULL DEFAULT 'owned' CHECK (ownership IN ('owned', 'wanted', 'unavailable')),
-    play_status TEXT NOT NULL DEFAULT 'backlog' CHECK (play_status IN ('backlog', 'playing', 'completed', 'paused', 'abandoned')),
-    media_format TEXT NOT NULL DEFAULT 'physical' CHECK (media_format IN ('physical', 'digital', 'unknown')),
+    pegi INTEGER CHECK (pegi IS NULL OR pegi IN (${PEGI_RATINGS.join(', ')})),
+    ownership TEXT NOT NULL DEFAULT 'owned' CHECK (ownership IN (${sqlTextValues(OWNERSHIP_VALUES)})),
+    play_status TEXT NOT NULL DEFAULT 'backlog' CHECK (play_status IN (${sqlTextValues(PLAY_STATUS_VALUES)})),
+    media_format TEXT NOT NULL DEFAULT 'physical' CHECK (media_format IN (${sqlTextValues(MEDIA_FORMAT_VALUES)})),
     cartridge_number INTEGER,
     publisher TEXT NOT NULL DEFAULT '',
     release_year INTEGER,
@@ -158,20 +188,14 @@ function normalizeGame(input = {}) {
   if (!title) throw new Error('Title is required.');
   if (!platform) throw new Error('Platform is required.');
   const pegi = input.pegi === '' || input.pegi == null ? null : Number(input.pegi);
-  if (pegi != null && ![3, 7, 12, 16, 18].includes(pegi)) throw new Error('PEGI must be 3, 7, 12, 16, 18, or blank.');
-  const ownership = ['owned', 'wanted', 'unavailable'].includes(input.ownership) ? input.ownership : 'owned';
-  const playStatus = ['backlog', 'playing', 'completed', 'paused', 'abandoned'].includes(input.playStatus) ? input.playStatus : 'backlog';
-  const mediaFormat = ['physical', 'digital', 'unknown'].includes(input.mediaFormat) ? input.mediaFormat : 'physical';
+  if (pegi != null && !PEGI_RATINGS.includes(pegi)) throw new Error('PEGI must be 3, 7, 12, 16, 18, or blank.');
+  const ownership = OWNERSHIP_VALUES.includes(input.ownership) ? input.ownership : 'owned';
+  const playStatus = PLAY_STATUS_VALUES.includes(input.playStatus) ? input.playStatus : 'backlog';
+  const mediaFormat = MEDIA_FORMAT_VALUES.includes(input.mediaFormat) ? input.mediaFormat : 'physical';
   const cartridgeNumber = input.cartridgeNumber === '' || input.cartridgeNumber == null ? null : Number.parseInt(input.cartridgeNumber, 10);
   const releaseYear = input.releaseYear === '' || input.releaseYear == null ? null : Number.parseInt(input.releaseYear, 10);
   if (cartridgeNumber != null && (!Number.isInteger(cartridgeNumber) || cartridgeNumber < 0)) throw new Error('Cartridge number must be a positive whole number.');
-  if (releaseYear != null && (!Number.isInteger(releaseYear) || releaseYear < 1970 || releaseYear > 2100)) throw new Error('Release year is invalid.');
-  const safeList = value => (Array.isArray(value) ? value : []).map(item => String(item || '').trim().slice(0, 180)).filter(Boolean).slice(0, 24);
-  const safeText = (value, limit = 8000) => String(value || '').trim().slice(0, limit);
-  const hltbHours = value => {
-    if (value === '' || value == null) return null;
-    const number = Number(value); return Number.isFinite(number) && number > 0 && number <= 100000 ? Math.round(number * 100) / 100 : null;
-  };
+  if (releaseYear != null && !validReleaseYear(releaseYear)) throw new Error('Release year is invalid.');
   const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
   return {
     title, platform, pegi, ownership, playStatus, mediaFormat, cartridgeNumber,
@@ -182,16 +206,16 @@ function normalizeGame(input = {}) {
     pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
     pegiAdvice: safeText(input.pegiAdvice), pegiOutline: safeText(input.pegiOutline),
     pegiContentIssues: safeText(input.pegiContentIssues), pegiOtherIssues: safeText(input.pegiOtherIssues),
-    hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, 220) : '',
-    hltbUrl: hltbId ? safeText(input.hltbUrl, 2000) : '',
+    hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, TITLE_MAX_LENGTH) : '',
+    hltbUrl: hltbId ? safeText(input.hltbUrl, URL_MAX_LENGTH) : '',
     hltbMainStory: hltbId ? hltbHours(input.hltbMainStory) : null,
     hltbMainExtra: hltbId ? hltbHours(input.hltbMainExtra) : null,
     hltbCompletionist: hltbId ? hltbHours(input.hltbCompletionist) : null,
     hltbAllStyles: hltbId ? hltbHours(input.hltbAllStyles) : null,
-    hltbUpdatedAt: hltbId ? safeText(input.hltbUpdatedAt, 40) || new Date().toISOString() : null,
-    coverUrl: String(input.coverUrl || '').trim().slice(0, 2000),
-    coverSource: String(input.coverSource || '').trim().slice(0, 80),
-    coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, 300),
+    hltbUpdatedAt: hltbId ? safeText(input.hltbUpdatedAt, HLTB_TIMESTAMP_MAX_LENGTH) || new Date().toISOString() : null,
+    coverUrl: String(input.coverUrl || '').trim().slice(0, URL_MAX_LENGTH),
+    coverSource: String(input.coverSource || '').trim().slice(0, COVER_SOURCE_MAX_LENGTH),
+    coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, COVER_MATCH_TITLE_MAX_LENGTH),
   };
 }
 
@@ -263,10 +287,10 @@ function listGames(userId, filters = {}) {
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
-function searchGameTitles(userId, query, limit = 10) {
-  const clean = String(query || '').trim().slice(0, 220);
-  if (clean.length < 2) return [];
-  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(20, Number(limit) || 10)));
+function searchGameTitles(userId, query, limit = TITLE_SEARCH_LIMIT) {
+  const clean = String(query || '').trim().slice(0, TITLE_MAX_LENGTH);
+  if (clean.length < TITLE_LOOKUP_MIN_LENGTH) return [];
+  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(TITLE_SEARCH_LIMIT_MAX, Number(limit) || TITLE_SEARCH_LIMIT)));
 }
 const normalizeIdentity = normalizeSearchText;
 function findDuplicateGames(userId, title, platform) {
@@ -300,12 +324,10 @@ function gamesMissingPegiMetadata(userId) {
 }
 
 function updateGamePegiMetadata(userId, id, metadata = {}) {
-  const safeList = value => (Array.isArray(value) ? value : []).map(item => String(item || '').trim().slice(0, 180)).filter(Boolean).slice(0, 24);
-  const safeText = (value, limit = 8000) => String(value || '').trim().slice(0, limit);
   const ratingValue = metadata.pegi ?? metadata.rating;
   const yearValue = metadata.releaseYear ?? metadata.year;
-  const pegi = [3, 7, 12, 16, 18].includes(Number(ratingValue)) ? Number(ratingValue) : null;
-  const releaseYear = Number.isInteger(Number(yearValue)) && Number(yearValue) >= 1970 && Number(yearValue) <= 2100 ? Number(yearValue) : null;
+  const pegi = PEGI_RATINGS.includes(Number(ratingValue)) ? Number(ratingValue) : null;
+  const releaseYear = validReleaseYear(yearValue) ? Number(yearValue) : null;
   const result = db.prepare(`UPDATE games SET pegi=COALESCE(@pegi, pegi),
     publisher=CASE WHEN @publisher<>'' THEN @publisher ELSE publisher END,
     release_year=COALESCE(@releaseYear, release_year), pegi_url=@pegiUrl,
@@ -316,7 +338,7 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
     AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''`).run({
       id, userId, pegi, releaseYear,
-      publisher: safeText(metadata.publisher, 160), pegiUrl: safeText(metadata.pegiUrl ?? metadata.url, 2000),
+      publisher: safeText(metadata.publisher, PUBLISHER_MAX_LENGTH), pegiUrl: safeText(metadata.pegiUrl ?? metadata.url, URL_MAX_LENGTH),
       pegiDescriptorsJson: JSON.stringify(safeList(metadata.descriptors)),
       pegiReleasesJson: JSON.stringify(safeList(metadata.releases)),
       pegiAdvice: safeText(metadata.advice), pegiOutline: safeText(metadata.outline),
@@ -346,8 +368,8 @@ function updateGameHltb(userId, id, metadata = {}) {
   return result.changes ? getGame(userId, id) : null;
 }
 
-function randomShowcaseCovers(limit = 14) {
-  const count = Math.max(1, Math.min(48, Number.parseInt(limit, 10) || 14));
+function randomShowcaseCovers(limit = SHOWCASE_COVER_LIMIT) {
+  const count = Math.max(1, Math.min(SHOWCASE_COVER_LIMIT_MAX, Number.parseInt(limit, 10) || SHOWCASE_COVER_LIMIT));
   return db.prepare(`SELECT cover_url AS coverUrl FROM games
     WHERE cover_url LIKE 'https://%'
     GROUP BY cover_url ORDER BY RANDOM() LIMIT ?`).all(count).map(row => row.coverUrl);

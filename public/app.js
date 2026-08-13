@@ -3,12 +3,16 @@ import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
 import { compareGames } from './js/game-sorting.js';
+import {
+  DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
+  SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
+} from './js/ui-policy.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 function mountDecorativeCoverSlots() {
   $$('[data-cover-slots]').forEach(field => {
-    const count = Math.max(0, Math.min(64, Number(field.dataset.coverSlots) || 0));
+    const count = Math.max(0, Math.min(DECORATIVE_COVER_SLOT_MAX, Number(field.dataset.coverSlots) || 0));
     const elementName = field.dataset.coverElement || 'i'; const baseClass = field.dataset.coverClass || '';
     field.replaceChildren(...Array.from({ length: count }, (_, index) => {
       const element = document.createElement(elementName);
@@ -22,7 +26,7 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
-const state = { games: [], stats: null, platforms: [], limit: 120, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], limit: LIBRARY_PAGE_SIZE, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -55,7 +59,7 @@ async function api(url, options) {
 }
 function toast(message) {
   const element = $('#toast'); element.textContent = message; element.classList.add('show');
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), 2600);
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), UI_TIMING.toastMs);
 }
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
@@ -66,7 +70,7 @@ async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
   const loadCandidate = url => new Promise(resolve => {
     const preload = new Image(); let settled = false;
     const finish = value => { if (settled) return; settled = true; clearTimeout(timeout); preload.onload = null; preload.onerror = null; resolve(value); };
-    const timeout = setTimeout(() => finish(''), 6000);
+    const timeout = setTimeout(() => finish(''), UI_TIMING.artworkLoadTimeoutMs);
     preload.onload = () => finish(url); preload.onerror = () => finish(''); preload.src = url;
   });
   for (const candidate of candidates) {
@@ -114,7 +118,7 @@ function showAuth(message = '') {
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
   state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null;
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
-  state.games = []; state.stats = null; state.platforms = []; state.limit = 120;
+  state.games = []; state.stats = null; state.platforms = []; state.limit = LIBRARY_PAGE_SIZE;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
   state.user = null;
@@ -122,7 +126,7 @@ function showAuth(message = '') {
   $('#auth-screen').hidden = false;
   endSessionResume();
   if (message) { $('#auth-error').textContent = message; $('#auth-error').hidden = false; }
-  setTimeout(() => $('#auth-username').focus(), 40);
+  setTimeout(() => $('#auth-username').focus(), UI_TIMING.focusDelayMs);
 }
 function preferencePayload() {
   return { view: state.view, filters: Object.fromEntries(Object.entries(filters).map(([key, element]) => [key, element.value])) };
@@ -137,11 +141,11 @@ async function savePreferences(keepalive = false) {
   } catch {
     if (generation === sessionGeneration && state.user?.id === userId) {
       preferencesDirty = true;
-      if (!keepalive) preferenceSaveTimer = setTimeout(() => { void savePreferences(); }, 5000);
+      if (!keepalive) preferenceSaveTimer = setTimeout(() => { void savePreferences(); }, UI_TIMING.preferenceRetryMs);
     }
   }
 }
-function schedulePreferenceSave(delay = 120) {
+function schedulePreferenceSave(delay = UI_TIMING.preferenceSaveMs) {
   if (!preferencesReady || !state.user) return;
   preferencesDirty = true;
   clearTimeout(preferenceSaveTimer);
@@ -380,7 +384,7 @@ async function loadGames() {
   try {
     const games = await api(`/api/games?${queryString()}`);
     if (sequence !== gameLoadSequence || state.user?.id !== userId) return;
-    state.games = games; state.limit = 120;
+    state.games = games; state.limit = LIBRARY_PAGE_SIZE;
   } catch (error) { if (sequence === gameLoadSequence && state.user?.id === userId) toast(error.message); }
   finally {
     if (sequence === gameLoadSequence && state.user?.id === userId) { state.loading = false; renderGames(); flushPendingGamePatches(); }
@@ -395,10 +399,10 @@ async function loadStatsAndMeta() {
   } catch (error) { if (sequence === metaLoadSequence && state.user?.id === userId) toast(error.message); }
 }
 let searchTimer;
-filters.q.addEventListener('input', () => { renderQuickFilter(); schedulePreferenceSave(260); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, 220); });
+filters.q.addEventListener('input', () => { renderQuickFilter(); schedulePreferenceSave(UI_TIMING.searchPreferenceSaveMs); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, UI_TIMING.librarySearchDebounceMs); });
 Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); schedulePreferenceSave(); loadGames(); }));
 $('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); schedulePreferenceSave(); loadGames(); });
-$('#load-more').addEventListener('click', () => { state.limit += 120; renderGames(); });
+$('#load-more').addEventListener('click', () => { state.limit += LIBRARY_PAGE_SIZE; renderGames(); });
 function renderQuickFilter() {
   $$('[data-stat-kind]').forEach(button => {
     const { statKind: kind, statValue: value = '' } = button.dataset;
@@ -471,7 +475,7 @@ function openForm(game = null) {
   $('#game-year').value = formValue(game, 'releaseYear'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
   $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
-  setTimeout(() => $('#game-title').focus(), 60);
+  setTimeout(() => $('#game-title').focus(), UI_TIMING.formFocusDelayMs);
 }
 function closeForm() { titleAutocomplete.close(); dialog.close(); }
 function closeOnTrueBackdrop(targetDialog, close) {
@@ -559,11 +563,11 @@ $('#games').addEventListener('click', async event => {
 
 $('#pegi-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#pegi-results'); box.hidden = false;
-  if (title.length < 2) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
+  if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
   box.innerHTML = '<p class="pegi-message">Searching PEGI’s catalogue…</p>';
   try {
     const results = await api(`/api/pegi/search?q=${encodeURIComponent(title)}`);
-    box.innerHTML = results.length ? `<p class="pegi-message pegi-result-count">${results.length.toLocaleString()} PEGI result${results.length === 1 ? '' : 's'}</p>${results.map((result, index) => `<button type="button" class="pegi-result" data-pegi-index="${index}"><span class="pegi-box">${result.pegi || '?'}</span><span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml([result.publisher, ...result.releases.slice(0, 2)].filter(Boolean).join(' · '))}</small></span></button>`).join('')}` : `<p class="pegi-message">No PEGI match found. You can keep entering it manually or <a href="https://pegi.info/search-pegi?q=${encodeURIComponent(title)}" target="_blank" rel="noopener">search PEGI directly</a>.</p>`;
+    box.innerHTML = results.length ? `<p class="pegi-message pegi-result-count">${results.length.toLocaleString()} PEGI result${results.length === 1 ? '' : 's'}</p>${results.map((result, index) => `<button type="button" class="pegi-result" data-pegi-index="${index}"><span class="pegi-box">${result.pegi || '?'}</span><span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml([result.publisher, ...result.releases.slice(0, PEGI_RELEASE_PREVIEW_LIMIT)].filter(Boolean).join(' · '))}</small></span></button>`).join('')}` : `<p class="pegi-message">No PEGI match found. You can keep entering it manually or <a href="https://pegi.info/search-pegi?q=${encodeURIComponent(title)}" target="_blank" rel="noopener">search PEGI directly</a>.</p>`;
     box._results = results;
   } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)} You can still enter the game manually.</p>`; }
 });
@@ -585,7 +589,7 @@ function renderCoverSelection() {
 }
 $('#cover-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#cover-results'); box.hidden = false;
-  if (title.length < 2) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
+  if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
   box.innerHTML = '<p class="pegi-message">Querying SteamGridDB artwork…</p>';
   try {
     const results = await api(`/api/covers/search?q=${encodeURIComponent(title)}`); box._results = results;
@@ -612,7 +616,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   accountDialog.showModal();
   Promise.all([loadCoverStatus(), loadPegiStatus(), loadHltbStatus()]);
-  setTimeout(() => $('#account-username').focus(), 40);
+  setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
   element.textContent = shortStatus; element.dataset.tooltip = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
@@ -705,7 +709,7 @@ $('#avatar-upload').addEventListener('click', () => $('#avatar-file').click());
 function avatarBlob(file) {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('Choose an image file.'));
-    if (file.size > 20 * 1024 * 1024) return reject(new Error('Source image is too large (maximum 20 MB).'));
+    if (file.size > SOURCE_IMAGE_MAX_BYTES) return reject(new Error('Source image is too large (maximum 20 MB).'));
     const image = new Image(); const objectUrl = URL.createObjectURL(file);
     image.onload = () => {
       URL.revokeObjectURL(objectUrl);

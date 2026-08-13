@@ -41,6 +41,7 @@
 <pre data-language="text"><code>games-app/
   server.js                 HTTP entrypoint, static serving, route dispatch
   server/
+    constants.js            shared catalogue domains, provider identity and batch policy
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
@@ -67,6 +68,7 @@
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
+    js/ui-policy.js         browser pagination, lookup limits and interaction timing
     css/
       foundation.css       reset, structural layout, and baseline responsive rules
       theme.css            dense dark operator theme and primary components
@@ -99,8 +101,10 @@
     seo.test.js             canonical metadata, crawler policy, image dimensions
     admin.test.js           localhost gate and cross-account admin summaries
     version.test.js         arbitrary release-string persistence and validation
+    constants.test.js       shared domain, provider identity and browser-policy contracts
   VERSION                   release string displayed in the application header
   games.db                  runtime SQLite database</code></pre>
+<p>Values shared by multiple server features live in <code>server/constants.js</code>; provider-specific limits stay beside their provider implementation. Browser pagination, lookup thresholds, upload limits, and interaction timings live in <code>public/js/ui-policy.js</code>. This keeps operational policy discoverable without creating a single catch-all configuration module or coupling browser modules to CommonJS server code.</p>
 <h3 id="request-flow">Request flow<a class="anchor" href="#request-flow" aria-label="Link to section">#</a></h3>
 <pre data-language="text"><code>Browser
   -&gt; static file request ----------------------&gt; server.js -&gt; public/

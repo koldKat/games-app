@@ -6,6 +6,9 @@ const backup = require('./backup');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
+const JSON_BODY_MAX_LENGTH = 64 * 1024;
+const CATALOGUE_QUERY_MAX_LENGTH = 120;
+const CATALOGUE_RESULT_LIMIT = 250;
 const startedAt = Date.now();
 const adminFiles = new Map([
   ['/admin', ['index.html', 'text/html; charset=utf-8']],
@@ -50,7 +53,7 @@ function readJson(request) {
     request.setEncoding('utf8');
     request.on('data', chunk => {
       body += chunk;
-      if (body.length > 64 * 1024) request.destroy(new Error('Request body is too large.'));
+      if (body.length > JSON_BODY_MAX_LENGTH) request.destroy(new Error('Request body is too large.'));
     });
     request.on('end', () => {
       try { resolve(body ? JSON.parse(body) : {}); }
@@ -105,12 +108,12 @@ function deleteAccount(id) {
 }
 
 function listCatalogue(query = '') {
-  const q = String(query).trim().slice(0, 120);
+  const q = String(query).trim().slice(0, CATALOGUE_QUERY_MAX_LENGTH);
   return db.prepare(`SELECT g.id, g.title, g.platform, g.pegi, g.ownership, g.play_status AS playStatus,
     CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END hasCover, u.username
     FROM games g LEFT JOIN users u ON u.id=g.user_id
     WHERE (@q='' OR g.title LIKE @like OR g.platform LIKE @like OR u.username LIKE @like)
-    ORDER BY g.title COLLATE NOCASE LIMIT 250`).all({ q, like: `%${q}%` });
+    ORDER BY g.title COLLATE NOCASE LIMIT ${CATALOGUE_RESULT_LIMIT}`).all({ q, like: `%${q}%` });
 }
 
 async function handleApi(request, response, url) {

@@ -1,11 +1,15 @@
 'use strict';
 
+const { TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
+
 const BASE_URL = 'https://howlongtobeat.com';
 const FALLBACK_SEARCH_PATH = '/api/s';
 const CACHE_MS = 30 * 60 * 1000;
 const SESSION_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 20_000;
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36';
+const QUERY_MAX_LENGTH = 220;
+const RESULT_LIMIT = 20;
 const cache = new Map();
 let session = null;
 let queue = Promise.resolve();
@@ -111,12 +115,12 @@ async function fetchSearch(title, retry = true) {
   if (!response.ok) throw new Error(`HLTB returned HTTP ${response.status}.`);
   const body = await response.json();
   return (Array.isArray(body.data) ? body.data : []).map(game => parseGame(game, title))
-    .filter(game => game.id && game.title).sort((left, right) => right.similarity - left.similarity).slice(0, 20);
+    .filter(game => game.id && game.title).sort((left, right) => right.similarity - left.similarity).slice(0, RESULT_LIMIT);
 }
 
 async function search(title) {
-  const clean = String(title || '').trim().slice(0, 220);
-  if (clean.length < 2) throw new Error('Type at least two characters.');
+  const clean = String(title || '').trim().slice(0, QUERY_MAX_LENGTH);
+  if (clean.length < TITLE_LOOKUP_MIN_LENGTH) throw new Error('Type at least two characters.');
   const key = normalize(clean); const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.results;
   const run = queue.catch(() => {}).then(() => fetchSearch(clean));

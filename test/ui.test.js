@@ -61,7 +61,7 @@ test('authenticated app matches the login account-cover background visibility', 
   assert.match(application, /await loadHeroCovers\(isCurrent\);[\s\S]*await loadAppBackgroundCovers\(isCurrent\)/);
   assert.match(application, /for \(const candidate of candidates\)[\s\S]*await loadCandidate\(candidate\)/);
   assert.doesNotMatch(application, /Promise\.all\(slots\.map|Math\.min\(8, candidates\.length\)/);
-  assert.match(application, /setTimeout\(\(\) => finish\('\'\), 6000\)/);
+  assert.match(application, /setTimeout\(\(\) => finish\('\'\), UI_TIMING\.artworkLoadTimeoutMs\)/);
   assert.match(application, /loaded\[nextSlot % loaded\.length\]/);
   assert.doesNotMatch(application, /applyDecorativeCovers\(slots, covers\.slice/);
   assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.075/);
@@ -81,14 +81,15 @@ test('stored sessions use a resume screen instead of flashing authentication', (
 });
 
 test('account preferences use SQLite-backed API state instead of browser storage', () => {
-  const application = read('public/app.js'); const server = read('server.js'); const preferences = read('server/preferences.js'); const database = read('server/db.js');
+  const application = read('public/app.js'); const server = read('server.js'); const preferences = read('server/preferences.js'); const database = read('server/db.js'); const constants = read('server/constants.js');
   assert.match(database, /CREATE TABLE IF NOT EXISTS user_preferences/);
   assert.match(server, /pathname === '\/api\/preferences'/);
   assert.match(application, /api\('\/api\/preferences', \{ method: 'PUT'/);
   assert.match(application, /applyPreferences\(savedPreferences\)/);
   assert.match(application, /window\.addEventListener\('pagehide',[^\n]*savePreferences\(true\)/);
   assert.match(application, /#logout-button'[\s\S]*await savePreferences\(\);[\s\S]*api\('\/api\/logout'/);
-  assert.match(preferences, /hltb_main_short/);
+  assert.match(preferences, /new Set\(SORT_VALUES\)/);
+  assert.match(constants, /'hltb_main_short'/);
   assert.doesNotMatch(application, /localStorage|sessionStorage/);
 });
 
@@ -121,14 +122,15 @@ test('common filters never move the viewport', () => {
 
 test('collection filtering separates owned physical and digital games', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const database = read('server/db.js'); const preferences = read('server/preferences.js');
+  const database = read('server/db.js'); const preferences = read('server/preferences.js'); const constants = read('server/constants.js');
   assert.match(html, /value="owned_physical">Owned · physical<\/option><option value="owned_digital">Owned · digital/);
   assert.match(html, /id="stat-owned-physical"[\s\S]*id="stat-owned-digital"/);
   assert.match(application, /filters\.ownership\.value === 'owned_physical'/);
   assert.match(application, /filters\.ownership\.value === 'owned_digital'/);
   assert.match(database, /media_format = @ownedFormat/);
   assert.match(database, /const ownedFormats =/);
-  assert.match(preferences, /'owned_physical', 'owned_digital'/);
+  assert.match(preferences, /OWNERSHIP_FILTER_VALUES/);
+  assert.match(constants, /'owned_physical', 'owned_digital'/);
 });
 
 test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times', () => {
@@ -184,7 +186,7 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
   assert.match(application, /createTitleAutocomplete/);
   assert.match(autocomplete, /api\(`\/api\/titles\/autocomplete/);
   assert.match(autocomplete, /catch \{\}/);
-  assert.match(autocomplete, /\}, 100\);/);
+  assert.match(autocomplete, /\}, AUTOCOMPLETE_POLICY\.debounceMs\);/);
   assert.match(server, /pathname === '\/api\/titles\/autocomplete'[\s\S]*catch \{ return sendJson\(response, 200, \{ existing, suggestions: \[\] \}\); \}/);
   assert.match(css, /\.title-suggestions\{[^}]*background:#080d12/);
   assert.match(html, /id="duplicate-warning"[\s\S]*id="open-duplicate"/);

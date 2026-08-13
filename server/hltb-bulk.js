@@ -1,5 +1,7 @@
 'use strict';
 
+const { BULK_JOB } = require('./constants');
+
 const normalize = value => String(value || '').replace(/[™®©]/g, '').normalize('NFKD').replace(/\p{M}/gu, '')
   .toLocaleLowerCase().replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 
@@ -37,13 +39,13 @@ function createHltbBulkManager({ data, lookup, pause = wait, notify = () => {} }
         consecutiveErrors = 0;
       } catch (error) {
         job.errors++; job.lastError = error.message; consecutiveErrors++;
-        if (consecutiveErrors >= 5) {
+        if (consecutiveErrors >= BULK_JOB.maxConsecutiveErrors) {
           job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString();
           notify(userId, 'hltb-job', { job }); return job;
         }
       }
       job.processed++; notify(userId, 'hltb-job', { job });
-      await pause(1500);
+      await pause(BULK_JOB.hltbDelayMs);
     }
     job.state = 'complete'; job.current = ''; job.finishedAt = new Date().toISOString();
     notify(userId, 'hltb-job', { job }); return job;

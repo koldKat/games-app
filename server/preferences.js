@@ -1,14 +1,17 @@
 'use strict';
 
 const { db } = require('./db');
+const {
+  MISSING_FILTER_VALUES, OWNERSHIP_FILTER_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, SORT_VALUES,
+} = require('./constants');
 
-const SORTS = new Set(['title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
-  'ownership', 'status', 'favorites', 'newest', 'oldest', 'updated', 'hltb_main_short', 'hltb_main_long',
-  'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long', 'cartridge']);
-const OWNERSHIP = new Set(['', 'owned_physical', 'owned_digital', 'wanted', 'unavailable']);
-const PEGI = new Set(['', '3', '7', '12', '16', '18', 'none']);
-const STATUS = new Set(['', 'backlog', 'playing', 'completed', 'paused', 'abandoned']);
-const MISSING = new Set(['', 'pegi', 'cover', 'hltb', 'either', 'both']);
+const SORTS = new Set(SORT_VALUES);
+const OWNERSHIP = new Set(['', ...OWNERSHIP_FILTER_VALUES]);
+const PEGI = new Set(['', ...PEGI_RATINGS.map(String), 'none']);
+const STATUS = new Set(['', ...PLAY_STATUS_VALUES]);
+const MISSING = new Set(['', ...MISSING_FILTER_VALUES]);
+const SEARCH_QUERY_MAX_LENGTH = 220;
+const PLATFORM_MAX_LENGTH = 80;
 
 const defaults = () => ({ view: 'grid', filters: { q: '', platform: '', ownership: '', pegi: '', playStatus: '', missing: '', favorite: '', sort: 'title' } });
 const text = (value, limit) => String(value || '').trim().slice(0, limit);
@@ -19,7 +22,7 @@ function normalize(input = {}) {
   return {
     view: input.view === 'list' ? 'list' : 'grid',
     filters: {
-      q: text(filters.q, 220), platform: text(filters.platform, 80),
+      q: text(filters.q, SEARCH_QUERY_MAX_LENGTH), platform: text(filters.platform, PLATFORM_MAX_LENGTH),
       ownership: choice(filters.ownership, OWNERSHIP), pegi: choice(filters.pegi, PEGI),
       playStatus: choice(filters.playStatus, STATUS), missing: choice(filters.missing, MISSING),
       favorite: filters.favorite === '1' ? '1' : '', sort: choice(filters.sort, SORTS, 'title'),

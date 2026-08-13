@@ -1,3 +1,5 @@
+import { LOOKUP_MIN_TITLE_LENGTH } from './ui-policy.js';
+
 function hoursLabel(value) {
   const hours = Number(value);
   if (!Number.isFinite(hours) || hours <= 0) return '—';
@@ -46,7 +48,7 @@ function createHltbLookup({ $, api, escapeHtml, toast }) {
 
   searchButton.addEventListener('click', async () => {
     const title = titleInput.value.trim(); const sequence = ++searchSequence; results.hidden = false;
-    if (title.length < 2) { results.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
+    if (title.length < LOOKUP_MIN_TITLE_LENGTH) { results.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
     searchButton.disabled = true; searchButton.textContent = 'Searching…';
     try {
       const choices = await api(`/api/hltb/search?q=${encodeURIComponent(title)}`);

@@ -1,7 +1,14 @@
 const https = require('node:https');
+const { APP_USER_AGENT, TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
 
 const cache = new Map();
 const MAX_PAGES = 10;
+const BASE_URL = 'https://pegi.info/search-pegi';
+const REQUEST_TIMEOUT_MS = 12_000;
+const RESPONSE_MAX_LENGTH = 4_000_000;
+const RESULTS_PER_PAGE = 10;
+const QUERY_MAX_LENGTH = 128;
+const CACHE_TTL_MS = 60 * 60 * 1000;
 const decode = value => String(value || '')
   .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&#039;|&apos;/g, "'")
   .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -9,7 +16,7 @@ const decode = value => String(value || '')
 
 function fetchPage(url) {
   return new Promise((resolve, reject) => {
-    const request = https.get(url, { headers: { 'User-Agent': 'GamesShelf/1.0 personal PEGI lookup' }, timeout: 12000 }, response => {
+    const request = https.get(url, { headers: { 'User-Agent': APP_USER_AGENT }, timeout: REQUEST_TIMEOUT_MS }, response => {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.resume();
         return resolve(fetchPage(new URL(response.headers.location, url)));
@@ -17,7 +24,7 @@ function fetchPage(url) {
       if (response.statusCode !== 200) { response.resume(); return reject(new Error(`PEGI returned HTTP ${response.statusCode}.`)); }
       let body = '';
       response.setEncoding('utf8');
-      response.on('data', chunk => { if (body.length < 4_000_000) body += chunk; });
+      response.on('data', chunk => { if (body.length < RESPONSE_MAX_LENGTH) body += chunk; });
       response.on('end', () => resolve(body));
     });
     request.on('timeout', () => request.destroy(new Error('PEGI lookup timed out.')));
@@ -28,7 +35,7 @@ function fetchPage(url) {
 function parseResults(html, query) {
   const resultsArea = html.match(/<div id="results"[\s\S]*?<\/main>/)?.[0] || '';
   const articles = resultsArea.split(/<article class="game">/).slice(1);
-  return articles.slice(0, 10).map(article => {
+  return articles.slice(0, RESULTS_PER_PAGE).map(article => {
     const title = decode(article.match(/game-content__header-title[\s\S]*?<h3>([\s\S]*?)<\/h3>/)?.[1]);
     const publisher = decode(article.match(/<span class="publisher">([\s\S]*?)<\/span>/)?.[1]);
     const pegi = Number(article.match(/age_threshold_icons\/(3|7|12|16|18)\.png/)?.[1]) || null;
@@ -52,14 +59,14 @@ function parseResults(html, query) {
       outline: sections['brief outline of the game'] || '',
       contentIssues: sections['content specific issues'] || '',
       otherIssues: sections['other issues'] || '',
-      pegiUrl: `https://pegi.info/search-pegi?q=${encodeURIComponent(title || query)}`,
+      pegiUrl: `${BASE_URL}?q=${encodeURIComponent(title || query)}`,
     };
   }).filter(result => result.title);
 }
 
 function resultPageCount(html) {
   const totalText = decode(html.match(/Found\s+([\d,.]+)\s+results?/i)?.[1]).replace(/\D/g, '');
-  const totalPages = totalText ? Math.ceil(Number(totalText) / 10) : 0;
+  const totalPages = totalText ? Math.ceil(Number(totalText) / RESULTS_PER_PAGE) : 0;
   const linkedPages = [...String(html || '').matchAll(/(?:[?&]|&amp;)page=(\d+)/gi)].map(match => Number(match[1]) + 1);
   const detectedPages = totalPages || (linkedPages.length ? Math.max(...linkedPages) : 1);
   return Math.max(1, Math.min(MAX_PAGES, detectedPages));
@@ -76,12 +83,12 @@ function mergeResults(pages) {
 }
 
 async function searchPegi(query, { fetcher = fetchPage } = {}) {
-  const q = String(query || '').trim().slice(0, 128);
-  if (q.length < 2) throw new Error('Enter at least two characters.');
+  const q = String(query || '').trim().slice(0, QUERY_MAX_LENGTH);
+  if (q.length < TITLE_LOOKUP_MIN_LENGTH) throw new Error('Enter at least two characters.');
   const key = q.toLocaleLowerCase();
   const cached = cache.get(key);
-  if (cached && Date.now() - cached.at < 60 * 60 * 1000) return cached.results;
-  const url = new URL('https://pegi.info/search-pegi');
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results;
+  const url = new URL(BASE_URL);
   url.searchParams.set('q', q);
   const firstHtml = await fetcher(url);
   const pages = [parseResults(firstHtml, q)];

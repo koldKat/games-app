@@ -1,3 +1,5 @@
+const { BULK_JOB } = require('./constants');
+
 const normalize = value => String(value || '').replace(/[™®©]/g, '').normalize('NFKD').replace(/\p{M}/gu, '')
   .toLocaleLowerCase().replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 
@@ -67,11 +69,11 @@ function createPegiBulkManager({ data, lookup, pause = wait, notify = () => {} }
         consecutiveErrors = 0;
       } catch (error) {
         job.errors++; job.lastError = error.message; consecutiveErrors++;
-        if (consecutiveErrors >= 5) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); notify(userId, 'pegi-job', { job }); return job; }
+        if (consecutiveErrors >= BULK_JOB.maxConsecutiveErrors) { job.processed++; job.state = 'failed'; job.current = ''; job.finishedAt = new Date().toISOString(); notify(userId, 'pegi-job', { job }); return job; }
       }
       job.processed++;
       notify(userId, 'pegi-job', { job });
-      await pause(500);
+      await pause(BULK_JOB.pegiDelayMs);
     }
     job.state = 'complete'; job.current = ''; job.finishedAt = new Date().toISOString();
     notify(userId, 'pegi-job', { job });

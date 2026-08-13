@@ -5,6 +5,16 @@ const { db } = require('./db');
 const scrypt = util.promisify(crypto.scrypt);
 const SESSION_SECONDS = 14 * 24 * 60 * 60;
 const SESSION_COOKIE = 'games_session';
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 32;
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 200;
+const EMAIL_MAX_LENGTH = 254;
+const PASSWORD_SALT_BYTES = 16;
+const PASSWORD_HASH_BYTES = 64;
+const SESSION_TOKEN_BYTES = 32;
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILURES_PER_WINDOW = 8;
 const failures = new Map();
 
 function publicUser(row) {
@@ -12,29 +22,29 @@ function publicUser(row) {
 }
 
 async function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = await scrypt(password, salt, 64);
+  const salt = crypto.randomBytes(PASSWORD_SALT_BYTES).toString('hex');
+  const hash = await scrypt(password, salt, PASSWORD_HASH_BYTES);
   return { hash: hash.toString('hex'), salt };
 }
 
 async function verifyPassword(password, storedHash, salt) {
-  const actual = await scrypt(password, salt, 64);
+  const actual = await scrypt(password, salt, PASSWORD_HASH_BYTES);
   const expected = Buffer.from(storedHash, 'hex');
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
 function validateCredentials(username, password) {
   const clean = String(username || '').trim();
-  if (clean.length < 3 || clean.length > 32) throw new Error('Username must be 3–32 characters.');
+  if (clean.length < USERNAME_MIN_LENGTH || clean.length > USERNAME_MAX_LENGTH) throw new Error('Username must be 3–32 characters.');
   if (!/^[\p{L}\p{N}_.-]+$/u.test(clean)) throw new Error('Username may contain letters, numbers, dot, dash, and underscore.');
-  if (String(password || '').length < 8 || String(password).length > 200) throw new Error('Password must be at least 8 characters.');
+  if (String(password || '').length < PASSWORD_MIN_LENGTH || String(password).length > PASSWORD_MAX_LENGTH) throw new Error('Password must be at least 8 characters.');
   return clean;
 }
 
 function normalizeEmail(email) {
   const clean = String(email || '').trim().toLocaleLowerCase();
   if (!clean) return null;
-  if (clean.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Enter a valid email address or leave it blank.');
+  if (clean.length > EMAIL_MAX_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Enter a valid email address or leave it blank.');
   return clean;
 }
 
@@ -58,7 +68,7 @@ async function login(username, password) {
 }
 
 function createSession(userId) {
-  const token = crypto.randomBytes(32).toString('hex');
+  const token = crypto.randomBytes(SESSION_TOKEN_BYTES).toString('hex');
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_SECONDS;
   db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
   return token;
@@ -136,9 +146,9 @@ function updateAvatar(userId, filename) {
 
 function isRateLimited(ip) {
   const now = Date.now();
-  const recent = (failures.get(ip) || []).filter(at => now - at < 15 * 60 * 1000);
+  const recent = (failures.get(ip) || []).filter(at => now - at < FAILURE_WINDOW_MS);
   failures.set(ip, recent);
-  return recent.length >= 8;
+  return recent.length >= MAX_FAILURES_PER_WINDOW;
 }
 function recordFailure(ip) { const recent = failures.get(ip) || []; recent.push(Date.now()); failures.set(ip, recent); }
 function clearFailures(ip) { failures.delete(ip); }

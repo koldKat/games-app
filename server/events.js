@@ -1,6 +1,9 @@
 const clients = new Map();
 const channels = new Map();
 const HISTORY_LIMIT = 2048;
+const RETRY_MS = 2_500;
+const HEARTBEAT_MS = 20_000;
+const CONNECTION_LIFETIME_MS = 10 * 60 * 1000;
 
 function frame(event, data, id = null) {
   return `${id == null ? '' : `id: ${id}\n`}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -35,7 +38,7 @@ function subscribe(request, response, userId, isAuthorized = () => true) {
     Connection: 'keep-alive',
     'X-Accel-Buffering': 'no',
   });
-  response.write('retry: 2500\n\n');
+  response.write(`retry: ${RETRY_MS}\n\n`);
   const stream = channel(userId);
   const requestedId = Number.parseInt(request.headers['last-event-id'], 10);
   if (Number.isInteger(requestedId) && requestedId >= 0) {
@@ -48,9 +51,9 @@ function subscribe(request, response, userId, isAuthorized = () => true) {
   }
   response.write(frame('stream-ready', {}, stream.nextId - 1));
   const userClients = clients.get(userId) || new Set(); userClients.add(response); clients.set(userId, userClients);
-  const heartbeat = setInterval(() => keepAlive(response, isAuthorized), 20_000);
+  const heartbeat = setInterval(() => keepAlive(response, isAuthorized), HEARTBEAT_MS);
   heartbeat.unref?.();
-  const lifetime = setTimeout(() => response.end(), 10 * 60 * 1000);
+  const lifetime = setTimeout(() => response.end(), CONNECTION_LIFETIME_MS);
   lifetime.unref?.();
   const close = () => {
     clearInterval(heartbeat); clearTimeout(lifetime); userClients.delete(response);

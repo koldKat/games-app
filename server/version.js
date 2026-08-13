@@ -3,6 +3,7 @@ const path = require('node:path');
 
 const VERSION_FILE = process.env.VERSION_FILE || path.join(__dirname, '..', 'VERSION');
 const FALLBACK_VERSION = 'dev';
+const VERSION_MAX_LENGTH = 80;
 
 function readVersion() {
   try { return fs.readFileSync(VERSION_FILE, 'utf8').trim() || FALLBACK_VERSION; }
@@ -12,7 +13,7 @@ function readVersion() {
 function normalizeVersion(value) {
   const version = String(value ?? '').trim();
   if (!version) throw new Error('Version cannot be empty.');
-  if (version.length > 80) throw new Error('Version must be 80 characters or fewer.');
+  if (version.length > VERSION_MAX_LENGTH) throw new Error('Version must be 80 characters or fewer.');
   if (/\r|\n/.test(version)) throw new Error('Version must be a single line.');
   return version;
 }

@@ -10,6 +10,7 @@ Game Kat·a·log follows the same lightweight family architecture as the other l
 games-app/
   server.js                 HTTP entrypoint, static serving, route dispatch
   server/
+    constants.js            shared catalogue domains, provider identity and batch policy
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
@@ -36,6 +37,7 @@ games-app/
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
+    js/ui-policy.js         browser pagination, lookup limits and interaction timing
     css/
       foundation.css       reset, structural layout, and baseline responsive rules
       theme.css            dense dark operator theme and primary components
@@ -68,9 +70,12 @@ games-app/
     seo.test.js             canonical metadata, crawler policy, image dimensions
     admin.test.js           localhost gate and cross-account admin summaries
     version.test.js         arbitrary release-string persistence and validation
+    constants.test.js       shared domain, provider identity and browser-policy contracts
   VERSION                   release string displayed in the application header
   games.db                  runtime SQLite database
 ```
+
+Values shared by multiple server features live in `server/constants.js`; provider-specific limits stay beside their provider implementation. Browser pagination, lookup thresholds, upload limits, and interaction timings live in `public/js/ui-policy.js`. This keeps operational policy discoverable without creating a single catch-all configuration module or coupling browser modules to CommonJS server code.
 
 ### Request flow
 

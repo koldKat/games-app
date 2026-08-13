@@ -1,4 +1,18 @@
+const { APP_USER_AGENT, TITLE_AUTOCOMPLETE_MIN_LENGTH, TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
+
 const API_ROOT = 'https://www.steamgriddb.com/api/v2';
+const REQUEST_GAP_MS = 275;
+const REQUEST_TIMEOUT_MS = 15_000;
+const RATE_LIMIT_RETRY_MS = 1_100;
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const QUERY_MAX_LENGTH = 160;
+const API_KEY_MIN_LENGTH = 12;
+const TITLE_SUGGESTION_LIMIT = 10;
+const COVER_RESULT_LIMIT = 16;
+const COVER_GAME_CANDIDATE_LIMIT = 4;
+const COVERS_PER_GAME_LIMIT = 5;
+const COVER_SEARCH_PAUSE_MS = 180;
+const GRID_DIMENSIONS = '600x900,342x482,660x930';
 const cache = new Map();
 const titleCache = new Map();
 let lastRequestAt = 0;
@@ -8,14 +22,14 @@ const normalizeTitle = value => String(value || '').replace(/[™®©]/g, '').no
   .replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
 
 async function request(key, pathname, retry = true) {
-  const delay = Math.max(0, 275 - (Date.now() - lastRequestAt));
+  const delay = Math.max(0, REQUEST_GAP_MS - (Date.now() - lastRequestAt));
   if (delay) await wait(delay);
   lastRequestAt = Date.now();
   const response = await fetch(`${API_ROOT}${pathname}`, {
-    headers: { Authorization: `Bearer ${key}`, Accept: 'application/json', 'User-Agent': 'GamesShelf/1.2 personal-library' },
-    signal: AbortSignal.timeout(15_000),
+    headers: { Authorization: `Bearer ${key}`, Accept: 'application/json', 'User-Agent': APP_USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (response.status === 429 && retry) { await wait(1_100); return request(key, pathname, false); }
+  if (response.status === 429 && retry) { await wait(RATE_LIMIT_RETRY_MS); return request(key, pathname, false); }
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.success === false) {
     const error = new Error(body.errors?.[0] || body.error || `SteamGridDB returned HTTP ${response.status}.`);
@@ -25,12 +39,12 @@ async function request(key, pathname, retry = true) {
 }
 
 async function searchGames(key, query) {
-  const clean = String(query || '').trim().slice(0, 160);
-  if (clean.length < 2) throw new Error('Enter at least two title characters.');
+  const clean = String(query || '').trim().slice(0, QUERY_MAX_LENGTH);
+  if (clean.length < TITLE_LOOKUP_MIN_LENGTH) throw new Error('Enter at least two title characters.');
   return request(key, `/search/autocomplete/${encodeURIComponent(clean)}`);
 }
 
-function titleSuggestions(rows, limit = 10) {
+function titleSuggestions(rows, limit = TITLE_SUGGESTION_LIMIT) {
   const unique = new Map();
   for (const row of Array.isArray(rows) ? rows : []) {
     const title = String(row?.name || '').trim();
@@ -42,18 +56,18 @@ function titleSuggestions(rows, limit = 10) {
 }
 
 async function searchTitles(key, query) {
-  const clean = String(query || '').trim().slice(0, 160);
-  if (clean.length < 3) return [];
+  const clean = String(query || '').trim().slice(0, QUERY_MAX_LENGTH);
+  if (clean.length < TITLE_AUTOCOMPLETE_MIN_LENGTH) return [];
   const cacheKey = `${key.slice(0, 8)}:${normalizeTitle(clean)}`;
   const cached = titleCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.results;
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results;
   const results = titleSuggestions(await searchGames(key, clean));
   titleCache.set(cacheKey, { at: Date.now(), results });
   return results;
 }
 
 async function gridsForGame(key, game) {
-  const rows = await request(key, `/grids/game/${game.id}?dimensions=600x900,342x482,660x930&types=static`);
+  const rows = await request(key, `/grids/game/${game.id}?dimensions=${GRID_DIMENSIONS}&types=static`);
   return rows.filter(row => row.url && (!row.width || !row.height || row.height > row.width)).map(row => ({
     providerGameId: game.id, gameTitle: game.name, url: row.url, thumbnailUrl: row.thumb || row.url,
     width: row.width || null, height: row.height || null, score: Number(row.score || 0),
@@ -61,16 +75,16 @@ async function gridsForGame(key, game) {
   })).sort((a, b) => b.score - a.score);
 }
 
-async function searchCovers(key, query, limit = 16) {
+async function searchCovers(key, query, limit = COVER_RESULT_LIMIT) {
   const cacheKey = `${key.slice(0, 8)}:${normalizeTitle(query)}`;
   const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.results;
-  const games = (await searchGames(key, query)).slice(0, 4);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results;
+  const games = (await searchGames(key, query)).slice(0, COVER_GAME_CANDIDATE_LIMIT);
   const results = [];
   for (const game of games) {
-    results.push(...(await gridsForGame(key, game)).slice(0, 5));
+    results.push(...(await gridsForGame(key, game)).slice(0, COVERS_PER_GAME_LIMIT));
     if (results.length >= limit) break;
-    await wait(180);
+    await wait(COVER_SEARCH_PAUSE_MS);
   }
   const limited = results.slice(0, limit);
   cache.set(cacheKey, { at: Date.now(), results: limited });
@@ -88,7 +102,7 @@ async function bestExactCover(key, title) {
 }
 
 async function verifyKey(key) {
-  if (String(key || '').trim().length < 12) throw new Error('Enter a valid SteamGridDB API key.');
+  if (String(key || '').trim().length < API_KEY_MIN_LENGTH) throw new Error('Enter a valid SteamGridDB API key.');
   await searchGames(String(key).trim(), 'Mario');
   return true;
 }

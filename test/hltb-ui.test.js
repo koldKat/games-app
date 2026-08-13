@@ -4,8 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 async function uiModule() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/hltb-ui.js'), 'utf8');
-  return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  const policy = fs.readFileSync(path.join(__dirname, '..', 'public/js/ui-policy.js'), 'utf8').replace(/^export /gm, '');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/hltb-ui.js'), 'utf8')
+    .replace(/^import .*?;\n\n/, '');
+  return import(`data:text/javascript;base64,${Buffer.from(`${policy}\n${source}`).toString('base64')}`);
 }
 
 test('new-game HLTB state accepts an explicit null game', async () => {

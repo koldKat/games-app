@@ -1,3 +1,5 @@
+const TOAST_DURATION_MS = 2_600;
+
 export async function api(method, path, body) {
   const options = { method, headers: {} };
   if (body !== undefined) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
@@ -58,7 +60,7 @@ export function confirmAction({ title = 'Confirm action', message = '', confirmL
 }
 export function toast(message, error = false) {
   const element = document.getElementById('toast'); element.textContent = message; element.classList.toggle('error', error); element.classList.add('show');
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), 2600);
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), TOAST_DURATION_MS);
 }
 export async function busy(element, task) {
   const old = element.textContent; element.disabled = true; element.textContent = 'Working…';

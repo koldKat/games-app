@@ -1,3 +1,5 @@
+import { AUTOCOMPLETE_POLICY, LOOKUP_MIN_TITLE_LENGTH } from './ui-policy.js';
+
 const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
   === String(right || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 
@@ -61,7 +63,7 @@ export function createTitleAutocomplete({
   function render(results = {}) {
     existingMatches = Array.isArray(results.existing) ? results.existing : [];
     const remote = Array.isArray(results.suggestions)
-      ? results.suggestions.filter(title => typeof title === 'string' && title.trim()).slice(0, 10) : [];
+      ? results.suggestions.filter(title => typeof title === 'string' && title.trim()).slice(0, AUTOCOMPLETE_POLICY.resultLimit) : [];
     suggestions = [
       ...existingMatches.map(game => ({ kind: 'existing', game })),
       ...remote.filter(title => !existingMatches.some(game => sameText(game.title, title))).map(title => ({ kind: 'remote', title })),
@@ -78,7 +80,7 @@ export function createTitleAutocomplete({
   input.addEventListener('input', () => {
     clearTimeout(timer); request?.abort(); request = null; render({});
     const query = input.value.trim();
-    if (query.length < 3) return;
+    if (query.length < AUTOCOMPLETE_POLICY.queryMinLength) return;
     timer = setTimeout(async () => {
       const controller = new AbortController(); request = controller;
       try {
@@ -88,7 +90,7 @@ export function createTitleAutocomplete({
         if (!controller.signal.aborted && input.value.trim() === query) render(results);
       } catch {}
       finally { if (request === controller) request = null; }
-    }, 100);
+    }, AUTOCOMPLETE_POLICY.debounceMs);
   });
   platformInput.addEventListener('change', updateWarning);
   customPlatformInput.addEventListener('input', updateWarning);
@@ -101,7 +103,7 @@ export function createTitleAutocomplete({
   });
   input.addEventListener('blur', () => setTimeout(() => {
     if (!suggestionBox.matches(':hover')) close();
-  }, 100));
+  }, AUTOCOMPLETE_POLICY.blurDelayMs));
   suggestionBox.addEventListener('pointerdown', event => event.preventDefault());
   suggestionBox.addEventListener('click', event => {
     const option = event.target.closest('[data-title-suggestion]');
@@ -111,7 +113,7 @@ export function createTitleAutocomplete({
 
   async function duplicateBeforeSave() {
     const title = input.value.trim();
-    if (title.length < 2) return null;
+    if (title.length < LOOKUP_MIN_TITLE_LENGTH) return null;
     try {
       const result = await api(`/api/titles/autocomplete?exact=1&q=${encodeURIComponent(title)}&platform=${encodeURIComponent(getPlatform())}`);
       existingMatches = Array.isArray(result.existing) ? result.existing : [];
