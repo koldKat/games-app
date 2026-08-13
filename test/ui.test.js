@@ -38,6 +38,18 @@ test('authentication landing keeps a dense real-cover background', () => {
   assert.match(application, /document\.createElement\('i'\)/);
 });
 
+test('maintained markup does not hardcode decorative placeholder clusters', () => {
+  const html = read('public/index.html'); const admin = read('admin/index.html'); const application = read('public/app.js');
+  assert.doesNotMatch(html + admin, /<i\b[^>]*>\s*<\/i>/);
+  assert.doesNotMatch(html, /class="hero-cover hero-cover-\d"/);
+  assert.doesNotMatch(html, /class="modal-actions"[^>]*>[\s\S]{0,180}<span>\s*<\/span>/);
+  assert.match(html, /class="promo-cover-deck" data-cover-slots="5"/);
+  assert.match(html, /class="hero-art" data-cover-slots="5" data-cover-element="span" data-cover-class="hero-cover"/);
+  assert.match(html, /class="auth-promo promo-library" data-cover-decoration="promo-loose-cover"/);
+  assert.match(application, /field\.dataset\.coverElement \|\| 'i'/);
+  assert.match(application, /`\$\{baseClass\} \$\{baseClass\}-\$\{index \+ 1\}`/);
+});
+
 test('authenticated app matches the login account-cover background visibility', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /class="auth-cover-field app-cover-field" data-cover-slots="32" aria-hidden="true"><\/div>/);

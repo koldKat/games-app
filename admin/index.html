@@ -11,7 +11,7 @@
 <body>
   <header class="admin-head">
     <div><span class="prompt">&gt;_</span><span><strong>GAME KAT·A·LOG</strong><small>LOCAL CONTROL PLANE</small></span></div>
-    <div class="head-actions"><span class="local-state"><i></i>LOOPBACK</span><span id="header-version" class="version">…</span><a href="/">RETURN TO APP</a></div>
+    <div class="head-actions"><span class="local-state">LOOPBACK</span><span id="header-version" class="version">…</span><a href="/">RETURN TO APP</a></div>
   </header>
 
   <nav class="tabs" aria-label="Admin sections">
@@ -43,13 +43,13 @@
 
     <section id="panel-accounts" class="panel">
       <header class="section-head"><div><span>IDENTITY CONTROL</span><h1>Accounts</h1></div><button id="refresh-accounts" class="button">Refresh</button></header>
-      <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th></th></tr></thead><tbody id="accounts-body"></tbody></table></div>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="accounts-body"></tbody></table></div>
     </section>
 
     <section id="panel-catalogue" class="panel">
       <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Catalogue</h1></div><span id="catalogue-count" class="quiet"></span></header>
       <form id="catalogue-search" class="search-row"><input id="catalogue-query" type="search" placeholder="Search title, platform, or account" autocomplete="off"><button class="button primary">Search</button></form>
-      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th></th></tr></thead><tbody id="catalogue-body"></tbody></table></div>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th>ACTIONS</th></tr></thead><tbody id="catalogue-body"></tbody></table></div>
     </section>
 
     <section id="panel-tools" class="panel">
@@ -69,7 +69,7 @@
         <article class="block tool-block wide">
           <header><span>RECOVERY</span><b>LOCAL BACKUPS</b><button id="create-backup" class="button primary">Create backup</button></header>
           <p>Hourly ZIP snapshots kept for 15 days under <code>backups/</code>. A backup runs at startup and then on the hour; the directory is excluded from Git.</p>
-          <div class="table-shell compact"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th></th></tr></thead><tbody id="backups-body"></tbody></table></div>
+          <div class="table-shell compact"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="backups-body"></tbody></table></div>
         </article>
       </div>
     </section>

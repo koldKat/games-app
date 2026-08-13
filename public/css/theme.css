@@ -21,9 +21,6 @@ body {
   background: #080b10;
   color: var(--ink);
 }
-.ambient {
-  display: none;
-}
 .shell {
   width: min(1600px, 100%);
   padding: 0 16px 28px;
@@ -45,27 +42,17 @@ body {
 }
 .brand-mark:before {
   width: 10px;
-  height: 3px;
-  left: 7px;
-  top: 12px;
-}
-.brand-mark:after {
-  width: 3px;
   height: 10px;
-  left: 11px;
+  left: 7px;
   top: 8px;
 }
-.brand-mark i {
+.brand-mark:after {
   width: 4px;
   height: 4px;
   right: 8px;
   top: 8px;
   background: #35d6b2;
-}
-.brand-mark i:nth-child(2) {
-  right: 5px;
-  top: 14px;
-  background: #e9b949;
+  box-shadow: 3px 6px #e9b949;
 }
 .brand strong {
   font:
@@ -363,7 +350,7 @@ body {
   font-size: 8px;
   letter-spacing: 0.055em;
 }
-.platform-dot {
+.platform-tag:before {
   width: 6px;
   height: 6px;
 }
@@ -756,25 +743,16 @@ dialog::backdrop {
 }
 .auth-terminal .brand-mark:before {
   width: 7px;
-  height: 2px;
-  left: 4px;
-  top: 7px;
-}
-.auth-terminal .brand-mark:after {
-  width: 2px;
   height: 7px;
-  left: 7px;
+  left: 4px;
   top: 4px;
 }
-.auth-terminal .brand-mark i {
+.auth-terminal .brand-mark:after {
   width: 2px;
   height: 2px;
   right: 5px;
   top: 5px;
-}
-.auth-terminal .brand-mark i:nth-child(2) {
-  right: 3px;
-  top: 9px;
+  box-shadow: 2px 4px #e9b949;
 }
 .auth-terminal em {
   font-style: normal;

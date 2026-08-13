@@ -2,7 +2,7 @@
 .game-card:before {
   background: var(--rating-color, #526170);
 }
-.platform-dot {
+.platform-tag:before {
   background: #708399;
 }
 .brand strong em {
@@ -160,7 +160,9 @@
 .promo-system span:last-child {
   grid-column: 1/-1;
 }
-.promo-system i {
+.promo-system span:before {
+  content: "";
+  flex: 0 0 auto;
   width: 5px;
   height: 5px;
   background: #47ddbb;

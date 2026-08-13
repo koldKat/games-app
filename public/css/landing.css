@@ -464,16 +464,23 @@
 }
 .promo-result {
   position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: 7px;
   padding: 4px 1px;
   color: #657482;
   font-size: 7px;
 }
-.promo-result i {
+.promo-result span {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 7px;
+}
+.promo-result span:after {
+  content: "";
   height: 1px;
+  flex: 1;
   background: #1c2b32;
 }
 .promo-result strong {
@@ -650,17 +657,13 @@
   gap: 8px;
   margin-top: 14px;
 }
-.promo-progress > span {
+.promo-progress-bar {
   height: 5px;
   flex: 1;
-  background: #111f23;
   border: 1px solid #253a3d;
-}
-.promo-progress i {
-  display: block;
-  width: var(--value);
-  height: 100%;
-  background: #36c7a7;
+  overflow: hidden;
+  color: transparent;
+  background: linear-gradient(90deg, #36c7a7 0 var(--value), #111f23 var(--value) 100%);
   box-shadow: 0 0 8px #36c7a760;
 }
 .promo-progress b {

@@ -9,7 +9,16 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 function mountDecorativeCoverSlots() {
   $$('[data-cover-slots]').forEach(field => {
     const count = Math.max(0, Math.min(64, Number(field.dataset.coverSlots) || 0));
-    field.replaceChildren(...Array.from({ length: count }, () => document.createElement('i')));
+    const elementName = field.dataset.coverElement || 'i'; const baseClass = field.dataset.coverClass || '';
+    field.replaceChildren(...Array.from({ length: count }, (_, index) => {
+      const element = document.createElement(elementName);
+      if (baseClass) element.className = `${baseClass} ${baseClass}-${index + 1}`;
+      return element;
+    }));
+  });
+  $$('[data-cover-decoration]').forEach(host => {
+    const element = document.createElement('i'); element.className = host.dataset.coverDecoration;
+    element.setAttribute('aria-hidden', 'true'); host.append(element);
   });
 }
 mountDecorativeCoverSlots();
@@ -262,7 +271,7 @@ function gameCard(game) {
   const descriptorBadges = (game.pegiDescriptors || []).map(descriptor => badge(descriptor, /purchases|random items/i.test(descriptor) ? 'descriptor purchase' : 'descriptor')).join('');
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
-    <div class="card-top"><span class="platform-tag"><i class="platform-dot"></i>${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
+    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${game.coverSource === 'steamgriddb' ? badge('SGDB art') : ''}</div>
     ${cardTimes(game, escapeHtml)}

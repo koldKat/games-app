@@ -70,27 +70,25 @@
   </script>
 </head>
 <body>
-  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
   <div id="session-resume" class="session-resume-screen" role="status" aria-live="polite">
-    <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
+    <span class="brand-mark" aria-hidden="true"></span>
     <span><strong>Game Kat·a·log</strong><small>Mounting authenticated library…</small></span>
   </div>
   <main id="auth-screen" class="auth-screen">
     <div class="auth-cover-field" data-cover-slots="32" aria-hidden="true"></div>
     <div class="auth-showcase">
       <aside class="auth-promo-rail" aria-label="Collection features">
-        <article class="auth-promo promo-library">
+        <article class="auth-promo promo-library" data-cover-decoration="promo-loose-cover">
           <span class="promo-code">LIBRARY // 01</span>
           <h2>One library.<br>Every system.</h2>
           <p>Track physical, digital, owned, wishlisted, and unavailable games across built-in or custom platforms.</p>
           <div class="promo-platforms"><span>NINTENDO</span><span>PLAYSTATION</span><span>XBOX</span><span>PC + CUSTOM</span></div>
-          <i class="promo-loose-cover" aria-hidden="true"></i>
         </article>
         <article class="auth-promo promo-query">
           <span class="promo-code">QUERY // READY</span>
           <h2>Interrogate the shelf.</h2>
           <div class="promo-command"><b>&gt;</b> filter --missing hltb</div>
-          <div class="promo-result"><span>FILTERS</span><i></i><strong>COMBINED</strong></div><div class="promo-result"><span>SORT</span><i></i><strong>PLAYTIME_ASC</strong></div>
+          <div class="promo-result"><span>FILTERS</span><strong>COMBINED</strong></div><div class="promo-result"><span>SORT</span><strong>PLAYTIME_ASC</strong></div>
         </article>
         <article class="auth-promo promo-metadata">
           <span class="promo-code">METADATA // ASSISTED</span>
@@ -101,7 +99,7 @@
       </aside>
 
       <section class="auth-card">
-        <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
+        <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
         <div class="auth-body">
           <p class="kicker">Identity required</p>
           <h1 id="auth-title">Access your library</h1>
@@ -122,7 +120,7 @@
       <aside class="auth-promo-rail" aria-label="Artwork and tracking features">
         <article class="auth-promo promo-covers">
           <span class="promo-code">BOX_ART // ONLINE</span>
-          <div class="promo-cover-deck" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="promo-cover-deck" data-cover-slots="5" aria-hidden="true"></div>
           <h2>Your covers on deck.</h2>
           <p>Request SteamGridDB box art per title or fill missing covers in a conservative account-wide scan.</p>
         </article>
@@ -130,13 +128,13 @@
           <span class="promo-code">WORKSPACE // SYNCED</span>
           <h2>Your view follows you.</h2>
           <p>Account-backed search, filters, sorting, and card layout stay consistent across desktop and mobile.</p>
-          <div class="promo-progress"><span><i style="--value:100%"></i></span><b>DB PERSISTED</b></div>
+          <div class="promo-progress"><span class="promo-progress-bar" style="--value:100%" aria-label="100 percent persisted">100%</span><b>DB PERSISTED</b></div>
         </article>
         <article class="auth-promo promo-private">
           <span class="promo-code">ENRICH // LIVE</span>
           <h2>Scan without babysitting.</h2>
           <p>Fill PEGI, cover, and HLTB gaps in the background while matching cards update without a grid reload.</p>
-          <div class="promo-system"><span><i></i>PEGI DETAILS</span><span><i></i>COVER ART</span><span><i></i>HLTB TIMES</span></div>
+          <div class="promo-system"><span>PEGI DETAILS</span><span>COVER ART</span><span>HLTB TIMES</span></div>
         </article>
       </aside>
       <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
@@ -147,7 +145,7 @@
     <div class="auth-cover-field app-cover-field" data-cover-slots="32" aria-hidden="true"></div>
     <header class="topbar">
       <a class="brand" href="/" aria-label="Game Kat·a·log home">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><b>+</b></span>
+        <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
       <div class="top-actions"><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
@@ -160,13 +158,7 @@
           <h1>What are we playing next?</h1>
           <p class="hero-copy">Browse the collection, track the backlog, and keep future finds close.</p>
         </div>
-        <div class="hero-art" aria-hidden="true">
-          <span class="hero-cover hero-cover-1"></span>
-          <span class="hero-cover hero-cover-2"></span>
-          <span class="hero-cover hero-cover-3"></span>
-          <span class="hero-cover hero-cover-4"></span>
-          <span class="hero-cover hero-cover-5"></span>
-        </div>
+        <div class="hero-art" data-cover-slots="5" data-cover-element="span" data-cover-class="hero-cover" aria-hidden="true"></div>
       </section>
 
       <section class="stats" aria-label="Collection summary">
@@ -267,7 +259,7 @@
         </div>
       </details>
       <p id="form-error" class="form-error" hidden></p>
-      <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><span></span><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
+      <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
     </form>
   </dialog>
   <dialog id="account-dialog">
@@ -299,14 +291,14 @@
         <label class="span-2"><span>Confirm new password</span><input id="account-confirm-password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat new password"></label>
       </div>
       <p id="account-error" class="form-error" hidden></p>
-      <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><span></span><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
+      <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
     </form>
   </dialog>
   <dialog id="action-dialog" class="action-dialog">
     <section class="modal-card action-modal" role="document">
       <header class="modal-head"><div><p class="kicker" id="action-kicker">Confirm action</p><h2 id="action-title">Are you sure?</h2></div><button type="button" class="close-button" id="action-close" aria-label="Close">×</button></header>
       <p id="action-message" class="action-message"></p>
-      <footer class="modal-actions"><span></span><button type="button" class="button ghost" id="action-cancel">Cancel</button><button type="button" class="button action-danger" id="action-confirm">Confirm</button></footer>
+      <footer class="modal-actions"><button type="button" class="button ghost" id="action-cancel">Cancel</button><button type="button" class="button action-danger" id="action-confirm">Confirm</button></footer>
     </section>
   </dialog>
   <script type="module" src="/app.js"></script>
