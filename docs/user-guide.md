@@ -56,7 +56,7 @@ The library updates as filters change.
 
 ### Search
 
-Search matches the game title, publisher, and notes. It is case-insensitive and starts after a short typing delay.
+Search matches the game title, publisher, and notes. It is case- and accent-insensitive, so `Pokemon` also finds `Pokémon`, and starts after a short typing delay.
 
 ### Filters
 
@@ -66,7 +66,7 @@ Search matches the game title, publisher, and notes. It is case-insensitive and 
 | **Collection** | Owned, Wishlisted, or Unavailable |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
-| **Data gaps** | No PEGI info, no cover, either missing, or both missing; Evercade is treated as PEGI-not-applicable |
+| **Data gaps** | No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable |
 | **Sort by** | Title, platform, PEGI rating, recently added, or cartridge number |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -79,6 +79,7 @@ Use the two view buttons beside **My library**:
 - **Compact view** places each game on a denser horizontal row.
 - The left card rail uses the PEGI colour: green for 3/7, amber for 12/16, red for 18, and muted grey when unrated.
 - The platform appears inside each card as its own label.
+- Games with saved HLTB data show compact Main, Main +, 100%, and All Styles estimates.
 
 The preference is stored in the browser.
 
@@ -143,13 +144,24 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 
 The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.
 
+### HowLongToBeat-assisted entry
+
+1. Type at least two characters in **Title**.
+2. Select **Look up times**.
+3. Review the result names and four estimates, then select the correct edition.
+4. Save the game. Select **Remove times** before saving if the match is wrong.
+
+The selected result stores Main Story, Main + Sides, Completionist, and All Styles estimates, plus a link back to its HowLongToBeat page. Missing or unreported estimates display as a dash. HLTB lookup is optional: provider or network failure never prevents manual game creation or editing.
+
 ### Fill existing games
 
 After connecting SteamGridDB, select **Fill missing covers** in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.
 
 Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
 
-Both scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover or PEGI record while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
+Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
+
+All three scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover, PEGI record, or HLTB match while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
 
 ---
 

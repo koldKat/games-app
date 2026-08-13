@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Catalog your video games, manage wishlists and backlogs, track PEGI ratings, and add box art in a fast personal game collection manager.">
+  <meta name="description" content="Catalog video games across every platform, manage wishlists and backlogs, track PEGI ratings, HLTB playtime estimates, and box art.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="application-name" content="Game Kat·a·log">
   <meta name="apple-mobile-web-app-title" content="Game Kat·a·log">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://gamekat.net/">
   <meta property="og:title" content="Game Kat·a·log — Personal Video Game Collection Manager">
-  <meta property="og:description" content="Catalog games across every platform, manage your backlog and wishlist, track PEGI ratings, and pull in box art.">
+  <meta property="og:description" content="Catalog games across every platform, manage your backlog and wishlist, and track PEGI ratings, HLTB estimates, and box art.">
   <meta property="og:image" content="https://gamekat.net/social-preview.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
   <meta property="og:image:alt" content="Game Kat·a·log personal game collection manager">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Game Kat·a·log — Personal Video Game Collection Manager">
-  <meta name="twitter:description" content="Catalog games, manage your backlog and wishlist, track PEGI ratings, and add box art.">
+  <meta name="twitter:description" content="Catalog games, manage your backlog and wishlist, and track PEGI ratings, HLTB estimates, and box art.">
   <meta name="twitter:image" content="https://gamekat.net/social-preview.png">
   <meta name="twitter:image:alt" content="Game Kat·a·log personal game collection manager">
   <title>Game Kat·a·log — Personal Video Game Collection &amp; Backlog Manager</title>
@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="/css/library.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Game Kat·a·log","url":"https://gamekat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI-assisted metadata and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Game Kat·a·log","url":"https://gamekat.net/","description":"A responsive personal video game collection, wishlist, and backlog manager with PEGI metadata, HLTB playtime estimates, and box-art lookup.","applicationCategory":"GameApplication","operatingSystem":"Any modern web browser","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"featureList":["Multi-platform game catalogue","Wishlist and backlog tracking","PEGI-assisted metadata","HowLongToBeat estimates","Box-art lookup","Responsive desktop and mobile interface","Private account libraries"]}</script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -169,7 +169,7 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
-            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="either">Either missing</option><option value="both">Both missing</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="either">Any missing</option><option value="both">All three missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter"><option value="title">Title A–Z</option><option value="platform">Platform</option><option value="pegi">PEGI rating</option><option value="newest">Recently added</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -200,6 +200,11 @@
       </div>
       <div id="cover-selection" class="cover-selection" hidden></div>
       <div id="cover-results" class="cover-results" hidden></div>
+      <div class="pegi-assist hltb-assist">
+        <div><strong>HowLongToBeat estimates</strong><small>Find Main Story, Main + Sides, Completionist, and All Styles times.</small></div>
+        <div class="cover-assist-actions"><button type="button" class="button ghost" id="hltb-remove-button" hidden>Remove times</button><button type="button" class="button secondary" id="hltb-search-button">Look up times</button></div>
+      </div>
+      <div id="hltb-results" class="pegi-results hltb-results" hidden></div>
       <div class="form-grid">
         <div class="span-2 title-autocomplete"><label for="game-title"><span>Title *</span></label><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="title-suggestions"><div id="title-suggestions" class="title-suggestions" role="listbox" hidden></div><div id="duplicate-warning" class="duplicate-warning" hidden><span><strong>Already in your library</strong><small id="duplicate-summary"></small></span><button type="button" id="open-duplicate" class="button ghost">Open existing</button></div></div>
         <label><span>Platform *</span><select id="game-platform" required></select></label>
@@ -214,6 +219,10 @@
         <label class="span-2"><span>Notes</span><textarea id="game-notes" rows="3" maxlength="2000" placeholder="Edition, condition, where to find it…"></textarea></label>
         <label class="check-label span-2"><input id="game-favorite" type="checkbox"><span>Mark as a favourite</span></label>
       </div>
+      <section id="game-hltb-details" class="game-hltb-details" hidden>
+        <header><span><small>HowLongToBeat match</small><strong id="game-hltb-title"></strong></span><a id="game-hltb-source" href="https://howlongtobeat.com/" target="_blank" rel="noopener">View source ↗</a></header>
+        <div id="game-hltb-times" class="hltb-time-grid"></div>
+      </section>
       <details id="game-pegi-details" class="game-pegi-details" hidden>
         <summary><span>PEGI details</span><small id="game-pegi-summary"></small></summary>
         <div class="pegi-detail-body">
@@ -247,6 +256,10 @@
       <section class="integration-panel pegi-integration">
         <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>
         <div class="integration-bulk"><span id="pegi-bulk-status" class="bulk-status" tabindex="0">PEGI scan idle.</span><button type="button" class="button ghost" id="pegi-bulk-start">Fill PEGI details</button></div>
+      </section>
+      <section class="integration-panel hltb-integration">
+        <div class="integration-head"><span><strong>HowLongToBeat estimates</strong><small id="hltb-provider-status">Checking library…</small></span><a href="https://howlongtobeat.com/" target="_blank" rel="noopener">Open HLTB ↗</a></div>
+        <div class="integration-bulk"><span id="hltb-bulk-status" class="bulk-status" tabindex="0">HLTB scan idle.</span><button type="button" class="button ghost" id="hltb-bulk-start">Fill HLTB times</button></div>
       </section>
       <div class="form-grid account-grid">
         <label class="span-2"><span>Username</span><input id="account-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>

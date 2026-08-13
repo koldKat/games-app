@@ -46,8 +46,12 @@ test('authenticated app matches the login account-cover background visibility', 
   assert.match(application, /state\.games\.map\(game => game\.coverUrl\)/);
   assert.match(application, /#auth-screen[^\n]*hidden = true;[\s\S]*#app-shell[^\n]*hidden = false;[\s\S]*void stageAppDecorations\(user\.id\)\.catch/);
   assert.doesNotMatch(application, /state\.games = games;[^\n]*await loadHeroCovers/);
-  assert.match(application, /Promise\.all\(\[loadHeroCovers\(isCurrent\), loadAppBackgroundCovers\(isCurrent\)\]\)/);
-  assert.match(application, /const loaded = await Promise\.all/);
+  assert.match(application, /await loadHeroCovers\(isCurrent\);[\s\S]*await loadAppBackgroundCovers\(isCurrent\)/);
+  assert.match(application, /for \(const candidate of candidates\)[\s\S]*await loadCandidate\(candidate\)/);
+  assert.doesNotMatch(application, /Promise\.all\(slots\.map|Math\.min\(8, candidates\.length\)/);
+  assert.match(application, /setTimeout\(\(\) => finish\('\'\), 6000\)/);
+  assert.match(application, /loaded\[nextSlot % loaded\.length\]/);
+  assert.doesNotMatch(application, /applyDecorativeCovers\(slots, covers\.slice/);
   assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.075/);
   assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
   assert.match(css, /#app-shell>\.topbar,#app-shell>main\{position:relative;z-index:1\}/);
@@ -84,14 +88,30 @@ test('common filters never move the viewport', () => {
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
 });
 
-test('one data-gaps filter handles missing PEGI metadata and covers', () => {
+test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
-  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*Either missing[\s\S]*Both missing/);
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*Any missing[\s\S]*All three missing/);
   assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
   assert.match(application, /filters\.missing\.value === 'either'/);
   assert.match(application, /filters\.missing\.value === 'both'/);
   assert.match(database, /filters\.missing === 'either'/);
   assert.match(database, /filters\.missing === 'both'/);
+});
+
+test('HLTB integration is native Node and exposes all four estimates', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const provider = read('server/hltb.js'); const hltbUi = read('public/js/hltb-ui.js'); const server = read('server.js'); const css = readPublicCss();
+  assert.match(html, /Main Story, Main \+ Sides, Completionist, and All Styles/);
+  assert.match(html, /id="hltb-bulk-start"[\s\S]*Fill HLTB times/);
+  assert.match(application, /event === 'hltb-job'/);
+  assert.match(application, /createHltbLookup/);
+  assert.match(server, /pathname === '\/api\/hltb\/search'/);
+  assert.match(server, /pathname === '\/api\/hltb\/bulk'/);
+  assert.match(provider, /async function fetchSearch/);
+  assert.doesNotMatch(provider, /spawn|python/i);
+  assert.match(hltbUi, /sequence !== searchSequence \|\| titleInput\.value\.trim\(\) !== title/);
+  assert.match(hltbUi, /titleInput\.addEventListener\('input'/);
+  assert.match(css, /\.card-hltb\{[^}]*display:grid/);
 });
 
 test('title autocomplete is themed and silently degrades when SteamGridDB fails', () => {

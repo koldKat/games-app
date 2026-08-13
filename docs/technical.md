@@ -16,6 +16,8 @@ games-app/
     db.js                   schema, migrations, validation, scoped game queries
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     pegi-bulk.js            account-scoped conservative PEGI enrichment jobs
+    hltb.js                 native Node HLTB lookup, endpoint discovery, parsing
+    hltb-bulk.js            account-scoped conservative timing enrichment jobs
     events.js               authenticated server-sent event fan-out
     covers.js               SteamGridDB client, throttling, matching, artwork selection
     version.js              validated atomic reads/writes of the VERSION file
@@ -31,6 +33,7 @@ games-app/
     js/events.js            bearer-authenticated SSE stream parser and reconnect
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
+    js/hltb-ui.js           manual HLTB selection, card estimates, form state
     css/
       foundation.css       reset, structural layout, and baseline responsive rules
       theme.css            dense dark operator theme and primary components
@@ -53,6 +56,8 @@ games-app/
     backup.test.js          hourly ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
     pegi-bulk.test.js       exact-title matching, skips, and job notifications
+    hltb.test.js            HLTB parsing, normalization, endpoint discovery
+    hltb-bulk.test.js       exact-title matching, skips, and circuit breaker
     events.test.js          SSE framing, replay isolation, and session revocation
     covers.test.js          conservative cover-title normalization
     seo.test.js             canonical metadata, crawler policy, image dimensions
@@ -73,6 +78,7 @@ Browser
                                                     |
                                                     +-> db.js (user-scoped query)
                                                     +-> pegi.js + pegi-bulk.js (lookup/jobs)
+                                                    +-> hltb.js + hltb-bulk.js (lookup/jobs)
                                                     +-> covers.js (configured lookup/bulk scan)
 
   <- authenticated /api/events event stream <------ events.js <- job progress/game changes
@@ -149,6 +155,10 @@ An inline pre-render token-presence check adds the `resuming-session` document c
 | `pegi_descriptors`, `pegi_releases` | JSON arrays containing content labels and exact platform/date strings |
 | `pegi_advice`, `pegi_outline` | PEGI consumer guidance and synopsis |
 | `pegi_content_issues`, `pegi_other_issues` | Detailed rating rationale and additional concerns |
+| `hltb_id`, `hltb_title`, `hltb_url` | Selected HowLongToBeat record and source provenance |
+| `hltb_main_story`, `hltb_main_extra` | Main Story and Main + Sides hour estimates |
+| `hltb_completionist`, `hltb_all_styles` | Completionist and All Styles hour estimates |
+| `hltb_updated_at` | Timestamp of the selected HLTB metadata |
 | `cover_url`, `cover_source`, `cover_match_title` | Selected artwork and match provenance |
 | `created_at`, `updated_at` | SQLite timestamps |
 
@@ -228,6 +238,9 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/pegi/search?q=...` | Explicit server-side PEGI search |
 | GET | `/api/pegi/status` | Missing-metadata count and current account job state |
 | POST | `/api/pegi/bulk` | Start an account-scoped conservative metadata scan |
+| GET | `/api/hltb/search?q=...` | Search HLTB for manual timing selection |
+| GET | `/api/hltb/status` | Missing-timing count and current account job state |
+| POST | `/api/hltb/bulk` | Start an account-scoped exact-title timing scan |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
 | PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
 | DELETE | `/api/covers/config` | Remove the account-specific provider key |
@@ -235,7 +248,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/titles/autocomplete?q=...` | Return account-local matches and up to ten SteamGridDB suggestions; `local=1` skips the provider and `exact=1&platform=...` performs the save-time duplicate check |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
 
-List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `missing` accepts `pegi`, `cover`, `either`, or `both`. The PEGI condition follows batch eligibility and excludes Evercade; the cover condition requires an empty cover URL. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
+List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `missing` accepts `pegi`, `cover`, `hltb`, `either`, or `both`; `either` means any of the three data sets is absent and `both` retains its legacy value while now meaning all three are absent. The PEGI condition follows batch eligibility and excludes Evercade, the cover condition requires an empty cover URL, and the HLTB condition requires no selected HLTB record. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
 
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
@@ -282,11 +295,23 @@ This integration is deliberately nonessential. Parsing or network failure return
 
 ---
 
+## HowLongToBeat integration
+
+HowLongToBeat does not provide a documented public developer API. `server/hltb.js` uses Node's built-in `fetch` implementation to discover the site's current private search route from its browser bundle, request the rotating search credentials, and perform opt-in searches. The provider is native JavaScript: it does not spawn Python, invoke the old Downloads script, or add a Python dependency.
+
+Responses are reduced to a numeric record ID, title, source URL, similarity score, and four hour values: Main Story, Main + Sides, Completionist, and All Styles. Search results are cached for 30 minutes, provider calls are serialized, and each request has a 20-second timeout. Authentication is refreshed once after an authorization failure. The private endpoint can change without notice, so this remains optional assistance and lookup errors never block ordinary game editing.
+
+The **Fill HLTB times** account action runs an in-memory, account-scoped job over games with no selected HLTB record. Each queued game is reloaded before lookup, and the database update also requires its HLTB ID to remain null. Automatic selection requires exactly one punctuation-, case-, trademark-, whitespace-, and accent-normalized exact title. Ambiguous editions and fuzzy matches remain untouched for manual selection. Requests are spaced by 1.5 seconds; five consecutive provider failures pause the job. Successful records are persisted immediately and published as targeted `game-updated` SSE events.
+
+The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Lookup requests carry a local sequence guard: changing the title or reopening the dialog invalidates an older response so it cannot populate a different game form. Cards show a compact four-column estimate strip, while the form shows the complete labels and source link. The **No HLTB info** data-gap filter is available independently and participates in the combined any/all missing-data modes.
+
+---
+
 ## Cover-art integration
 
 SteamGridDB was selected because its API is dedicated to game artwork and exposes portrait grid images suitable for box-art cards. It requires a personal bearer API key. Account keys are stored in `user_integrations`; an optional `STEAMGRIDDB_API_KEY` environment value acts as a server-wide fallback. Keys are never returned to the browser after configuration.
 
-The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local matching is account-scoped and uses escaped SQL `LIKE` input.
+The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
 
 An exact case-insensitive, whitespace-normalized title-and-platform pair is treated as a possible duplicate. Save-time validation uses a dedicated account-scoped exact lookup rather than the autocomplete result limit, so spacing variants and collections with many editions cannot bypass the warning. The warning can open the existing record. Creating another entry requires an explicit themed confirmation, but remains permitted for multiple copies or editions; another platform is never treated as the same record. The authenticated autocomplete route deliberately returns local results plus an empty remote list when no key is configured or SteamGridDB fails. The interface shows no provider warning, toast, empty state, or loading indicator: remote autocomplete is optional assistance and manual entry always remains available.
 
@@ -296,13 +321,13 @@ Bulk lookup considers only games without a cover and reloads each queued record 
 
 Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
 
-On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and preloads the five header covers and fixed 32-slot decorative field in parallel. The HTML declares each decorative field once with `data-cover-slots="32"`; the browser module generates the non-semantic positioning slots instead of hardcoding repeated empty elements into the document. Each set is applied atomically, preventing placeholder-by-placeholder flicker without making either library data or remote images part of the authenticated-shell render path. Individual image loads time out after 1.8 seconds; stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
+On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and fills the five header covers first, followed by the fixed 32-slot decorative field. The HTML declares each decorative field once with `data-cover-slots="32"`; the browser module generates the non-semantic positioning slots instead of hardcoding repeated empty elements into the document. Decorative images load in a genuine one-at-a-time queue and appear progressively, so remote artwork never competes with the application shell or floods the browser connection pool. Each image may take up to six seconds; failed candidates are skipped in favour of the next shuffled URL. If fewer unique images succeed than there are slots, successful covers repeat instead of leaving permanent holes. Stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
 
 ---
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`.
+`public/app.js` is a zero-dependency ES-module browser application. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live separately in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`.
 
 Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
@@ -326,7 +351,7 @@ location / {
 
 An isolated `net::ERR_INCOMPLETE_CHUNKED_ENCODING` entry means the proxy or upstream ended an open event stream without a normal HTTP terminator. The browser client catches that interruption and reconnects after 2.5 seconds with its last event ID. Repeated warnings indicate a proxy timeout or unstable upstream process; they do not require reloading the library grid.
 
-Cover and PEGI workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can clear only the same bearer token it actually used, never a newer login token. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
+Cover, PEGI, and HLTB workers publish account-targeted progress plus `game-updated` records. The browser normally reconciles only that record against the current filters and sort order, reusing every unaffected card node; it does not reload the entire game list or move the viewport. Updates received while a filter/search request is in flight are keyed by game ID and flushed afterward. Collection and summary requests also carry a client-side sequence and account check, so a slower or previous-account HTTP response cannot overwrite newer state. Likewise, a late unauthorized response can clear only the same bearer token it actually used, never a newer login token. Logout clears the in-memory collection and account-specific header artwork before another account can enter.
 
 ### Startup
 
@@ -391,6 +416,8 @@ npm run docs:check   # fail if generated HTML is stale
 | `test/auth.test.js` | Account isolation, sessions, password invalidation |
 | `test/pegi.test.js` | PEGI HTML parsing |
 | `test/pegi-bulk.test.js` | Exact-title/platform selection, late-change skipping, and account job events |
+| `test/hltb.test.js` | HLTB response parsing, title similarity, and dynamic route discovery |
+| `test/hltb-bulk.test.js` | Exact-title selection, late-change skipping, job events, and failure circuit breaker |
 | `test/events.test.js` | SSE framing, account-isolated replay, and revoked-session closure |
 | `test/covers.test.js` | Conservative cover-title normalization |
 | `test/seo.test.js` | Canonical/social metadata, crawler policy, and asset dimensions |
@@ -426,6 +453,7 @@ The database is excluded from Git. Source code, generated documentation, and tes
 - The administrator panel is deliberately available only through a direct loopback request; remote administration requires an explicit, separately secured transport such as an SSH tunnel.
 - Login throttling is in-memory rather than persisted.
 - PEGI parsing depends on public page structure and can require maintenance; running batch jobs are not resumed after a process restart.
+- HLTB lookup depends on an undocumented private search route that can change; it is discovered dynamically, but may still require maintenance. Running batch jobs are not resumed after a process restart.
 - Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.
 - The browser token is stored in local storage, matching the gamebooks app; only serve the app over trusted networks or HTTPS.
 - The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.

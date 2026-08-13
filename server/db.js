@@ -5,6 +5,10 @@ const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+const normalizeSearchText = value => String(value || '').normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+const searchPattern = value => `%${normalizeSearchText(value).replace(/[\\%_]/g, character => `\\${character}`)}%`;
+db.function('search_normalize', { deterministic: true }, normalizeSearchText);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -71,6 +75,14 @@ if (!gameColumns.includes('pegi_advice')) db.exec("ALTER TABLE games ADD COLUMN 
 if (!gameColumns.includes('pegi_outline')) db.exec("ALTER TABLE games ADD COLUMN pegi_outline TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('pegi_content_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_content_issues TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('pegi_other_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_other_issues TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('hltb_id')) db.exec('ALTER TABLE games ADD COLUMN hltb_id INTEGER');
+if (!gameColumns.includes('hltb_title')) db.exec("ALTER TABLE games ADD COLUMN hltb_title TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('hltb_url')) db.exec("ALTER TABLE games ADD COLUMN hltb_url TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('hltb_main_story')) db.exec('ALTER TABLE games ADD COLUMN hltb_main_story REAL');
+if (!gameColumns.includes('hltb_main_extra')) db.exec('ALTER TABLE games ADD COLUMN hltb_main_extra REAL');
+if (!gameColumns.includes('hltb_completionist')) db.exec('ALTER TABLE games ADD COLUMN hltb_completionist REAL');
+if (!gameColumns.includes('hltb_all_styles')) db.exec('ALTER TABLE games ADD COLUMN hltb_all_styles REAL');
+if (!gameColumns.includes('hltb_updated_at')) db.exec('ALTER TABLE games ADD COLUMN hltb_updated_at TEXT');
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
@@ -87,6 +99,10 @@ const selectFields = `id, title, platform, pegi, ownership, play_status AS playS
   pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
+  hltb_id AS hltbId, hltb_title AS hltbTitle, hltb_url AS hltbUrl,
+  hltb_main_story AS hltbMainStory, hltb_main_extra AS hltbMainExtra,
+  hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles,
+  hltb_updated_at AS hltbUpdatedAt,
   cover_url AS coverUrl, cover_source AS coverSource, cover_match_title AS coverMatchTitle,
   created_at AS createdAt, updated_at AS updatedAt`;
 
@@ -94,10 +110,12 @@ const insert = db.prepare(`
   INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, media_format,
     cartridge_number, publisher, release_year, notes, favorite, pegi_url, pegi_descriptors,
     pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
+    hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
     cover_url, cover_source, cover_match_title)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
+    @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
     @coverUrl, @coverSource, @coverMatchTitle)
 `);
 const update = db.prepare(`
@@ -106,14 +124,17 @@ const update = db.prepare(`
     publisher=@publisher, release_year=@releaseYear, notes=@notes, favorite=@favorite,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
-    pegi_other_issues=@pegiOtherIssues, cover_url=@coverUrl, cover_source=@coverSource,
+    pegi_other_issues=@pegiOtherIssues, hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
+    hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
+    hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles, hltb_updated_at=@hltbUpdatedAt,
+    cover_url=@coverUrl, cover_source=@coverSource,
     cover_match_title=@coverMatchTitle, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
 const searchTitles = db.prepare(`
   SELECT id, title, platform, ownership FROM games
-  WHERE user_id=? AND title LIKE ? ESCAPE '\\'
-  ORDER BY CASE WHEN title = ? COLLATE NOCASE THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
+  WHERE user_id=? AND search_normalize(title) LIKE ? ESCAPE '\\'
+  ORDER BY CASE WHEN search_normalize(title) = ? THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
   LIMIT ?
 `);
 const accountTitles = db.prepare('SELECT id, title, platform, ownership FROM games WHERE user_id=?');
@@ -134,6 +155,11 @@ function normalizeGame(input = {}) {
   if (releaseYear != null && (!Number.isInteger(releaseYear) || releaseYear < 1970 || releaseYear > 2100)) throw new Error('Release year is invalid.');
   const safeList = value => (Array.isArray(value) ? value : []).map(item => String(item || '').trim().slice(0, 180)).filter(Boolean).slice(0, 24);
   const safeText = (value, limit = 8000) => String(value || '').trim().slice(0, limit);
+  const hltbHours = value => {
+    if (value === '' || value == null) return null;
+    const number = Number(value); return Number.isFinite(number) && number > 0 && number <= 100000 ? Math.round(number * 100) / 100 : null;
+  };
+  const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
   return {
     title, platform, pegi, ownership, playStatus, mediaFormat, cartridgeNumber,
     publisher: String(input.publisher || '').trim(), releaseYear,
@@ -143,6 +169,13 @@ function normalizeGame(input = {}) {
     pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
     pegiAdvice: safeText(input.pegiAdvice), pegiOutline: safeText(input.pegiOutline),
     pegiContentIssues: safeText(input.pegiContentIssues), pegiOtherIssues: safeText(input.pegiOtherIssues),
+    hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, 220) : '',
+    hltbUrl: hltbId ? safeText(input.hltbUrl, 2000) : '',
+    hltbMainStory: hltbId ? hltbHours(input.hltbMainStory) : null,
+    hltbMainExtra: hltbId ? hltbHours(input.hltbMainExtra) : null,
+    hltbCompletionist: hltbId ? hltbHours(input.hltbCompletionist) : null,
+    hltbAllStyles: hltbId ? hltbHours(input.hltbAllStyles) : null,
+    hltbUpdatedAt: hltbId ? safeText(input.hltbUpdatedAt, 40) || new Date().toISOString() : null,
     coverUrl: String(input.coverUrl || '').trim().slice(0, 2000),
     coverSource: String(input.coverSource || '').trim().slice(0, 80),
     coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, 300),
@@ -162,7 +195,12 @@ function hydrateGame(row) {
 function listGames(userId, filters = {}) {
   const clauses = ['user_id = @userId'];
   const params = { userId };
-  if (filters.q) { clauses.push('(title LIKE @q OR publisher LIKE @q OR notes LIKE @q)'); params.q = `%${filters.q}%`; }
+  if (filters.q) {
+    clauses.push(`(search_normalize(title) LIKE @q ESCAPE '\\'
+      OR search_normalize(publisher) LIKE @q ESCAPE '\\'
+      OR search_normalize(notes) LIKE @q ESCAPE '\\')`);
+    params.q = searchPattern(filters.q);
+  }
   if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
   if (filters.ownership) { clauses.push('ownership = @ownership'); params.ownership = filters.ownership; }
   if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
@@ -173,8 +211,9 @@ function listGames(userId, filters = {}) {
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='')`;
   if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
   if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
-  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='')`);
-  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url=''`);
+  if (filters.missing === 'hltb') clauses.push('hltb_id IS NULL');
+  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL)`);
+  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
   const sortMap = {
     title: 'title COLLATE NOCASE ASC',
@@ -191,10 +230,9 @@ function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFie
 function searchGameTitles(userId, query, limit = 10) {
   const clean = String(query || '').trim().slice(0, 220);
   if (clean.length < 2) return [];
-  const pattern = `%${clean.replace(/[\\%_]/g, character => `\\${character}`)}%`;
-  return searchTitles.all(userId, pattern, clean, Math.max(1, Math.min(20, Number(limit) || 10)));
+  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(20, Number(limit) || 10)));
 }
-const normalizeIdentity = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+const normalizeIdentity = normalizeSearchText;
 function findDuplicateGames(userId, title, platform) {
   const wantedTitle = normalizeIdentity(title); const wantedPlatform = normalizeIdentity(platform);
   if (!wantedTitle || !wantedPlatform) return [];
@@ -251,6 +289,27 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
   return result.changes ? getGame(userId, id) : null;
 }
 
+function gamesMissingHltb(userId) {
+  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
+}
+
+function updateGameHltb(userId, id, metadata = {}) {
+  const normalized = normalizeGame({ title: 'placeholder', platform: 'placeholder', ...metadata,
+    hltbId: metadata.hltbId ?? metadata.id, hltbTitle: metadata.hltbTitle ?? metadata.title,
+    hltbUrl: metadata.hltbUrl ?? metadata.url, hltbMainStory: metadata.hltbMainStory ?? metadata.mainStory,
+    hltbMainExtra: metadata.hltbMainExtra ?? metadata.mainExtra,
+    hltbCompletionist: metadata.hltbCompletionist ?? metadata.completionist,
+    hltbAllStyles: metadata.hltbAllStyles ?? metadata.allStyles, hltbUpdatedAt: new Date().toISOString(),
+  });
+  if (!normalized.hltbId) return null;
+  const result = db.prepare(`UPDATE games SET hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
+    hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
+    hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
+    hltb_updated_at=@hltbUpdatedAt, updated_at=CURRENT_TIMESTAMP
+    WHERE id=@id AND user_id=@userId AND hltb_id IS NULL`).run({ id, userId, ...normalized });
+  return result.changes ? getGame(userId, id) : null;
+}
+
 function randomShowcaseCovers(limit = 14) {
   const count = Math.max(1, Math.min(48, Number.parseInt(limit, 10) || 14));
   return db.prepare(`SELECT cover_url AS coverUrl FROM games
@@ -268,4 +327,4 @@ function stats(userId) {
   return { total, favorites, ownership, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, randomShowcaseCovers, stats };
+module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, randomShowcaseCovers, stats };

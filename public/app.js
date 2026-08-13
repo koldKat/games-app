@@ -1,6 +1,7 @@
 import { CUSTOM_PLATFORM, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
+import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -12,7 +13,7 @@ function mountDecorativeCoverSlots() {
 }
 mountDecorativeCoverSlots();
 const TOKEN_KEY = 'games_shelf_auth_token';
-const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], limit: 120, view: localStorage.getItem('games-view') || 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -48,19 +49,28 @@ function toast(message) {
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
   for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
-  if (!covers.length) return;
-  const loaded = await Promise.all(slots.map((_, index) => new Promise(resolve => {
+  const candidates = [...new Set(covers.filter(url => /^https:\/\//i.test(url)))];
+  if (!slots.length || !candidates.length) return;
+  const loaded = []; let nextSlot = 0;
+  const loadCandidate = url => new Promise(resolve => {
     const preload = new Image(); let settled = false;
-    const finish = value => { if (settled) return; settled = true; clearTimeout(timeout); resolve(value); };
-    const timeout = setTimeout(() => finish(''), 1800);
-    preload.onload = () => finish(preload.src); preload.onerror = () => finish('');
-    preload.src = covers[index % covers.length];
-  })));
-  if (!isCurrent()) return;
-  slots.forEach((slot, index) => {
-    if (!loaded[index]) return;
-    slot.style.backgroundImage = `url(${JSON.stringify(loaded[index])})`; slot.classList.add('has-art');
+    const finish = value => { if (settled) return; settled = true; clearTimeout(timeout); preload.onload = null; preload.onerror = null; resolve(value); };
+    const timeout = setTimeout(() => finish(''), 6000);
+    preload.onload = () => finish(url); preload.onerror = () => finish(''); preload.src = url;
   });
+  for (const candidate of candidates) {
+    if (!isCurrent() || nextSlot >= slots.length) break;
+    const url = await loadCandidate(candidate);
+    if (!url || !isCurrent()) continue;
+    loaded.push(url);
+    const slot = slots[nextSlot++];
+    slot.style.backgroundImage = `url(${JSON.stringify(url)})`; slot.classList.add('has-art');
+  }
+  if (!isCurrent() || !loaded.length) return;
+  while (nextSlot < slots.length) {
+    const slot = slots[nextSlot]; const url = loaded[nextSlot % loaded.length]; nextSlot++;
+    slot.style.backgroundImage = `url(${JSON.stringify(url)})`; slot.classList.add('has-art');
+  }
 }
 async function loadAuthCovers() {
   try {
@@ -91,7 +101,7 @@ function showAuth(message = '') {
   decorationSequence += 1;
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
-  state.coverStatus = null; state.pegiStatus = null;
+  state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null;
   state.games = []; state.stats = null; state.platforms = []; state.limit = 120;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -206,6 +216,7 @@ function isMissingPegiInfo(game) {
     && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
     && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
 }
+function isMissingHltbInfo(game) { return !game.hltbId; }
 function gameCard(game) {
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
@@ -216,6 +227,7 @@ function gameCard(game) {
     <div class="card-top"><span class="platform-tag"><i class="platform-dot"></i>${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${game.coverSource === 'steamgriddb' ? badge('SGDB art') : ''}</div>
+    ${cardTimes(game, escapeHtml)}
     <div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
 }
@@ -227,11 +239,12 @@ function gameMatchesFilters(game) {
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
-  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl;
+  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl; const missingHltb = isMissingHltbInfo(game);
   if (filters.missing.value === 'pegi' && !missingPegi) return false;
   if (filters.missing.value === 'cover' && !missingCover) return false;
-  if (filters.missing.value === 'either' && !missingPegi && !missingCover) return false;
-  if (filters.missing.value === 'both' && (!missingPegi || !missingCover)) return false;
+  if (filters.missing.value === 'hltb' && !missingHltb) return false;
+  if (filters.missing.value === 'either' && !missingPegi && !missingCover && !missingHltb) return false;
+  if (filters.missing.value === 'both' && (!missingPegi || !missingCover || !missingHltb)) return false;
   if (filters.favorite.value === '1' && !game.favorite) return false;
   return true;
 }
@@ -279,7 +292,8 @@ function connectEventStream() {
     if (event === 'game-updated') applyGamePatch(data.game);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
-    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); loadPegiStatus(); }
+    else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
+    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); loadPegiStatus(); loadHltbStatus(); }
   }, onUnauthorized() {
     if (localStorage.getItem(TOKEN_KEY) !== token) return;
     localStorage.removeItem(TOKEN_KEY); showAuth('Your session expired. Authenticate again.');
@@ -305,12 +319,13 @@ async function loadHeroCovers(isCurrent) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
   }
-  await applyDecorativeCovers(slots, covers.slice(0, slots.length), isCurrent);
+  await applyDecorativeCovers(slots, covers, isCurrent);
 }
 async function stageAppDecorations(userId) {
   const sequence = ++decorationSequence;
   const isCurrent = () => sequence === decorationSequence && state.user?.id === userId;
-  await Promise.all([loadHeroCovers(isCurrent), loadAppBackgroundCovers(isCurrent)]);
+  await loadHeroCovers(isCurrent);
+  await loadAppBackgroundCovers(isCurrent);
 }
 function queryString() {
   const params = new URLSearchParams();
@@ -410,7 +425,7 @@ function openForm(game = null) {
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); renderCoverSelection(); renderPegiDetails();
+  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#game-title').focus(), 60);
 }
@@ -458,12 +473,13 @@ const titleAutocomplete = createTitleAutocomplete({
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
   api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
 });
+const hltbLookup = createHltbLookup({ $, api, escapeHtml, toast });
 function payload() {
   return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value,
     notes: $('#game-notes').value, favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
-    ...($('#game-form')._pegiMetadata || pegiMetadata()),
+    ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(),
     coverUrl: $('#game-form').dataset.coverUrl || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
 $('#game-form').addEventListener('submit', async event => {
@@ -551,7 +567,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-confirm-password').value = '';
   $('#account-error').hidden = true;
   accountDialog.showModal();
-  Promise.all([loadCoverStatus(), loadPegiStatus()]);
+  Promise.all([loadCoverStatus(), loadPegiStatus(), loadHltbStatus()]);
   setTimeout(() => $('#account-username').focus(), 40);
 });
 function setBulkStatus(element, shortStatus, detail) {
@@ -598,6 +614,26 @@ async function loadPegiStatus() {
   try { state.pegiStatus = await api('/api/pegi/status'); renderPegiBulkStatus(); }
   catch (error) { $('#pegi-provider-status').textContent = error.message; }
 }
+function renderHltbBulkStatus() {
+  const status = state.hltbStatus; if (!status) return;
+  $('#hltb-provider-status').textContent = `${status.missing.toLocaleString()} games still need HLTB estimates.`;
+  $('#hltb-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
+  const job = status.job; let shortStatus = 'Unique exact-title matches only.'; let detail = 'Ambiguous editions stay blank for manual review.';
+  if (job?.state === 'running') {
+    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+  } else if (job?.state === 'complete') {
+    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`;
+    detail = `${job.processed.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.unmatched.toLocaleString()} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+  } else if (job?.state === 'failed') {
+    shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'HLTB unavailable.';
+  }
+  setBulkStatus($('#hltb-bulk-status'), shortStatus, detail);
+}
+async function loadHltbStatus() {
+  try { state.hltbStatus = await api('/api/hltb/status'); renderHltbBulkStatus(); }
+  catch (error) { $('#hltb-provider-status').textContent = error.message; }
+}
 $('#cover-api-save').addEventListener('click', async () => {
   const key = $('#cover-api-key').value.trim(); if (!key) { $('#account-error').textContent = 'Paste your SteamGridDB API key first.'; $('#account-error').hidden = false; return; }
   const button = $('#cover-api-save'); button.disabled = true; button.textContent = 'Checking…';
@@ -613,6 +649,11 @@ $('#cover-bulk-start').addEventListener('click', async () => {
 $('#pegi-bulk-start').addEventListener('click', async () => {
   const button = $('#pegi-bulk-start'); button.disabled = true;
   try { await api('/api/pegi/bulk', { method: 'POST' }); toast('Background PEGI scan started.'); await loadPegiStatus(); }
+  catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
+});
+$('#hltb-bulk-start').addEventListener('click', async () => {
+  const button = $('#hltb-bulk-start'); button.disabled = true;
+  try { await api('/api/hltb/bulk', { method: 'POST' }); toast('Background HLTB scan started.'); await loadHltbStatus(); }
   catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
 });
 $('#avatar-picker').addEventListener('click', () => $('#avatar-file').click());

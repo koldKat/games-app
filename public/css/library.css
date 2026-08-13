@@ -634,6 +634,143 @@ body {
 .pegi-integration .integration-head strong {
   color: #62e4c6;
 }
+.hltb-integration .integration-head strong,
+.hltb-assist strong {
+  color: #d6b56b;
+}
+.hltb-assist {
+  border-color: #4b4028;
+  background: #15130d;
+}
+.hltb-result {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 7px;
+  border: 1px solid #252d35;
+  background: #0a0f15;
+  color: #dce5ef;
+  text-align: left;
+}
+.hltb-result + .hltb-result {
+  margin-top: 3px;
+}
+.hltb-result:hover,
+.hltb-result:focus-visible {
+  border-color: #75613a;
+  background: #17150f;
+}
+.hltb-result span {
+  min-width: 0;
+}
+.hltb-result strong,
+.hltb-result small {
+  display: block;
+}
+.hltb-result strong {
+  overflow: hidden;
+  color: #e4d2a6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hltb-result b {
+  flex: none;
+  color: #d6b56b;
+  font-size: 10px;
+}
+.game-hltb-details {
+  margin-top: 9px;
+  border: 1px solid #403822;
+  background: #11100b;
+}
+.game-hltb-details header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 9px;
+  border-bottom: 1px solid #342e1e;
+}
+.game-hltb-details header span,
+.game-hltb-details header small,
+.game-hltb-details header strong {
+  display: block;
+  min-width: 0;
+}
+.game-hltb-details header small {
+  color: #887d64;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.game-hltb-details header strong {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #ddc98f;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-hltb-details header a {
+  flex: none;
+  color: #bca260;
+  font-size: 9px;
+}
+.hltb-time-grid,
+.card-hltb {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.hltb-time-grid > div {
+  min-width: 0;
+  padding: 7px 9px;
+  border-right: 1px solid #2e291b;
+}
+.hltb-time-grid > div:last-child {
+  border-right: 0;
+}
+.hltb-time-grid span,
+.hltb-time-grid strong {
+  display: block;
+}
+.hltb-time-grid span {
+  color: #887d64;
+  font-size: 8px;
+}
+.hltb-time-grid strong {
+  margin-top: 2px;
+  color: #e8d8ab;
+  font-size: 12px;
+}
+.card-hltb {
+  margin: 2px 0 0;
+  border: 1px solid #35301f;
+  background: rgba(13, 14, 10, .78);
+}
+.card-hltb > div {
+  min-width: 0;
+  padding: 4px 5px;
+  border-right: 1px solid #2e291c;
+}
+.card-hltb > div:last-child {
+  border-right: 0;
+}
+.card-hltb dt {
+  overflow: hidden;
+  color: #8f866e;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.card-hltb dd {
+  margin: 1px 0 0;
+  color: #dac58d;
+  font-size: 10px;
+  font-weight: 700;
+}
 @media (max-width: 520px) {
   .pegi-assist {
     display: flex;
@@ -660,5 +797,14 @@ body {
   }
   .integration-bulk span {
     white-space: normal;
+  }
+  .hltb-time-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hltb-time-grid > div:nth-child(2) {
+    border-right: 0;
+  }
+  .hltb-time-grid > div:nth-child(-n+2) {
+    border-bottom: 1px solid #2e291b;
   }
 }

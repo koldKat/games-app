@@ -2,7 +2,7 @@
 
 A responsive, local-first, multi-platform game collection manager built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
 
-Game Kat·a·log tracks physical and digital games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry ownership, wishlist, availability, play-state, PEGI, format, cover-art, and favourite metadata.
+Game Kat·a·log tracks physical and digital games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry ownership, wishlist, availability, play-state, PEGI, format, cover-art, HowLongToBeat estimates, and favourite metadata.
 
 ## Accounts
 
@@ -43,7 +43,11 @@ The authentication landing page doubles as a crawler-readable product page for `
 
 PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
 
-Cover and PEGI batch progress is delivered over an authenticated server-sent event stream. Matching cards are patched in place as results arrive, without reloading or repositioning the complete library grid.
+## HowLongToBeat estimates
+
+The add/edit dialog can search HowLongToBeat and store Main Story, Main + Sides, Completionist, and All Styles estimates. An account-scoped background scan fills only unique exact-title matches and leaves ambiguous editions for manual review. The provider is implemented entirely in Node.js; no Python runtime or worker process is required.
+
+Cover, PEGI, and HLTB batch progress is delivered over an authenticated server-sent event stream. Matching cards are patched in place as results arrive, without reloading or repositioning the complete library grid.
 
 ## Data and tests
 

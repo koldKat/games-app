@@ -69,6 +69,14 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));
   assert.ok(!data.listGames(other.id, { missing: 'pegi' }).some(game => game.platform === 'Evercade'));
   assert.ok(data.listGames(other.id, { missing: 'either' }).length > data.listGames(other.id, { missing: 'both' }).length);
+  const hltbCandidate = data.createGame(other.id, { title: 'Timed Adventure', platform: 'PC (Windows)' });
+  assert.ok(data.gamesMissingHltb(other.id).some(game => game.id === hltbCandidate.id));
+  const timed = data.updateGameHltb(other.id, hltbCandidate.id, { id: 1234, title: 'Timed Adventure',
+    url: 'https://howlongtobeat.com/game/1234', mainStory: 8.25, mainExtra: 13.5, completionist: 22, allStyles: 12.75 });
+  assert.deepEqual([timed.hltbMainStory, timed.hltbMainExtra, timed.hltbCompletionist, timed.hltbAllStyles], [8.25, 13.5, 22, 12.75]);
+  assert.equal(data.updateGameHltb(other.id, hltbCandidate.id, { id: 9999, title: 'Wrong' }), null);
+  assert.ok(!data.listGames(other.id, { missing: 'hltb' }).some(game => game.id === hltbCandidate.id));
+  assert.ok(data.listGames(owner.id, { missing: 'hltb' }).every(game => game.id !== hltbCandidate.id));
   const switchCopy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'Nintendo Switch' });
   data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
   const titleMatches = data.searchGameTitles(other.id, 'shared adventure');
@@ -78,6 +86,10 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.findDuplicateGames(other.id, '  SHARED   Adventure ', 'nintendo switch').length, 1);
   assert.equal(data.findDuplicateGames(other.id, 'Shared Adventure', 'Xbox Series X|S').length, 0);
   assert.equal(data.findDuplicateGames(owner.id, 'Shared Adventure', 'Nintendo Switch').length, 0);
+  const accented = data.createGame(other.id, { title: 'Pokémon Pokopia', platform: 'Nintendo Switch 2', publisher: 'Pokémon Company' });
+  assert.deepEqual(data.listGames(other.id, { q: 'Pokemon Pokopia' }).map(game => game.id), [accented.id]);
+  assert.ok(data.searchGameTitles(other.id, 'Pokemon Pokopia').some(game => game.id === accented.id));
+  assert.equal(data.findDuplicateGames(other.id, 'Pokemon Pokopia', 'Nintendo Switch 2').length, 1);
   await assert.rejects(() => auth.register('third_user', 'third-password', 'other@example.com'), /already in use/);
 });
 

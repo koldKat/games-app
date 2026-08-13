@@ -5,6 +5,8 @@ const path = require('node:path');
 const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
 const { createPegiBulkManager } = require('./server/pegi-bulk');
+const hltb = require('./server/hltb');
+const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
 const events = require('./server/events');
 const auth = require('./server/auth');
@@ -25,6 +27,7 @@ const MIME = {
 };
 const coverJobs = new Map();
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: events.publish });
+const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: events.publish });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -231,6 +234,15 @@ async function handleApi(request, response, url) {
   if (request.method === 'POST' && url.pathname === '/api/pegi/bulk') {
     try { return sendJson(response, 202, pegiJobs.start(user.id)); }
     catch (error) { return sendJson(response, 409, { error: error.message, job: pegiJobs.status(user.id).job }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/hltb/search') {
+    try { return sendJson(response, 200, await hltb.search(url.searchParams.get('q'))); }
+    catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: 'https://howlongtobeat.com/' }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/hltb/status') return sendJson(response, 200, hltbJobs.status(user.id));
+  if (request.method === 'POST' && url.pathname === '/api/hltb/bulk') {
+    try { return sendJson(response, 202, hltbJobs.start(user.id)); }
+    catch (error) { return sendJson(response, 409, { error: error.message, job: hltbJobs.status(user.id).job }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/games') {
     try { return sendJson(response, 201, db.createGame(user.id, await readJson(request))); }
