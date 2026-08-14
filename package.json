@@ -7,12 +7,15 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "covers:normalize": "node scripts/normalize-covers.js",
+    "covers:showcase": "node scripts/generate-cover-showcase.js",
     "docs:build": "node scripts/generate-docs.js",
     "docs:check": "node scripts/generate-docs.js --check",
     "test": "node --test && node scripts/generate-docs.js --check"
   },
   "dependencies": {
-    "better-sqlite3": "^11.9.1"
+    "better-sqlite3": "^11.9.1",
+    "sharp": "^0.35.3"
   },
   "engines": {
     "node": ">=20"

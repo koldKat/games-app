@@ -22,6 +22,11 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   const owner = await auth.register('library_owner', 'another-long-password');
   assert.equal(data.stats(owner.id).total, 0);
   assert.equal(data.stats(other.id).total, 0);
+  data.setCoverProviderCredentials(owner.id, 'thegamesdb', { apiKey: 'owner-key' });
+  assert.deepEqual(data.coverProviderCredentials(owner.id, 'thegamesdb'), { apiKey: 'owner-key' });
+  assert.equal(data.coverProviderCredentials(other.id, 'thegamesdb'), null);
+  data.setCoverProviderCredentials(owner.id, 'thegamesdb', null);
+  assert.equal(data.coverProviderCredentials(owner.id, 'thegamesdb'), null);
   assert.equal(data.db.prepare('SELECT COUNT(*) count FROM games WHERE user_id IS NULL').get().count, 1);
 
   data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
@@ -69,6 +74,10 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(data.updateGameCover(other.id, coverCandidate.id, { url: 'https://example.com/first.jpg', source: 'test', matchTitle: 'Cover Race' }));
   assert.equal(data.updateGameCover(other.id, coverCandidate.id, { url: 'https://example.com/second.jpg', source: 'test', matchTitle: 'Wrong' }), null);
   assert.equal(data.getGame(other.id, coverCandidate.id).coverUrl, 'https://example.com/first.jpg');
+  data.db.prepare("UPDATE games SET updated_at='2026-01-02 03:04:05' WHERE id=?").run(coverCandidate.id);
+  assert.ok(data.replaceGameCoverUrl(other.id, coverCandidate.id, 'https://example.com/first.jpg', '/covers/0123456789abcdef0123456789abcdef.jpg'));
+  assert.equal(data.getGame(other.id, coverCandidate.id).updatedAt, '2026-01-02 03:04:05');
+  assert.ok(data.randomShowcaseCovers(20).includes('/covers/0123456789abcdef0123456789abcdef.jpg'));
   assert.deepEqual(data.listGames(other.id, { missing: 'pegi' }).map(game => game.id), [coverCandidate.id]);
   assert.ok(data.listGames(other.id, { missing: 'cover' }).some(game => game.id === pending.id));
   assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));

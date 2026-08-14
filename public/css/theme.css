@@ -25,6 +25,18 @@ body {
   width: min(1600px, 100%);
   padding: 0 16px 28px;
 }
+.app-footer {
+  padding: 12px 0 0;
+  color: #9ca3af;
+  font: 400 11px/1.4 ui-monospace, monospace;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+.app-footer-brand {
+  color: #f5a623;
+  font-weight: 600;
+}
 .topbar {
   height: 56px;
   border-bottom: 1px solid #19212b;

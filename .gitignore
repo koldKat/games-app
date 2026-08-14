@@ -13,3 +13,6 @@ backups/
 .DS_Store
 public/avatars/*
 !public/avatars/.gitkeep
+public/covers/*
+!public/covers/.gitkeep
+public/cover-showcase.json

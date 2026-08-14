@@ -8,6 +8,11 @@ const { createPegiBulkManager } = require('./server/pegi-bulk');
 const hltb = require('./server/hltb');
 const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
+const thegamesdb = require('./server/thegamesdb');
+const { createCoverProviderBulkManager } = require('./server/cover-provider-bulk');
+const coverStorage = require('./server/cover-storage');
+const imagePolicy = require('./server/image-policy');
+const showcaseCovers = require('./server/showcase-covers');
 const events = require('./server/events');
 const auth = require('./server/auth');
 const preferences = require('./server/preferences');
@@ -28,10 +33,28 @@ fs.mkdirSync(AVATARS_DIR, { recursive: true });
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp',
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 const coverJobs = new Map();
+const externalCoverProviders = Object.freeze({
+  thegamesdb: {
+    label: 'TheGamesDB', client: thegamesdb,
+    environment: () => process.env.THEGAMESDB_API_KEY ? { apiKey: process.env.THEGAMESDB_API_KEY } : null,
+  },
+});
+const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
+async function storeMatchedCover(userId, game, match, source) {
+  const localUrl = await coverStorage.storeRemote(match.url);
+  try {
+    const updated = db.updateGameCover(userId, game.id, { url: localUrl, source, matchTitle: match.gameTitle });
+    if (!updated) coverStorage.removeLocal(localUrl);
+    return updated;
+  } catch (error) { coverStorage.removeLocal(localUrl); throw error; }
+}
+const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProviders).map(([provider, definition]) => [provider,
+  createCoverProviderBulkManager({ data: db, provider, label: definition.label, lookup: definition.client.bestExactCover,
+    saveCover: storeMatchedCover, notify: events.publish })]));
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: events.publish });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: events.publish });
 
@@ -50,7 +73,7 @@ async function runCoverJob(userId, key) {
     try {
       const match = await covers.bestExactCover(key, current.title);
       if (match) {
-        const updated = db.updateGameCover(userId, game.id, { url: match.url, source: 'steamgriddb', matchTitle: match.gameTitle });
+        const updated = await storeMatchedCover(userId, current, match, 'steamgriddb');
         if (updated) { job.matched++; events.publish(userId, 'game-updated', { source: 'covers', game: updated }); }
         else job.skipped++;
       } else job.unmatched++;
@@ -91,6 +114,18 @@ function removeAvatarFile(filename) {
   fs.unlink(path.join(AVATARS_DIR, filename), () => {});
 }
 
+async function prepareGameCover(input, existing = null) {
+  const requested = String(input?.coverUrl || '').trim();
+  if (!requested || (requested === existing?.coverUrl && coverStorage.localFilename(requested))) return { input, createdUrl: '' };
+  if (coverStorage.localFilename(requested)) throw new Error('Saved cover paths cannot be assigned manually. Request the cover again.');
+  const createdUrl = await coverStorage.storeRemote(requested);
+  return { input: { ...input, coverUrl: createdUrl }, createdUrl };
+}
+
+function finishGameCoverChange(existing, game) {
+  if (existing?.coverUrl && existing.coverUrl !== game?.coverUrl) coverStorage.removeLocal(existing.coverUrl);
+}
+
 function readJson(request) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -111,6 +146,15 @@ function serveStatic(requestPath, response) {
   const relative = requestPath === '/' ? 'index.html' : `${requestPath.replace(/^\/+/, '')}${requestPath.endsWith('/') ? 'index.html' : ''}`;
   const filePath = path.resolve(PUBLIC_DIR, relative);
   if (!filePath.startsWith(`${PUBLIC_DIR}${path.sep}`) && filePath !== PUBLIC_DIR) return sendJson(response, 403, { error: 'Forbidden.' });
+  const durableCover = filePath.startsWith(`${coverStorage.COVER_DIR}${path.sep}`);
+  if (durableCover) {
+    return fs.stat(filePath, (error, stats) => {
+      if (error || !stats.isFile()) return sendJson(response, error?.code === 'ENOENT' ? 404 : 500, { error: error?.code === 'ENOENT' ? 'Not found.' : 'Could not read file.' });
+      response.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream', 'Content-Length': stats.size,
+        'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' });
+      const stream = fs.createReadStream(filePath); stream.on('error', () => response.destroy()); stream.pipe(response);
+    });
+  }
   fs.readFile(filePath, (error, content) => {
     if (error) {
       if (error.code === 'ENOENT') return sendJson(response, 404, { error: 'Not found.' });
@@ -181,8 +225,10 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'POST' && url.pathname === '/api/account/avatar') {
     try {
-      const image = await readRaw(request, AVATAR_MAX_BYTES);
-      if (image.length < 4 || image[0] !== 0xff || image[1] !== 0xd8 || image[2] !== 0xff) return sendJson(response, 415, { error: 'Avatar must be a JPEG image.' });
+      const source = await readRaw(request, AVATAR_MAX_BYTES);
+      let image;
+      try { image = await imagePolicy.processAvatar(source); }
+      catch { return sendJson(response, 415, { error: 'Avatar must be a valid image that can be processed.' }); }
       const filename = `${user.id}_${Date.now()}_${require('node:crypto').randomBytes(4).toString('hex')}.jpg`;
       const old = auth.avatarPath(user.id);
       fs.writeFileSync(path.join(AVATARS_DIR, filename), image, { flag: 'wx' });
@@ -211,11 +257,42 @@ async function handleApi(request, response, url) {
   if (request.method === 'DELETE' && url.pathname === '/api/covers/config') {
     db.setCoverApiKey(user.id, ''); return sendJson(response, 200, { configured: Boolean(process.env.STEAMGRIDDB_API_KEY) });
   }
+  const providerRoute = url.pathname.match(/^\/api\/cover-providers\/(thegamesdb)\/(status|config|bulk)$/);
+  if (providerRoute) {
+    const [, provider, action] = providerRoute; const definition = externalCoverProviders[provider];
+    const credentials = providerCredentials(user.id, provider); const manager = externalCoverJobs[provider];
+    if (request.method === 'GET' && action === 'status') {
+      return sendJson(response, 200, { configured: Boolean(credentials), ...manager.status(user.id) });
+    }
+    if (request.method === 'PUT' && action === 'config') {
+      try {
+        const input = await readJson(request); const clean = definition.client.cleanCredentials(input);
+        await definition.client.verify(clean); db.setCoverProviderCredentials(user.id, provider, clean);
+        return sendJson(response, 200, { configured: true });
+      } catch (error) { return sendJson(response, 400, { error: error.message }); }
+    }
+    if (request.method === 'DELETE' && action === 'config') {
+      db.setCoverProviderCredentials(user.id, provider, null);
+      return sendJson(response, 200, { configured: Boolean(definition.environment()) });
+    }
+    if (request.method === 'POST' && action === 'bulk') {
+      if (!credentials) return sendJson(response, 409, { error: `Configure ${definition.label} in Account Settings first.` });
+      try { return sendJson(response, 202, manager.start(user.id, credentials)); }
+      catch (error) { return sendJson(response, 409, { error: error.message }); }
+    }
+  }
   if (request.method === 'GET' && url.pathname === '/api/covers/search') {
-    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
-    if (!key) return sendJson(response, 409, { error: 'Configure a SteamGridDB API key in Account Settings first.' });
-    try { return sendJson(response, 200, await covers.searchCovers(key, url.searchParams.get('q'))); }
-    catch (error) { return sendJson(response, 502, { error: error.message }); }
+    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY; const title = url.searchParams.get('q'); const platform = url.searchParams.get('platform');
+    const searches = [];
+    if (key) searches.push(covers.searchCovers(key, title));
+    for (const [provider, definition] of Object.entries(externalCoverProviders)) {
+      const credentials = providerCredentials(user.id, provider);
+      if (credentials) searches.push(definition.client.searchCovers(credentials, title, platform));
+    }
+    if (!searches.length) return sendJson(response, 409, { error: 'Configure at least one cover provider in Account Settings first.' });
+    const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+    if (results.length || settled.some(result => result.status === 'fulfilled')) return sendJson(response, 200, results.slice(0, 30));
+    return sendJson(response, 502, { error: settled.find(result => result.status === 'rejected')?.reason?.message || 'Cover providers are unavailable.' });
   }
   if (request.method === 'GET' && url.pathname === '/api/titles/autocomplete') {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
@@ -268,8 +345,13 @@ async function handleApi(request, response, url) {
     catch (error) { return sendJson(response, 409, { error: error.message, job: hltbJobs.status(user.id).job }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/games') {
-    try { return sendJson(response, 201, db.createGame(user.id, await readJson(request))); }
+    let prepared;
+    try {
+      prepared = await prepareGameCover(await readJson(request));
+      return sendJson(response, 201, db.createGame(user.id, prepared.input));
+    }
     catch (error) {
+      if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
       return sendJson(response, 400, { error: error.message });
     }
   }
@@ -279,15 +361,23 @@ async function handleApi(request, response, url) {
     return game ? sendJson(response, 200, game) : sendJson(response, 404, { error: 'Game not found.' });
   }
   if (match && request.method === 'PUT') {
+    const existing = db.getGame(user.id, Number(match[1]));
+    if (!existing) return sendJson(response, 404, { error: 'Game not found.' });
+    let prepared;
     try {
-      const game = db.updateGame(user.id, Number(match[1]), await readJson(request));
-      return game ? sendJson(response, 200, game) : sendJson(response, 404, { error: 'Game not found.' });
+      prepared = await prepareGameCover(await readJson(request), existing);
+      const game = db.updateGame(user.id, Number(match[1]), prepared.input);
+      if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
+      finishGameCoverChange(existing, game); return sendJson(response, 200, game);
     } catch (error) {
+      if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
       return sendJson(response, 400, { error: error.message });
     }
   }
   if (match && request.method === 'DELETE') {
-    return db.deleteGame(user.id, Number(match[1])) ? sendJson(response, 200, { ok: true }) : sendJson(response, 404, { error: 'Game not found.' });
+    const existing = db.getGame(user.id, Number(match[1]));
+    if (!existing || !db.deleteGame(user.id, Number(match[1]))) return sendJson(response, 404, { error: 'Game not found.' });
+    coverStorage.removeLocal(existing.coverUrl); return sendJson(response, 200, { ok: true });
   }
   sendJson(response, 404, { error: 'API route not found.' });
 }
@@ -307,6 +397,18 @@ auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
   console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
   backup.start();
+  coverStorage.localizeExistingCovers(db, {
+    onStored: (userId, game) => events.publish(userId, 'game-updated', { source: 'cover-storage', game }),
+    onError: (game, error) => console.error(`[covers] could not store game ${game.id}: ${error.message}`),
+  }).then(async result => {
+    if (result.total) console.log(`[covers] localized ${result.stored}/${result.total}; ${result.failed} failed`);
+    const normalized = await coverStorage.normalizeExistingCovers(db, {
+      onStored: (userId, game) => events.publish(userId, 'game-updated', { source: 'cover-storage', game }),
+      onError: (game, error) => console.error(`[covers] could not normalize game ${game.id}: ${error.message}`),
+    });
+    showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
+    if (normalized.total) console.log(`[covers] normalized ${normalized.stored}/${normalized.total}; ${normalized.skipped} already compliant; ${normalized.failed} failed`);
+  }).catch(error => console.error('[covers] migration failed:', error.message));
 });
 
 function shutdown() {

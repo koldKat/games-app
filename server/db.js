@@ -62,6 +62,13 @@ db.exec(`
     steamgriddb_key TEXT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS cover_provider_credentials (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    credentials_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, provider)
+  );
   CREATE TABLE IF NOT EXISTS user_preferences (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     library_view TEXT NOT NULL DEFAULT 'grid',
@@ -307,10 +314,40 @@ function setCoverApiKey(userId, key) {
   if (key) db.prepare(`INSERT INTO user_integrations (user_id, steamgriddb_key) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET steamgriddb_key=excluded.steamgriddb_key, updated_at=CURRENT_TIMESTAMP`).run(userId, key);
   else db.prepare('DELETE FROM user_integrations WHERE user_id=?').run(userId);
 }
+function coverProviderCredentials(userId, provider) {
+  const row = db.prepare('SELECT credentials_json FROM cover_provider_credentials WHERE user_id=? AND provider=?').get(userId, provider);
+  if (!row) return null;
+  try { const value = JSON.parse(row.credentials_json); return value && typeof value === 'object' && !Array.isArray(value) ? value : null; }
+  catch { return null; }
+}
+function setCoverProviderCredentials(userId, provider, credentials) {
+  const cleanProvider = String(provider || '').trim();
+  if (!cleanProvider) throw new Error('Cover provider is required.');
+  if (!credentials) { db.prepare('DELETE FROM cover_provider_credentials WHERE user_id=? AND provider=?').run(userId, cleanProvider); return; }
+  db.prepare(`INSERT INTO cover_provider_credentials (user_id, provider, credentials_json) VALUES (?, ?, ?)
+    ON CONFLICT(user_id, provider) DO UPDATE SET credentials_json=excluded.credentials_json, updated_at=CURRENT_TIMESTAMP`)
+    .run(userId, cleanProvider, JSON.stringify(credentials));
+}
 function gamesMissingCovers(userId) { return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND cover_url='' ORDER BY title COLLATE NOCASE`).all(userId); }
 function updateGameCover(userId, id, cover) {
   const result = db.prepare(`UPDATE games SET cover_url=?, cover_source=?, cover_match_title=?, updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND user_id=? AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
+  return result.changes ? getGame(userId, id) : null;
+}
+function gamesWithRemoteCovers() {
+  return db.prepare(`SELECT id, user_id AS userId, cover_url AS coverUrl FROM games
+    WHERE cover_url LIKE 'https://%' ORDER BY id`).all();
+}
+function gamesWithLocalCovers() {
+  return db.prepare(`SELECT id, user_id AS userId, cover_url AS coverUrl FROM games
+    WHERE cover_url LIKE '/covers/%' ORDER BY id`).all();
+}
+function coverUrlReferenceCount(coverUrl) {
+  return db.prepare('SELECT COUNT(*) AS count FROM games WHERE cover_url=?').get(coverUrl).count;
+}
+function replaceGameCoverUrl(userId, id, expectedUrl, localUrl) {
+  const result = db.prepare(`UPDATE games SET cover_url=?
+    WHERE id=? AND user_id=? AND cover_url=?`).run(localUrl, id, userId, expectedUrl);
   return result.changes ? getGame(userId, id) : null;
 }
 
@@ -371,7 +408,7 @@ function updateGameHltb(userId, id, metadata = {}) {
 function randomShowcaseCovers(limit = SHOWCASE_COVER_LIMIT) {
   const count = Math.max(1, Math.min(SHOWCASE_COVER_LIMIT_MAX, Number.parseInt(limit, 10) || SHOWCASE_COVER_LIMIT));
   return db.prepare(`SELECT cover_url AS coverUrl FROM games
-    WHERE cover_url LIKE 'https://%'
+    WHERE cover_url LIKE 'https://%' OR cover_url LIKE '/covers/%'
     GROUP BY cover_url ORDER BY RANDOM() LIMIT ?`).all(count).map(row => row.coverUrl);
 }
 
@@ -386,4 +423,7 @@ function stats(userId) {
   return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, coverApiKey, setCoverApiKey, gamesMissingCovers, updateGameCover, gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, randomShowcaseCovers, stats };
+module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+  coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
+  gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, randomShowcaseCovers, stats };

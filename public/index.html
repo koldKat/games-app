@@ -58,7 +58,7 @@
         "Wishlist, backlog, and play-status management",
         "PEGI-assisted ratings and metadata",
         "HowLongToBeat playtime estimates",
-        "SteamGridDB cover-art lookup",
+        "SteamGridDB and TheGamesDB cover-art lookup",
         "Advanced filters, missing-data views, and playtime sorting",
         "Live incremental batch updates",
         "Cross-device account preferences",
@@ -122,7 +122,7 @@
           <span class="promo-code">BOX_ART // ONLINE</span>
           <div class="promo-cover-deck" data-cover-slots="5" aria-hidden="true"></div>
           <h2>Your covers on deck.</h2>
-          <p>Request SteamGridDB box art per title or fill missing covers in a conservative account-wide scan.</p>
+          <p>Search SteamGridDB and TheGamesDB per title or run conservative account-wide cover scans.</p>
         </article>
         <article class="auth-promo promo-track">
           <span class="promo-code">WORKSPACE // SYNCED</span>
@@ -203,6 +203,7 @@
         <button id="load-more" class="button load-more" hidden>Show more</button>
       </section>
     </main>
+    <footer class="app-footer" aria-label="Copyright"><span class="app-footer-brand">koldKat productions</span> <span data-copyright-year>© 2026</span></footer>
   </div>
 
   <button class="fab" data-add-game aria-label="Add a game">＋</button>
@@ -218,7 +219,7 @@
       </div>
       <div id="pegi-results" class="pegi-results" hidden></div>
       <div class="cover-assist">
-        <div><strong>Box-art lookup</strong><small>Search portrait artwork on SteamGridDB and choose the exact edition.</small></div>
+        <div><strong>Box-art lookup</strong><small>Search connected artwork providers and choose the exact edition.</small></div>
         <div class="cover-assist-actions"><button type="button" class="button ghost" id="cover-remove-button" hidden>Remove cover</button><button type="button" class="button secondary" id="cover-search-button">Request cover</button></div>
       </div>
       <div id="cover-selection" class="cover-selection" hidden></div>
@@ -275,6 +276,12 @@
         <div class="integration-head"><span><strong>SteamGridDB covers</strong><small id="cover-provider-status">Checking configuration…</small></span><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">Get API key ↗</a></div>
         <div class="integration-key"><input id="cover-api-key" type="text" autocomplete="off" aria-label="SteamGridDB API key" value="Checking…" disabled><button type="button" class="button secondary" id="cover-api-save" disabled>Checking…</button></div>
         <div class="integration-bulk"><span id="cover-bulk-status" class="bulk-status" tabindex="0">Cover scan idle.</span><button type="button" class="button ghost" id="cover-bulk-start">Fill missing covers</button></div>
+      </section>
+      <section class="integration-panel external-cover-integration" data-cover-provider="thegamesdb">
+        <div class="integration-head"><span><strong>TheGamesDB covers</strong><small data-provider-status>Checking configuration…</small></span><span class="integration-links"><a href="https://thegamesdb.net/login.php" target="_blank" rel="noopener">Sign in / register ↗</a><a href="https://api.thegamesdb.net/key.php" target="_blank" rel="noopener">View API key ↗</a></span></div>
+        <div class="integration-key provider-connected" data-provider-connected><input class="is-connected" type="text" value="Checking…" aria-label="TheGamesDB connection" disabled><button type="button" class="button secondary" data-provider-replace>Replace key</button></div>
+        <div class="provider-fields" data-provider-fields hidden><div class="integration-key"><input type="password" autocomplete="off" data-credential="apiKey" aria-label="TheGamesDB API key" placeholder="API key"><button type="button" class="button secondary" data-provider-save>Connect</button></div></div>
+        <div class="integration-bulk"><span class="bulk-status" data-provider-bulk-status tabindex="0">TheGamesDB scan idle.</span><button type="button" class="button ghost" data-provider-bulk>Fill with TheGamesDB</button></div>
       </section>
       <section class="integration-panel pegi-integration">
         <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>

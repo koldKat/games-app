@@ -115,6 +115,14 @@ test('landing footer links to the public repository without replacing the app', 
   assert.doesNotMatch(readPublicCss(), /\.auth-footer \.repo-link\{/);
 });
 
+test('authenticated library carries the family copyright notice with a rolling year', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const css = readPublicCss();
+  assert.match(html, /class="app-footer"[\s\S]*koldKat productions[\s\S]*data-copyright-year>© 2026/);
+  assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
+  assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
+  assert.match(css, /\.app-footer-brand\{color:#f5a623;font-weight:600\}/);
+});
+
 test('common filters never move the viewport', () => {
   const application = read('public/app.js');
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
@@ -217,6 +225,26 @@ test('SteamGridDB configuration uses a disabled connected field and explicit rep
   assert.match(css, /input\.is-connected:disabled/);
   assert.match(server, /configured: Boolean\(accountKey \|\| serverKey\)/);
   assert.doesNotMatch(server, /steamgriddb_key[^\n]*sendJson/);
+});
+
+test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const settings = read('public/js/cover-provider-settings.js'); const server = read('server.js');
+  assert.match(html, /data-cover-provider="thegamesdb"/);
+  assert.match(html, /thegamesdb\.net\/login\.php[^>]*>Sign in \/ register ↗/);
+  assert.match(html, /api\.thegamesdb\.net\/key\.php[^>]*>View API key ↗/);
+  assert.match(settings, /\/api\/cover-providers\/\$\{provider\}\/config/);
+  assert.match(settings, /connectedInput\.value = 'Connected'; connectedInput\.disabled = true/);
+  assert.match(application, /coverProviderSettings\.handleEvent/);
+  assert.match(application, /TheGamesDB art ↗/);
+  assert.match(server, /db\.coverProviderCredentials\(userId, provider\)/);
+  assert.match(server, /\(thegamesdb\)/);
+});
+
+test('durable public covers stream from disk instead of buffering whole images', () => {
+  const server = read('server.js');
+  assert.match(server, /fs\.createReadStream\(filePath\)/);
+  assert.match(server, /public, max-age=31536000, immutable/);
+  assert.match(server, /'Content-Length': stats\.size/);
 });
 
 test('batch updates use cookie-authenticated SSE and patch individual cards', () => {

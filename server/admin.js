@@ -3,6 +3,7 @@ const path = require('node:path');
 const { db } = require('./db');
 const { readVersion, writeVersion } = require('./version');
 const backup = require('./backup');
+const coverStorage = require('./cover-storage');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -100,10 +101,12 @@ function deleteAccount(id) {
   const account = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, COUNT(g.id) games
     FROM users u LEFT JOIN games g ON g.user_id=u.id WHERE u.id=? GROUP BY u.id`).get(Number(id));
   if (!account) return null;
+  const coverUrls = db.prepare("SELECT cover_url AS coverUrl FROM games WHERE user_id=? AND cover_url LIKE '/covers/%'").all(account.id);
   const result = db.prepare('DELETE FROM users WHERE id=?').run(account.id);
   if (result.changes && account.avatarPath && path.basename(account.avatarPath) === account.avatarPath) {
     try { fs.unlinkSync(path.join(ROOT, 'public', 'avatars', account.avatarPath)); } catch {}
   }
+  if (result.changes) for (const { coverUrl } of coverUrls) coverStorage.removeLocal(coverUrl);
   return result.changes ? account : null;
 }
 
@@ -133,7 +136,9 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listCatalogue(url.searchParams.get('q')));
   match = pathname.match(/^\/api\/admin\/games\/(\d+)$/);
   if (request.method === 'DELETE' && match) {
+    const game = db.prepare('SELECT cover_url AS coverUrl FROM games WHERE id=?').get(Number(match[1]));
     const result = db.prepare('DELETE FROM games WHERE id=?').run(Number(match[1]));
+    if (result.changes) coverStorage.removeLocal(game?.coverUrl);
     return result.changes ? sendJson(response, 200, { ok: true }) : sendJson(response, 404, { error: 'Game not found.' });
   }
   if (request.method === 'GET' && pathname === '/api/admin/version') return sendJson(response, 200, { version: readVersion() });

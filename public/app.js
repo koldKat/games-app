@@ -2,14 +2,21 @@ import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformFr
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
+import { createCoverProviderSettings } from './js/cover-provider-settings.js';
+import { bindCoverResultFallbacks } from './js/cover-result-images.js';
+import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
 import {
-  DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
+  COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
 } from './js/ui-policy.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+const copyrightYear = new Date().getFullYear();
+$$('[data-copyright-year]').forEach(element => {
+  element.textContent = copyrightYear > COPYRIGHT_START_YEAR ? `© ${COPYRIGHT_START_YEAR}-${copyrightYear}` : `© ${COPYRIGHT_START_YEAR}`;
+});
 function mountDecorativeCoverSlots() {
   $$('[data-cover-slots]').forEach(field => {
     const count = Math.max(0, Math.min(DECORATIVE_COVER_SLOT_MAX, Number(field.dataset.coverSlots) || 0));
@@ -61,10 +68,12 @@ function toast(message) {
   const element = $('#toast'); element.textContent = message; element.classList.add('show');
   clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), UI_TIMING.toastMs);
 }
+function showAccountError(message) { $('#account-error').textContent = message; $('#account-error').hidden = false; }
+const coverProviderSettings = createCoverProviderSettings({ api, toast, showError: showAccountError });
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
   for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
-  const candidates = [...new Set(covers.filter(url => /^https:\/\//i.test(url)))];
+  const candidates = uniqueArtworkUrls(covers);
   if (!slots.length || !candidates.length) return;
   const loaded = []; let nextSlot = 0;
   const loadCandidate = url => new Promise(resolve => {
@@ -90,14 +99,17 @@ async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
 async function loadAuthCovers() {
   try {
     const response = await fetch(`/api/showcase/covers?v=${Date.now()}`, { cache: 'no-store' });
-    if (!response.ok) return;
-    const { covers = [] } = await response.json();
+    let covers = response.ok ? (await response.json()).covers || [] : [];
+    if (!covers.length) {
+      const fallback = await fetch(`/cover-showcase.json?v=${Date.now()}`, { cache: 'no-store' });
+      if (fallback.ok) covers = (await fallback.json()).covers || [];
+    }
     const slots = [...$$('.promo-cover-deck i'), $('.promo-loose-cover'), ...$$('#auth-screen .auth-cover-field i')].filter(Boolean);
     await applyDecorativeCovers(slots, covers);
   } catch {}
 }
 async function loadAppBackgroundCovers(isCurrent) {
-  const covers = [...new Set(state.games.map(game => game.coverUrl).filter(url => /^https:\/\//i.test(url)))];
+  const covers = uniqueArtworkUrls(state.games.map(game => game.coverUrl));
   for (let index = covers.length - 1; index > 0; index--) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
@@ -117,6 +129,7 @@ function showAuth(message = '') {
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
   state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null;
+  coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   state.games = []; state.stats = null; state.platforms = []; state.limit = LIBRARY_PAGE_SIZE;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
@@ -263,6 +276,14 @@ function selectedPlatform() { return $('#game-platform').value === CUSTOM_PLATFO
 renderPlatformChoices();
 $('#game-platform').addEventListener('change', () => toggleCustomPlatform());
 function badge(text, className = '') { return `<span class="badge ${className}">${escapeHtml(text)}</span>`; }
+function coverCredit(source) {
+  const credits = {
+    thegamesdb: ['TheGamesDB art ↗', 'https://thegamesdb.net/'],
+  };
+  const credit = credits[source];
+  if (credit) return `<a class="badge source-credit" href="${credit[1]}" target="_blank" rel="noopener" data-card-link>${credit[0]}</a>`;
+  return source === 'steamgriddb' ? badge('SGDB art') : '';
+}
 function isMissingPegiInfo(game) {
   return !/^Evercade/i.test(String(game.platform || '')) && !game.pegiUrl
     && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
@@ -278,7 +299,7 @@ function gameCard(game) {
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${game.coverSource === 'steamgriddb' ? badge('SGDB art') : ''}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     <div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
@@ -339,7 +360,8 @@ function connectEventStream() {
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
-    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); loadPegiStatus(); loadHltbStatus(); }
+    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); }
+    else coverProviderSettings.handleEvent(event, data);
   }, onUnauthorized() {
     if (generation !== sessionGeneration) return;
     sessionGeneration++; showAuth('Your session expired. Authenticate again.');
@@ -360,7 +382,7 @@ function renderGames() {
 async function loadHeroCovers(isCurrent) {
   const slots = $$('.hero-cover');
   if (!slots.length || slots.some(slot => slot.classList.contains('has-art'))) return;
-  const covers = [...new Set(state.games.map(game => game.coverUrl).filter(url => /^https:\/\//i.test(url)))];
+  const covers = uniqueArtworkUrls(state.games.map(game => game.coverUrl));
   for (let index = covers.length - 1; index > 0; index--) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
@@ -585,15 +607,19 @@ $('#pegi-results').addEventListener('click', event => {
 function renderCoverSelection() {
   const url = $('#game-form').dataset.coverUrl || ''; const box = $('#cover-selection');
   $('#cover-remove-button').hidden = !url; box.hidden = !url;
-  box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml($('#game-form').dataset.coverMatchTitle || 'Custom match')}</small></span>` : '';
+  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB' };
+  const details = [$('#game-form').dataset.coverMatchTitle || 'Custom match', sourceLabels[source]].filter(Boolean).join(' · ');
+  box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
 }
 $('#cover-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#cover-results'); box.hidden = false;
   if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
-  box.innerHTML = '<p class="pegi-message">Querying SteamGridDB artwork…</p>';
+  box.innerHTML = '<p class="pegi-message">Querying connected cover providers…</p>';
   try {
-    const results = await api(`/api/covers/search?q=${encodeURIComponent(title)}`); box._results = results;
-    box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="cover-result" data-cover-index="${index}"><img src="${escapeHtml(result.thumbnailUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml([result.width && result.height ? `${result.width}×${result.height}` : '', result.style].filter(Boolean).join(' · '))}</small></span></button>`).join('') : '<p class="pegi-message">No portrait covers found. Try a shorter or more exact title.</p>';
+    const results = await api(`/api/covers/search?q=${encodeURIComponent(title)}&platform=${encodeURIComponent(selectedPlatform())}`); box._results = results;
+    const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB' };
+    box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="cover-result" data-cover-index="${index}"><img src="${escapeHtml(result.thumbnailUrl)}" data-cover-image-index="${index}" alt="" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml([providerLabels[result.source] || result.source, result.width && result.height ? `${result.width}×${result.height}` : '', result.style].filter(Boolean).join(' · '))}</small></span></button>`).join('') : '<p class="pegi-message">No portrait covers found. Try a shorter or more exact title.</p>';
+    bindCoverResultFallbacks(box, results);
   } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)}</p>`; }
 });
 $('#cover-results').addEventListener('click', event => {
@@ -616,7 +642,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
-  Promise.all([loadCoverStatus(), loadPegiStatus(), loadHltbStatus()]);
+  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus()]);
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {

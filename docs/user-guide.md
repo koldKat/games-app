@@ -86,7 +86,7 @@ Use the two view buttons beside **My library**:
 
 The selected view, search text, every filter, and the sort order are stored with the account in SQLite. They follow the account to another browser, desktop, or phone; nothing is kept in local or session storage.
 
-The signed-in workspace keeps the login screen's scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes artwork from the current account when the app is entered; the decorative layer is non-interactive and does not affect the cards or controls.
+The signed-in workspace keeps the login screen's scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes durable local artwork from the current account when the app is entered; those same local files feed the public promo modules and header covers. The decorative layer is non-interactive and does not affect the cards or controls.
 
 The small release string beside **Game Kat·a·log** comes from the project's `VERSION` file and can be changed from the local administrator panel.
 
@@ -142,14 +142,18 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 
 ### Cover-assisted entry
 
-1. Open **Account Settings**, obtain a personal SteamGridDB API key from the linked preferences page, paste it, and select **Connect**.
+1. Open **Account Settings** and connect one or both artwork sources: SteamGridDB or TheGamesDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts.
 2. Type a title in the game form and select **Request cover**.
 3. Review the portrait artwork and game names, then select the correct edition.
 4. Save the game. Select **Remove cover** before saving if the match is wrong.
 
-After validation, the disabled key field shows **Connected** in green. The secret itself is deliberately never returned to the browser. Select **Replace key** to enable an empty password field, enter the replacement, and select **Save key**.
+After validation, that provider's disabled field shows **Connected** in green. Secrets are deliberately never returned to the browser. Select **Replace key** or **Replace credentials** to open empty replacement fields.
 
-The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.
+If a provider cannot be reached while Account Settings loads, its scan action stays disabled and its credential fields remain available instead of displaying a stale connection from an earlier session.
+
+**Request cover** searches every connected source and labels each result with its provider. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. TheGamesDB cards carry a source-credit link.
+
+Cover choices initially use each provider's smaller preview image. If a TheGamesDB preview derivative is missing or fails to load, the chooser retries that result's original image automatically.
 
 ### HowLongToBeat-assisted entry
 
@@ -164,11 +168,13 @@ The selected result stores Main Story, Main + Sides, Completionist, and All Styl
 
 After connecting SteamGridDB, select **Fill missing covers** in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.
 
+TheGamesDB has its own **Fill with TheGamesDB** action. Its scan is platform-aware and requires exactly one normalized title record for the saved platform. Run it after SteamGridDB to fill remaining gaps; it touches only games that still have no cover.
+
 Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 
-All three scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover, PEGI record, or HLTB match while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
+All metadata and artwork scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover, PEGI record, or HLTB match while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
 
 ---
 
@@ -206,6 +212,8 @@ Select the username in the top-right corner.
 ### Add or change avatar
 
 Select the avatar or **Change avatar**, then choose an image. The browser centre-crops it to a 512×512 square and compresses it before upload. The stored JPEG is limited to 256 KB. Select **Remove** to return to the username initial.
+
+Downloaded game covers are also normalized automatically: each is stored as a JPEG with a maximum 900-pixel edge and a maximum size of 256 KB. This keeps card, header, and decorative background artwork quick to load without changing its public `/covers/...` availability.
 
 ### Change username
 
@@ -286,6 +294,6 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 ## Data safety
 
-All persistent collection data lives in `games.db`. Back up that file while the server is stopped, or use **Create backup** in the local admin panel while it is running. Do not copy only the main file during active writes without also accounting for its WAL files.
+Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends titles to the configured SteamGridDB provider, and title autocomplete sends the text currently being typed after the third character.
+The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider—SteamGridDB and/or TheGamesDB—and their individual background scans do the same for eligible games. Title autocomplete uses SteamGridDB only and sends the text currently being typed after the third character.

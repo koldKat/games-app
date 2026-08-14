@@ -11,7 +11,7 @@ Game Kat·a·log tracks physical and digital games across Nintendo, PlayStation,
 - Ownership, wishlist, availability, physical/digital format, play status, favourites, cartridge numbers, publishers, years, and notes.
 - Accent-insensitive search; composable platform, collection, PEGI, status, favourite, and missing-data filters; and 23 catalogue or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
-- SteamGridDB title suggestions, duplicate warnings, manual cover selection, and missing-cover scans.
+- SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
@@ -46,7 +46,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes collection/account summaries, session revocation, cross-account catalogue inspection, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
-The server makes one ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. The host `zip` command is required.
+The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
 The panel is loopback-only. Requests forwarded by nginx with a non-loopback client address are rejected even though nginx itself connects locally.
 
@@ -63,6 +63,8 @@ PEGI does not publish a documented public developer API. The add/edit dialog the
 The add/edit dialog can search HowLongToBeat and store Main Story, Main + Sides, Completionist, and All Styles estimates. An account-scoped background scan fills only unique exact-title matches and leaves ambiguous editions for manual review. The provider is implemented entirely in Node.js; no Python runtime or worker process is required.
 
 Cover, PEGI, and HLTB batch progress is delivered over an authenticated server-sent event stream. Matching cards are patched in place as results arrive, without reloading or repositioning the complete library grid.
+
+Provider artwork is copied into durable public storage rather than hotlinked. Covers are normalized to JPEG, capped at 900 pixels on the longest edge and 256 KiB; avatars are 512×512 JPEGs capped at 256 KiB.
 
 ## Data and tests
 

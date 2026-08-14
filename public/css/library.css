@@ -262,6 +262,14 @@ body {
 .badge {
   font-size: 9px;
 }
+.badge.source-credit {
+  text-decoration: none;
+}
+.badge.source-credit:hover,
+.badge.source-credit:focus-visible {
+  color: #b99aef;
+  outline: 1px solid #7962a5;
+}
 .badges {
   height: 42px;
   align-content: flex-start;
@@ -620,6 +628,13 @@ body {
   font-size: 9px;
   color: #54dbbd;
 }
+.integration-links {
+  display: flex;
+  align-items: flex-end;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+}
 .integration-key {
   margin-top: 7px;
 }
@@ -640,6 +655,16 @@ body {
   -webkit-text-fill-color: #58dbb8;
   opacity: 1;
   cursor: default;
+}
+.external-cover-integration .integration-head strong {
+  color: #b99aef;
+}
+.provider-fields .integration-key input {
+  width: 0;
+}
+.provider-connected[hidden],
+.provider-fields[hidden] {
+  display: none;
 }
 .integration-bulk {
   justify-content: space-between;
@@ -890,6 +915,14 @@ body {
   }
   .integration-bulk span {
     white-space: normal;
+  }
+  .provider-fields .integration-key {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .provider-fields .integration-key input {
+    width: 100%;
+    flex: none;
   }
   .hltb-time-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

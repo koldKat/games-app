@@ -22,6 +22,12 @@ games-app/
     hltb-bulk.js            account-scoped conservative timing enrichment jobs
     events.js               authenticated server-sent event fan-out
     covers.js               SteamGridDB client, throttling, matching, artwork selection
+    cover-storage.js        validated local image storage and cover migration
+    image-policy.js         256 KiB JPEG processing for covers and avatars
+    showcase-covers.js      atomic public decorative-cover catalogue writer
+    thegamesdb.js           TheGamesDB boxart search, CDN URL parsing and credential checks
+    cover-provider-utils.js shared title/platform normalization for artwork providers
+    cover-provider-bulk.js  reusable account-scoped external-cover batch engine
     version.js              validated atomic reads/writes of the VERSION file
   admin/
     index.html              localhost control-panel markup
@@ -29,6 +35,7 @@ games-app/
     js/                     dashboard, accounts, catalogue, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
+    normalize-covers.js     idempotent existing-cover normalization command
   public/
     index.html              application and authentication markup
     app.js                  browser state, rendering, auth, forms, API calls
@@ -37,6 +44,9 @@ games-app/
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
+    js/cover-provider-settings.js TheGamesDB connection and scan controls
+    js/cover-result-images.js failed-thumbnail fallback to provider originals
+    js/artwork-url.js       accepted remote and durable-local artwork URL policy
     js/ui-policy.js         browser pagination, lookup limits and interaction timing
     css/
       foundation.css       reset, structural layout, and baseline responsive rules
@@ -60,6 +70,12 @@ games-app/
     backup.test.js          hourly ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
     pegi-bulk.test.js       exact-title matching, skips, and job notifications
+    cover-providers.test.js provider parsing, image URLs and platform aliases
+    cover-provider-bulk.test.js reusable cover-job updates and race protection
+    cover-storage.test.js   provider allow-list, image validation and local migration
+    image-policy.test.js    cover/avatar dimensions, format and byte ceilings
+    cover-result-images.test.js browser thumbnail fallback contract
+    artwork-url.test.js    durable local artwork across landing, header and background
     hltb.test.js            HLTB parsing, normalization, endpoint discovery
     hltb-bulk.test.js       exact-title matching, skips, and circuit breaker
     hltb-ui.test.js         null-safe new/edit form metadata state
@@ -115,6 +131,7 @@ Environment variables:
 | `VERSION_FILE` | `./VERSION` | Release-string file; primarily useful for isolated tests or custom deployments |
 | `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
 | `STEAMGRIDDB_API_KEY` | blank | Optional server-wide cover API key; per-account keys can instead be configured in the UI |
+| `THEGAMESDB_API_KEY` | blank | Optional server-wide TheGamesDB key |
 
 Start the server with `npm start`. Development watch mode is available through `npm run dev`.
 
@@ -188,6 +205,8 @@ Missing rows produce safe defaults. `server/preferences.js` validates every enum
 | `created_at`, `updated_at` | SQLite timestamps |
 
 Indexes cover owner, platform, ownership, PEGI, and case-insensitive title.
+
+`cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets are never returned to the browser.
 
 Username comparison is case-insensitive. Renaming an account later does not alter ownership because all collection queries use the immutable numeric user ID.
 
@@ -275,12 +294,16 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
 | GET | `/api/titles/autocomplete?q=...` | Return account-local matches and up to ten SteamGridDB suggestions; `local=1` skips the provider and `exact=1&platform=...` performs the save-time duplicate check |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
+| GET | `/api/cover-providers/:provider/status` | TheGamesDB connection state, missing count, and job progress |
+| PUT | `/api/cover-providers/:provider/config` | Validate and store an account's provider credentials |
+| DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
+| POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
 
 List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, `wanted`, or `unavailable`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `cover`, `hltb`, `either`, or `both`; `either` means any of the three data sets is absent and `both` retains its legacy value while now meaning all three are absent. The PEGI condition follows batch eligibility and excludes Evercade, the cover condition requires an empty cover URL, and the HLTB condition requires no selected HLTB record. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
 
 Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favourites, creation/update timestamps, cartridge number, and ascending/descending values for all four HLTB estimates. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
 
-Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. They are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
+Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. The browser centre-crops and compresses before upload; the server independently decodes and reprocesses the image through the shared policy before accepting it, guaranteeing a 512×512 JPEG no larger than 256 KiB. Avatars are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
 ### Local administrator API
 
@@ -339,27 +362,35 @@ The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Look
 
 ## Cover-art integration
 
-SteamGridDB was selected because its API is dedicated to game artwork and exposes portrait grid images suitable for box-art cards. It requires a personal bearer API key. Account keys are stored in `user_integrations`; an optional `STEAMGRIDDB_API_KEY` environment value acts as a server-wide fallback. Keys are never returned to the browser after configuration.
+The artwork layer supports SteamGridDB and TheGamesDB. SteamGridDB supplies portrait grids and title autocomplete. TheGamesDB supplies front boxart and platform metadata from its CDN. Manual lookup runs both configured sources concurrently, preserves provider provenance, and returns successful results even when the other source is unavailable.
 
-The cover-status response exposes only whether lookup is configured. When connected, Account Settings renders the disabled key field as a green **Connected** state; the secret is never returned to the browser. Selecting **Replace key** explicitly enters replacement mode, enabling an empty password field and changing the action to **Save key**.
+SteamGridDB requires a personal bearer API key stored in `user_integrations`. TheGamesDB requires an API key stored in `cover_provider_credentials`; its key page requires an authenticated TheGamesDB site account, so Account Settings links to sign-in/registration separately from the key page. `STEAMGRIDDB_API_KEY` and `THEGAMESDB_API_KEY` provide optional server-wide fallbacks. Secrets are validated before storage and never returned to the browser.
+
+Cover-status responses expose only whether lookup is configured. When connected, Account Settings renders a disabled field as a green **Connected** state; secrets are never returned to the browser. Selecting **Replace key** or **Replace credentials** explicitly enters replacement mode with empty fields.
 
 The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
 
 An exact case-insensitive, whitespace-normalized title-and-platform pair is treated as a possible duplicate. Save-time validation uses a dedicated account-scoped exact lookup rather than the autocomplete result limit, so spacing variants and collections with many editions cannot bypass the warning. The warning can open the existing record. Creating another entry requires an explicit themed confirmation, but remains permitted for multiple copies or editions; another platform is never treated as the same record. The authenticated autocomplete route deliberately returns local results plus an empty remote list when no key is configured or SteamGridDB fails. The interface shows no provider warning, toast, empty state, or loading indicator: remote autocomplete is optional assistance and manual entry always remains available.
 
-Manual lookup searches up to four title candidates and returns portrait static grids. Results are cached in memory for 30 minutes. Provider calls are serialized below four requests per second, have a 15-second timeout, and retry HTTP 429 once.
+Manual lookup sends the title and selected platform to the configured sources. SteamGridDB searches up to four title candidates for portrait static grids. TheGamesDB requests front boxart with platform filtering and constructs image URLs only from the API's returned CDN bases. Results are cached in memory for 30 minutes. Provider failures are isolated, so one healthy source can still populate the chooser.
 
-Bulk lookup considers only games without a cover and reloads each queued record before contacting SteamGridDB. Games deleted or manually covered after the job began are skipped rather than queried or overwritten; the database update also requires the cover to remain empty, closing the race while a provider request is in flight. Title comparison is Unicode-normalized, case-insensitive, punctuation-insensitive, and conservative: auto-selection requires exactly one exact normalized title candidate. The highest-scoring portrait grid is stored; ambiguous titles remain unmatched. Five consecutive provider errors trip a circuit breaker and mark the job failed instead of hammering the remaining catalogue. Job state is in memory and therefore does not survive a server restart, while already matched covers remain in SQLite.
+Selected and automatically matched covers are not hotlinked permanently. `server/cover-storage.js` accepts HTTPS downloads only from the supported providers' CDN domains, validates every redirect before following it, caps source responses at 12 MB, and verifies JPEG/PNG/WebP file signatures. The shared server-side `server/image-policy.js` then applies EXIF rotation, limits the longest edge to 900 pixels without enlargement, converts to JPEG, and iteratively compresses until the result is no larger than 256 KiB. Only the processed image is written through a collision-safe temporary filename and atomically published under `public/covers/`. SQLite stores the resulting `/covers/...` path while retaining provider and matched-title provenance. These static files are unauthenticated and therefore publicly reachable through `https://gamekat.net/covers/...`; they stream from disk with exact content lengths and immutable one-year cache headers because filenames never change in place. Replacement, game deletion, account deletion, and admin catalogue deletion remove the corresponding local file.
+
+On startup, a paced sequential background migration finds legacy HTTPS cover URLs, downloads each through the same validation path, and compare-and-swaps the database URL so a concurrent edit is never overwritten. A second idempotent pass brings older local files under the same 900-pixel/256-KiB JPEG policy. It atomically writes the replacement before changing the database URL and removes the old file only when no database record still references it. These storage-only conversions preserve the game's logical `updated_at` value. Successful migrations publish targeted `game-updated` events; failures leave the previous URL and file intact and are logged for a later restart. `npm run covers:normalize` exposes the local normalization pass for deliberate maintenance.
+
+Each source has an independent missing-cover scan. Jobs consider only games without a cover and reload each queued record before making a request. Games deleted or manually covered after queuing are skipped; the database update also requires the cover to remain empty. TheGamesDB additionally requires a platform match and exactly one normalized title record; several regional images belonging to one record are not treated as ambiguous. Five consecutive provider errors pause that job. Progress and individual card updates use SSE, jobs remain in memory, and saved results remain in SQLite across restarts.
 
 Cards use a centred, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
 
-On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. After the returned games render, it shuffles their unique cover URLs and fills the five header covers first, followed by the fixed 32-slot decorative field. HTML declares each cover group once with `data-cover-slots`; the browser generates its non-semantic positioning nodes, element type, base class, and numbered modifier classes. The single loose promo cover uses the same declarative mounting pass through `data-cover-decoration`. Repeated empty cover tags are therefore absent from maintained markup. The controller mark, separator rules, status dots, progress fill, and modal spacing use CSS or meaningful elements rather than empty helper tags. Empty live regions remain only where runtime content is intentionally inserted. Decorative images load in a genuine one-at-a-time queue and appear progressively, so remote artwork never competes with the application shell or floods the browser connection pool. Each image may take up to six seconds; failed candidates are skipped in favour of the next shuffled URL. If fewer unique images succeed than there are slots, successful covers repeat instead of leaving permanent holes. Stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
+On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. `public/js/artwork-url.js` admits both legacy HTTPS artwork and validated `/covers/...` paths, while `randomShowcaseCovers()` applies the same two-form policy to the public cover-only endpoint. The logged-out loader also falls back to the generated, Git-ignored `public/cover-showcase.json` catalogue if an older running server process returns no covers; the file exposes only the same already-public randomized paths and is regenerated after normalization. Durable storage therefore feeds the login background, promo modules, authenticated header and app background consistently. After the returned games render, it shuffles their unique cover URLs and fills the five header covers first, followed by the fixed 32-slot decorative field. HTML declares each cover group once with `data-cover-slots`; the browser generates its non-semantic positioning nodes, element type, base class, and numbered modifier classes. The single loose promo cover uses the same declarative mounting pass through `data-cover-decoration`. Repeated empty cover tags are therefore absent from maintained markup. The controller mark, separator rules, status dots, progress fill, and modal spacing use CSS or meaningful elements rather than empty helper tags. Empty live regions remain only where runtime content is intentionally inserted. Decorative images load in a genuine one-at-a-time queue and appear progressively, so artwork never competes with the application shell or floods the browser connection pool. Each image may take up to six seconds; failed candidates are skipped in favour of the next shuffled URL. If fewer unique images succeed than there are slots, successful covers repeat instead of leaving permanent holes. Stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
 
 ---
 
 ## Browser application
 
 `public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions live in `public/js/title-autocomplete.js`; and HLTB form and card presentation lives in `public/js/hltb-ui.js`.
+
+The authenticated library footer mirrors the family branding used by Gamebooks: **koldKat productions** followed by a copyright year. `COPYRIGHT_START_YEAR` lives in `public/js/ui-policy.js`; the browser displays that year initially and automatically expands it to a range in later years.
 
 Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
@@ -470,7 +501,7 @@ The authentication test uses a disposable SQLite database under `/tmp` and remov
 
 Stop with `Ctrl+C` or send SIGTERM. The server closes SQLite before exiting.
 
-The server automatically creates compressed, consistent live backups at startup and hourly, retaining 15 days. The admin **Tools** tab lists, triggers, and removes those archives and can checkpoint the WAL. For a simple offline backup:
+The server automatically creates compressed, consistent live database backups at startup and hourly, retaining 15 days. Cover binaries under `public/covers/` are deliberately excluded from those ZIP files. The admin **Tools** tab lists, triggers, and removes the database archives and can checkpoint the WAL. For a simple offline database backup:
 
 1. Stop the server.
 2. Copy `games.db` to a dated backup location.
@@ -478,7 +509,7 @@ The server automatically creates compressed, consistent live backups at startup 
 
 When backing up a live WAL database, use SQLite's backup API or include a proper checkpoint procedure. Copying only `games.db` during an active write can omit transactions still present in `games.db-wal`.
 
-The database is excluded from Git. Source code, generated documentation, and tests can be versioned normally.
+The database and generated cover files are excluded from Git. Source code, generated documentation, tests, and the empty `public/covers/.gitkeep` directory marker can be versioned normally.
 
 ---
 
@@ -489,6 +520,6 @@ The database is excluded from Git. Source code, generated documentation, and tes
 - Login throttling is in-memory rather than persisted.
 - PEGI parsing depends on public page structure and can require maintenance; running batch jobs are not resumed after a process restart.
 - HLTB lookup depends on an undocumented private search route that can change; it is discovered dynamically, but may still require maintenance. Running batch jobs are not resumed after a process restart.
-- Cover lookup requires a SteamGridDB API key and its external API availability; bulk jobs resume only when restarted manually after a process restart.
+- Cover lookup depends on whichever of SteamGridDB or TheGamesDB the account or server has configured; external quotas and availability apply, and unfinished bulk jobs must be restarted after a process restart.
 - Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
 - The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.
