@@ -1,10 +1,12 @@
-const { BULK_JOB } = require('./constants');
+const { BULK_JOB, PC_STOREFRONT_VALUES } = require('./constants');
 
 const normalize = value => String(value || '').replace(/[™®©]/g, '').normalize('NFKD').replace(/\p{M}/gu, '')
   .toLocaleLowerCase().replace(/&/g, ' and ').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+const pcStorefrontKeys = new Set(PC_STOREFRONT_VALUES.map(normalize));
 
 function platformKey(value) {
   const text = normalize(value);
+  if (pcStorefrontKeys.has(text)) return 'pc';
   if (/nintendo switch 2/.test(text)) return 'switch-2';
   if (/nintendo switch/.test(text)) return 'switch';
   if (/playstation 5|ps5/.test(text)) return 'ps5';

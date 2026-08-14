@@ -198,7 +198,8 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { avatarUrl: null });
   }
   if (request.method === 'GET' && url.pathname === '/api/covers/status') {
-    return sendJson(response, 200, { configured: Boolean(db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY), missing: db.gamesMissingCovers(user.id).length, job: coverJobs.get(user.id) || null });
+    const accountKey = Boolean(db.coverApiKey(user.id)); const serverKey = Boolean(process.env.STEAMGRIDDB_API_KEY);
+    return sendJson(response, 200, { configured: Boolean(accountKey || serverKey), missing: db.gamesMissingCovers(user.id).length, job: coverJobs.get(user.id) || null });
   }
   if (request.method === 'PUT' && url.pathname === '/api/covers/config') {
     try {

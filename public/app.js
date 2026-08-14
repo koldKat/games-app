@@ -1,4 +1,4 @@
-import { CUSTOM_PLATFORM, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
+import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
@@ -576,7 +576,7 @@ $('#pegi-results').addEventListener('click', event => {
   const result = $('#pegi-results')._results?.[Number(button.dataset.pegiIndex)]; if (!result) return;
   $('#game-title').value = result.title; $('#game-pegi').value = result.pegi || ''; $('#game-publisher').value = result.publisher || ''; $('#game-year').value = result.releaseYear || '';
   const mapped = platformFromReleaseText(result.releases.join(' '));
-  if (mapped) setPlatformValue(mapped);
+  if (mapped && !(mapped === 'PC (Windows)' && isPcStorefront(selectedPlatform()))) setPlatformValue(mapped);
   $('#game-form').dataset.pegiUrl = result.pegiUrl;
   $('#game-form')._pegiMetadata = pegiMetadata({ pegiDescriptors: result.descriptors, pegiReleases: result.releases, pegiAdvice: result.advice, pegiOutline: result.outline, pegiContentIssues: result.contentIssues, pegiOtherIssues: result.otherIssues });
   $('#pegi-results').hidden = true; renderPegiDetails(); $('#game-pegi-details').open = true; toast('PEGI details applied.');
@@ -614,6 +614,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-new-password').value = '';
   $('#account-confirm-password').value = '';
   $('#account-error').hidden = true;
+  setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
   Promise.all([loadCoverStatus(), loadPegiStatus(), loadHltbStatus()]);
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
@@ -621,9 +622,25 @@ $('#account-button').addEventListener('click', () => {
 function setBulkStatus(element, shortStatus, detail) {
   element.textContent = shortStatus; element.dataset.tooltip = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
 }
+function setCoverKeyMode(configured, replacing = false) {
+  const input = $('#cover-api-key'); const button = $('#cover-api-save');
+  const saving = input.dataset.saving === 'true';
+  input.dataset.replacing = replacing ? 'true' : 'false';
+  if (configured && !replacing) {
+    input.type = 'text'; input.value = 'Connected'; input.disabled = true; input.placeholder = '';
+    input.classList.add('is-connected'); button.textContent = 'Replace key'; button.disabled = saving;
+    return;
+  }
+  if (input.classList.contains('is-connected') || input.type === 'text') input.value = '';
+  input.type = 'password'; input.disabled = saving; input.classList.remove('is-connected');
+  input.placeholder = replacing ? 'Paste replacement API key' : 'Paste personal API key';
+  button.textContent = saving ? 'Checking…' : replacing ? 'Save key' : 'Connect'; button.disabled = saving;
+}
 function renderCoverStatus() {
   const status = state.coverStatus; if (!status) return;
-  $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString()} games still need covers.` : 'API key not configured.';
+  const replacing = $('#cover-api-key').dataset.replacing === 'true';
+  $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString()} games still need covers.` : 'Add a personal API key to enable cover lookup.';
+  setCoverKeyMode(status.configured, status.configured && replacing);
   $('#cover-bulk-start').disabled = !status.configured || status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Exact-title matches only.'; let detail = 'Only exact normalized title matches receive covers automatically.';
   if (job?.state === 'running') {
@@ -640,7 +657,10 @@ function renderCoverStatus() {
 async function loadCoverStatus() {
   try {
     state.coverStatus = await api('/api/covers/status'); renderCoverStatus();
-  } catch (error) { $('#cover-provider-status').textContent = error.message; }
+  } catch (error) {
+    $('#cover-provider-status').textContent = error.message;
+    setCoverKeyMode(Boolean(state.coverStatus?.configured));
+  }
 }
 function renderPegiBulkStatus() {
   const status = state.pegiStatus; if (!status) return;
@@ -683,11 +703,19 @@ async function loadHltbStatus() {
   catch (error) { $('#hltb-provider-status').textContent = error.message; }
 }
 $('#cover-api-save').addEventListener('click', async () => {
-  const key = $('#cover-api-key').value.trim(); if (!key) { $('#account-error').textContent = 'Paste your SteamGridDB API key first.'; $('#account-error').hidden = false; return; }
-  const button = $('#cover-api-save'); button.disabled = true; button.textContent = 'Checking…';
-  try { await api('/api/covers/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: key }) }); $('#cover-api-key').value = ''; $('#account-error').hidden = true; toast('SteamGridDB connected.'); await loadCoverStatus(); }
-  catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; }
-  finally { button.disabled = false; button.textContent = 'Connect'; }
+  const input = $('#cover-api-key');
+  if (state.coverStatus?.configured && input.dataset.replacing !== 'true') {
+    setCoverKeyMode(true, true); input.focus(); return;
+  }
+  const key = input.value.trim(); if (!key) { $('#account-error').textContent = 'Paste your SteamGridDB API key first.'; $('#account-error').hidden = false; return; }
+  input.dataset.saving = 'true'; setCoverKeyMode(Boolean(state.coverStatus?.configured), input.dataset.replacing === 'true');
+  try {
+    await api('/api/covers/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: key }) });
+    input.value = ''; input.dataset.saving = 'false'; $('#account-error').hidden = true; toast('SteamGridDB connected.'); await loadCoverStatus();
+  } catch (error) {
+    input.dataset.saving = 'false'; $('#account-error').textContent = error.message; $('#account-error').hidden = false;
+    setCoverKeyMode(Boolean(state.coverStatus?.configured), true); input.focus();
+  }
 });
 $('#cover-bulk-start').addEventListener('click', async () => {
   const button = $('#cover-bulk-start'); button.disabled = true;

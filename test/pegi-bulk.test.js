@@ -10,6 +10,9 @@ const result = (title, platform, publisher = 'Publisher') => ({
 test('PEGI batch matching is exact-title and platform-aware', () => {
   assert.equal(normalize('Pokémon™: Deluxe!'), 'pokemon deluxe');
   assert.equal(matchesPlatform({ platform: 'PC (Windows)' }.platform, result('Game', 'PC')), true);
+  for (const storefront of ['Steam', 'GOG', 'Epic Games Store']) {
+    assert.equal(matchesPlatform(storefront, result('Game', 'PC')), true);
+  }
   assert.equal(bestExactPegi({ title: 'Minecraft', platform: 'Nintendo Switch' }, [result('Minecraft', 'PC'), result('Minecraft', 'Nintendo Switch')]).releases[0], 'Nintendo Switch - 01/01/2025');
   assert.equal(bestExactPegi({ title: 'Minecraft', platform: 'Nintendo Switch' }, [result('Minecraft', 'Nintendo Switch', 'One'), result('Minecraft', 'Nintendo Switch', 'Two')]), null);
   assert.equal(bestExactPegi({ title: 'Minecraft', platform: 'Nintendo Switch' }, [result('Minecraft Deluxe', 'Nintendo Switch')]), null);

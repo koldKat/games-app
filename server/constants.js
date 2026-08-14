@@ -3,6 +3,11 @@
 const APP_USER_AGENT = 'Game-Kat-a-log/1.0 personal-library';
 const TITLE_LOOKUP_MIN_LENGTH = 2;
 const TITLE_AUTOCOMPLETE_MIN_LENGTH = 3;
+const PC_STOREFRONT_VALUES = Object.freeze([
+  'Steam', 'GOG', 'Epic Games Store', 'Microsoft Store', 'PC Game Pass', 'Xbox app (PC)',
+  'EA app', 'Origin', 'Ubisoft Connect', 'Uplay', 'Battle.net', 'Rockstar Games Launcher',
+  'itch.io', 'Amazon Games',
+]);
 
 const PEGI_RATINGS = Object.freeze([3, 7, 12, 16, 18]);
 const OWNERSHIP_VALUES = Object.freeze(['owned', 'wanted', 'unavailable']);
@@ -31,6 +36,7 @@ module.exports = {
   MISSING_FILTER_VALUES,
   OWNERSHIP_FILTER_VALUES,
   OWNERSHIP_VALUES,
+  PC_STOREFRONT_VALUES,
   PEGI_RATINGS,
   PLAY_STATUS_VALUES,
   SORT_VALUES,

@@ -4,6 +4,13 @@ export const pegiColors = {
   3: '#4fbd69', 7: '#83bd46', 12: '#e4b447', 16: '#e67b45', 18: '#df5656', none: '#526170',
 };
 
+export const pcStorefronts = Object.freeze([
+  'Steam', 'GOG', 'Epic Games Store', 'Microsoft Store', 'PC Game Pass', 'Xbox app (PC)',
+  'EA app', 'Origin', 'Ubisoft Connect', 'Uplay', 'Battle.net', 'Rockstar Games Launcher',
+  'itch.io', 'Amazon Games',
+]);
+const pcStorefrontSet = new Set(pcStorefronts);
+
 export const platformGroups = {
   Nintendo: [
     'Nintendo Entertainment System', 'Super Nintendo Entertainment System', 'Nintendo 64',
@@ -35,16 +42,20 @@ export const platformGroups = {
     'ZX Spectrum', 'Amstrad CPC', 'MSX', 'Apple II', 'BBC Micro', 'Acorn Archimedes',
     'Sharp X68000', 'NEC PC-98', 'FM Towns', 'TRS-80', 'Sam Coupé',
   ],
+  'PC storefronts & launchers': pcStorefronts,
   'Mobile & handheld': ['Android', 'iOS', 'N-Gage', 'Gizmondo', 'Playdate', 'Evercade', 'Evercade VS', 'Steam Deck'],
   'Arcade, VR & streaming': ['Arcade', 'Meta Quest', 'SteamVR', 'Pico VR', 'Amazon Luna', 'GeForce NOW', 'Google Stadia'],
   Microconsoles: ['Amazon Fire TV', 'Android TV', 'Apple TV', 'Nvidia Shield TV', 'Ouya', 'Intellivision Amico'],
 };
 
 export const knownPlatforms = new Set(Object.values(platformGroups).flat());
+export const isPcStorefront = platform => pcStorefrontSet.has(String(platform || '').trim());
 
 export function platformFromReleaseText(releases) {
   const haystack = String(releases || '').toLocaleLowerCase();
-  return [...knownPlatforms]
+  const exact = [...knownPlatforms]
     .sort((left, right) => right.length - left.length)
     .find(platform => haystack.includes(platform.toLocaleLowerCase()));
+  if (exact) return exact;
+  return /(^|[^\p{L}\p{N}])pc([^\p{L}\p{N}]|$)/u.test(haystack) ? 'PC (Windows)' : undefined;
 }

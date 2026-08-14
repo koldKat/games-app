@@ -633,6 +633,14 @@ body {
   padding: 0 8px;
   font-size: 11px;
 }
+.integration-key input.is-connected:disabled {
+  border-color: #267961;
+  background: #10251f;
+  color: #58dbb8;
+  -webkit-text-fill-color: #58dbb8;
+  opacity: 1;
+  cursor: default;
+}
 .integration-bulk {
   justify-content: space-between;
   border-top: 1px solid #202b36;

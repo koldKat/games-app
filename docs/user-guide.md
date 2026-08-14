@@ -107,7 +107,9 @@ An exact title-and-platform match shows an **Already in your library** warning a
 | Field | Purpose |
 |---|---|
 | **Title** | Display name of the game |
-| **Platform** | Choose from the grouped platform catalogue, or select Custom to enter any other platform |
+| **Platform** | Choose from the grouped hardware, operating-system, PC storefront and launcher catalogue, or select Custom to enter anything else |
+
+PC libraries can be tracked by storefront rather than only by operating system. The built-in catalogue includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
 | **PEGI rating** | 3, 7, 12, 16, 18, or blank |
 | **Collection** | Owned, Wishlisted, or Unavailable |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
@@ -144,6 +146,8 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 2. Type a title in the game form and select **Request cover**.
 3. Review the portrait artwork and game names, then select the correct edition.
 4. Save the game. Select **Remove cover** before saving if the match is wrong.
+
+After validation, the disabled key field shows **Connected** in green. The secret itself is deliberately never returned to the browser. Select **Replace key** to enable an empty password field, enter the replacement, and select **Save key**.
 
 The chosen cover flows from the centre of the card beneath a dark readability gradient, following the card treatment used by Gamebooks. The image remains hosted by SteamGridDB; Game Kat·a·log stores its URL and match title.
 

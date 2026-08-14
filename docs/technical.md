@@ -64,6 +64,7 @@ games-app/
     hltb-bulk.test.js       exact-title matching, skips, and circuit breaker
     hltb-ui.test.js         null-safe new/edit form metadata state
     preferences.test.js     persistence, account isolation, validation and cascading
+    platforms.test.js       PC storefront taxonomy and PEGI release mapping
     sorting.test.js         client sort behavior, null placement, accent parity
     events.test.js          SSE framing, replay isolation, and session revocation
     covers.test.js          conservative cover-title normalization
@@ -340,6 +341,8 @@ The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Look
 
 SteamGridDB was selected because its API is dedicated to game artwork and exposes portrait grid images suitable for box-art cards. It requires a personal bearer API key. Account keys are stored in `user_integrations`; an optional `STEAMGRIDDB_API_KEY` environment value acts as a server-wide fallback. Keys are never returned to the browser after configuration.
 
+The cover-status response exposes only whether lookup is configured. When connected, Account Settings renders the disabled key field as a green **Connected** state; the secret is never returned to the browser. Selecting **Replace key** explicitly enters replacement mode, enabling an empty password field and changing the action to **Save key**.
+
 The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
 
 An exact case-insensitive, whitespace-normalized title-and-platform pair is treated as a possible duplicate. Save-time validation uses a dedicated account-scoped exact lookup rather than the autocomplete result limit, so spacing variants and collections with many editions cannot bypass the warning. The warning can open the existing record. Creating another entry requires an explicit themed confirmation, but remains permitted for multiple copies or editions; another platform is never treated as the same record. The authenticated autocomplete route deliberately returns local results plus an empty remote list when no key is configured or SteamGridDB fails. The interface shows no provider warning, toast, empty state, or loading indicator: remote autocomplete is optional assistance and manual entry always remains available.
@@ -356,7 +359,7 @@ On authenticated entry, the browser starts the core library requests and reveals
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions live in `public/js/title-autocomplete.js`; and HLTB form and card presentation lives in `public/js/hltb-ui.js`.
+`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions live in `public/js/title-autocomplete.js`; and HLTB form and card presentation lives in `public/js/hltb-ui.js`.
 
 Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 

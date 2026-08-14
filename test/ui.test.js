@@ -205,6 +205,20 @@ test('cover processing uses compact text with a themed detail tooltip', () => {
   assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
 });
 
+test('SteamGridDB configuration uses a disabled connected field and explicit replacement mode', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const server = read('server.js'); const css = readPublicCss();
+  assert.doesNotMatch(html, /cover-connection-state/);
+  assert.match(application, /input\.type = 'text'; input\.value = 'Connected'; input\.disabled = true/);
+  assert.match(application, /setCoverKeyMode\(true, true\); input\.focus\(\); return/);
+  assert.match(application, /replacing \? 'Save key' : 'Connect'/);
+  assert.match(application, /const saving = input\.dataset\.saving === 'true'/);
+  assert.match(application, /input\.disabled = saving/);
+  assert.doesNotMatch(application, /Personal API key saved securely/);
+  assert.match(css, /input\.is-connected:disabled/);
+  assert.match(server, /configured: Boolean\(accountKey \|\| serverKey\)/);
+  assert.doesNotMatch(server, /steamgriddb_key[^\n]*sendJson/);
+});
+
 test('batch updates use cookie-authenticated SSE and patch individual cards', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/events.js'); const server = read('server.js');
   assert.match(html, /id="pegi-bulk-start"[\s\S]*Fill PEGI details/);

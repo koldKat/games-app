@@ -12,6 +12,7 @@ test('shared server constants define catalogue domains and batch policy', () => 
   assert.deepEqual(constants.OWNERSHIP_VALUES, ['owned', 'wanted', 'unavailable']);
   assert.deepEqual(constants.PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned']);
   assert.deepEqual(constants.MEDIA_FORMAT_VALUES, ['physical', 'digital', 'unknown']);
+  assert.deepEqual(constants.PC_STOREFRONT_VALUES.slice(0, 3), ['Steam', 'GOG', 'Epic Games Store']);
   assert.equal(constants.TITLE_LOOKUP_MIN_LENGTH, 2);
   assert.equal(constants.TITLE_AUTOCOMPLETE_MIN_LENGTH, 3);
   assert.equal(constants.BULK_JOB.maxConsecutiveErrors, 5);
