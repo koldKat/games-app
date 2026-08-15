@@ -1,7 +1,7 @@
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const {
-  MEDIA_FORMAT_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
+  MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
@@ -196,7 +196,9 @@ function normalizeGame(input = {}) {
   if (!platform) throw new Error('Platform is required.');
   const pegi = input.pegi === '' || input.pegi == null ? null : Number(input.pegi);
   if (pegi != null && !PEGI_RATINGS.includes(pegi)) throw new Error('PEGI must be 3, 7, 12, 16, 18, or blank.');
-  const ownership = OWNERSHIP_VALUES.includes(input.ownership) ? input.ownership : 'owned';
+  const requestedOwnership = String(input.ownership || 'owned');
+  if (!OWNERSHIP_VALUES.includes(requestedOwnership)) throw new Error('Collection must be Owned or Wishlisted.');
+  const ownership = requestedOwnership;
   const playStatus = PLAY_STATUS_VALUES.includes(input.playStatus) ? input.playStatus : 'backlog';
   const mediaFormat = MEDIA_FORMAT_VALUES.includes(input.mediaFormat) ? input.mediaFormat : 'physical';
   const cartridgeNumber = input.cartridgeNumber === '' || input.cartridgeNumber == null ? null : Number.parseInt(input.cartridgeNumber, 10);
@@ -249,7 +251,9 @@ function listGames(userId, filters = {}) {
   if (filters.ownership === 'owned_physical' || filters.ownership === 'owned_digital') {
     clauses.push('ownership = \'owned\' AND media_format = @ownedFormat');
     params.ownedFormat = filters.ownership.slice('owned_'.length);
-  } else if (filters.ownership) { clauses.push('ownership = @ownership'); params.ownership = filters.ownership; }
+  } else if (OWNERSHIP_FILTER_VALUES.includes(filters.ownership)) {
+    clauses.push('ownership = @ownership'); params.ownership = filters.ownership;
+  }
   if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
   if (filters.pegi === 'none') clauses.push('pegi IS NULL');
   else if (filters.pegi) { clauses.push('pegi = @pegi'); params.pegi = Number(filters.pegi); }

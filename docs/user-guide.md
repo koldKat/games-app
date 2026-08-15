@@ -31,7 +31,7 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Dashboard
 
-The eleven compact cards summarize the current account and act as one-click major filters:
+The ten compact cards summarize the current account and act as one-click major filters:
 
 | Card | Meaning |
 |---|---|
@@ -39,7 +39,6 @@ The eleven compact cards summarize the current account and act as one-click majo
 | **Owned physical** | Owned games stored as physical copies |
 | **Owned digital** | Owned games stored as digital copies |
 | **Wishlisted** | Games wanted but not yet owned |
-| **Unavailable** | Entries unavailable on the tracked platform |
 | **Backlog** | Games waiting to be played |
 | **Playing** | Games currently in progress |
 | **Completed** | Games with play status set to Completed |
@@ -64,7 +63,7 @@ Search matches the game title, publisher, and notes. It is case- and accent-inse
 | Filter | Options |
 |---|---|
 | **Platform** | Platforms currently present in the account |
-| **Collection** | Owned physical, Owned digital, Wishlisted, or Unavailable |
+| **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable |
@@ -111,7 +110,7 @@ An exact title-and-platform match shows an **Already in your library** warning a
 
 PC libraries can be tracked by storefront rather than only by operating system. The built-in catalogue includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
 | **PEGI rating** | 3, 7, 12, 16, 18, or blank |
-| **Collection** | Owned, Wishlisted, or Unavailable |
+| **Collection** | Owned or Wishlisted |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Format** | Physical, Digital, or Unknown |
 | **Cartridge no.** | Mainly used for Evercade cartridge numbering |

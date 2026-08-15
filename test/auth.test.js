@@ -30,6 +30,8 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.db.prepare('SELECT COUNT(*) count FROM games WHERE user_id IS NULL').get().count, 1);
 
   data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
+  assert.throws(() => data.createGame(owner.id, { title: 'Removed State', platform: 'PC', ownership: 'unavailable' }),
+    /Collection must be Owned or Wishlisted/);
   assert.equal(data.stats(owner.id).total, 1);
   data.createGame(owner.id, { title: 'Digital Game', platform: 'PC (Windows)', mediaFormat: 'digital' });
   assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_physical' }).map(game => game.title), ['Owned Game']);

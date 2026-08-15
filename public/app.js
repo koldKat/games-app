@@ -47,7 +47,7 @@ const filters = {
   favorite: $('#favorite-filter'), sort: $('#sort-filter'),
 };
 const labels = {
-  owned: 'Owned', wanted: 'Wishlisted', unavailable: 'Unavailable', backlog: 'Backlog',
+  owned: 'Owned', wanted: 'Wishlisted', backlog: 'Backlog',
   playing: 'Playing', completed: 'Completed', paused: 'Paused', abandoned: 'Abandoned',
   physical: 'Physical', digital: 'Digital', unknown: 'Unknown',
 };
@@ -244,7 +244,6 @@ function renderStats() {
   $('#stat-owned-physical').textContent = count(state.stats?.ownedFormats, 'physical').toLocaleString();
   $('#stat-owned-digital').textContent = count(state.stats?.ownedFormats, 'digital').toLocaleString();
   $('#stat-wanted').textContent = count(state.stats?.ownership, 'wanted').toLocaleString();
-  $('#stat-unavailable').textContent = count(state.stats?.ownership, 'unavailable').toLocaleString();
   $('#stat-backlog').textContent = count(state.stats?.play, 'backlog').toLocaleString();
   $('#stat-playing').textContent = count(state.stats?.play, 'playing').toLocaleString();
   $('#stat-completed').textContent = count(state.stats?.play, 'completed').toLocaleString();

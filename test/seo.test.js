@@ -30,6 +30,14 @@ test('landing feature copy reflects the current product surface', () => {
   assert.match(manifest.description, /multi-platform.*metadata.*playtime/i);
 });
 
+test('public product copy exposes only owned and wishlisted collection states', () => {
+  const html = read('index.html');
+  const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  assert.match(html, /Track owned and wishlisted games—physical or digital/);
+  assert.doesNotMatch(html, />Unavailable<|value="unavailable"|availability/i);
+  assert.doesNotMatch(readme, /wishlist, availability|Ownership, wishlist, availability/i);
+});
+
 test('crawler files expose the landing page without indexing private surfaces', () => {
   const robots = read('robots.txt');
   const sitemap = read('sitemap.xml');

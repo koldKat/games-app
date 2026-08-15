@@ -17,10 +17,6 @@
     <path d="M6 3.5h12v17L12 17l-6 3.5z"/>
     <path d="M12 7v6m-3-3h6"/>
   </symbol>
-  <symbol id="unavailable" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="8.5"/>
-    <path d="m6 18 12-12"/>
-  </symbol>
   <symbol id="backlog" viewBox="0 0 24 24">
     <path d="m4 8 8-4 8 4-8 4z"/>
     <path d="m4 12 8 4 8-4M4 16l8 4 8-4"/>

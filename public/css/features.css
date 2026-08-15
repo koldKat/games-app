@@ -24,7 +24,7 @@
 
 /* Major collection filters: dense on desktop, two rows on smaller screens. */
 .stats {
-  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
 }
 .stat-card {
   min-width: 0;
@@ -101,12 +101,6 @@
   --stat-active: #3a3217;
   --stat-line: #8c7027;
 }
-.stat-tone-red {
-  --stat-bg: #251517;
-  --stat-hover: #31191c;
-  --stat-active: #3b1d21;
-  --stat-line: #8d3b42;
-}
 .stat-tone-blue {
   --stat-bg: #121e2e;
   --stat-hover: #17283c;
@@ -139,7 +133,7 @@
 }
 @media (max-width: 1400px) {
   .stats {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 @media (max-width: 520px) {

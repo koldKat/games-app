@@ -81,7 +81,7 @@
         <article class="auth-promo promo-library" data-cover-decoration="promo-loose-cover">
           <span class="promo-code">LIBRARY // 01</span>
           <h2>One library.<br>Every system.</h2>
-          <p>Track physical, digital, owned, wishlisted, and unavailable games across built-in or custom platforms.</p>
+          <p>Track owned and wishlisted games—physical or digital—across built-in and custom platforms.</p>
           <div class="promo-platforms"><span>NINTENDO</span><span>PLAYSTATION</span><span>XBOX</span><span>PC + CUSTOM</span></div>
         </article>
         <article class="auth-promo promo-query">
@@ -166,7 +166,6 @@
         <button class="stat-card stat-tone-green" data-stat-kind="ownership" data-stat-value="owned_physical"><span><b id="stat-owned-physical">—</b><small>Owned physical</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#physical"></use></svg></button>
         <button class="stat-card stat-tone-cyan" data-stat-kind="ownership" data-stat-value="owned_digital"><span><b id="stat-owned-digital">—</b><small>Owned digital</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#digital"></use></svg></button>
         <button class="stat-card stat-tone-amber" data-stat-kind="ownership" data-stat-value="wanted"><span><b id="stat-wanted">—</b><small>Wishlisted</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#wishlist"></use></svg></button>
-        <button class="stat-card stat-tone-red" data-stat-kind="ownership" data-stat-value="unavailable"><span><b id="stat-unavailable">—</b><small>Unavailable</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#unavailable"></use></svg></button>
         <button class="stat-card stat-tone-blue" data-stat-kind="playStatus" data-stat-value="backlog"><span><b id="stat-backlog">—</b><small>Backlog</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#backlog"></use></svg></button>
         <button class="stat-card stat-tone-cyan" data-stat-kind="playStatus" data-stat-value="playing"><span><b id="stat-playing">—</b><small>Playing</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#playing"></use></svg></button>
         <button class="stat-card stat-tone-violet" data-stat-kind="playStatus" data-stat-value="completed"><span><b id="stat-completed">—</b><small>Completed</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#completed"></use></svg></button>
@@ -189,7 +188,7 @@
           <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, publisher, or notes…" autocomplete="off"></label>
           <div class="filters">
             <label><span>Platform</span><select id="platform-filter"><option value="">All platforms</option></select></label>
-            <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
+            <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
             <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="either">Any missing</option><option value="both">All three missing</option></select></label>
@@ -234,7 +233,7 @@
         <label><span>Platform *</span><select id="game-platform" required></select></label>
         <label id="game-platform-custom-label" hidden><span>Custom platform *</span><input id="game-platform-custom" maxlength="80" autocomplete="off" placeholder="Enter platform name"></label>
         <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>
-        <label><span>Collection</span><select id="game-ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option><option value="unavailable">Unavailable</option></select></label>
+        <label><span>Collection</span><select id="game-ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option></select></label>
         <label><span>Play status</span><select id="game-status"><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
         <label><span>Format</span><select id="game-format"><option value="physical">Physical</option><option value="digital">Digital</option><option value="unknown">Unknown</option></select></label>
         <label><span>Cartridge no.</span><input id="game-cartridge" type="number" min="0" step="1" placeholder="Evercade #"></label>

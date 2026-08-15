@@ -141,6 +141,18 @@ test('collection filtering separates owned physical and digital games', () => {
   assert.match(constants, /'owned_physical', 'owned_digital'/);
 });
 
+test('collection tracking has no unavailable state or dead dashboard control', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const sorting = read('public/js/game-sorting.js'); const icons = read('public/assets/stat-icons.svg'); const css = readPublicCss();
+  assert.equal((html.match(/class="stat-card /g) || []).length, 10);
+  assert.doesNotMatch(html, /data-stat-value="unavailable"|value="unavailable"|>Unavailable</);
+  assert.doesNotMatch(application, /stat-unavailable|unavailable: 'Unavailable'/);
+  assert.doesNotMatch(sorting, /unavailable/);
+  assert.doesNotMatch(icons, /id="unavailable"/);
+  assert.doesNotMatch(css, /badge\.unavailable|stat-tone-red/);
+  assert.match(css, /\.stats\{grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
+});
+
 test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
   assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*Any missing[\s\S]*All three missing/);

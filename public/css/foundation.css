@@ -536,10 +536,6 @@ button {
   background: #f8e9cc;
   color: #a66c14;
 }
-.badge.unavailable {
-  background: #eee4e1;
-  color: #98594e;
-}
 .badge.completed {
   background: #e8e1f6;
   color: #6a52a8;

@@ -407,10 +407,6 @@ body {
   background: #2c2411;
   color: #eabc57;
 }
-.badge.unavailable {
-  background: #28191a;
-  color: #df837a;
-}
 .badge.completed {
   background: #211a32;
   color: #ae96ef;

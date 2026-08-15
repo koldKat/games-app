@@ -15,8 +15,8 @@ function compareGames(left, right, sort = 'title') {
   if (sort === 'year_desc') return number('releaseYear', -1);
   if (sort === 'pegi') return number('pegi');
   if (sort === 'pegi_desc') return number('pegi', -1);
-  if (sort === 'ownership') return ({ owned: 0, wanted: 1, unavailable: 2 }[left.ownership] ?? 3)
-    - ({ owned: 0, wanted: 1, unavailable: 2 }[right.ownership] ?? 3) || title();
+  if (sort === 'ownership') return ({ owned: 0, wanted: 1 }[left.ownership] ?? 2)
+    - ({ owned: 0, wanted: 1 }[right.ownership] ?? 2) || title();
   if (sort === 'status') return ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4 }[left.playStatus] ?? 5)
     - ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4 }[right.playStatus] ?? 5) || title();
   if (sort === 'favorites') return Number(right.favorite) - Number(left.favorite) || title();

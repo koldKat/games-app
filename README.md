@@ -2,13 +2,13 @@
 
 A responsive, local-first, multi-platform game collection manager built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
 
-Game Kat·a·log tracks physical and digital games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry ownership, wishlist, availability, play-state, PEGI, format, cover-art, HowLongToBeat estimates, and favourite metadata.
+Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI, cover-art, HowLongToBeat estimates, favourite, publisher, release-year, cartridge, and note metadata.
 
 ## Features
 
 - Multi-account, account-scoped libraries with responsive card and compact views.
 - Broad platform taxonomy plus custom platforms for unusual hardware and editions.
-- Ownership, wishlist, availability, physical/digital format, play status, favourites, cartridge numbers, publishers, years, and notes.
+- Owned and wishlisted collection states, physical/digital format, play status, favourites, cartridge numbers, publishers, years, and notes.
 - Accent-insensitive search; composable platform, collection, PEGI, status, favourite, and missing-data filters; and 23 catalogue or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
 - SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.

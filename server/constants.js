@@ -10,10 +10,10 @@ const PC_STOREFRONT_VALUES = Object.freeze([
 ]);
 
 const PEGI_RATINGS = Object.freeze([3, 7, 12, 16, 18]);
-const OWNERSHIP_VALUES = Object.freeze(['owned', 'wanted', 'unavailable']);
+const OWNERSHIP_VALUES = Object.freeze(['owned', 'wanted']);
 const PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'completed', 'paused', 'abandoned']);
 const MEDIA_FORMAT_VALUES = Object.freeze(['physical', 'digital', 'unknown']);
-const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted', 'unavailable']);
+const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted']);
 const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'cover', 'hltb', 'either', 'both']);
 const SORT_VALUES = Object.freeze([
   'title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
