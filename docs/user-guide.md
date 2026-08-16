@@ -267,7 +267,7 @@ The admin panel is not a normal user account and has no public login screen. Its
 
 ### A session expired
 
-Sign in again. Sessions expire after two weeks of inactivity. A password change also invalidates all sessions.
+If this notice appears after the library was open, sign in again. Sessions expire after two weeks of inactivity, and a password change invalidates all sessions. Opening or refreshing the normal logged-out login screen does not display an expiry notice.
 
 ### PEGI lookup failed
 

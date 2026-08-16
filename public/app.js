@@ -51,13 +51,14 @@ const labels = {
   playing: 'Playing', completed: 'Completed', paused: 'Paused', abandoned: 'Abandoned',
   physical: 'Physical', digital: 'Digital', unknown: 'Unknown',
 };
+const AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE = new Set(['/api/login', '/api/register', '/api/auth/me']);
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
 async function api(url, options) {
   const generation = sessionGeneration;
   const response = await fetch(url, { credentials: 'same-origin', ...options });
   const body = await response.json().catch(() => ({}));
-  if (response.status === 401 && generation === sessionGeneration && !['/api/login', '/api/register'].includes(url)) {
+  if (response.status === 401 && generation === sessionGeneration && !AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE.has(url)) {
     sessionGeneration++;
     showAuth('Your session expired. Authenticate again.');
   }
@@ -138,7 +139,8 @@ function showAuth(message = '') {
   $('#app-shell').hidden = true;
   $('#auth-screen').hidden = false;
   endSessionResume();
-  if (message) { $('#auth-error').textContent = message; $('#auth-error').hidden = false; }
+  $('#auth-error').textContent = message;
+  $('#auth-error').hidden = !message;
   setTimeout(() => $('#auth-username').focus(), UI_TIMING.focusDelayMs);
 }
 function preferencePayload() {
@@ -205,8 +207,36 @@ function updateAvatarUI() {
   setAvatar($('#nav-avatar'), state.user);
   $('#avatar-remove').hidden = !state.user?.avatarUrl;
 }
+const authInputs = $$('#auth-form input');
+function clearAuthValidation() {
+  $('#auth-password-confirm').setCustomValidity('');
+  for (const input of authInputs) { input.classList.remove('input-invalid'); input.removeAttribute('aria-invalid'); }
+}
+function validateAuthForm() {
+  const registration = state.authMode === 'register';
+  const confirmation = $('#auth-password-confirm');
+  confirmation.setCustomValidity(registration && confirmation.value !== $('#auth-password').value ? 'mismatch' : '');
+  let firstInvalid = null;
+  for (const input of authInputs) {
+    const active = !input.closest('label')?.hidden;
+    const invalid = active && !input.checkValidity();
+    input.classList.toggle('input-invalid', invalid);
+    if (invalid) { input.setAttribute('aria-invalid', 'true'); firstInvalid ||= input; }
+    else input.removeAttribute('aria-invalid');
+  }
+  firstInvalid?.focus();
+  return !firstInvalid;
+}
+for (const input of authInputs) input.addEventListener('input', () => {
+  input.classList.remove('input-invalid'); input.removeAttribute('aria-invalid');
+  if (input === $('#auth-password') || input === $('#auth-password-confirm')) {
+    const confirmation = $('#auth-password-confirm'); confirmation.setCustomValidity('');
+    confirmation.classList.remove('input-invalid'); confirmation.removeAttribute('aria-invalid');
+  }
+});
 function setAuthMode(mode) {
   state.authMode = mode;
+  $('#auth-screen').dataset.authMode = mode;
   $$('[data-auth-mode]').forEach(button => button.classList.toggle('active', button.dataset.authMode === mode));
   $('#auth-title').textContent = mode === 'register' ? 'Create an identity' : 'Access your library';
   $('#auth-copy').textContent = mode === 'register' ? 'Create an isolated library account on this server.' : 'Enter your credentials to mount your personal collection.';
@@ -219,13 +249,13 @@ function setAuthMode(mode) {
   $('#auth-password-confirm').required = mode === 'register';
   $('#auth-hint').hidden = mode !== 'register';
   $('#auth-error').hidden = true;
+  clearAuthValidation();
 }
 $$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
 $('#auth-form').addEventListener('submit', async event => {
   event.preventDefault();
-  if (state.authMode === 'register' && $('#auth-password').value !== $('#auth-password-confirm').value) {
-    $('#auth-error').textContent = 'Passwords do not match.'; $('#auth-error').hidden = false; return;
-  }
+  $('#auth-error').hidden = true;
+  if (!validateAuthForm()) return;
   const submit = $('#auth-submit'); submit.disabled = true; submit.textContent = state.authMode === 'register' ? 'Creating…' : 'Authenticating…';
   try {
     const result = await api(state.authMode === 'register' ? '/api/register' : '/api/login', {

@@ -438,16 +438,6 @@
   min-width: 92px;
 }
 
-/* Login and registration share one stable frame; field changes never reflow the landing page. */
-.auth-card {
-  height: 510px;
-}
-.auth-card .auth-body {
-  height: calc(100% - 31px);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
-
 /* Promo copy is supporting text, not microscopic decoration. */
 .auth-promo p {
   font-size: 12px;

@@ -163,7 +163,7 @@ SQLite runs in WAL mode with foreign keys enabled.
 
 Expired sessions are purged when the server starts. Valid sessions receive a rolling two-week expiry on authenticated use.
 
-An inline pre-render marker adds the `resuming-session` document class before the body is painted. Because the HttpOnly cookie is deliberately invisible to JavaScript, the marker cannot inspect it. The class hides the public authentication surface and exposes a non-sensitive session-resume screen only while `/api/auth/me` asks the server to validate the cookie. Successful validation reveals the application immediately in its loading state; collection, statistics, metadata, and decorative artwork continue asynchronously. Failed authentication reveals the login screen. This prevents logged-out UI from flashing for an authenticated account without putting session state into browser storage.
+An inline pre-render marker adds the `resuming-session` document class before the body is painted. Because the HttpOnly cookie is deliberately invisible to JavaScript, the marker cannot inspect it. The class hides the public authentication surface and exposes a non-sensitive session-resume screen only while `/api/auth/me` asks the server to validate the cookie. Successful validation reveals the application immediately in its loading state; collection, statistics, metadata, and decorative artwork continue asynchronously. Failed authentication reveals the login screen without an expiry warning because the absence of a cookie is the normal logged-out state. This prevents logged-out UI from flashing for an authenticated account without putting session state into browser storage.
 
 ### `user_preferences`
 
@@ -423,7 +423,7 @@ Cover, PEGI, and HLTB workers publish account-targeted progress plus `game-updat
 3. Show authentication on absence/failure, or apply the returned account preferences and mount the library on success.
 4. Load games, statistics, and metadata in parallel using those preferences.
 
-An HTTP 401 on a protected request advances the client session generation and returns to login. No browser-stored token needs to be removed.
+An HTTP 401 on a protected request made from an active application advances the client session generation, returns to login, and reports that the session expired. A 401 from the initial `/api/auth/me` probe is treated as an ordinary logged-out visit and does not show that warning. No browser-stored token needs to be removed.
 
 ### Rendering
 

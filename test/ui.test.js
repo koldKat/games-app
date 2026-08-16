@@ -80,6 +80,23 @@ test('stored sessions use a resume screen instead of flashing authentication', (
   assert.doesNotMatch(html + application, /localStorage|sessionStorage/);
 });
 
+test('an ordinary logged-out refresh does not report an expired session', () => {
+  const application = read('public/app.js');
+  assert.match(application, /AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE = new Set\(\['\/api\/login', '\/api\/register', '\/api\/auth\/me'\]\)/);
+  assert.match(application, /!AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE\.has\(url\)/);
+  assert.match(application, /#auth-error'\)\.textContent = message;\s*\$\('#auth-error'\)\.hidden = !message/);
+});
+
+test('auth validation uses themed field state without native browser prompts', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
+  assert.match(html, /<form id="auth-form" novalidate>/);
+  assert.match(application, /function validateAuthForm\(\)/);
+  assert.match(application, /input\.classList\.toggle\('input-invalid', invalid\)/);
+  assert.match(application, /if \(!validateAuthForm\(\)\) return/);
+  assert.doesNotMatch(application, /reportValidity\(|Passwords do not match/);
+  assert.match(css, /\.auth-body input\.input-invalid,[^{]*\.auth-body input\.input-invalid:hover,[^{]*\.auth-body input\.input-invalid:focus\{border-color:#e15d5d;box-shadow:/);
+});
+
 test('account preferences use SQLite-backed API state instead of browser storage', () => {
   const application = read('public/app.js'); const server = read('server.js'); const preferences = read('server/preferences.js'); const database = read('server/db.js'); const constants = read('server/constants.js');
   assert.match(database, /CREATE TABLE IF NOT EXISTS user_preferences/);
@@ -99,10 +116,14 @@ test('authenticated shell renders before library data and artwork finish', () =>
   assert.doesNotMatch(application, /await Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\)[\s\S]*#app-shell'\)\.hidden = false/);
 });
 
-test('login and registration use a stable authentication frame', () => {
-  const css = readPublicCss();
-  assert.match(css, /\.auth-card\{height:510px\}/);
-  assert.match(css, /\.auth-card \.auth-body\{height:calc\(100% - 31px\);overflow-y:auto/);
+test('login and registration keep a stable desktop rail without filler content', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
+  assert.match(html, /id="auth-screen" class="auth-screen" data-auth-mode="login"/);
+  assert.match(html, /class="auth-center"[\s\S]*class="auth-card"/);
+  assert.doesNotMatch(html + application + css, /auth-login-promo|promo-pipeline|BACKLOG \/\/ ROUTED/);
+  assert.match(application, /#auth-screen'\)\.dataset\.authMode = mode/);
+  assert.match(css, /\.auth-center\{width:100%;height:510px;display:flex;flex-direction:column;gap:10px\}/);
+  assert.match(css, /@media \(max-width:580px\)[\s\S]*\.auth-center\{width:100%;height:auto\}/);
 });
 
 test('landing promo descriptions remain readable', () => {

@@ -74,7 +74,7 @@
     <span class="brand-mark" aria-hidden="true"></span>
     <span><strong>Game Kat·a·log</strong><small>Mounting authenticated library…</small></span>
   </div>
-  <main id="auth-screen" class="auth-screen">
+  <main id="auth-screen" class="auth-screen" data-auth-mode="login">
     <div class="auth-cover-field" data-cover-slots="32" aria-hidden="true"></div>
     <div class="auth-showcase">
       <aside class="auth-promo-rail" aria-label="Collection features">
@@ -98,24 +98,26 @@
         </article>
       </aside>
 
-      <section class="auth-card">
-        <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
-        <div class="auth-body">
-          <p class="kicker">Identity required</p>
-          <h1 id="auth-title">Access your library</h1>
-          <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
-          <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
-          <form id="auth-form">
-            <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
-            <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
-            <label><span>Password</span><input id="auth-password" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></label>
-            <label id="auth-confirm-label" hidden><span>Confirm password</span><input id="auth-password-confirm" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat password"></label>
-            <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
-            <p id="auth-error" class="form-error" hidden></p>
-            <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
-          </form>
-        </div>
-      </section>
+      <div class="auth-center">
+        <section class="auth-card">
+          <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
+          <div class="auth-body">
+            <p class="kicker">Identity required</p>
+            <h1 id="auth-title">Access your library</h1>
+            <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
+            <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
+            <form id="auth-form" novalidate>
+              <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
+              <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
+              <label><span>Password</span><input id="auth-password" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></label>
+              <label id="auth-confirm-label" hidden><span>Confirm password</span><input id="auth-password-confirm" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat password"></label>
+              <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
+              <p id="auth-error" class="form-error" hidden></p>
+              <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
+            </form>
+          </div>
+        </section>
+      </div>
 
       <aside class="auth-promo-rail" aria-label="Artwork and tracking features">
         <article class="auth-promo promo-covers">
