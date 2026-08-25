@@ -439,7 +439,7 @@ Destructive actions use themed HTML dialogs in both the public application and l
 
 ## Static serving
 
-`server.js` resolves requested paths beneath `public/`, rejects traversal outside that directory, assigns MIME types, and serves static content with `Cache-Control: no-cache`. API content uses `no-store`.
+`server.js` resolves requested paths beneath `public/`, rejects traversal outside that directory, assigns MIME types, and serves maintained static content with `Cache-Control: no-cache` plus an ETag. Browsers therefore revalidate on every load, receive a cheap `304 Not Modified` response for unchanged files, and pick up changed JavaScript, CSS, manifests, and app icons without manual `?v=N` URL updates. Durable cover files retain immutable one-year caching because their filenames change when their content changes. API content uses `no-store`.
 
 Admin assets are not beneath the public directory. `server/admin.js` serves an explicit file allowlist only after the request passes the loopback check.
 

@@ -272,7 +272,7 @@
 <p>Destructive actions use themed HTML dialogs in both the public application and localhost admin. Native browser <code>alert</code>, <code>confirm</code>, and <code>prompt</code> APIs are not used.</p>
 <hr>
 <h2 id="static-serving">Static serving<a class="anchor" href="#static-serving" aria-label="Link to section">#</a></h2>
-<p><code>server.js</code> resolves requested paths beneath <code>public/</code>, rejects traversal outside that directory, assigns MIME types, and serves static content with <code>Cache-Control: no-cache</code>. API content uses <code>no-store</code>.</p>
+<p><code>server.js</code> resolves requested paths beneath <code>public/</code>, rejects traversal outside that directory, assigns MIME types, and serves maintained static content with <code>Cache-Control: no-cache</code> plus an ETag. Browsers therefore revalidate on every load, receive a cheap <code>304 Not Modified</code> response for unchanged files, and pick up changed JavaScript, CSS, manifests, and app icons without manual <code>?v=N</code> URL updates. Durable cover files retain immutable one-year caching because their filenames change when their content changes. API content uses <code>no-store</code>.</p>
 <p>Admin assets are not beneath the public directory. <code>server/admin.js</code> serves an explicit file allowlist only after the request passes the loopback check.</p>
 <p>Generated documentation is available at:</p>
 <ul>

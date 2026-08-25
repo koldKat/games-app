@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const http = require('node:http');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const db = require('./server/db');
@@ -142,7 +143,7 @@ function readJson(request) {
   });
 }
 
-function serveStatic(requestPath, response) {
+function serveStatic(request, requestPath, response) {
   const relative = requestPath === '/' ? 'index.html' : `${requestPath.replace(/^\/+/, '')}${requestPath.endsWith('/') ? 'index.html' : ''}`;
   const filePath = path.resolve(PUBLIC_DIR, relative);
   if (!filePath.startsWith(`${PUBLIC_DIR}${path.sep}`) && filePath !== PUBLIC_DIR) return sendJson(response, 403, { error: 'Forbidden.' });
@@ -160,7 +161,17 @@ function serveStatic(requestPath, response) {
       if (error.code === 'ENOENT') return sendJson(response, 404, { error: 'Not found.' });
       return sendJson(response, 500, { error: 'Could not read file.' });
     }
-    response.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const etag = `"${content.length}-${crypto.createHash('md5').update(content).digest('hex').slice(0, 8)}"`;
+    const headers = {
+      'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream',
+      'Cache-Control': 'no-cache',
+      'ETag': etag,
+    };
+    if (request.headers['if-none-match'] === etag) {
+      response.writeHead(304, headers);
+      return response.end();
+    }
+    response.writeHead(200, { ...headers, 'Content-Length': content.length });
     response.end(content);
   });
 }
@@ -389,7 +400,7 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));
   } else {
-    serveStatic(decodeURIComponent(url.pathname), response);
+    serveStatic(request, decodeURIComponent(url.pathname), response);
   }
 });
 

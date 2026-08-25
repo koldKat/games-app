@@ -61,7 +61,7 @@ test('social and install assets have production dimensions', () => {
 
 test('favicon uses a green controller outline with contrasting action buttons', () => {
   const html = read('index.html'); const favicon = read('favicon.svg'); const manifest = JSON.parse(read('manifest.webmanifest'));
-  assert.match(html, /rel="icon" href="\/favicon\.svg\?v=6"/);
+  assert.match(html, /rel="icon" href="\/favicon\.svg"/);
   assert.match(favicon, /fill="none" stroke="#35d6b2" stroke-width="1\.6"/);
   assert.match(favicon, /fill="none" stroke="#35d6b2" stroke-width="2\.2"/);
   assert.match(favicon, /fill="#f2b84b"/);
@@ -69,7 +69,8 @@ test('favicon uses a green controller outline with contrasting action buttons', 
   assert.match(favicon, /cx="41" cy="26" r="3" fill="#f2b84b"/);
   assert.match(favicon, /cx="46" cy="32" r="3" fill="#ef6b6b"/);
   assert.match(favicon, /d="M23\.5 24v10M18\.5 29h10"/);
-  assert.equal(manifest.icons[0].src, '/favicon.svg?v=6');
-  assert.equal(manifest.icons[1].src, '/icon-192.png?v=6');
-  assert.equal(manifest.icons[2].src, '/icon-512.png?v=6');
+  assert.equal(manifest.icons[0].src, '/favicon.svg');
+  assert.equal(manifest.icons[1].src, '/icon-192.png');
+  assert.equal(manifest.icons[2].src, '/icon-512.png');
+  assert.doesNotMatch(html, /[?&](?:v|ver|version)=\d+/);
 });
