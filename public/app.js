@@ -357,6 +357,7 @@ function cardNode(game) {
 }
 function updateCollectionChrome() {
   const shown = state.games.slice(0, state.limit);
+  $('#library-loader').hidden = !state.loading || state.games.length > 0;
   $('#empty').hidden = state.loading || state.games.length > 0;
   $('#load-more').hidden = shown.length >= state.games.length;
   $('#result-count').textContent = `${state.games.length.toLocaleString()} ${state.games.length === 1 ? 'game' : 'games'} found`;

@@ -236,6 +236,74 @@ body {
 .empty-state p {
   font-size: 10px;
 }
+.library-loader {
+  min-height: clamp(180px, 28vh, 280px);
+  display: grid;
+  place-items: center;
+  color: #7f918f;
+}
+.library-loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.library-loader-controller {
+  width: 58px;
+  height: 58px;
+  overflow: visible;
+  filter: drop-shadow(0 7px 12px #0009);
+}
+.library-loader-mark {
+  transform-box: view-box;
+  transform-origin: 32px 32px;
+  animation: controller-breathe 1.8s ease-in-out infinite;
+}
+.loader-controller-body {
+  fill: none;
+  stroke: #35d6b2;
+  stroke-width: 1.6;
+}
+.loader-control {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: controller-press 1.8s ease-in-out infinite;
+}
+.loader-dpad {
+  fill: none;
+  stroke: #35d6b2;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+.loader-action-a {
+  fill: #f2b84b;
+  stroke: #08120f;
+  stroke-width: 1;
+  animation-delay: -1.2s;
+}
+.loader-action-b {
+  fill: #ef6b6b;
+  stroke: #08120f;
+  stroke-width: 1;
+  animation-delay: -0.6s;
+}
+@keyframes controller-breathe {
+  0%, 100% { transform: scale(1); filter: brightness(0.92); }
+  50% { transform: scale(1.045); filter: brightness(1.12); }
+}
+@keyframes controller-press {
+  0%, 38%, 62%, 100% { transform: scale(1); }
+  48% { transform: scale(0.72); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-loader-mark,
+  .loader-control {
+    animation: none;
+  }
+}
 .filters label > span,
 .form-grid label > span,
 .auth-body form label > span {

@@ -28,8 +28,8 @@
   <meta name="twitter:image" content="https://gamekat.net/social-preview.png">
   <meta name="twitter:image:alt" content="Game Kat·a·log personal game collection manager">
   <title>Game Kat·a·log — Video Game Collection, Backlog &amp; Wishlist Tracker</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" href="/favicon.svg?v=6" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png?v=6">
   <link rel="manifest" href="/manifest.webmanifest">
   <script>document.documentElement.classList.add('resuming-session')</script>
   <link rel="stylesheet" href="/css/foundation.css">
@@ -199,6 +199,19 @@
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
         </div>
 
+        <div id="library-loader" class="library-loader" role="status" aria-live="polite" hidden>
+          <div class="library-loader-inner">
+            <svg class="library-loader-controller" viewBox="0 0 64 64" aria-hidden="true">
+              <g class="library-loader-mark">
+                <path class="loader-controller-body" d="M15 25c1-7 6-11 13-11h8c7 0 12 4 13 11l4 18c1 5-5 9-9 5l-7-7H27l-7 7c-4 4-10 0-9-5z"/>
+                <path class="loader-control loader-dpad" d="M23.5 24v10M18.5 29h10"/>
+                <circle class="loader-control loader-action-a" cx="41" cy="26" r="3"/>
+                <circle class="loader-control loader-action-b" cx="46" cy="32" r="3"/>
+              </g>
+            </svg>
+            <span>Loading collection…</span>
+          </div>
+        </div>
         <div id="games" class="game-grid" aria-live="polite"></div>
         <div id="empty" class="empty-state" hidden><span>⌁</span><h3>No games found</h3><p>Try clearing a filter, or add a new title.</p><button class="button primary" data-add-game>Add a game</button></div>
         <button id="load-more" class="button load-more" hidden>Show more</button>

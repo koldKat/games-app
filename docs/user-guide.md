@@ -25,7 +25,7 @@ Every account has an isolated library. Game ownership is attached to the account
 - Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.
 - Select the username in the top-right corner, then **Log out**, to end the current session.
 
-During refresh, a compact **Mounting authenticated library…** screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; library data, header covers, and background covers fill in afterward. The public login and registration interface is shown only if that session is absent or invalid.
+During refresh, a compact **Mounting authenticated library…** screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; a green-outline controller marks an empty grid while library data arrives, and header and background covers fill in afterward. Existing cards remain visible during later refreshes instead of being replaced by the loader. The public login and registration interface is shown only if that session is absent or invalid.
 
 ---
 

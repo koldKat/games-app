@@ -116,6 +116,20 @@ test('authenticated shell renders before library data and artwork finish', () =>
   assert.doesNotMatch(application, /await Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\)[\s\S]*#app-shell'\)\.hidden = false/);
 });
 
+test('an empty library request uses the favicon controller as its loading state', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
+  assert.match(html, /id="library-loader" class="library-loader" role="status" aria-live="polite" hidden/);
+  assert.match(html, /class="library-loader-mark"[\s\S]*class="loader-controller-body"[\s\S]*class="loader-control loader-dpad"[\s\S]*class="loader-control loader-action-a"[\s\S]*class="loader-control loader-action-b"/);
+  assert.match(html, /loader-dpad" d="M23\.5 24v10M18\.5 29h10"/);
+  assert.match(html, /loader-action-a" cx="41" cy="26"[\s\S]*loader-action-b" cx="46" cy="32"/);
+  assert.match(application, /#library-loader'\)\.hidden = !state\.loading \|\| state\.games\.length > 0/);
+  assert.match(css, /\.loader-controller-body\{fill:none;stroke:#35d6b2;stroke-width:1\.6/);
+  assert.match(css, /\.loader-dpad\{fill:none;stroke:#35d6b2;stroke-width:2\.2/);
+  assert.match(css, /@keyframes controller-breathe/);
+  assert.match(css, /@keyframes controller-press/);
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)[^{]*\{[\s\S]*\.library-loader-mark,[^{]*\.loader-control\{animation:none\}/);
+});
+
 test('login and registration keep a stable desktop rail without filler content', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /id="auth-screen" class="auth-screen" data-auth-mode="login"/);

@@ -427,7 +427,7 @@ An HTTP 401 on a protected request made from an active application advances the 
 
 ### Rendering
 
-Game cards are generated from escaped values. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms query debounce. View, search, filter, and sort changes are separately debounced into `/api/preferences`, which stores the validated snapshot in SQLite. Dirty preference state retries after a transient failure and is flushed with a keepalive request when the page exits or before logout. Rendering is batched in groups of 120.
+Game cards are generated from escaped values. While a library request has no existing cards to preserve, the grid area shows a compact animated controller derived from the green-outline favicon; it is hidden as soon as cards or the genuine empty state can render. Refreshes with existing cards never replace them with the loader. Reduced-motion clients receive the same status as a static mark. Filters are sent to the server rather than applied to a global cross-user data set. Search uses a 220 ms query debounce. View, search, filter, and sort changes are separately debounced into `/api/preferences`, which stores the validated snapshot in SQLite. Dirty preference state retries after a transient failure and is flushed with a keepalive request when the page exits or before logout. Rendering is batched in groups of 120.
 
 ### Dialog pointer safety
 
