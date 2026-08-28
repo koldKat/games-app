@@ -10,7 +10,7 @@ const readPublicCss = () => publicStylesheets.map(file => read(`public/css/${fil
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}').replace(/\s+/g, ' ').trim();
 
 test('destructive actions never invoke native browser dialogs', () => {
-  const sources = ['public/app.js', 'admin/js/accounts.js', 'admin/js/catalogue.js', 'admin/js/tools.js', 'admin/js/core.js'];
+  const sources = ['public/app.js', 'admin/js/accounts.js', 'admin/js/catalogue.js', 'admin/js/public-catalogue.js', 'admin/js/tools.js', 'admin/js/core.js'];
   const nativeDialog = /\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/;
   for (const source of sources) assert.doesNotMatch(read(source), nativeDialog, source);
 });
@@ -163,6 +163,20 @@ test('common filters never move the viewport', () => {
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
 });
 
+test('catalogue navigation keeps the authenticated shell mounted and swaps only its content view', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const navigation = read('public/js/catalogue-navigation.js');
+  assert.match(html, /<main id="app-main">\s*<div id="library-view">/);
+  assert.match(html, /<section id="catalogue-view" class="catalogue-view" hidden aria-live="polite"><\/section>/);
+  assert.match(application, /import \{ createCatalogueNavigation \} from '\.\/js\/catalogue-navigation\.js'/);
+  assert.match(application, /openCatalogue: slug => catalogueNavigation\.open/);
+  assert.match(navigation, /library\.hidden = false; catalogue\.hidden = true/);
+  assert.match(navigation, /catalogue\.replaceChildren\(document\.importNode\(main, true\)\)/);
+  assert.match(navigation, /window\.history\.pushState/);
+  assert.match(navigation, /toggle\.textContent = catalogueOpen \? 'My Kat·a·log' : 'Kat·a·log'/);
+  assert.match(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
+  assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
+});
+
 test('collection filtering separates owned physical and digital games', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const database = read('server/db.js'); const preferences = read('server/preferences.js'); const constants = read('server/constants.js');
@@ -188,14 +202,61 @@ test('collection tracking has no unavailable state or dead dashboard control', (
   assert.match(css, /\.stats\{grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
 });
 
-test('one data-gaps filter handles missing PEGI metadata, covers, and HLTB times', () => {
+test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, and descriptions', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
-  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*Any missing[\s\S]*All three missing/);
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All four missing/);
   assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
   assert.match(application, /filters\.missing\.value === 'either'/);
   assert.match(application, /filters\.missing\.value === 'both'/);
   assert.match(database, /filters\.missing === 'either'/);
   assert.match(database, /filters\.missing === 'both'/);
+  assert.match(application, /filters\.missing\.value === 'description'/);
+  assert.match(database, /filters\.missing === 'description'/);
+});
+
+test('personal ratings use private half-star values and card rendering', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const css = readPublicCss(); const database = read('server/db.js'); const catalogue = read('server/catalogue-store.js');
+  assert.match(html, /id="game-rating" type="hidden"[\s\S]*id="game-rating-picker"[\s\S]*data-rating-star="5"/);
+  assert.match(application, /function personalRating\(rating\)/);
+  assert.match(application, /ratingPicker\.addEventListener\('pointermove'/);
+  assert.match(application, /function ratingAtPointer\(event\)/);
+  assert.match(application, /paintRating\(rating, true\)/);
+  assert.match(application, /personalRating\(game\.rating\)/);
+  assert.match(application, /rating: \$\('#game-rating'\)\.value/);
+  assert.match(database, /rating REAL CHECK/);
+  assert.match(database, /Rating must be in half-star steps from 0\.5 to 5/);
+  assert.match(css, /\.rating-picker \.rating-star\{[^}]*font-size:19px/);
+  assert.match(css, /\.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
+  assert.doesNotMatch(catalogue, /\brating\b/);
+});
+
+test('library cards open a read-only details view before editing', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
+  assert.match(html, /id="game-details-dialog"/);
+  assert.match(application, /data-action="view">View details/);
+  assert.match(application, /function openDetails\(game\)/);
+  assert.match(application, /if \(action === 'view'\) return openDetails\(game\)/);
+  assert.match(application, /safeDetailLink\(game\.descriptionSourceUrl, 'View description source'\)/);
+  assert.match(application, /detailsDialog\.addEventListener\('close'/);
+  assert.match(html, /id="game-details-edit"/);
+  assert.match(css, /\.game-detail-hero\{display:grid/);
+});
+
+test('private, public, and administrator catalogues use delayed live search', () => {
+  const privateApp = read('public/app.js'); const publicCatalogue = read('public/js/catalogue-public.js');
+  const adminCatalogue = read('admin/js/catalogue.js'); const adminPublicCatalogue = read('admin/js/public-catalogue.js');
+  assert.match(privateApp, /setTimeout\(loadGames, UI_TIMING\.librarySearchDebounceMs\)/);
+  assert.match(publicCatalogue, /catalogueSearchSequence/);
+  assert.match(publicCatalogue, /querySelector\('\.catalogue-results'\)/);
+  assert.doesNotMatch(publicCatalogue, /current\.replaceWith\(next\);[\s\S]*bindCatalogueAddForm/);
+  assert.match(publicCatalogue, /closest\('main\.catalogue-main'\)\?\.addEventListener\('click'/);
+  assert.match(publicCatalogue, /event\.stopPropagation\(\)/);
+  assert.match(publicCatalogue, /setTimeout\(\(\) => \{/);
+  assert.match(read('public/js/catalogue-navigation.js'), /async function refreshResults\(url\)/);
+  assert.match(read('public/js/catalogue-navigation.js'), /current\.replaceWith\(document\.importNode\(next, true\)\)/);
+  assert.match(adminCatalogue, /setTimeout\(loadCatalogue, 250\)/);
+  assert.match(adminPublicCatalogue, /setTimeout\(loadPublicCatalogue, 250\)/);
 });
 
 test('sorting is modular and includes catalogue and HLTB duration orders', () => {
@@ -242,14 +303,17 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
   assert.match(autocomplete, /api\(`\/api\/titles\/autocomplete/);
   assert.match(autocomplete, /catch \{\}/);
   assert.match(autocomplete, /\}, AUTOCOMPLETE_POLICY\.debounceMs\);/);
-  assert.match(server, /pathname === '\/api\/titles\/autocomplete'[\s\S]*catch \{ return sendJson\(response, 200, \{ existing, suggestions: \[\] \}\); \}/);
+  assert.match(server, /pathname === '\/api\/titles\/autocomplete'[\s\S]*catch \{ return sendJson\(response, 200, \{ existing, catalogue: publicEntries, suggestions: \[\] \}\); \}/);
   assert.match(css, /\.title-suggestions\{[^}]*background:#080d12/);
   assert.match(html, /id="duplicate-warning"[\s\S]*id="open-duplicate"/);
   assert.match(autocomplete, /kind: 'existing'/);
+  assert.match(autocomplete, /kind: 'catalogue'/);
+  assert.match(autocomplete, /openCatalogue\(choice\.entry\.slug\)/);
   assert.match(autocomplete, /autocomplete\?exact=1/);
   assert.match(application, /title: 'Add another copy\?'/);
   assert.match(application, /confirmLabel: 'Add anyway'/);
   assert.match(server, /db\.searchGameTitles\(user\.id, query\)/);
+  assert.match(server, /catalogue\.searchPublic\(query\)/);
   assert.match(server, /db\.findDuplicateGames\(user\.id, query/);
 });
 
@@ -257,6 +321,7 @@ test('cover processing uses compact text with a themed detail tooltip', () => {
   const application = read('public/app.js'); const css = readPublicCss();
   assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
   assert.match(application, /element\.dataset\.tooltip = detail/);
+  assert.match(application, /element\.title = detail/);
   assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
 });
 

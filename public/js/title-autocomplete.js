@@ -5,7 +5,7 @@ const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ')
 
 export function createTitleAutocomplete({
   input, suggestionBox, warning, summary, openButton, platformInput, customPlatformInput,
-  api, escapeHtml, labels, getPlatform, getEditingId, openExisting,
+  api, escapeHtml, labels, getPlatform, getEditingId, openExisting, openCatalogue,
 }) {
   let timer = null;
   let request = null;
@@ -57,21 +57,28 @@ export function createTitleAutocomplete({
     const choice = suggestions[index];
     if (!choice) return;
     if (choice.kind === 'existing') return openExisting(choice.game.id);
+    if (choice.kind === 'catalogue') return openCatalogue(choice.entry.slug);
     input.value = choice.title; close(); updateWarning(); input.focus();
   }
 
   function render(results = {}) {
     existingMatches = Array.isArray(results.existing) ? results.existing : [];
+    const catalogue = Array.isArray(results.catalogue) ? results.catalogue : [];
+    const catalogueMatches = catalogue.filter(entry => !existingMatches.some(game => sameText(game.title, entry.title) && sameText(game.platform, entry.platform)));
     const remote = Array.isArray(results.suggestions)
       ? results.suggestions.filter(title => typeof title === 'string' && title.trim()).slice(0, AUTOCOMPLETE_POLICY.resultLimit) : [];
     suggestions = [
       ...existingMatches.map(game => ({ kind: 'existing', game })),
-      ...remote.filter(title => !existingMatches.some(game => sameText(game.title, title))).map(title => ({ kind: 'remote', title })),
+      ...catalogueMatches.slice(0, AUTOCOMPLETE_POLICY.resultLimit).map(entry => ({ kind: 'catalogue', entry })),
+      ...remote.filter(title => !existingMatches.some(game => sameText(game.title, title))
+        && !catalogueMatches.some(entry => sameText(entry.title, title))).map(title => ({ kind: 'remote', title })),
     ];
     activeSuggestion = -1;
-    suggestionBox.innerHTML = suggestions.map((choice, index) => choice.kind === 'existing'
-      ? `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(choice.game.platform)} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`
-      : `<button type="button" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}</span><small>SteamGridDB</small></button>`).join('');
+    suggestionBox.innerHTML = suggestions.map((choice, index) => {
+      if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(choice.game.platform)} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
+      if (choice.kind === 'catalogue') return `<button type="button" class="catalogue" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small>${escapeHtml(choice.entry.platform)}${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
+      return `<button type="button" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}</span><small>SteamGridDB</small></button>`;
+    }).join('');
     suggestionBox.hidden = suggestions.length === 0;
     input.setAttribute('aria-expanded', String(suggestions.length > 0));
     updateWarning();

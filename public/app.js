@@ -3,6 +3,7 @@ import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
 import { createCoverProviderSettings } from './js/cover-provider-settings.js';
+import { createCatalogueNavigation } from './js/catalogue-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
@@ -33,7 +34,7 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
-const state = { games: [], stats: null, platforms: [], limit: LIBRARY_PAGE_SIZE, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], limit: LIBRARY_PAGE_SIZE, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -129,7 +130,7 @@ function showAuth(message = '') {
   decorationSequence += 1;
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
-  state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null;
+  state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   state.games = []; state.stats = null; state.platforms = []; state.limit = LIBRARY_PAGE_SIZE;
@@ -319,6 +320,17 @@ function isMissingPegiInfo(game) {
     && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
 }
 function isMissingHltbInfo(game) { return !game.hltbId; }
+function isMissingDescription(game) { return !String(game.description || '').trim(); }
+function ratingStars(value) {
+  return Array.from({ length: 5 }, (_, index) => {
+    const position = index + 1;
+    return `<i class="rating-star ${value >= position ? 'on' : value >= position - 0.5 ? 'half' : ''}" aria-hidden="true">★</i>`;
+  }).join('');
+}
+function personalRating(rating) {
+  const value = Number(rating);
+  return value ? `<span class="personal-rating" aria-label="Your rating: ${value} out of 5"><span class="rating-stars">${ratingStars(value)}</span><b>${value.toFixed(1)}</b></span>` : '';
+}
 function gameCard(game) {
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
@@ -328,14 +340,14 @@ function gameCard(game) {
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
-    <div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
+    <div class="card-actions"><button class="view-button" data-action="view">View details</button><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
 }
 function gameMatchesFilters(game) {
   const query = filters.q.value.trim().toLocaleLowerCase();
-  if (query && ![game.title, game.publisher, game.notes].some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
+  if (query && ![game.title, game.publisher, game.notes, game.description].some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
   if (filters.platform.value && game.platform !== filters.platform.value) return false;
   if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
   if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
@@ -343,12 +355,13 @@ function gameMatchesFilters(game) {
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
-  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl; const missingHltb = isMissingHltbInfo(game);
+  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl; const missingHltb = isMissingHltbInfo(game); const missingDescription = isMissingDescription(game);
   if (filters.missing.value === 'pegi' && !missingPegi) return false;
   if (filters.missing.value === 'cover' && !missingCover) return false;
   if (filters.missing.value === 'hltb' && !missingHltb) return false;
-  if (filters.missing.value === 'either' && !missingPegi && !missingCover && !missingHltb) return false;
-  if (filters.missing.value === 'both' && (!missingPegi || !missingCover || !missingHltb)) return false;
+  if (filters.missing.value === 'description' && !missingDescription) return false;
+  if (filters.missing.value === 'either' && !missingPegi && !missingCover && !missingHltb && !missingDescription) return false;
+  if (filters.missing.value === 'both' && (!missingPegi || !missingCover || !missingHltb || !missingDescription)) return false;
   if (filters.favorite.value === '1' && !game.favorite) return false;
   return true;
 }
@@ -390,7 +403,8 @@ function connectEventStream() {
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
-    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); }
+    else if (event === 'description-job') { state.descriptionStatus = mergeLiveJobStatus(state.descriptionStatus, data.job); renderDescriptionBulkStatus(); }
+    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
     else coverProviderSettings.handleEvent(event, data);
   }, onUnauthorized() {
     if (generation !== sessionGeneration) return;
@@ -482,6 +496,87 @@ function setView(view, persist = true) {
 $('#grid-view').addEventListener('click', () => setView('grid')); $('#list-view').addEventListener('click', () => setView('list')); setView(state.view);
 
 const dialog = $('#game-dialog');
+const detailsDialog = $('#game-details-dialog');
+let detailGame = null;
+function safeDetailLink(url, label) {
+  try {
+    const parsed = new URL(String(url || ''));
+    return parsed.protocol === 'https:' ? `<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} ↗</a>` : '';
+  } catch { return ''; }
+}
+function detailSection(title, content) { return content ? `<section class="game-detail-section"><h3>${escapeHtml(title)}</h3>${content}</section>` : ''; }
+function openDetails(game) {
+  detailGame = game;
+  $('#game-details-title').textContent = game.title;
+  const rating = personalRating(game.rating);
+  const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
+  const times = [['Main story', game.hltbMainStory], ['Main + sides', game.hltbMainExtra], ['Completionist', game.hltbCompletionist], ['All styles', game.hltbAllStyles]]
+    .map(([label, value]) => `<div><span>${label}</span><strong>${value == null ? '—' : escapeHtml(String(value)) + 'h'}</strong></div>`).join('');
+  const facts = [['Platform', game.platform], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]
+    .filter(([, value]) => value !== '' && value != null).map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
+  const pegiText = [['Advice for consumers', game.pegiAdvice], ['Brief outline', game.pegiOutline], ['Content-specific issues', game.pegiContentIssues], ['Other issues', game.pegiOtherIssues]]
+    .filter(([, value]) => value).map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`).join('');
+  const releases = (game.pegiReleases || []).length ? `<ul>${game.pegiReleases.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : '';
+  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favourite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
+  detailsDialog.showModal();
+  setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
+}
+function closeDetails() { detailsDialog.close(); detailGame = null; }
+$$('[data-details-close]').forEach(button => button.addEventListener('click', closeDetails));
+detailsDialog.addEventListener('close', () => { detailGame = null; });
+closeOnTrueBackdrop(detailsDialog, closeDetails);
+$('#game-details-edit').addEventListener('click', () => { const game = detailGame; closeDetails(); if (game) openForm(game); });
+const ratingPicker = $('#game-rating-picker');
+function ratingValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0.5 && numeric <= 5 ? Math.round(numeric * 2) / 2 : null;
+}
+function paintRating(value, preview = false) {
+  const rating = ratingValue(value);
+  const label = rating == null ? 'Not rated' : `${rating.toFixed(1)} / 5`;
+  ratingPicker.classList.toggle('previewing', preview);
+  ratingPicker.dataset.rating = rating == null ? '' : String(rating);
+  ratingPicker.setAttribute('aria-label', `${preview ? 'Rating preview' : 'Your rating'}: ${label}`);
+  $('#game-rating-label').textContent = label;
+  $$('#game-rating-picker .rating-star').forEach(star => {
+    const position = Number(star.dataset.ratingStar);
+    star.classList.toggle('on', rating != null && rating >= position);
+    star.classList.toggle('half', rating != null && rating === position - 0.5);
+    star.setAttribute('aria-label', `Rate ${position === 1 ? '1 star' : `${position} stars`}`);
+  });
+}
+function setRating(value) {
+  const rating = ratingValue(value);
+  $('#game-rating').value = rating == null ? '' : String(rating);
+  paintRating(rating);
+}
+function ratingAtPointer(event) {
+  const star = event.target.closest('[data-rating-star]');
+  if (!star) return null;
+  const bounds = star.getBoundingClientRect();
+  const position = Number(star.dataset.ratingStar);
+  return position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
+}
+ratingPicker.addEventListener('pointermove', event => {
+  const rating = ratingAtPointer(event);
+  if (rating != null) paintRating(rating, true);
+  else if (ratingPicker.classList.contains('previewing')) paintRating($('#game-rating').value);
+});
+ratingPicker.addEventListener('pointerleave', () => setRating($('#game-rating').value));
+ratingPicker.addEventListener('click', event => {
+  const clear = event.target.closest('[data-rating-clear]');
+  if (clear) return setRating(null);
+  const star = event.target.closest('[data-rating-star]');
+  if (!star) return;
+  const position = Number(star.dataset.ratingStar);
+  setRating(event.detail === 0 ? position : ratingAtPointer(event));
+});
+ratingPicker.addEventListener('keydown', event => {
+  const current = Number($('#game-rating').value) || 0;
+  const next = { ArrowLeft: current - 0.5, ArrowDown: current - 0.5, ArrowRight: current + 0.5, ArrowUp: current + 0.5, Home: 0, End: 5 }[event.key];
+  if (next === undefined && event.key !== 'Backspace' && event.key !== 'Delete') return;
+  event.preventDefault(); setRating(event.key === 'Backspace' || event.key === 'Delete' ? null : Math.max(0, Math.min(5, next)));
+});
 function formValue(game, key, fallback = '') { return game?.[key] ?? fallback; }
 const pegiFields = ['pegiDescriptors', 'pegiReleases', 'pegiAdvice', 'pegiOutline', 'pegiContentIssues', 'pegiOtherIssues'];
 function pegiMetadata(game = {}) {
@@ -518,14 +613,17 @@ function openForm(game = null) {
   $('#game-form').dataset.coverUrl = game?.coverUrl || '';
   $('#game-form').dataset.coverSource = game?.coverSource || '';
   $('#game-form').dataset.coverMatchTitle = game?.coverMatchTitle || '';
+  $('#game-form').dataset.descriptionSource = game?.descriptionSource || '';
+  $('#game-form').dataset.descriptionSourceUrl = game?.descriptionSourceUrl || '';
+  $('#game-form').dataset.descriptionInitial = game?.description || '';
   $('#game-form')._pegiMetadata = pegiMetadata(game);
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
   $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
-  $('#game-year').value = formValue(game, 'releaseYear'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
+  $('#game-year').value = formValue(game, 'releaseYear'); setRating(formValue(game, 'rating')); $('#game-description').value = formValue(game, 'description'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
+  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#game-title').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -568,17 +666,21 @@ async function openExistingGame(id) {
   try { const game = await api(`/api/games/${id}`); openForm(game); }
   catch {}
 }
+const catalogueNavigation = createCatalogueNavigation({
+  onGameAdded: () => { void loadGames(); void loadStatsAndMeta(); },
+});
 const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
   api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
+  openCatalogue: slug => catalogueNavigation.open(`/game/${encodeURIComponent(slug)}`),
 });
 const hltbLookup = createHltbLookup({ $, api, escapeHtml, toast });
 function payload() {
   return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
-    cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value,
-    notes: $('#game-notes').value, favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
+    cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value, rating: $('#game-rating').value,
+    notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
     ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(),
     coverUrl: $('#game-form').dataset.coverUrl || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
@@ -605,6 +707,7 @@ $('#delete-game').addEventListener('click', async () => {
 $('#games').addEventListener('click', async event => {
   const card = event.target.closest('.game-card'); const action = event.target.closest('[data-action]')?.dataset.action;
   if (!card || !action) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
+  if (action === 'view') return openDetails(game);
   if (action === 'edit') return openForm(game);
   const changed = { ...game };
   if (action === 'favorite') changed.favorite = !changed.favorite;
@@ -632,6 +735,29 @@ $('#pegi-results').addEventListener('click', event => {
   $('#game-form').dataset.pegiUrl = result.pegiUrl;
   $('#game-form')._pegiMetadata = pegiMetadata({ pegiDescriptors: result.descriptors, pegiReleases: result.releases, pegiAdvice: result.advice, pegiOutline: result.outline, pegiContentIssues: result.contentIssues, pegiOtherIssues: result.otherIssues });
   $('#pegi-results').hidden = true; renderPegiDetails(); $('#game-pegi-details').open = true; toast('PEGI details applied.');
+});
+
+$('#game-description').addEventListener('input', () => {
+  if ($('#game-description').value !== $('#game-form').dataset.descriptionInitial) {
+    $('#game-form').dataset.descriptionSource = $('#game-description').value.trim() ? 'Manual' : '';
+    $('#game-form').dataset.descriptionSourceUrl = '';
+  }
+});
+$('#description-search-button').addEventListener('click', async () => {
+  const title = $('#game-title').value.trim(); const box = $('#description-results'); box.hidden = false;
+  if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
+  box.innerHTML = '<p class="pegi-message">Searching Steam Store and TheGamesDB…</p>';
+  try {
+    const results = await api(`/api/descriptions/search?q=${encodeURIComponent(title)}&platform=${encodeURIComponent(selectedPlatform())}`); box._results = results;
+    box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="pegi-result" data-description-index="${index}"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml(result.source)} · ${escapeHtml(result.description.slice(0, 180))}${result.description.length > 180 ? '…' : ''}</small></span></button>`).join('') : '<p class="pegi-message">No description match found. You can write one manually.</p>';
+  } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)} You can still write a description manually.</p>`; }
+});
+$('#description-results').addEventListener('click', event => {
+  const button = event.target.closest('[data-description-index]'); if (!button) return;
+  const result = $('#description-results')._results?.[Number(button.dataset.descriptionIndex)]; if (!result) return;
+  $('#game-description').value = result.description; $('#game-form').dataset.descriptionInitial = result.description;
+  $('#game-form').dataset.descriptionSource = result.source; $('#game-form').dataset.descriptionSourceUrl = result.sourceUrl;
+  $('#description-results').hidden = true; toast(`${result.source} description applied.`);
 });
 
 function renderCoverSelection() {
@@ -672,11 +798,11 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
-  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus()]);
+  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus()]);
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
-  element.textContent = shortStatus; element.dataset.tooltip = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
+  element.textContent = shortStatus; element.dataset.tooltip = detail; element.title = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
 }
 function setCoverKeyMode(configured, replacing = false) {
   const input = $('#cover-api-key'); const button = $('#cover-api-save');
@@ -758,6 +884,24 @@ async function loadHltbStatus() {
   try { state.hltbStatus = await api('/api/hltb/status'); renderHltbBulkStatus(); }
   catch (error) { $('#hltb-provider-status').textContent = error.message; }
 }
+function renderDescriptionBulkStatus() {
+  const status = state.descriptionStatus; if (!status) return;
+  $('#description-provider-status').textContent = `${status.missing.toLocaleString()} games still need descriptions.${status.thegamesdbConfigured ? ' TheGamesDB fallback connected.' : ' Steam Store only until TheGamesDB is connected.'}`;
+  $('#description-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
+  const job = status.job; let shortStatus = 'Steam Store first; exact titles only.'; let detail = 'TheGamesDB is used only when Steam Store has no unique exact-title match.';
+  if (job?.state === 'running') {
+    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+  } else if (job?.state === 'complete') {
+    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`;
+    detail = `${job.processed.toLocaleString()} scanned · ${job.unmatched.toLocaleString()} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+  } else if (job?.state === 'failed') { shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'A description source is unavailable.'; }
+  setBulkStatus($('#description-bulk-status'), shortStatus, detail);
+}
+async function loadDescriptionStatus() {
+  try { state.descriptionStatus = await api('/api/descriptions/status'); renderDescriptionBulkStatus(); }
+  catch (error) { $('#description-provider-status').textContent = error.message; }
+}
 $('#cover-api-save').addEventListener('click', async () => {
   const input = $('#cover-api-key');
   if (state.coverStatus?.configured && input.dataset.replacing !== 'true') {
@@ -786,6 +930,11 @@ $('#pegi-bulk-start').addEventListener('click', async () => {
 $('#hltb-bulk-start').addEventListener('click', async () => {
   const button = $('#hltb-bulk-start'); button.disabled = true;
   try { await api('/api/hltb/bulk', { method: 'POST' }); toast('Background HLTB scan started.'); await loadHltbStatus(); }
+  catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
+});
+$('#description-bulk-start').addEventListener('click', async () => {
+  const button = $('#description-bulk-start'); button.disabled = true;
+  try { await api('/api/descriptions/bulk', { method: 'POST' }); toast('Background description scan started.'); await loadDescriptionStatus(); }
   catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
 });
 $('#avatar-picker').addEventListener('click', () => $('#avatar-file').click());

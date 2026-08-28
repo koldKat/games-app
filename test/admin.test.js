@@ -41,6 +41,7 @@ test('admin summaries span accounts while preserving owner identity', async () =
   assert.equal(stats.covered, 1);
   assert.equal(stats.activeSessions, 1);
   assert.equal(stats.version, 'test-channel');
+  assert.deepEqual(stats.catalogue, { candidate: 0, public: 0, rejected: 0 });
 
   const accounts = admin.listAccounts();
   assert.deepEqual(accounts.map(account => account.games), [1, 1]);

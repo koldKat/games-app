@@ -473,6 +473,8 @@
   position: relative;
   cursor: help;
   outline: none;
+  overflow: visible;
+  white-space: normal;
 }
 .integration-bulk .bulk-status:after {
   content: attr(data-tooltip);

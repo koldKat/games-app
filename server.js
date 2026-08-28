@@ -10,6 +10,8 @@ const hltb = require('./server/hltb');
 const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
 const thegamesdb = require('./server/thegamesdb');
+const steamStore = require('./server/steam-store');
+const { createDescriptionBulkManager } = require('./server/description-bulk');
 const { createCoverProviderBulkManager } = require('./server/cover-provider-bulk');
 const coverStorage = require('./server/cover-storage');
 const imagePolicy = require('./server/image-policy');
@@ -18,6 +20,8 @@ const events = require('./server/events');
 const auth = require('./server/auth');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
+const catalogue = require('./server/catalogue-runtime');
+const { createCatalogueRoutes } = require('./server/catalogue-routes');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
 const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants');
@@ -45,6 +49,10 @@ const externalCoverProviders = Object.freeze({
   },
 });
 const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
+function publishAppEvent(userId, event, payload) {
+  if (event === 'game-updated' && payload?.game) catalogue.syncGameSafely(userId, payload.game);
+  events.publish(userId, event, payload);
+}
 async function storeMatchedCover(userId, game, match, source) {
   const localUrl = await coverStorage.storeRemote(match.url);
   try {
@@ -55,9 +63,11 @@ async function storeMatchedCover(userId, game, match, source) {
 }
 const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProviders).map(([provider, definition]) => [provider,
   createCoverProviderBulkManager({ data: db, provider, label: definition.label, lookup: definition.client.bestExactCover,
-    saveCover: storeMatchedCover, notify: events.publish })]));
-const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: events.publish });
-const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: events.publish });
+    saveCover: storeMatchedCover, notify: publishAppEvent })]));
+const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
+const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
+const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
+const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -75,7 +85,7 @@ async function runCoverJob(userId, key) {
       const match = await covers.bestExactCover(key, current.title);
       if (match) {
         const updated = await storeMatchedCover(userId, current, match, 'steamgriddb');
-        if (updated) { job.matched++; events.publish(userId, 'game-updated', { source: 'covers', game: updated }); }
+        if (updated) { job.matched++; publishAppEvent(userId, 'game-updated', { source: 'covers', game: updated }); }
         else job.skipped++;
       } else job.unmatched++;
       consecutiveErrors = 0;
@@ -312,9 +322,12 @@ async function handleApi(request, response, url) {
       return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform')), suggestions: [] });
     }
     const existing = db.searchGameTitles(user.id, query);
-    if (!key || query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') return sendJson(response, 200, { existing, suggestions: [] });
-    try { return sendJson(response, 200, { existing, suggestions: await covers.searchTitles(key, query) }); }
-    catch { return sendJson(response, 200, { existing, suggestions: [] }); }
+    const publicEntries = query.length >= TITLE_AUTOCOMPLETE_MIN_LENGTH ? catalogue.searchPublic(query) : [];
+    if (!key || query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') {
+      return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: [] });
+    }
+    try { return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: await covers.searchTitles(key, query) }); }
+    catch { return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: [] }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/covers/bulk') {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
@@ -355,11 +368,27 @@ async function handleApi(request, response, url) {
     try { return sendJson(response, 202, hltbJobs.start(user.id)); }
     catch (error) { return sendJson(response, 409, { error: error.message, job: hltbJobs.status(user.id).job }); }
   }
+  if (request.method === 'GET' && url.pathname === '/api/descriptions/status') {
+    return sendJson(response, 200, { configured: true, thegamesdbConfigured: Boolean(providerCredentials(user.id, 'thegamesdb')), ...descriptionJobs.status(user.id) });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/descriptions/search') {
+    const title = url.searchParams.get('q'); const platform = url.searchParams.get('platform'); const credentials = providerCredentials(user.id, 'thegamesdb');
+    const searches = [steamStore.searchDescriptions(title)]; if (credentials) searches.push(thegamesdb.searchDescriptions(credentials, title, platform));
+    const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+    if (results.length || settled.some(result => result.status === 'fulfilled')) return sendJson(response, 200, results.slice(0, 20));
+    return sendJson(response, 502, { error: settled.find(result => result.status === 'rejected')?.reason?.message || 'Description sources are unavailable.' });
+  }
+  if (request.method === 'POST' && url.pathname === '/api/descriptions/bulk') {
+    try { return sendJson(response, 202, descriptionJobs.start(user.id, providerCredentials(user.id, 'thegamesdb'))); }
+    catch (error) { return sendJson(response, 409, { error: error.message }); }
+  }
   if (request.method === 'POST' && url.pathname === '/api/games') {
     let prepared;
     try {
       prepared = await prepareGameCover(await readJson(request));
-      return sendJson(response, 201, db.createGame(user.id, prepared.input));
+      const game = db.createGame(user.id, prepared.input);
+      catalogue.syncGameSafely(user.id, game);
+      return sendJson(response, 201, game);
     }
     catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
@@ -379,7 +408,9 @@ async function handleApi(request, response, url) {
       prepared = await prepareGameCover(await readJson(request), existing);
       const game = db.updateGame(user.id, Number(match[1]), prepared.input);
       if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
-      finishGameCoverChange(existing, game); return sendJson(response, 200, game);
+      finishGameCoverChange(existing, game);
+      catalogue.syncGameSafely(user.id, game);
+      return sendJson(response, 200, game);
     } catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
       return sendJson(response, 400, { error: error.message });
@@ -395,8 +426,10 @@ async function handleApi(request, response, url) {
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  try { if (await admin.handle(request, response, url)) return; }
-  catch (error) { return sendJson(response, 500, { error: error.message || 'Admin request failed.' }); }
+  try {
+    if (await admin.handle(request, response, url)) return;
+    if (await catalogueRoutes.handle(request, response, url)) return;
+  } catch (error) { return sendJson(response, 500, { error: error.message || 'Request failed.' }); }
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));
   } else {
@@ -409,15 +442,19 @@ server.listen(PORT, HOST, () => {
   console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
   backup.start();
   coverStorage.localizeExistingCovers(db, {
-    onStored: (userId, game) => events.publish(userId, 'game-updated', { source: 'cover-storage', game }),
+    onStored: (userId, game) => publishAppEvent(userId, 'game-updated', { source: 'cover-storage', game }),
     onError: (game, error) => console.error(`[covers] could not store game ${game.id}: ${error.message}`),
   }).then(async result => {
     if (result.total) console.log(`[covers] localized ${result.stored}/${result.total}; ${result.failed} failed`);
     const normalized = await coverStorage.normalizeExistingCovers(db, {
-      onStored: (userId, game) => events.publish(userId, 'game-updated', { source: 'cover-storage', game }),
+      onStored: (userId, game) => publishAppEvent(userId, 'game-updated', { source: 'cover-storage', game }),
       onError: (game, error) => console.error(`[covers] could not normalize game ${game.id}: ${error.message}`),
     });
     showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
+    const catalogueSummary = catalogue.syncAll(db.allGamesForCatalogue());
+    if (catalogueSummary.public || catalogueSummary.candidate || catalogueSummary.errors) {
+      console.log(`[catalogue] public ${catalogueSummary.public}; candidates ${catalogueSummary.candidate}; linked ${catalogueSummary.linked}; errors ${catalogueSummary.errors}`);
+    }
     if (normalized.total) console.log(`[covers] normalized ${normalized.stored}/${normalized.total}; ${normalized.skipped} already compliant; ${normalized.failed} failed`);
   }).catch(error => console.error('[covers] migration failed:', error.message));
 });

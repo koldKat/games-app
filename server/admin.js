@@ -4,6 +4,7 @@ const { db } = require('./db');
 const { readVersion, writeVersion } = require('./version');
 const backup = require('./backup');
 const coverStorage = require('./cover-storage');
+const catalogue = require('./catalogue-runtime');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -19,6 +20,7 @@ const adminFiles = new Map([
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/catalogue.js', ['js/catalogue.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/public-catalogue.js', ['js/public-catalogue.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/tools.js', ['js/tools.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/boot.js', ['js/boot.js', 'application/javascript; charset=utf-8']],
 ]);
@@ -84,6 +86,7 @@ function adminStats() {
     missingCovers: scalar("SELECT COUNT(*) n FROM games WHERE cover_url=''"),
     activeSessions: scalar("SELECT COUNT(*) n FROM sessions WHERE expires_at>strftime('%s','now')"),
     favorites: scalar('SELECT COUNT(*) n FROM games WHERE favorite=1'), databaseBytes: pageCount * pageSize,
+    catalogue: catalogue.counts(),
     ownership: db.prepare('SELECT ownership label, COUNT(*) count FROM games GROUP BY ownership ORDER BY count DESC').all(),
     platforms: db.prepare('SELECT platform label, COUNT(*) count FROM games GROUP BY platform ORDER BY count DESC, platform LIMIT 12').all(),
     pegi: db.prepare("SELECT COALESCE(CAST(pegi AS TEXT),'Unrated') label, COUNT(*) count FROM games GROUP BY pegi ORDER BY pegi").all(),
@@ -134,6 +137,29 @@ async function handleApi(request, response, url) {
     return account ? sendJson(response, 200, { deleted: account }) : sendJson(response, 404, { error: 'Account not found.' });
   }
   if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listCatalogue(url.searchParams.get('q')));
+  if (request.method === 'GET' && pathname === '/api/admin/catalogue') {
+    return sendJson(response, 200, { entries: catalogue.listAdmin({ q: url.searchParams.get('q'), status: url.searchParams.get('status') }), counts: catalogue.counts() });
+  }
+  match = pathname.match(/^\/api\/admin\/catalogue\/(\d+)$/);
+  if (request.method === 'PATCH' && match) {
+    try {
+      const body = await readJson(request);
+      const entry = Object.hasOwn(body, 'status')
+        ? catalogue.setStatus(Number(match[1]), String(body.status || ''))
+        : catalogue.updateAdmin(Number(match[1]), body);
+      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'PUT' && match) {
+    try {
+      const entry = await catalogue.replaceCover(Number(match[1]), String((await readJson(request)).url || ''));
+      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'DELETE' && match) {
+    const entry = catalogue.removeEntry(Number(match[1]));
+    return entry ? sendJson(response, 200, { deleted: entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+  }
   match = pathname.match(/^\/api\/admin\/games\/(\d+)$/);
   if (request.method === 'DELETE' && match) {
     const game = db.prepare('SELECT cover_url AS coverUrl FROM games WHERE id=?').get(Number(match[1]));

@@ -17,6 +17,7 @@ const COVER_SOURCE_MAX_LENGTH = 80;
 const COVER_MATCH_TITLE_MAX_LENGTH = 300;
 const HLTB_TIMESTAMP_MAX_LENGTH = 40;
 const HLTB_HOURS_MAX = 100_000;
+const DESCRIPTION_MAX_LENGTH = 12_000;
 const TITLE_SEARCH_LIMIT = 10;
 const TITLE_SEARCH_LIMIT_MAX = 20;
 const SHOWCASE_COVER_LIMIT = 14;
@@ -95,6 +96,7 @@ db.exec(`
     publisher TEXT NOT NULL DEFAULT '',
     release_year INTEGER,
     notes TEXT NOT NULL DEFAULT '',
+    rating REAL CHECK (rating IS NULL OR (rating >= 0.5 AND rating <= 5 AND rating * 2 = CAST(rating * 2 AS INTEGER))),
     favorite INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0, 1)),
     pegi_url TEXT NOT NULL DEFAULT '',
     pegi_descriptors TEXT NOT NULL DEFAULT '[]',
@@ -106,6 +108,9 @@ db.exec(`
     cover_url TEXT NOT NULL DEFAULT '',
     cover_source TEXT NOT NULL DEFAULT '',
     cover_match_title TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    description_source TEXT NOT NULL DEFAULT '',
+    description_source_url TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -133,6 +138,10 @@ if (!gameColumns.includes('hltb_main_extra')) db.exec('ALTER TABLE games ADD COL
 if (!gameColumns.includes('hltb_completionist')) db.exec('ALTER TABLE games ADD COLUMN hltb_completionist REAL');
 if (!gameColumns.includes('hltb_all_styles')) db.exec('ALTER TABLE games ADD COLUMN hltb_all_styles REAL');
 if (!gameColumns.includes('hltb_updated_at')) db.exec('ALTER TABLE games ADD COLUMN hltb_updated_at TEXT');
+if (!gameColumns.includes('description')) db.exec("ALTER TABLE games ADD COLUMN description TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('description_source')) db.exec("ALTER TABLE games ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('description_source_url')) db.exec("ALTER TABLE games ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
@@ -145,7 +154,7 @@ db.exec(`
 
 const selectFields = `id, title, platform, pegi, ownership, play_status AS playStatus,
   media_format AS mediaFormat, cartridge_number AS cartridgeNumber, publisher,
-  release_year AS releaseYear, notes, favorite, pegi_url AS pegiUrl,
+  release_year AS releaseYear, notes, rating, favorite, pegi_url AS pegiUrl,
   pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
@@ -154,31 +163,33 @@ const selectFields = `id, title, platform, pegi, ownership, play_status AS playS
   hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles,
   hltb_updated_at AS hltbUpdatedAt,
   cover_url AS coverUrl, cover_source AS coverSource, cover_match_title AS coverMatchTitle,
+  description, description_source AS descriptionSource, description_source_url AS descriptionSourceUrl,
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
   INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, media_format,
-    cartridge_number, publisher, release_year, notes, favorite, pegi_url, pegi_descriptors,
+    cartridge_number, publisher, release_year, notes, rating, favorite, pegi_url, pegi_descriptors,
     pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
-    cover_url, cover_source, cover_match_title)
+    cover_url, cover_source, cover_match_title, description, description_source, description_source_url)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @mediaFormat,
-    @cartridgeNumber, @publisher, @releaseYear, @notes, @favorite, @pegiUrl, @pegiDescriptorsJson,
+    @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
-    @coverUrl, @coverSource, @coverMatchTitle)
+    @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl)
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
     play_status=@playStatus, media_format=@mediaFormat, cartridge_number=@cartridgeNumber,
-    publisher=@publisher, release_year=@releaseYear, notes=@notes, favorite=@favorite,
+    publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=@rating, favorite=@favorite,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
     pegi_other_issues=@pegiOtherIssues, hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
     hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
     hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles, hltb_updated_at=@hltbUpdatedAt,
     cover_url=@coverUrl, cover_source=@coverSource,
-    cover_match_title=@coverMatchTitle, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
+    cover_match_title=@coverMatchTitle, description=@description, description_source=@descriptionSource,
+    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
 const searchTitles = db.prepare(`
@@ -203,13 +214,15 @@ function normalizeGame(input = {}) {
   const mediaFormat = MEDIA_FORMAT_VALUES.includes(input.mediaFormat) ? input.mediaFormat : 'physical';
   const cartridgeNumber = input.cartridgeNumber === '' || input.cartridgeNumber == null ? null : Number.parseInt(input.cartridgeNumber, 10);
   const releaseYear = input.releaseYear === '' || input.releaseYear == null ? null : Number.parseInt(input.releaseYear, 10);
+  const rating = input.rating === '' || input.rating == null ? null : Number(input.rating);
   if (cartridgeNumber != null && (!Number.isInteger(cartridgeNumber) || cartridgeNumber < 0)) throw new Error('Cartridge number must be a positive whole number.');
   if (releaseYear != null && !validReleaseYear(releaseYear)) throw new Error('Release year is invalid.');
+  if (rating != null && (!Number.isFinite(rating) || rating < 0.5 || rating > 5 || !Number.isInteger(rating * 2))) throw new Error('Rating must be in half-star steps from 0.5 to 5.');
   const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
   return {
     title, platform, pegi, ownership, playStatus, mediaFormat, cartridgeNumber,
     publisher: String(input.publisher || '').trim(), releaseYear,
-    notes: String(input.notes || '').trim(), favorite: input.favorite ? 1 : 0,
+    notes: String(input.notes || '').trim(), rating, favorite: input.favorite ? 1 : 0,
     pegiUrl: String(input.pegiUrl || '').trim(),
     pegiDescriptorsJson: JSON.stringify(safeList(input.pegiDescriptors)),
     pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
@@ -225,6 +238,9 @@ function normalizeGame(input = {}) {
     coverUrl: String(input.coverUrl || '').trim().slice(0, URL_MAX_LENGTH),
     coverSource: String(input.coverSource || '').trim().slice(0, COVER_SOURCE_MAX_LENGTH),
     coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, COVER_MATCH_TITLE_MAX_LENGTH),
+    description: safeText(input.description, DESCRIPTION_MAX_LENGTH),
+    descriptionSource: safeText(input.description) ? String(input.descriptionSource || '').trim().slice(0, COVER_SOURCE_MAX_LENGTH) : '',
+    descriptionSourceUrl: safeText(input.description) ? String(input.descriptionSourceUrl || '').trim().slice(0, URL_MAX_LENGTH) : '',
   };
 }
 
@@ -244,7 +260,8 @@ function listGames(userId, filters = {}) {
   if (filters.q) {
     clauses.push(`(search_normalize(title) LIKE @q ESCAPE '\\'
       OR search_normalize(publisher) LIKE @q ESCAPE '\\'
-      OR search_normalize(notes) LIKE @q ESCAPE '\\')`);
+      OR search_normalize(notes) LIKE @q ESCAPE '\\'
+      OR search_normalize(description) LIKE @q ESCAPE '\\')`);
     params.q = searchPattern(filters.q);
   }
   if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
@@ -263,8 +280,9 @@ function listGames(userId, filters = {}) {
   if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
   if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
   if (filters.missing === 'hltb') clauses.push('hltb_id IS NULL');
-  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL)`);
-  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL`);
+  if (filters.missing === 'description') clauses.push("description=''");
+  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL OR description='')`);
+  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL AND description=''`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
   const titleAsc = 'search_normalize(title) ASC, id ASC';
   const titleDesc = 'search_normalize(title) DESC, id DESC';
@@ -298,6 +316,9 @@ function listGames(userId, filters = {}) {
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
+function allGamesForCatalogue() {
+  return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL ORDER BY id`).all().map(hydrateGame);
+}
 function searchGameTitles(userId, query, limit = TITLE_SEARCH_LIMIT) {
   const clean = String(query || '').trim().slice(0, TITLE_MAX_LENGTH);
   if (clean.length < TITLE_LOOKUP_MIN_LENGTH) return [];
@@ -392,6 +413,21 @@ function gamesMissingHltb(userId) {
   return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
 }
 
+function gamesMissingDescriptions(userId) {
+  return db.prepare("SELECT id, title, platform FROM games WHERE user_id=? AND description='' ORDER BY title COLLATE NOCASE").all(userId);
+}
+
+function updateGameDescription(userId, id, metadata = {}) {
+  const description = safeText(metadata.description, DESCRIPTION_MAX_LENGTH);
+  if (!description) return null;
+  const result = db.prepare(`UPDATE games SET description=@description, description_source=@descriptionSource,
+    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND description=''`).run({
+    id, userId, description, descriptionSource: safeText(metadata.source, COVER_SOURCE_MAX_LENGTH),
+    descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, URL_MAX_LENGTH),
+  });
+  return result.changes ? getGame(userId, id) : null;
+}
+
 function updateGameHltb(userId, id, metadata = {}) {
   const normalized = normalizeGame({ title: 'placeholder', platform: 'placeholder', ...metadata,
     hltbId: metadata.hltbId ?? metadata.id, hltbTitle: metadata.hltbTitle ?? metadata.title,
@@ -427,7 +463,7 @@ function stats(userId) {
   return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, normalizeGame, listGames, getGame, allGamesForCatalogue, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
-  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, randomShowcaseCovers, stats };
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };

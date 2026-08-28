@@ -13,7 +13,7 @@ export async function loadCatalogue() {
       const cover = cell(row, game.hasCover ? 'YES' : 'NO', `state ${game.hasCover ? 'good' : 'warn'}`); cover.textContent = game.hasCover ? 'YES' : 'NO';
       const actions = cell(row, '', 'row-actions');
       const remove = button('Delete', 'danger', async () => {
-        if (!await confirmAction({ title: 'Delete catalogue entry?', message: `Permanently delete “${game.title}” from ${game.username || 'the unassigned pool'}?`, confirmLabel: 'Delete game', kicker: 'DESTRUCTIVE // GAME' })) return;
+        if (!await confirmAction({ title: 'Delete library entry?', message: `Permanently delete “${game.title}” from ${game.username || 'the unassigned pool'}?`, confirmLabel: 'Delete game', kicker: 'DESTRUCTIVE // GAME' })) return;
         await busy(remove, async () => { await api('DELETE', `/api/admin/games/${game.id}`); toast('Game deleted.'); await loadCatalogue(); });
       });
       actions.append(remove);
@@ -22,3 +22,7 @@ export async function loadCatalogue() {
 }
 
 document.getElementById('catalogue-search').addEventListener('submit', event => { event.preventDefault(); loadCatalogue(); });
+let catalogueSearchTimer;
+document.getElementById('catalogue-query').addEventListener('input', () => {
+  clearTimeout(catalogueSearchTimer); catalogueSearchTimer = setTimeout(loadCatalogue, 250);
+});

@@ -1,7 +1,7 @@
 'use strict';
 
 const { APP_USER_AGENT, TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
-const { fingerprint, matchesPlatform, oneExactGameCover, platformKey } = require('./cover-provider-utils');
+const { fingerprint, matchesPlatform, normalize, oneExactGameCover, platformKey } = require('./cover-provider-utils');
 
 const API_ROOT = 'https://api.thegamesdb.net';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -15,7 +15,9 @@ async function request(credentials, pathname, parameters = {}) {
   for (const [name, value] of Object.entries(parameters)) if (value !== '' && value != null) url.searchParams.set(name, String(value));
   const response = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': APP_USER_AGENT }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok || (body.code != null && Number(body.code) !== 200)) throw new Error(body.status || body.message || `TheGamesDB returned HTTP ${response.status}.`);
+  if (!response.ok || (body.code != null && Number(body.code) !== 200)) {
+    const error = new Error(body.status || body.message || `TheGamesDB returned HTTP ${response.status}.`); error.status = response.status; throw error;
+  }
   return body;
 }
 async function platforms(credentials) {
@@ -55,6 +57,23 @@ async function bestExactCover(credentials, title, platform = '') {
   const matches = (await searchCovers(credentials, title, platform)).filter(result => matchesPlatform(platform, result.platforms));
   return oneExactGameCover(title, matches);
 }
+function parseDescriptions(body) {
+  const games = Array.isArray(body.data?.games) ? body.data.games : [];
+  return games.map(game => ({ providerGameId: game.id, gameTitle: game.game_title || '', description: String(game.overview || '').trim(),
+    source: 'TheGamesDB', sourceUrl: `https://thegamesdb.net/game.php?id=${encodeURIComponent(game.id)}`, platform: game.platform }))
+    .filter(game => game.description);
+}
+async function searchDescriptions(credentials, title, platform = '') {
+  const cleanTitle = String(title || '').trim(); if (cleanTitle.length < TITLE_LOOKUP_MIN_LENGTH) throw new Error('Enter at least two title characters.');
+  const matchedPlatform = await platformFor(credentials, platform);
+  if (platform && !matchedPlatform) return [];
+  const body = await request(credentials, '/v1.1/Games/ByGameName', { name: cleanTitle, fields: 'overview,platform', 'filter[platform]': matchedPlatform?.id });
+  return parseDescriptions(body);
+}
+async function bestExactDescription(credentials, title, platform = '') {
+  const exact = (await searchDescriptions(credentials, title, platform)).filter(result => normalize(result.gameTitle) === normalize(title));
+  return exact.length === 1 ? exact[0] : null;
+}
 async function verify(credentials) { await request(validateCredentials(credentials), '/v1/API/Limit'); return true; }
 
-module.exports = { bestExactCover, cleanCredentials, parseCovers, searchCovers, verify };
+module.exports = { bestExactCover, bestExactDescription, cleanCredentials, parseCovers, parseDescriptions, searchCovers, searchDescriptions, verify };

@@ -3,7 +3,7 @@ const PROVIDERS = Object.freeze({
 });
 
 function setBulkStatus(element, shortStatus, detail) {
-  element.textContent = shortStatus; element.dataset.tooltip = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
+  element.textContent = shortStatus; element.dataset.tooltip = detail; element.title = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
 }
 
 export function createCoverProviderSettings({ api, toast, showError }) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Multi-platform video game collection manager with wishlists, backlogs, deep filters, PEGI data, HLTB playtimes, cover art, and synced account settings.">
+  <meta name="description" content="Build a private multi-platform game library, discover enriched public releases, and track wishlists, PEGI data, HLTB playtimes, and cover art.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="application-name" content="Game Kat·a·log">
   <meta name="apple-mobile-web-app-title" content="Game Kat·a·log">
@@ -53,7 +53,7 @@
       "sameAs": "https://github.com/koldKat/games-app",
       "softwareHelp": { "@type": "WebPage", "url": "https://gamekat.net/docs/user-guide.html" },
       "featureList": [
-        "Multi-platform and custom-platform game catalogue",
+        "Multi-platform and custom-platform game tracking",
         "Physical and digital collection tracking",
         "Wishlist, backlog, and play-status management",
         "PEGI-assisted ratings and metadata",
@@ -64,7 +64,8 @@
         "Cross-device account preferences",
         "Responsive desktop and mobile interface",
         "Private account-scoped libraries",
-        "Background metadata and cover enrichment with live card updates"
+        "Background metadata and cover enrichment with live card updates",
+        "Public, search-indexed game discovery with one-click private library adds"
       ]
     }
   </script>
@@ -133,13 +134,13 @@
           <div class="promo-progress"><span class="promo-progress-bar" style="--value:100%" aria-label="100 percent persisted">100%</span><b>DB PERSISTED</b></div>
         </article>
         <article class="auth-promo promo-private">
-          <span class="promo-code">ENRICH // LIVE</span>
-          <h2>Scan without babysitting.</h2>
-          <p>Fill PEGI, cover, and HLTB gaps in the background while matching cards update without a grid reload.</p>
-          <div class="promo-system"><span>PEGI DETAILS</span><span>COVER ART</span><span>HLTB TIMES</span></div>
+          <span class="promo-code">PUBLIC // PRIVATE</span>
+          <h2>Private shelf. Public discovery.</h2>
+          <p>Personal tracking stays account-only. Complete release facts build a public Kat·a·log others can add in one click.</p>
+          <div class="promo-system"><span>FACTS SHARED</span><span>TRACKING PRIVATE</span><span>ONE-CLICK ADD</span></div>
         </article>
       </aside>
-      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
+      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/catalogue">KAT·A·LOG</a><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
     </div>
   </main>
 
@@ -150,10 +151,11 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
+      <div class="top-actions"><a class="button catalogue-button" href="/catalogue">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
     </header>
 
-    <main>
+    <main id="app-main">
+      <div id="library-view">
       <section class="hero">
         <div>
           <p class="kicker">Personal game library</p>
@@ -178,7 +180,7 @@
 
       <section class="library">
         <div class="library-head">
-          <div><p class="kicker library-title">My library</p></div>
+          <div><p class="kicker library-title">My Kat·a·log</p></div>
           <div class="view-buttons" aria-label="View style">
             <button class="icon-button active" id="grid-view" title="Card view" aria-label="Card view">▦</button>
             <button class="icon-button" id="list-view" title="Compact view" aria-label="Compact view">☷</button>
@@ -193,7 +195,7 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
-            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="either">Any missing</option><option value="both">All three missing</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All four missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter"><option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option><option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option><option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favourites first</option><option value="newest">Recently added</option><option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option><option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option><option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -216,6 +218,8 @@
         <div id="empty" class="empty-state" hidden><span>⌁</span><h3>No games found</h3><p>Try clearing a filter, or add a new title.</p><button class="button primary" data-add-game>Add a game</button></div>
         <button id="load-more" class="button load-more" hidden>Show more</button>
       </section>
+      </div>
+      <section id="catalogue-view" class="catalogue-view" hidden aria-live="polite"></section>
     </main>
     <footer class="app-footer" aria-label="Copyright"><span class="app-footer-brand">koldKat productions</span> <span data-copyright-year>© 2026</span></footer>
   </div>
@@ -243,6 +247,11 @@
         <div class="cover-assist-actions"><button type="button" class="button ghost" id="hltb-remove-button" hidden>Remove times</button><button type="button" class="button secondary" id="hltb-search-button">Look up times</button></div>
       </div>
       <div id="hltb-results" class="pegi-results hltb-results" hidden></div>
+      <div class="pegi-assist">
+        <div><strong>Game description</strong><small>Search Steam Store and TheGamesDB, or write your own.</small></div>
+        <button type="button" class="button secondary" id="description-search-button">Look up description</button>
+      </div>
+      <div id="description-results" class="pegi-results" hidden></div>
       <div class="form-grid">
         <div class="span-2 title-autocomplete"><label for="game-title"><span>Title *</span></label><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="title-suggestions"><div id="title-suggestions" class="title-suggestions" role="listbox" hidden></div><div id="duplicate-warning" class="duplicate-warning" hidden><span><strong>Already in your library</strong><small id="duplicate-summary"></small></span><button type="button" id="open-duplicate" class="button ghost">Open existing</button></div></div>
         <label><span>Platform *</span><select id="game-platform" required></select></label>
@@ -254,6 +263,8 @@
         <label><span>Cartridge no.</span><input id="game-cartridge" type="number" min="0" step="1" placeholder="Evercade #"></label>
         <label><span>Publisher</span><input id="game-publisher" maxlength="160" placeholder="Optional"></label>
         <label><span>Release year</span><input id="game-year" type="number" min="1970" max="2100" placeholder="2026"></label>
+        <div class="rating-field"><span>Your rating</span><input id="game-rating" type="hidden"><div id="game-rating-picker" class="rating-picker" role="group" tabindex="0" aria-label="Your rating: Not rated"><button type="button" class="rating-star" data-rating-star="1" aria-label="Rate 1 star">★</button><button type="button" class="rating-star" data-rating-star="2" aria-label="Rate 2 stars">★</button><button type="button" class="rating-star" data-rating-star="3" aria-label="Rate 3 stars">★</button><button type="button" class="rating-star" data-rating-star="4" aria-label="Rate 4 stars">★</button><button type="button" class="rating-star" data-rating-star="5" aria-label="Rate 5 stars">★</button><button type="button" class="rating-clear" data-rating-clear>Clear</button><output id="game-rating-label" for="game-rating">Not rated</output></div></div>
+        <label class="span-2"><span>Description</span><textarea id="game-description" rows="5" maxlength="8000" placeholder="A short overview of the game…"></textarea></label>
         <label class="span-2"><span>Notes</span><textarea id="game-notes" rows="3" maxlength="2000" placeholder="Edition, condition, where to find it…"></textarea></label>
         <label class="check-label span-2"><input id="game-favorite" type="checkbox"><span>Mark as a favourite</span></label>
       </div>
@@ -278,6 +289,9 @@
       <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
     </form>
   </dialog>
+  <dialog id="game-details-dialog" class="game-details-dialog">
+    <section class="modal-card game-details-card"><header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close">×</button></header><div id="game-details-content"></div><footer class="modal-actions"><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer></section>
+  </dialog>
   <dialog id="account-dialog">
     <form id="account-form" class="modal-card account-modal">
       <header class="modal-head"><div><p class="kicker">Identity control</p><h2>Account settings</h2></div><button type="button" class="close-button" data-account-close aria-label="Close">×</button></header>
@@ -296,6 +310,11 @@
         <div class="integration-key provider-connected" data-provider-connected><input class="is-connected" type="text" value="Checking…" aria-label="TheGamesDB connection" disabled><button type="button" class="button secondary" data-provider-replace>Replace key</button></div>
         <div class="provider-fields" data-provider-fields hidden><div class="integration-key"><input type="password" autocomplete="off" data-credential="apiKey" aria-label="TheGamesDB API key" placeholder="API key"><button type="button" class="button secondary" data-provider-save>Connect</button></div></div>
         <div class="integration-bulk"><span class="bulk-status" data-provider-bulk-status tabindex="0">TheGamesDB scan idle.</span><button type="button" class="button ghost" data-provider-bulk>Fill with TheGamesDB</button></div>
+      </section>
+      <section class="integration-panel">
+        <div class="integration-head"><span><strong>Game descriptions</strong><small id="description-provider-status">Checking library…</small></span><span class="integration-links"><a href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam Store ↗</a><a href="https://thegamesdb.net/" target="_blank" rel="noopener">TheGamesDB ↗</a></span></div>
+        <div class="integration-bulk"><span id="description-bulk-status" class="bulk-status" tabindex="0">Description scan idle.</span><button type="button" class="button ghost" id="description-bulk-start">Fill descriptions</button></div>
+        <small class="integration-note">Steam Store is tried first. TheGamesDB is a fallback when connected; the scan pauses immediately if it rejects a request or reaches its limit.</small>
       </section>
       <section class="integration-panel pegi-integration">
         <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>

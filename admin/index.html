@@ -17,8 +17,9 @@
   <nav class="tabs" aria-label="Admin sections">
     <button class="active" data-tab="dashboard">01 / DASHBOARD</button>
     <button data-tab="accounts">02 / ACCOUNTS</button>
-    <button data-tab="catalogue">03 / CATALOGUE</button>
-    <button data-tab="tools">04 / TOOLS</button>
+    <button data-tab="catalogue">03 / LIBRARY INDEX</button>
+    <button data-tab="public-catalogue">04 / KAT·A·LOG</button>
+    <button data-tab="tools">05 / TOOLS</button>
   </nav>
 
   <main>
@@ -33,6 +34,7 @@
         <article><span>DATABASE</span><strong id="metric-database">—</strong></article>
         <article><span>UPTIME</span><strong id="metric-uptime">—</strong></article>
         <article><span>VERSION</span><strong id="metric-version">—</strong></article>
+        <article><span>PUBLIC</span><strong id="metric-public">—</strong><small id="metric-public-sub"></small></article>
       </div>
       <div class="split-grid">
         <article class="block"><header><span>OWNERSHIP</span><b>STATE COUNTS</b></header><div id="ownership-bars" class="bars"></div></article>
@@ -47,9 +49,16 @@
     </section>
 
     <section id="panel-catalogue" class="panel">
-      <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Catalogue</h1></div><span id="catalogue-count" class="quiet"></span></header>
+      <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Library index</h1></div><span id="catalogue-count" class="quiet"></span></header>
       <form id="catalogue-search" class="search-row"><input id="catalogue-query" type="search" placeholder="Search title, platform, or account" autocomplete="off"><button class="button primary">Search</button></form>
       <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th>ACTIONS</th></tr></thead><tbody id="catalogue-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-public-catalogue" class="panel">
+      <header class="section-head"><div><span>SHARED FACTUAL INDEX</span><h1>Public Kat·a·log</h1></div><span id="public-catalogue-count" class="quiet"></span></header>
+      <form id="public-catalogue-search" class="search-row"><input id="public-catalogue-query" type="search" placeholder="Search title or platform" autocomplete="off"><select id="public-catalogue-status" aria-label="Publication status"><option value="">All states</option><option value="candidate">Candidates</option><option value="public">Public</option><option value="rejected">Rejected</option></select><button class="button primary">Search</button></form>
+      <p class="panel-note">Exact cover and HLTB title matches publish automatically. Ambiguous but complete records wait here for review. Personal tracking fields never enter this index.</p>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>STATE</th><th>SCORE</th><th>CHECKS</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody id="public-catalogue-body"></tbody></table></div>
     </section>
 
     <section id="panel-tools" class="panel">
@@ -82,6 +91,29 @@
       <label id="confirm-input-label" hidden><span id="confirm-input-caption"></span><input id="confirm-input" autocomplete="off" spellcheck="false"></label>
       <footer><button id="confirm-cancel" class="button" type="button">Cancel</button><button id="confirm-accept" class="button danger" type="button">Confirm</button></footer>
     </section>
+  </dialog>
+  <dialog id="catalogue-edit-dialog" class="catalogue-edit-dialog">
+    <form id="catalogue-edit-form" class="catalogue-edit-card" method="dialog">
+      <header><div><span>PUBLIC FACTS // EDIT</span><h2 id="catalogue-edit-heading">Edit release</h2></div><button id="catalogue-edit-close" type="button" aria-label="Close">×</button></header>
+      <div class="edit-grid">
+        <label><span>Title</span><input name="title" required maxlength="220"></label><label><span>Platform</span><input name="platform" required maxlength="220"></label>
+        <label><span>Publisher</span><input name="publisher" maxlength="160"></label><label><span>Release year</span><input name="releaseYear" type="number" min="1970" max="2100"></label>
+        <label><span>PEGI rating</span><select name="pegi"><option value="">Unrated</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label><label><span>PEGI source URL</span><input name="pegiUrl" type="url" maxlength="2000"></label>
+        <label class="wide"><span>PEGI descriptors (comma-separated)</span><input name="pegiDescriptors" maxlength="4000"></label>
+        <label class="wide"><span>PEGI release details (comma-separated)</span><input name="pegiReleases" maxlength="4000"></label>
+        <label><span>HLTB ID</span><input name="hltbId" type="number" min="1"></label><label><span>HLTB title</span><input name="hltbTitle" maxlength="220"></label>
+        <label class="wide"><span>HLTB source URL</span><input name="hltbUrl" type="url" maxlength="2000"></label>
+        <label><span>Main story (hours)</span><input name="hltbMainStory" type="number" min="0.01" step="0.01"></label><label><span>Main + sides (hours)</span><input name="hltbMainExtra" type="number" min="0.01" step="0.01"></label>
+        <label><span>Completionist (hours)</span><input name="hltbCompletionist" type="number" min="0.01" step="0.01"></label><label><span>All styles (hours)</span><input name="hltbAllStyles" type="number" min="0.01" step="0.01"></label>
+        <label><span>Cover provider</span><input name="coverSource" maxlength="80"></label><label><span>Cover matched title</span><input name="coverMatchTitle" maxlength="300"></label>
+        <label class="wide"><span>PEGI advice</span><textarea name="pegiAdvice" maxlength="8000"></textarea></label>
+        <label class="wide"><span>PEGI outline</span><textarea name="pegiOutline" maxlength="8000"></textarea></label>
+        <label class="wide"><span>PEGI content issues</span><textarea name="pegiContentIssues" maxlength="8000"></textarea></label>
+        <label class="wide"><span>PEGI other issues</span><textarea name="pegiOtherIssues" maxlength="8000"></textarea></label>
+      </div>
+      <section class="cover-replace"><span>Replace cover from SteamGridDB or TheGamesDB URL</span><div><input name="coverRemoteUrl" type="url" placeholder="https://…"><button id="catalogue-cover-replace" class="button" type="button">Replace cover</button></div><small id="catalogue-cover-status"></small></section>
+      <footer><button id="catalogue-edit-cancel" class="button" type="button">Cancel</button><button class="button primary" type="submit">Save factual changes</button></footer>
+    </form>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module" src="/admin/js/boot.js"></script>

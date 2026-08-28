@@ -1,6 +1,6 @@
 # Game Kat·a·log - User Guide
 
-Game Kat·a·log is a private, multi-account catalogue for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.
+Game Kat·a·log is a private, multi-account library for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.
 
 ---
 
@@ -26,6 +26,24 @@ Every account has an isolated library. Game ownership is attached to the account
 - Select the username in the top-right corner, then **Log out**, to end the current session.
 
 During refresh, a compact **Mounting authenticated library…** screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; a green-outline controller marks an empty grid while library data arrives, and header and background covers fill in afterward. Existing cards remain visible during later refreshes instead of being replaced by the loader. The public login and registration interface is shown only if that session is absent or invalid.
+
+---
+
+## Public Kat·a·log
+
+Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index. While signed in, the application shell stays in place: only the content beneath the header changes, the header action becomes **My Kat·a·log**, and **Add a game** remains in its fixed position. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release page shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
+
+When signed in, choose collection and media format on a release page, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favourite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the add is rejected and the existing row is left untouched.
+
+The Kat·a·log grows conservatively from member libraries. A release publishes automatically only when all of these are present:
+
+- A durable locally stored cover with an exact normalized title match.
+- A PEGI rating plus substantive PEGI metadata.
+- A HowLongToBeat record with at least one timing estimate and an exact normalized title match.
+
+Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only—never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. Once at least two members with linked private copies have rated a release, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
+
+Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its release page, where you can inspect the metadata before adding it.
 
 ---
 
@@ -56,7 +74,7 @@ The library updates as filters change.
 
 ### Search
 
-Search matches the game title, publisher, and notes. It is case- and accent-insensitive, so `Pokemon` also finds `Pokémon`, and starts after a short typing delay.
+Search matches the game title, publisher, notes, and description. It is case- and accent-insensitive, so `Pokemon` also finds `Pokémon`, and starts after a short typing delay. The public Kat·a·log and both administrator indexes use the same delayed live search. On the public Kat·a·log, typing, clearing a query, filtering, and paging update only the result cards rather than refreshing the page.
 
 ### Filters
 
@@ -66,7 +84,7 @@ Search matches the game title, publisher, and notes. It is case- and accent-inse
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
-| **Data gaps** | No PEGI info, no cover, no HLTB info, any missing, or all three missing; Evercade is treated as PEGI-not-applicable |
+| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all four missing; Evercade is treated as PEGI-not-applicable |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -75,7 +93,7 @@ HLTB duration sorts always place games without that particular estimate after ga
 
 ### Card and compact views
 
-Use the two view buttons beside **My library**:
+Use the two view buttons beside **My Kat·a·log**:
 
 - **Card view** gives titles more space and is the default.
 - **Compact view** places each game on a denser horizontal row.
@@ -99,17 +117,20 @@ Select **Add a game** on desktop or the **+** floating button on mobile.
 
 Only **Title** and **Platform** are required. Every other field can be added later.
 
-After three title characters, matching games already in the current account appear first, with their platform and collection state, followed by SteamGridDB suggestions when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
+After three title characters, matching games already in the current account appear first, with their platform and collection state. Public Kat·a·log matches follow and open their release page; optional SteamGridDB title suggestions appear last when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
 
 An exact title-and-platform match shows an **Already in your library** warning and an **Open existing** action. Saving a new game with that same pair requires a themed **Add anyway** confirmation because multiple copies or editions can be legitimate. The same title on another platform is not considered a duplicate. Suggestions are optional: any title can still be entered manually. If SteamGridDB is unavailable or not configured, its suggestions disappear silently while local duplicate detection and ordinary title entry continue working.
+
+PC libraries can be tracked by storefront rather than only by operating system. The built-in platform list includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
+
+Each library card has **View details** for a read-only record of its metadata, description, PEGI and HLTB information, notes, and your rating. Use **Edit details** only when you want to change it.
 
 | Field | Purpose |
 |---|---|
 | **Title** | Display name of the game |
-| **Platform** | Choose from the grouped hardware, operating-system, PC storefront and launcher catalogue, or select Custom to enter anything else |
-
-PC libraries can be tracked by storefront rather than only by operating system. The built-in catalogue includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
+| **Platform** | Choose from the grouped hardware, operating-system, PC storefront and launcher list, or select Custom to enter anything else |
 | **PEGI rating** | 3, 7, 12, 16, 18, or blank |
+| **Your rating** | Optional private score from 0.5 to 5 stars; hover to preview the score, click a star’s left or right half for half-star increments, or use the keyboard arrows when the control is focused |
 | **Collection** | Owned or Wishlisted |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Format** | Physical, Digital, or Unknown |
@@ -169,11 +190,17 @@ After connecting SteamGridDB, select **Fill missing covers** in Account Settings
 
 TheGamesDB has its own **Fill with TheGamesDB** action. Its scan is platform-aware and requires exactly one normalized title record for the saved platform. Run it after SteamGridDB to fill remaining gaps; it touches only games that still have no cover.
 
+### Game descriptions
+
+Each game has an editable **Description** field. Select **Look up description** to choose a result from Steam Store or, when connected, TheGamesDB. The selected source is retained for the public Kat·a·log page; editing the text yourself marks it as manual.
+
+Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
+
 Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 
-All metadata and artwork scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover, PEGI record, or HLTB match while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
+All metadata, description, and artwork scanners continue in the background while the app is open. Their counters update live, and each successfully enriched game card changes in place. If you manually add a cover, PEGI record, HLTB match, or description while a scanner is running, its queued copy is skipped and your newer choice is preserved. The full grid is not reloaded, the current filters stay active, and the page does not jump. Short network interruptions reconnect automatically and replay missed updates. A server restart stops an unfinished scan; saved results are retained and starting it again scans what is still missing.
 
 ---
 
@@ -254,7 +281,8 @@ The compact terminal-style panel provides:
 
 - Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.
 - Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.
-- Cross-account catalogue search and deliberate, confirmed game deletion.
+- Cross-account private-row search and deliberate, confirmed game deletion.
+- Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
 - Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.
@@ -295,4 +323,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization and does not send the collection to a third party. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider—SteamGridDB and/or TheGamesDB—and their individual background scans do the same for eligible games. Title autocomplete uses SteamGridDB only and sends the text currently being typed after the third character.
+The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider—SteamGridDB and/or TheGamesDB—and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. SteamGridDB autocomplete, when configured, also sends the text currently being typed after the third character.

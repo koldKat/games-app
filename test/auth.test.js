@@ -42,16 +42,19 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   const created = data.createGame(other.id, {
     title: 'Private Game', platform: 'Evercade', pegiDescriptors: ['Fear', 'Paid random items'],
     pegiReleases: ['Evercade - 12/08/2026'], pegiAdvice: 'Suitable for older players.',
-    pegiOutline: 'A private test game.', pegiContentIssues: 'Mild fear.', pegiOtherIssues: 'Optional purchases.',
+    pegiOutline: 'A private test game.', pegiContentIssues: 'Mild fear.', pegiOtherIssues: 'Optional purchases.', rating: 4.5,
   });
   assert.deepEqual(created.pegiDescriptors, ['Fear', 'Paid random items']);
   assert.deepEqual(created.pegiReleases, ['Evercade - 12/08/2026']);
+  assert.equal(created.rating, 4.5);
   assert.equal(created.pegiAdvice, 'Suitable for older players.');
   assert.equal(data.getGame(other.id, created.id).pegiOtherIssues, 'Optional purchases.');
   assert.equal(data.getGame(owner.id, created.id), undefined);
   assert.equal(data.updateGame(owner.id, created.id, { title: 'No Access', platform: 'Evercade' }), null);
   assert.equal(data.deleteGame(owner.id, created.id), false);
   assert.equal(data.stats(other.id).total, 1);
+
+  assert.throws(() => data.createGame(other.id, { title: 'Bad Rating', platform: 'Nintendo Switch', rating: 4.25 }), /half-star steps/);
 
   const pending = data.createGame(other.id, {
     title: 'Needs PEGI', platform: 'Nintendo Switch', ownership: 'wanted', notes: 'Keep this note.',
@@ -85,6 +88,10 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));
   assert.ok(!data.listGames(other.id, { missing: 'pegi' }).some(game => game.platform === 'Evercade'));
   assert.ok(data.listGames(other.id, { missing: 'either' }).length > data.listGames(other.id, { missing: 'both' }).length);
+  assert.ok(data.listGames(other.id, { missing: 'description' }).some(game => game.id === coverCandidate.id));
+  const described = data.updateGameDescription(other.id, coverCandidate.id, { description: 'A durable game overview.', source: 'Steam Store', sourceUrl: 'https://store.steampowered.com/app/1/' });
+  assert.equal(described.descriptionSource, 'Steam Store');
+  assert.ok(!data.listGames(other.id, { missing: 'description' }).some(game => game.id === coverCandidate.id));
   const hltbCandidate = data.createGame(other.id, { title: 'Timed Adventure', platform: 'PC (Windows)' });
   assert.ok(data.gamesMissingHltb(other.id).some(game => game.id === hltbCandidate.id));
   const timed = data.updateGameHltb(other.id, hltbCandidate.id, { id: 1234, title: 'Timed Adventure',

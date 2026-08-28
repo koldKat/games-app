@@ -24,7 +24,7 @@ test('landing page publishes canonical, social, and structured metadata', () => 
 
 test('landing feature copy reflects the current product surface', () => {
   const html = read('index.html'); const manifest = JSON.parse(read('manifest.webmanifest'));
-  for (const phrase of ['Every system', 'Interrogate the shelf', 'Ratings and runtimes', 'missing covers', 'Your view follows you', 'Scan without babysitting']) {
+  for (const phrase of ['Every system', 'Interrogate the shelf', 'Ratings and runtimes', 'missing covers', 'Your view follows you', 'Private shelf. Public discovery']) {
     assert.match(html, new RegExp(phrase));
   }
   assert.match(manifest.description, /multi-platform.*metadata.*playtime/i);
@@ -45,7 +45,8 @@ test('crawler files expose the landing page without indexing private surfaces', 
   assert.match(robots, /Disallow: \/admin\//);
   assert.match(robots, /Sitemap: https:\/\/gamekat\.net\/sitemap\.xml/);
   assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/<\/loc>/);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 2);
+  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/catalogue<\/loc>/);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 3);
 });
 
 test('social and install assets have production dimensions', () => {

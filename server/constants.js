@@ -14,7 +14,7 @@ const OWNERSHIP_VALUES = Object.freeze(['owned', 'wanted']);
 const PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'completed', 'paused', 'abandoned']);
 const MEDIA_FORMAT_VALUES = Object.freeze(['physical', 'digital', 'unknown']);
 const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted']);
-const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'cover', 'hltb', 'either', 'both']);
+const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'cover', 'hltb', 'description', 'either', 'both']);
 const SORT_VALUES = Object.freeze([
   'title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
   'ownership', 'status', 'favorites', 'newest', 'oldest', 'updated', 'hltb_main_short', 'hltb_main_long',
@@ -27,6 +27,7 @@ const BULK_JOB = Object.freeze({
   coverDelayMs: 150,
   pegiDelayMs: 500,
   hltbDelayMs: 1_500,
+  descriptionDelayMs: 1_500,
 });
 
 module.exports = {

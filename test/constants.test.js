@@ -20,12 +20,13 @@ test('shared server constants define catalogue domains and batch policy', () => 
 });
 
 test('provider requests use the current shared application identity', () => {
-  const providerSources = `${read('server/covers.js')}\n${read('server/pegi.js')}\n${read('server/thegamesdb.js')}`;
+  const providerSources = `${read('server/covers.js')}\n${read('server/pegi.js')}\n${read('server/thegamesdb.js')}\n${read('server/steam-store.js')}`;
   assert.match(constants.APP_USER_AGENT, /Game-Kat-a-log/);
   assert.doesNotMatch(providerSources, /GamesShelf/);
   assert.match(read('server/covers.js'), /'User-Agent': APP_USER_AGENT/);
   assert.match(read('server/pegi.js'), /'User-Agent': APP_USER_AGENT/);
   assert.match(read('server/thegamesdb.js'), /'User-Agent': APP_USER_AGENT/);
+  assert.match(read('server/steam-store.js'), /'User-Agent': APP_USER_AGENT/);
 });
 
 test('browser policies name pagination, lookup, and timing contracts', () => {

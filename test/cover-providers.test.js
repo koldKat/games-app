@@ -25,6 +25,24 @@ test('TheGamesDB parser keeps front boxart and constructs CDN URLs', () => {
   assert.deepEqual([results[0].width, results[0].height, results[0].platforms[0]], [800, 1100, 'Sega Genesis']);
 });
 
+test('TheGamesDB description parser retains overview text and provenance', () => {
+  const results = thegamesdb.parseDescriptions({ data: { games: [{ id: 53, game_title: 'Sonic', platform: 18, overview: 'Fast blue hedgehog.' }] } });
+  assert.deepEqual(results, [{ providerGameId: 53, gameTitle: 'Sonic', description: 'Fast blue hedgehog.', source: 'TheGamesDB', sourceUrl: 'https://thegamesdb.net/game.php?id=53', platform: 18 }]);
+});
+
+test('TheGamesDB exact description lookup normalizes one platform-specific overview', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async url => {
+    const parsed = new URL(String(url));
+    if (parsed.pathname === '/v1/Platforms') return new Response(JSON.stringify({ data: { platforms: [{ id: 4971, name: 'Nintendo Switch' }] } }), { status: 200 });
+    return new Response(JSON.stringify({ data: { games: [{ id: 7, game_title: 'Example™ Game', platform: 4971, overview: 'Platform-specific overview.' }] } }), { status: 200 });
+  };
+  try {
+    const result = await thegamesdb.bestExactDescription({ apiKey: 'description-test-key' }, 'Example Game', 'Nintendo Switch');
+    assert.equal(result.description, 'Platform-specific overview.'); assert.equal(result.source, 'TheGamesDB');
+  } finally { global.fetch = originalFetch; }
+});
+
 test('batch selection permits several regional covers for one exact game but rejects ambiguous games', () => {
   const cover = id => ({ providerGameId: id, gameTitle: 'Example', url: `https://example.com/${id}.jpg` });
   assert.equal(oneExactGameCover('Example', [cover(1), cover(1)]).providerGameId, 1);

@@ -866,6 +866,7 @@ dialog::backdrop {
   padding-bottom: 0;
   line-height: 1;
 }
+.top-actions > .catalogue-button { width: auto; padding-inline: 11px; border-color: #28483f; background: #0d1919; color: var(--green); text-decoration: none; }
 .desktop-add {
   padding-left: 9px;
   padding-right: 9px;
@@ -1028,4 +1029,7 @@ dialog::backdrop {
   .top-actions {
     gap: 4px;
   }
+  .top-actions > .catalogue-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
+  .top-actions > .catalogue-button::after { content: "⌕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
+  .top-actions > .catalogue-button[data-catalogue-destination="library"]::after { content: "⌂"; }
 }
