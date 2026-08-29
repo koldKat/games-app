@@ -46,7 +46,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes collection/account summaries, session revocation, cross-account private-row inspection, public Kat·a·log review, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
@@ -54,13 +54,13 @@ The panel is loopback-only. Requests forwarded by nginx with a non-loopback clie
 
 ## Public landing and SEO
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/catalogue`, while each release receives a stable `/game/:slug` detail page with factual metadata and `VideoGame` structured data. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap exposes the landing page, documentation, Kat·a·log, and published releases. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, while each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap exposes the landing page, documentation, Kat·a·log, published releases, their latest update dates, and catalogue cover images. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## Public Kat·a·log
 
 Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; the Kat·a·log/My Kat·a·log action interchanges while Add a game stays fixed.
 
-Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favourites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public page can show only an anonymous community rating average and count once at least two members have rated it. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. Adding a public release creates another independent private copy and preserves normal title-plus-platform duplicate protection.
+Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favourites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count once at least two members have rated it. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
 
 ## PEGI lookup
 

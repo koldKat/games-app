@@ -26,18 +26,38 @@
     <section id="panel-dashboard" class="panel active">
       <header class="section-head"><div><span>RUNTIME OVERVIEW</span><h1>Dashboard</h1></div><button id="refresh-dashboard" class="button">Refresh</button></header>
       <div class="metric-grid">
-        <article><span>GAMES</span><strong id="metric-games">—</strong></article>
-        <article><span>ACCOUNTS</span><strong id="metric-users">—</strong></article>
-        <article><span>COVERS</span><strong id="metric-covers">—</strong><small id="metric-covers-sub"></small></article>
-        <article><span>SESSIONS</span><strong id="metric-sessions">—</strong></article>
-        <article><span>FAVOURITES</span><strong id="metric-favorites">—</strong></article>
-        <article><span>DATABASE</span><strong id="metric-database">—</strong></article>
-        <article><span>UPTIME</span><strong id="metric-uptime">—</strong></article>
-        <article><span>VERSION</span><strong id="metric-version">—</strong></article>
-        <article><span>PUBLIC</span><strong id="metric-public">—</strong><small id="metric-public-sub"></small></article>
+        <div class="metric-stack" aria-label="Library totals">
+          <article><span>GAMES</span><strong id="metric-games">—</strong></article>
+          <article><span>ACCOUNTS</span><strong id="metric-users">—</strong></article>
+          <article><span>SESSIONS</span><strong id="metric-sessions">—</strong></article>
+        </div>
+        <div class="metric-stack" aria-label="Community catalogue">
+          <article><span>PUBLIC</span><strong id="metric-public">—</strong><small id="metric-public-sub"></small></article>
+          <article><span>FAVOURITES</span><strong id="metric-favorites">—</strong></article>
+          <article><span>RATINGS</span><strong id="metric-ratings">—</strong><small id="metric-ratings-sub"></small></article>
+        </div>
+        <div class="metric-stack" aria-label="Metadata coverage">
+          <article><span>COVERS</span><strong id="metric-covers">—</strong><small id="metric-covers-sub"></small></article>
+          <article><span>DESCRIPTIONS</span><strong id="metric-descriptions">—</strong><small id="metric-descriptions-sub"></small></article>
+          <article><span>PEGI</span><strong id="metric-pegi">—</strong><small id="metric-pegi-sub"></small></article>
+          <article><span>HOWLONGTOBEAT</span><strong id="metric-hltb">—</strong><small id="metric-hltb-sub"></small></article>
+        </div>
+        <div class="metric-stack" aria-label="Runtime health">
+          <article><span>UPTIME</span><strong id="metric-uptime">—</strong><small id="metric-uptime-sub"></small></article>
+          <article><span>APP AGE</span><strong id="metric-app-age">—</strong></article>
+          <article><span>SESSION UPTIME</span><strong id="metric-session-uptime">—</strong></article>
+          <article><span>VERSION</span><strong id="metric-version">—</strong></article>
+        </div>
+        <div class="metric-stack" aria-label="Process and storage">
+          <article><span>DATABASE</span><strong id="metric-database">—</strong></article>
+          <article><span>HEAP</span><strong id="metric-heap">—</strong><small id="metric-heap-sub"></small></article>
+          <article><span>RSS / CPU</span><strong id="metric-rss">—</strong><small id="metric-cpu"></small></article>
+        </div>
       </div>
       <div class="split-grid">
         <article class="block"><header><span>OWNERSHIP</span><b>STATE COUNTS</b></header><div id="ownership-bars" class="bars"></div></article>
+        <article class="block"><header><span>MEDIA FORMAT</span><b>STATE COUNTS</b></header><div id="format-bars" class="bars"></div></article>
+        <article class="block"><header><span>PLAY STATUS</span><b>STATE COUNTS</b></header><div id="play-status-bars" class="bars"></div></article>
         <article class="block"><header><span>PEGI</span><b>RATING COUNTS</b></header><div id="pegi-bars" class="bars"></div></article>
         <article class="block wide"><header><span>PLATFORMS</span><b>TOP 12</b></header><div id="platform-bars" class="bars columns"></div></article>
       </div>
@@ -45,7 +65,7 @@
 
     <section id="panel-accounts" class="panel">
       <header class="section-head"><div><span>IDENTITY CONTROL</span><h1>Accounts</h1></div><button id="refresh-accounts" class="button">Refresh</button></header>
-      <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="accounts-body"></tbody></table></div>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>ACCESS</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="accounts-body"></tbody></table></div>
     </section>
 
     <section id="panel-catalogue" class="panel">
@@ -78,7 +98,12 @@
         <article class="block tool-block wide">
           <header><span>RECOVERY</span><b>LOCAL BACKUPS</b><button id="create-backup" class="button primary">Create backup</button></header>
           <p>Hourly ZIP snapshots kept for 15 days under <code>backups/</code>. A backup runs at startup and then on the hour; the directory is excluded from Git.</p>
-          <div class="table-shell compact"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="backups-body"></tbody></table></div>
+          <div class="table-shell compact backup-table-shell"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="backups-body"></tbody></table></div>
+        </article>
+        <article class="block tool-block wide">
+          <header><span>EMAIL DELIVERY</span><b>SMTP + PASSWORD RESET</b></header>
+          <p>Stored locally for password-reset emails. Leave password blank when updating other settings to keep the saved value.</p>
+          <form id="mail-settings-form" class="edit-grid"><label><span>SMTP host</span><input name="host" required placeholder="mail.example.com"></label><label><span>Port</span><input name="port" type="number" min="1" max="65535" required value="587"></label><label><span>Security</span><select name="security"><option value="starttls">STARTTLS</option><option value="tls">TLS (implicit)</option><option value="none">None</option></select></label><label><span>Username</span><input name="username" autocomplete="username"></label><label><span>SMTP password</span><input name="password" type="password" autocomplete="new-password" placeholder="Saved password remains if blank"></label><label><span>Sender address</span><input name="sender" type="email" required placeholder="games@example.com"></label><footer class="wide"><button id="mail-test" class="button" type="button">Send test email</button><button class="button primary" type="submit">Save mail settings</button></footer></form>
         </article>
       </div>
     </section>

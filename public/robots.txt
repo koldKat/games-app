@@ -1,7 +1,13 @@
 User-agent: *
+# Searchable public surface: catalogue pages, canonical release URLs, and the
+# catalogue-owned cover images referenced from the image sitemap.
 Allow: /
+Allow: /katalog
+Allow: /game/
+Allow: /covers/
 Disallow: /api/
 Disallow: /admin/
 Disallow: /avatars/
+Disallow: /backups/
 
 Sitemap: https://gamekat.net/sitemap.xml

@@ -14,10 +14,14 @@ const entry = {
 
 test('catalogue page is crawlable server-rendered HTML', () => {
   const html = renderCatalogue({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [{ platform: 'Steam', count: 1 }] });
-  assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/catalogue">/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/katalog">/);
   assert.match(html, /Portal 2/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /class="catalogue-results"/);
+  assert.match(html, /class="auth-cover-field app-cover-field"/);
+  assert.match(html, /background-image:url\(&quot;\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg&quot;\)/);
+  assert.match(html, /Discover enriched releases and add them to your private library\.<\/span>/);
+  assert.doesNotMatch(html, /without entering everything again/);
   assert.match(html, /name="robots" content="index, follow, max-image-preview:large"/);
   assert.doesNotMatch(html, /submittedByUserId|sourceGameId|ownership|notes/);
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
@@ -45,8 +49,21 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
 test('public release pages show a community aggregate but never offer a public voting control', () => {
   const html = renderGame({ entry, user: { username: 'koldKat' } });
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
+  assert.match(html, /<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open/);
+  assert.match(html, /<section class="catalogue-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
+  assert.match(html, /property="og:type" content="video\.game"/);
+  assert.match(html, /property="og:image:alt" content="Portal 2 cover"/);
+  assert.match(html, /"@type":"AggregateRating"/);
   assert.doesNotMatch(html, /name="rating"|Your rating/);
   assert.doesNotMatch(renderGame({ entry: { ...entry, ratingAverage: 5, ratingCount: 1 } }), /Community rating/);
+});
+
+test('a signed-in user with the release already in their library cannot add it again', () => {
+  const html = renderGame({ entry, user: { username: 'koldKat' }, libraryGame: { id: 9, title: entry.title, platform: entry.platform } });
+  assert.match(html, /Already in your Kat·a·log/);
+  assert.match(html, /Open my Kat·a·log/);
+  assert.match(html, /data-catalogue-destination="library"/);
+  assert.doesNotMatch(html, /data-catalogue-add/);
 });
 
 test('game page escapes text and refuses unsafe source links', () => {
@@ -59,9 +76,11 @@ test('game page escapes text and refuses unsafe source links', () => {
   assert.equal(safeExternalUrl('http://example.com'), '');
 });
 
-test('dynamic sitemap includes only entries supplied by the public store', () => {
-  const xml = sitemapXml([{ slug: 'portal-2-steam', updatedAt: '2026-08-27 12:00:00' }], '2026-08-28');
-  assert.match(xml, /https:\/\/gamekat\.net\/catalogue/);
+test('dynamic sitemap includes each public release and its cover image', () => {
+  const xml = sitemapXml([{ slug: 'portal-2-steam', title: 'Portal 2', coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg', updatedAt: '2026-08-27 12:00:00' }], '2026-08-28');
+  assert.match(xml, /https:\/\/gamekat\.net\/katalog/);
   assert.match(xml, /https:\/\/gamekat\.net\/game\/portal-2-steam/);
   assert.match(xml, /<lastmod>2026-08-27<\/lastmod>/);
+  assert.match(xml, /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/);
+  assert.match(xml, /<image:loc>https:\/\/gamekat\.net\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg<\/image:loc>/);
 });

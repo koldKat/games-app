@@ -333,7 +333,7 @@ function createCatalogueStore(database) {
   }
 
   function sitemapEntries() {
-    return database.prepare(`SELECT slug, COALESCE(published_at,updated_at) AS updatedAt
+    return database.prepare(`SELECT slug, title, cover_url AS coverUrl, updated_at AS updatedAt
       FROM catalogue_entries WHERE status='public' ORDER BY id`).all();
   }
 

@@ -93,7 +93,7 @@ test('auth validation uses themed field state without native browser prompts', (
   assert.match(application, /function validateAuthForm\(\)/);
   assert.match(application, /input\.classList\.toggle\('input-invalid', invalid\)/);
   assert.match(application, /if \(!validateAuthForm\(\)\) return/);
-  assert.doesNotMatch(application, /reportValidity\(|Passwords do not match/);
+  assert.doesNotMatch(application, /reportValidity\(/);
   assert.match(css, /\.auth-body input\.input-invalid,[^{]*\.auth-body input\.input-invalid:hover,[^{]*\.auth-body input\.input-invalid:focus\{border-color:#e15d5d;box-shadow:/);
 });
 
@@ -174,6 +174,9 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /window\.history\.pushState/);
   assert.match(navigation, /toggle\.textContent = catalogueOpen \? 'My Kat·a·log' : 'Kat·a·log'/);
   assert.match(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
+  assert.match(navigation, /link\.dataset\.catalogueDestination === 'library'[\s\S]*showLibrary\(\)/);
+  assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
+  assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
 });
 
@@ -228,7 +231,9 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.match(database, /Rating must be in half-star steps from 0\.5 to 5/);
   assert.match(css, /\.rating-picker \.rating-star\{[^}]*font-size:19px/);
   assert.match(css, /\.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
-  assert.doesNotMatch(catalogue, /\brating\b/);
+  assert.match(catalogue, /SELECT AVG\(g\.rating\)/);
+  assert.match(catalogue, /count >= 2/);
+  assert.doesNotMatch(catalogue, /rating:\s*entry\.rating/);
 });
 
 test('library cards open a read-only details view before editing', () => {
@@ -249,7 +254,7 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(privateApp, /setTimeout\(loadGames, UI_TIMING\.librarySearchDebounceMs\)/);
   assert.match(publicCatalogue, /catalogueSearchSequence/);
   assert.match(publicCatalogue, /querySelector\('\.catalogue-results'\)/);
-  assert.doesNotMatch(publicCatalogue, /current\.replaceWith\(next\);[\s\S]*bindCatalogueAddForm/);
+  assert.match(publicCatalogue, /current\.replaceWith\(next\); history\.replaceState/);
   assert.match(publicCatalogue, /closest\('main\.catalogue-main'\)\?\.addEventListener\('click'/);
   assert.match(publicCatalogue, /event\.stopPropagation\(\)/);
   assert.match(publicCatalogue, /setTimeout\(\(\) => \{/);
@@ -257,6 +262,51 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(read('public/js/catalogue-navigation.js'), /current\.replaceWith\(document\.importNode\(next, true\)\)/);
   assert.match(adminCatalogue, /setTimeout\(loadCatalogue, 250\)/);
   assert.match(adminPublicCatalogue, /setTimeout\(loadPublicCatalogue, 250\)/);
+});
+
+test('only public catalogue candidates offer the Publish action', () => {
+  const catalogueAdmin = read('admin/js/public-catalogue.js');
+  assert.match(catalogueAdmin, /entry\.status === 'candidate'\) actions\.append\(button\('Publish'/);
+  assert.doesNotMatch(catalogueAdmin, /entry\.status !== 'public'\) actions\.append\(button\('Publish'/);
+});
+
+test('admin account controls show access state and protect koldKat from lock or deletion', () => {
+  const html = read('admin/index.html'); const accounts = read('admin/js/accounts.js'); const adminServer = read('server/admin.js'); const authServer = read('server/auth.js');
+  assert.match(html, /<th>ACCESS<\/th>/);
+  assert.match(accounts, /account\.protected \? 'PROTECTED'/);
+  assert.match(accounts, /\/api\/admin\/accounts\/\$\{account\.id\}\/lock/);
+  assert.match(accounts, /lock\.disabled = Boolean\(account\.protected\)/);
+  assert.match(accounts, /remove\.disabled = Boolean\(account\.protected\)/);
+  assert.match(adminServer, /auth\.setAccountLocked/);
+  assert.match(authServer, /ACCOUNT_FAILURE_LIMIT = 5/);
+  assert.match(authServer, /isProtectedUsername/);
+});
+
+test('password reset has a token-based login flow and localhost SMTP administration', () => {
+  const html = read('public/index.html'); const app = read('public/app.js'); const adminHtml = read('admin/index.html'); const admin = read('server/admin.js'); const mailer = read('server/mailer.js');
+  assert.match(html, /id="forgot-password"/);
+  assert.match(html, /id="password-reset-request-form"/);
+  assert.match(html, /id="password-reset-complete-form"/);
+  assert.doesNotMatch(html, /id="password-reset-dialog"/);
+  assert.match(app, /\/api\/password-reset\/request/);
+  assert.match(app, /new URLSearchParams\(window\.location\.search\)\.get\('reset'\)/);
+  assert.match(app, /history\.replaceState\(\{\}, '', window\.location\.pathname\)/);
+  assert.match(adminHtml, /id="mail-settings-form"/);
+  assert.match(admin, /\/api\/admin\/mail/);
+  assert.match(mailer, /STARTTLS/);
+  assert.match(mailer, /AUTH PLAIN/);
+  assert.match(mailer, /multipart\/alternative/);
+  assert.match(read('server.js'), /GAME KAT·A·LOG/);
+  assert.match(read('server.js'), /Reset password<\/a>/);
+});
+
+test('public release links retain crawlable URLs while opening in the Kat·a·log detail dialog', () => {
+  const navigation = read('public/js/catalogue-navigation.js'); const catalogue = read('public/js/catalogue-public.js'); const css = read('public/css/catalogue.css');
+  assert.match(navigation, /bindCatalogueGameDialog/);
+  assert.match(catalogue, /data-catalogue-game-dialog/);
+  assert.match(catalogue, /dialog\.showModal\(\)/);
+  assert.match(catalogue, /window\.history\.replaceState\(\{ catalogue: true \}, '', '\/katalog'\)/);
+  assert.match(css, /\.catalogue-game-dialog/);
 });
 
 test('sorting is modular and includes catalogue and HLTB duration orders', () => {

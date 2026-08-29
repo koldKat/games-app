@@ -96,6 +96,12 @@ function createCatalogueService({ data, store, covers, logger = console }) {
     }
   }
 
+  function libraryCopy(userId, catalogueId) {
+    const entry = store.getPublicById(catalogueId);
+    if (!entry) return null;
+    return data.findDuplicateGames(userId, entry.title, entry.platform)[0] || null;
+  }
+
   function removeEntry(id) {
     const entry = store.remove(id);
     if (entry?.coverUrl) covers.remove(entry.coverUrl);
@@ -114,6 +120,7 @@ function createCatalogueService({ data, store, covers, logger = console }) {
 
   return {
     addToLibrary,
+    libraryCopy,
     counts: store.counts,
     getById: store.getById,
     getPublicById: store.getPublicById,

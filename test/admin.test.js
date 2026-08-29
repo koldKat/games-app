@@ -39,9 +39,22 @@ test('admin summaries span accounts while preserving owner identity', async () =
   assert.equal(stats.users, 2);
   assert.equal(stats.games, 2);
   assert.equal(stats.covered, 1);
+  assert.equal(stats.described, 0);
+  assert.equal(stats.missingDescriptions, 2);
+  assert.equal(stats.pegiKnown, 1);
+  assert.equal(stats.missingPegi, 1);
+  assert.equal(stats.hltbKnown, 0);
+  assert.equal(stats.rated, 0);
+  assert.equal(stats.uptimePercent, 100);
   assert.equal(stats.activeSessions, 1);
   assert.equal(stats.version, 'test-channel');
   assert.deepEqual(stats.catalogue, { candidate: 0, public: 0, rejected: 0 });
+  assert.deepEqual(stats.formats, [{ label: 'physical', count: 2 }]);
+
+  const live = admin.liveStats();
+  assert.equal(typeof live.heapUsed, 'number');
+  assert.equal(typeof live.cpuPct, 'number');
+  assert.ok(live.appAgeSeconds >= 0);
 
   const accounts = admin.listAccounts();
   assert.deepEqual(accounts.map(account => account.games), [1, 1]);
@@ -53,4 +66,9 @@ test('admin summaries span accounts while preserving owner identity', async () =
   assert.equal(deleted.games, 1);
   assert.equal(data.db.prepare('SELECT COUNT(*) count FROM games WHERE user_id=?').get(beta.id).count, 0);
   assert.equal(admin.deleteAccount(beta.id), null);
+});
+
+test('admin refuses to delete the protected koldKat account', async () => {
+  const protectedUser = await auth.register('koldKat', 'protected-password');
+  assert.throws(() => admin.deleteAccount(protectedUser.id), error => error.code === 'PROTECTED_ACCOUNT' && error.status === 403);
 });

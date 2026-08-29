@@ -49,6 +49,9 @@ db.exec(`
     avatar_path TEXT,
     password_hash TEXT NOT NULL,
     salt TEXT NOT NULL,
+    failed_login_count INTEGER NOT NULL DEFAULT 0,
+    locked_until INTEGER,
+    admin_locked INTEGER NOT NULL DEFAULT 0 CHECK (admin_locked IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -57,6 +60,27 @@ db.exec(`
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS mail_settings (
+    id INTEGER PRIMARY KEY CHECK (id=1),
+    host TEXT NOT NULL DEFAULT '',
+    port INTEGER NOT NULL DEFAULT 587,
+    security TEXT NOT NULL DEFAULT 'starttls',
+    username TEXT NOT NULL DEFAULT '',
+    password TEXT NOT NULL DEFAULT '',
+    sender TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS runtime_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS user_integrations (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -119,6 +143,9 @@ db.exec(`
 const userColumns = db.pragma('table_info(users)').map(column => column.name);
 if (!userColumns.includes('email')) db.exec('ALTER TABLE users ADD COLUMN email TEXT COLLATE NOCASE');
 if (!userColumns.includes('avatar_path')) db.exec('ALTER TABLE users ADD COLUMN avatar_path TEXT');
+if (!userColumns.includes('failed_login_count')) db.exec('ALTER TABLE users ADD COLUMN failed_login_count INTEGER NOT NULL DEFAULT 0');
+if (!userColumns.includes('locked_until')) db.exec('ALTER TABLE users ADD COLUMN locked_until INTEGER');
+if (!userColumns.includes('admin_locked')) db.exec('ALTER TABLE users ADD COLUMN admin_locked INTEGER NOT NULL DEFAULT 0');
 const gameColumns = db.pragma('table_info(games)').map(column => column.name);
 if (!gameColumns.includes('user_id')) db.exec('ALTER TABLE games ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
 if (!gameColumns.includes('cover_url')) db.exec("ALTER TABLE games ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''");
@@ -145,6 +172,7 @@ if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN ratin
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id, expires_at);
   CREATE INDEX IF NOT EXISTS idx_games_user ON games(user_id);
   CREATE INDEX IF NOT EXISTS idx_games_platform ON games(platform);
   CREATE INDEX IF NOT EXISTS idx_games_ownership ON games(ownership);

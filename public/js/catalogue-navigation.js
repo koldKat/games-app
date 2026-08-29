@@ -1,7 +1,7 @@
-import { bindCatalogueAddForm, bindCatalogueSearch } from './catalogue-public.js';
+import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch } from './catalogue-public.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
 
-const CATALOGUE_PATH = /^\/(?:catalogue|game\/)/;
+const CATALOGUE_PATH = /^\/(?:katalog|game\/)/;
 
 function isPrimaryNavigation(event) {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
@@ -35,7 +35,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   function setHeader(nextView) {
     const catalogueOpen = nextView === 'catalogue';
     toggle.textContent = catalogueOpen ? 'My Kat·a·log' : 'Kat·a·log';
-    toggle.href = catalogueOpen ? '/' : '/catalogue';
+    toggle.href = catalogueOpen ? '/' : '/katalog';
     toggle.dataset.catalogueDestination = catalogueOpen ? 'library' : 'catalogue';
     toggle.setAttribute('aria-label', catalogueOpen ? 'Open my Kat·a·log' : 'Open public Kat·a·log');
   }
@@ -48,7 +48,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     onLibraryVisible();
   }
 
-  async function open(url = '/catalogue', { push = true, focusSearch = false } = {}) {
+  async function open(url = '/katalog', { push = true, focusSearch = false } = {}) {
     const target = new URL(url, window.location.origin);
     if (!CATALOGUE_PATH.test(target.pathname)) return showLibrary({ push });
     request?.abort(); const controller = new AbortController(); request = controller;
@@ -65,7 +65,11 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
       if (request !== controller) return;
       catalogue.replaceChildren(document.importNode(main, true));
       document.title = title || libraryTitle;
-      bindCatalogueAddForm(catalogue, { onAdded: game => onGameAdded(game) });
+      bindCatalogueAddForm(catalogue, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
+      bindCatalogueGameDialog(catalogue, { onClose: () => {
+        if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'catalogue' }, '', '/katalog');
+        document.title = 'Public Kat·a·log | Game Kat·a·log';
+      } });
       bindCatalogueSearch(catalogue, { navigate: targetUrl => void refreshResults(targetUrl) });
       if (focusSearch) {
         const input = catalogue.querySelector('.catalogue-search input[name="q"]');
@@ -81,7 +85,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
 
   async function refreshResults(url) {
     const target = new URL(url, window.location.origin);
-    if (target.pathname !== '/catalogue' || view !== 'catalogue') return open(url);
+    if (target.pathname !== '/katalog' || view !== 'catalogue') return open(url);
     const current = catalogue.querySelector('.catalogue-results');
     if (!current) return open(url);
     request?.abort(); const controller = new AbortController(); request = controller;
@@ -104,7 +108,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   toggle.addEventListener('click', event => {
     if (!isPrimaryNavigation(event)) return;
     event.preventDefault();
-    if (view === 'catalogue') showLibrary(); else void open('/catalogue');
+    if (view === 'catalogue') showLibrary(); else void open('/katalog');
   });
   brand.addEventListener('click', event => {
     if (view !== 'catalogue' || !isPrimaryNavigation(event)) return;
@@ -114,9 +118,12 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     const link = event.target.closest('a[href]');
     if (!link || !isPrimaryNavigation(event) || link.target || link.hasAttribute('download')) return;
     const target = new URL(link.href, window.location.origin);
+    if (target.origin === window.location.origin && link.dataset.catalogueDestination === 'library') {
+      event.preventDefault(); showLibrary(); return;
+    }
     if (target.origin !== window.location.origin || !CATALOGUE_PATH.test(target.pathname)) return;
     event.preventDefault();
-    if (target.pathname === '/catalogue' && view === 'catalogue') void refreshResults(`${target.pathname}${target.search}`);
+    if (target.pathname === '/katalog' && view === 'catalogue') void refreshResults(`${target.pathname}${target.search}`);
     else void open(`${target.pathname}${target.search}`);
   });
   window.addEventListener('popstate', () => {

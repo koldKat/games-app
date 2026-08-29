@@ -42,7 +42,7 @@ function readJson(request, maxBytes = 32 * 1024) {
 
 function createCatalogueRoutes({ catalogue, auth, events }) {
   async function handle(request, response, url) {
-    if (request.method === 'GET' && url.pathname === '/catalogue') {
+    if (request.method === 'GET' && url.pathname === '/katalog') {
       const user = auth.authenticate(request);
       const refreshed = user && auth.refreshSessionCookie(request);
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
@@ -60,8 +60,9 @@ function createCatalogueRoutes({ catalogue, auth, events }) {
       const refreshed = user && auth.refreshSessionCookie(request);
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
       const entry = catalogue.getPublicBySlug(gamePage[1]);
+      const libraryGame = entry && user ? catalogue.libraryCopy?.(user.id, entry.id) || null : null;
       send(response, entry ? 200 : 404, 'text/html; charset=utf-8', entry
-        ? renderGame({ entry, user }) : renderNotFound());
+        ? renderGame({ entry, result: catalogue.listPublic({}), platforms: catalogue.publicPlatforms(), user, libraryGame }) : renderNotFound());
       return true;
     }
     if (request.method === 'GET' && url.pathname === '/sitemap.xml') {

@@ -1,15 +1,16 @@
-import { loadDashboard } from './dashboard.js';
+import { loadDashboard, loadLive } from './dashboard.js';
 import { loadAccounts } from './accounts.js';
 import { loadCatalogue } from './catalogue.js';
 import { loadPublicCatalogue } from './public-catalogue.js';
 import { loadVersion, loadBackups } from './tools.js';
+import { loadMailSettings } from './mail.js';
 
 const loaders = {
   dashboard: loadDashboard,
   accounts: loadAccounts,
   catalogue: loadCatalogue,
   'public-catalogue': loadPublicCatalogue,
-  tools: async () => { await Promise.all([loadVersion(), loadBackups()]); },
+  tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings()]); },
 };
 
 document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
@@ -20,3 +21,6 @@ document.querySelectorAll('[data-tab]').forEach(button => button.addEventListene
 }));
 
 loadDashboard();
+loadLive();
+setInterval(loadLive, 1_000);
+setInterval(loadDashboard, 60_000);

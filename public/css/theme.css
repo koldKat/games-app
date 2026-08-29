@@ -788,7 +788,7 @@ dialog::backdrop {
 }
 .auth-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   border: 1px solid #25313d;
   border-radius: 4px;
   padding: 2px;
@@ -852,6 +852,17 @@ dialog::backdrop {
 }
 .auth-hint strong {
   color: #64e8ca;
+}
+.auth-reset-panel .auth-hint {
+  margin-bottom: 0;
+}
+.auth-reset-panel label:first-child {
+  margin-top: 0;
+}
+.auth-reset-panel label > span {
+  margin-bottom: 6px;
+  color: #9aaaba;
+  line-height: 1.2;
 }
 .top-actions {
   display: flex;

@@ -24,6 +24,7 @@ const catalogue = require('./server/catalogue-runtime');
 const { createCatalogueRoutes } = require('./server/catalogue-routes');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
+const mailer = require('./server/mailer');
 const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants');
 
 const PORT = Number(process.env.PORT || 3005);
@@ -33,6 +34,7 @@ const AVATAR_MAX_BYTES = 256 * 1024;
 const SHOWCASE_COVER_COUNT = 38;
 const SHUTDOWN_GRACE_MS = 2_500;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_URL = String(process.env.PUBLIC_URL || 'https://gamekat.net').replace(/\/$/, '');
 const AVATARS_DIR = path.join(PUBLIC_DIR, 'avatars');
 fs.mkdirSync(AVATARS_DIR, { recursive: true });
 const MIME = {
@@ -49,6 +51,11 @@ const externalCoverProviders = Object.freeze({
   },
 });
 const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
+const escapeEmailHtml = value => String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+function passwordResetEmail({ username, link }) {
+  const safeUsername = escapeEmailHtml(username); const safeLink = escapeEmailHtml(link);
+  return `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#071016;color:#dce6ee;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#071016;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #29404b;background:#0b141b"><tr><td style="padding:18px 22px;border-bottom:1px solid #29404b;background:#101d24;color:#64e8ca;font-size:12px;font-weight:bold;letter-spacing:1.5px">GAME KAT·A·LOG</td></tr><tr><td style="padding:26px 22px"><p style="margin:0 0 14px;color:#90a1af;font-size:12px;letter-spacing:1px;text-transform:uppercase">Account security</p><h1 style="margin:0 0 14px;color:#f2f7fa;font-size:24px;line-height:1.2">Reset your password</h1><p style="margin:0 0 20px;color:#bfccd5;font-size:15px;line-height:1.55">Hello ${safeUsername}, use the button below to choose a new password. This one-time link expires in one hour.</p><p style="margin:0 0 22px"><a href="${safeLink}" style="display:inline-block;padding:12px 17px;background:#1d8b76;border:1px solid #64e8ca;color:#06120f;font-size:14px;font-weight:bold;text-decoration:none">Reset password</a></p><p style="margin:0;color:#8798a6;font-size:12px;line-height:1.55">If the button does not open, copy this address into your browser:<br><a href="${safeLink}" style="color:#72e4c8;word-break:break-all">${safeLink}</a></p></td></tr><tr><td style="padding:14px 22px;border-top:1px solid #29404b;color:#71828f;font-size:12px;line-height:1.5">If you did not request this reset, you can safely ignore this email.</td></tr></table></td></tr></table></body></html>`;
+}
 function publishAppEvent(userId, event, payload) {
   if (event === 'game-updated' && payload?.game) catalogue.syncGameSafely(userId, payload.game);
   events.publish(userId, event, payload);
@@ -216,9 +223,33 @@ async function handleApi(request, response, url) {
       const token = auth.createSession(user.id);
       return sendJson(response, 200, { user, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) {
+      if (error.code === 'ACCOUNT_LOCKED') return sendJson(response, error.status, { error: error.message });
       auth.recordFailure(ip);
       return sendJson(response, 400, { error: error.message });
     }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/password-reset/request') {
+    const ip = auth.clientIp(request);
+    if (auth.isRateLimited(ip)) return sendJson(response, 429, { error: 'Too many attempts. Try again later.' });
+    try {
+      const reset = auth.preparePasswordReset((await readJson(request)).identity);
+      if (reset) {
+        try {
+          const link = `${PUBLIC_URL}/?reset=${encodeURIComponent(reset.token)}`;
+          await mailer.send({ to: reset.email, subject: 'Reset your Game Kat·a·log password', text: `Hello ${reset.username},\n\nUse this one-time link to choose a new Game Kat·a·log password:\n${link}\n\nIt expires in one hour. If you did not request this, you can ignore this email.`, html: passwordResetEmail({ username: reset.username, link }) });
+          auth.storePasswordReset(reset);
+        } catch (error) { console.error(`[mail] password-reset delivery failed: ${error.message}`); }
+      }
+      return sendJson(response, 200, { message: 'If that account has an email address, a password reset link has been sent.' });
+    } catch (error) { auth.recordFailure(ip); return sendJson(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/password-reset') {
+    try {
+      const input = await readJson(request);
+      if (input.password !== input.passwordConfirm) return sendJson(response, 400, { error: 'Passwords do not match.' });
+      await auth.resetPassword(input.token, input.password);
+      return sendJson(response, 200, { message: 'Password reset. You can now sign in.' });
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/logout') {
     auth.logout(request);
@@ -460,6 +491,7 @@ server.listen(PORT, HOST, () => {
 });
 
 function shutdown() {
+  admin.markServerStopped();
   server.close(() => { db.db.close(); process.exit(0); });
   setTimeout(() => process.exit(1), SHUTDOWN_GRACE_MS).unref();
 }

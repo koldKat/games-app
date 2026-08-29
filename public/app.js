@@ -139,6 +139,7 @@ function showAuth(message = '') {
   state.user = null;
   $('#app-shell').hidden = true;
   $('#auth-screen').hidden = false;
+  showAuthForm();
   endSessionResume();
   $('#auth-error').textContent = message;
   $('#auth-error').hidden = !message;
@@ -239,6 +240,7 @@ function setAuthMode(mode) {
   state.authMode = mode;
   $('#auth-screen').dataset.authMode = mode;
   $$('[data-auth-mode]').forEach(button => button.classList.toggle('active', button.dataset.authMode === mode));
+  $('#forgot-password').classList.remove('active');
   $('#auth-title').textContent = mode === 'register' ? 'Create an identity' : 'Access your library';
   $('#auth-copy').textContent = mode === 'register' ? 'Create an isolated library account on this server.' : 'Enter your credentials to mount your personal collection.';
   $('#auth-submit').textContent = mode === 'register' ? 'Create account' : 'Authenticate';
@@ -252,7 +254,6 @@ function setAuthMode(mode) {
   $('#auth-error').hidden = true;
   clearAuthValidation();
 }
-$$('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
 $('#auth-form').addEventListener('submit', async event => {
   event.preventDefault();
   $('#auth-error').hidden = true;
@@ -268,6 +269,68 @@ $('#auth-form').addEventListener('submit', async event => {
     await enterApp(result.user, result.preferences);
   } catch (error) { $('#auth-error').textContent = error.message; $('#auth-error').hidden = false; }
   finally { submit.disabled = false; submit.textContent = state.authMode === 'register' ? 'Create account' : 'Authenticate'; }
+});
+let passwordResetToken = '';
+function showAuthForm() {
+  passwordResetToken = '';
+  $('#auth-form').hidden = false; $('.auth-tabs').hidden = false;
+  $('#password-reset-request-form').hidden = true; $('#password-reset-complete-form').hidden = true;
+  setAuthMode('login');
+}
+function showPasswordResetRequest() {
+  passwordResetToken = '';
+  $('#auth-form').hidden = true;
+  $('#password-reset-complete-form').hidden = true; $('#password-reset-request-form').hidden = false;
+  $$('[data-auth-mode]').forEach(button => button.classList.remove('active'));
+  $('#forgot-password').classList.add('active');
+  $('#auth-title').textContent = 'Reset your password';
+  $('#auth-copy').textContent = 'Enter your username or email and we’ll send a one-time reset link.';
+  $('#password-reset-request-form').reset(); $('#password-reset-request-error').hidden = true; $('#password-reset-request-success').hidden = true;
+  $('#password-reset-identity').disabled = false; $('#password-reset-request-submit').hidden = false;
+  setTimeout(() => $('#password-reset-identity').focus(), UI_TIMING.focusDelayMs);
+}
+function showPasswordResetComplete(token) {
+  passwordResetToken = token;
+  $('#auth-form').hidden = true;
+  $('#password-reset-request-form').hidden = true; $('#password-reset-complete-form').hidden = false;
+  $$('[data-auth-mode]').forEach(button => button.classList.remove('active'));
+  $('#forgot-password').classList.add('active');
+  $('#auth-title').textContent = 'Choose a new password';
+  $('#auth-copy').textContent = 'Set a new password for your Game Kat·a·log account.';
+  $('#password-reset-complete-form').reset(); $('#password-reset-complete-error').hidden = true; $('#password-reset-complete-success').hidden = true;
+  $('#password-reset-new').disabled = false; $('#password-reset-confirm').disabled = false;
+  $('#password-reset-complete-submit').hidden = false;
+  setTimeout(() => $('#password-reset-new').focus(), UI_TIMING.focusDelayMs);
+}
+$('.auth-tabs').addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.id === 'forgot-password') { showPasswordResetRequest(); return; }
+  const mode = button.dataset.authMode;
+  if (!mode) return;
+  showAuthForm(); setAuthMode(mode);
+});
+$('#password-reset-request-form').addEventListener('submit', async event => {
+  event.preventDefault(); const submit = $('#password-reset-request-submit'); submit.disabled = true;
+  try {
+    const identity = $('#password-reset-identity').value.trim();
+    if (!identity) throw new Error('Enter your username or email.');
+    const result = await api('/api/password-reset/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identity }) });
+    $('#password-reset-request-success').textContent = result.message; $('#password-reset-request-success').hidden = false;
+    $('#password-reset-identity').disabled = true; submit.hidden = true;
+  } catch (error) { $('#password-reset-request-error').textContent = error.message; $('#password-reset-request-error').hidden = false; }
+  finally { submit.disabled = false; }
+});
+$('#password-reset-complete-form').addEventListener('submit', async event => {
+  event.preventDefault(); const submit = $('#password-reset-complete-submit'); submit.disabled = true;
+  try {
+    const password = $('#password-reset-new').value;
+    if (password !== $('#password-reset-confirm').value) throw new Error('Passwords do not match.');
+    await api('/api/password-reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: passwordResetToken, password, passwordConfirm: $('#password-reset-confirm').value }) });
+    passwordResetToken = ''; $('#password-reset-new').disabled = true; $('#password-reset-confirm').disabled = true;
+    submit.hidden = true; $('#password-reset-complete-success').hidden = false;
+  } catch (error) { $('#password-reset-complete-error').textContent = error.message; $('#password-reset-complete-error').hidden = false; }
+  finally { submit.disabled = false; }
 });
 function count(group, label) { return group?.find(row => row.label === label)?.count || 0; }
 function renderStats() {
@@ -1010,6 +1073,8 @@ $('#account-form').addEventListener('submit', async event => {
   setAuthMode('login');
   loadConfig();
   loadAuthCovers();
+  const resetToken = new URLSearchParams(window.location.search).get('reset');
+  if (resetToken) { history.replaceState({}, '', window.location.pathname); showAuth(); showPasswordResetComplete(resetToken); return; }
   try { const result = await api('/api/auth/me'); await enterApp(result.user, result.preferences); }
   catch { showAuth(); }
 })();

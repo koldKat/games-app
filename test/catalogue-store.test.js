@@ -107,6 +107,15 @@ test('administrator updates shared facts without changing a release slug or mode
   assert.equal(updated.hltbMainStory, 10.5);
 });
 
+test('sitemap entries use the release update time rather than its original publication time', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const created = store.upsertFromGame(1, game(), evaluateCatalogueGame(game()), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  database.prepare("UPDATE catalogue_entries SET published_at='2026-01-01 00:00:00', updated_at='2026-08-29 12:00:00' WHERE id=?").run(created.id);
+  const [entry] = store.sitemapEntries();
+  assert.equal(entry.updatedAt, '2026-08-29 12:00:00');
+  assert.equal(entry.coverUrl, '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+});
+
 test('administrator cannot merge two catalogue identities through an edit', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game(); const second = game({ id: 22, title: 'Metroid Prime', hltbTitle: 'Metroid Prime', coverMatchTitle: 'Metroid Prime' });

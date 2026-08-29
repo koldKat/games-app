@@ -49,6 +49,16 @@ test('duplicate catalogue release is rejected without copying a cover', () => {
   assert.equal(copied, false);
 });
 
+test('library-copy lookup exposes an existing private duplicate for public-page rendering', () => {
+  const existing = { id: 3, title: 'Portal 2', platform: 'Steam' };
+  const service = createCatalogueService({
+    data: { findDuplicateGames: () => [existing] },
+    store: { getPublicById: () => publicEntry(), counts() {}, getById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
+    covers: { copy() {}, remove() {} },
+  });
+  assert.equal(service.libraryCopy(20, 4), existing);
+});
+
 test('safe synchronization never breaks the calling private-library operation', () => {
   const messages = [];
   const service = createCatalogueService({

@@ -106,7 +106,7 @@
             <p class="kicker">Identity required</p>
             <h1 id="auth-title">Access your library</h1>
             <p class="auth-copy" id="auth-copy">Enter your credentials to mount your personal collection.</p>
-            <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button></div>
+            <div class="auth-tabs"><button class="active" type="button" data-auth-mode="login">Login</button><button type="button" data-auth-mode="register">Register</button><button id="forgot-password" type="button">Forgot?</button></div>
             <form id="auth-form" novalidate>
               <label><span>Username</span><input id="auth-username" required minlength="3" maxlength="32" autocomplete="username" spellcheck="false"></label>
               <label id="auth-email-label" hidden><span>Email (optional)</span><input id="auth-email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></label>
@@ -115,6 +115,19 @@
               <p id="auth-hint" class="auth-hint" hidden>Each account receives its own isolated game library.</p>
               <p id="auth-error" class="form-error" hidden></p>
               <button id="auth-submit" class="button primary auth-submit" type="submit">Authenticate</button>
+            </form>
+            <form id="password-reset-request-form" class="auth-reset-panel" hidden novalidate>
+              <label><span>Username or email</span><input id="password-reset-identity" required autocomplete="username email" maxlength="254"></label>
+              <p id="password-reset-request-error" class="form-error" hidden></p>
+              <p id="password-reset-request-success" class="auth-hint" hidden aria-live="polite"></p>
+              <button id="password-reset-request-submit" type="submit" class="button primary auth-submit">Send reset link</button>
+            </form>
+            <form id="password-reset-complete-form" class="auth-reset-panel" hidden novalidate>
+              <label><span>New password</span><input id="password-reset-new" type="password" required minlength="8" maxlength="200" autocomplete="new-password"></label>
+              <label><span>Confirm new password</span><input id="password-reset-confirm" type="password" required minlength="8" maxlength="200" autocomplete="new-password"></label>
+              <p id="password-reset-complete-error" class="form-error" hidden></p>
+              <p id="password-reset-complete-success" class="auth-hint" hidden aria-live="polite">Password reset. You can now sign in.</p>
+              <button id="password-reset-complete-submit" type="submit" class="button primary auth-submit">Set new password</button>
             </form>
           </div>
         </section>
@@ -140,7 +153,7 @@
           <div class="promo-system"><span>FACTS SHARED</span><span>TRACKING PRIVATE</span><span>ONE-CLICK ADD</span></div>
         </article>
       </aside>
-      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/catalogue">KAT·A·LOG</a><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
+      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/katalog">KAT·A·LOG</a><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
     </div>
   </main>
 
@@ -151,7 +164,7 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><a class="button catalogue-button" href="/catalogue">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
+      <div class="top-actions"><a class="button catalogue-button" href="/katalog">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
     </header>
 
     <main id="app-main">

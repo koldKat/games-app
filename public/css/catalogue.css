@@ -19,6 +19,7 @@
 .catalogue-document *::-webkit-scrollbar-thumb:hover { background: #438878; }
 .catalogue-document a,.catalogue-view a { color: inherit; }
 .catalogue-shell { margin: 0 auto; }
+.catalogue-shell > .topbar,.catalogue-shell > .catalogue-main,.catalogue-shell > .catalogue-footer { position: relative; z-index: 1; }
 .catalogue-view { width: 100%; }
 .catalogue-navigation-loading { min-height: 260px; }
 .catalogue-footer a,.catalogue-back { padding: 7px 10px; border: 1px solid var(--line); border-radius: 5px; color: #afbdc5; text-decoration: none; }
@@ -26,7 +27,7 @@
 .catalogue-main { width: 100%; margin: 0; padding: 10px 0 36px; }
 .catalogue-hero { min-height: 132px; margin-top: 0; padding: 19px 22px; border: 1px solid #222d3a; border-radius: 7px; background: #0b1017; }
 .catalogue-hero p,.game-summary>p,.game-metadata header span { margin: 0 0 5px; color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
-.catalogue-hero h1,.game-summary h1 { margin: 0; color: #edf7f3; font-size: clamp(27px,3vw,38px); line-height: 1.05; letter-spacing: -.04em; }
+.catalogue-hero h1,.catalogue-hero h2,.game-summary h1 { margin: 0; color: #edf7f3; font-size: clamp(27px,3vw,38px); line-height: 1.05; letter-spacing: -.04em; }
 .catalogue-hero>span { display: block; max-width: 720px; margin-top: 10px; color: var(--muted); }
 .catalogue-search { display: grid; grid-template-columns: minmax(0,1fr) minmax(190px,260px) auto; gap: 8px; margin-top: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); }
 .catalogue-search label,.catalogue-add label { display: grid; gap: 3px; }
@@ -70,6 +71,15 @@
 .catalogue-pagination a:first-child { justify-self: start; }
 .catalogue-empty { grid-column: 1/-1; display: grid; place-items: center; gap: 5px; min-height: 230px; border: 1px dashed #293843; border-radius: 10px; color: var(--muted); text-align: center; }
 .catalogue-empty strong { color: var(--text); font-size: 18px; }
+.catalogue-game-dialog { width: min(1120px,calc(100vw - 22px)); max-height: calc(100vh - 22px); padding: 0; overflow: auto; border: 1px solid #38515b; border-radius: 12px; background: #090e14; color: var(--text); box-shadow: 0 25px 80px rgba(0,0,0,.62); }
+.catalogue-game-dialog::backdrop { background: rgba(2,5,8,.8); backdrop-filter: blur(4px); }
+.catalogue-game-dialog-card>header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--line); background: #0c131a; }
+.catalogue-game-dialog-card>header span { color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: .14em; }
+.catalogue-game-dialog-card>header button { width: 29px; height: 29px; margin-left: auto; border: 1px solid #304451; border-radius: 5px; background: #101923; color: #b9c7cf; font: 22px/1 sans-serif; cursor: pointer; }
+.catalogue-game-dialog-card>header button:hover { border-color: var(--green); color: var(--green); }
+.catalogue-game-dialog .game-detail { padding: 13px; }
+.catalogue-game-dialog .game-detail .game-overview { padding: 0; border: 0; background: transparent; }
+.catalogue-game-dialog .game-detail .game-metadata { margin-bottom: 2px; }
 .game-detail { max-width: 1080px; margin-right: auto; margin-left: auto; }
 .catalogue-back { display: inline-block; margin-bottom: 12px; }
 .game-overview { display: grid; grid-template-columns: minmax(180px,270px) minmax(0,1fr); gap: 24px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
@@ -82,6 +92,9 @@
 .catalogue-add p.success { color: var(--green); }
 .catalogue-add p.error { color: var(--red); }
 .catalogue-signin { grid-template-columns: 1fr auto; }
+.catalogue-added { grid-template-columns: 1fr auto; border-color: #384853; background: rgba(111,132,125,.07); }
+.catalogue-added a { align-self: center; padding: 8px 11px; border: 1px solid #526572; border-radius: 6px; color: #b7c8d2; font-size: 10px; text-decoration: none; }
+.catalogue-added a:hover { border-color: var(--green); color: var(--green); }
 .catalogue-signin span { grid-column: 1; }
 .catalogue-signin a { grid-column: 2; grid-row: 1/3; align-self: center; padding: 8px 11px; border: 1px solid var(--green); border-radius: 6px; color: var(--green); text-decoration: none; }
 .game-metadata { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }

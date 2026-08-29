@@ -43,9 +43,13 @@ test('crawler files expose the landing page without indexing private surfaces', 
   const sitemap = read('sitemap.xml');
   assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Disallow: \/admin\//);
+  assert.match(robots, /Allow: \/katalog/);
+  assert.match(robots, /Allow: \/game\//);
+  assert.match(robots, /Allow: \/covers\//);
+  assert.match(robots, /Disallow: \/backups\//);
   assert.match(robots, /Sitemap: https:\/\/gamekat\.net\/sitemap\.xml/);
   assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/<\/loc>/);
-  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/catalogue<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/katalog<\/loc>/);
   assert.equal((sitemap.match(/<loc>/g) || []).length, 3);
 });
 

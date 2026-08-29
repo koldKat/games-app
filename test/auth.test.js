@@ -135,6 +135,7 @@ test('login, sessions, and account password changes work', async () => {
   assert.match(auth.refreshSessionCookie({ headers: { cookie }, socket: {} }), /^games_session=[a-f0-9]{64}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=1209600$/);
   assert.match(auth.clearSessionCookie({ headers: {}, socket: {} }), /^games_session=; Path=\/; HttpOnly; SameSite=Strict; Max-Age=0$/);
   assert.equal(auth.authenticate({ headers: { cookie: 'games_session=%E0%A4%A' }, socket: {} }), null);
+  await assert.rejects(() => auth.updateAccount(user.id, { username: 'blocked_update', currentPassword: 'wrong-password' }), /Current password is incorrect/);
   const updated = await auth.updateAccount(user.id, { username: 'library_owner', currentPassword: 'another-long-password', newPassword: 'replacement-password' });
   assert.equal(updated.sessionInvalidated, true);
   assert.equal(auth.authenticate(request), null);
@@ -145,4 +146,51 @@ test('login, sessions, and account password changes work', async () => {
   assert.equal((await auth.login('library_owner', 'replacement-password')).avatarUrl, '/avatars/1_test.jpg');
   assert.equal(auth.updateAvatar(user.id, null), null);
   assert.equal(auth.avatarPath(user.id), null);
+});
+
+test('failed password attempts temporarily lock accounts, while admin locks revoke sessions', async () => {
+  const user = await auth.register('lockable_account', 'secure-password');
+  for (let attempt = 0; attempt < auth.ACCOUNT_FAILURE_LIMIT - 1; attempt++) assert.equal(await auth.login('lockable_account', 'wrong-password'), null);
+  await assert.rejects(() => auth.login('lockable_account', 'wrong-password'), error => error.code === 'ACCOUNT_LOCKED' && error.status === 423);
+  await assert.rejects(() => auth.login('lockable_account', 'secure-password'), error => error.code === 'ACCOUNT_LOCKED');
+  data.db.prepare("UPDATE users SET locked_until=strftime('%s','now')-1 WHERE id=?").run(user.id);
+  assert.ok(await auth.login('lockable_account', 'secure-password'));
+
+  const token = auth.createSession(user.id);
+  assert.equal(auth.setAccountLocked(user.id, true).adminLocked, true);
+  assert.equal(auth.authenticate({ headers: { authorization: `Bearer ${token}` } }), null);
+  await assert.rejects(() => auth.login('lockable_account', 'secure-password'), error => error.code === 'ACCOUNT_LOCKED' && error.manual);
+  assert.equal(auth.setAccountLocked(user.id, false).adminLocked, false);
+  assert.ok(await auth.login('lockable_account', 'secure-password'));
+});
+
+test('the koldKat account cannot be locked or renamed', async () => {
+  const user = await auth.register('koldKat', 'protected-password');
+  assert.throws(() => auth.setAccountLocked(user.id, true), error => error.code === 'PROTECTED_ACCOUNT' && error.status === 403);
+  await assert.rejects(() => auth.updateAccount(user.id, { username: 'renamed_koldkat', currentPassword: 'protected-password' }), /cannot be renamed/);
+});
+
+test('password reset tokens are one-time and revoke sessions', async () => {
+  const user = await auth.register('reset_account', 'old-password', 'reset@example.com');
+  const token = await auth.createPasswordReset('RESET@EXAMPLE.COM');
+  assert.equal(token.username, 'reset_account');
+  assert.doesNotMatch(data.db.prepare('SELECT token_hash FROM password_reset_tokens WHERE user_id=?').get(user.id).token_hash, new RegExp(token.token));
+  const session = auth.createSession(user.id);
+  await auth.resetPassword(token.token, 'new-password');
+  assert.equal(auth.authenticate({ headers: { authorization: `Bearer ${session}` } }), null);
+  assert.equal(await auth.login('reset_account', 'old-password'), null);
+  assert.ok(await auth.login('reset_account', 'new-password'));
+  await assert.rejects(() => auth.resetPassword(token.token, 'another-password'), /invalid or has expired/);
+});
+
+test('a reset link is not invalidated until its email has been accepted for delivery', async () => {
+  const user = await auth.register('delivery_account', 'old-password', 'delivery@example.com');
+  const current = await auth.createPasswordReset('delivery@example.com');
+  const originalHash = data.db.prepare('SELECT token_hash FROM password_reset_tokens WHERE user_id=?').get(user.id).token_hash;
+  const pending = auth.preparePasswordReset('delivery@example.com');
+  assert.equal(data.db.prepare('SELECT COUNT(*) count FROM password_reset_tokens WHERE user_id=?').get(user.id).count, 1);
+  assert.equal(data.db.prepare('SELECT token_hash FROM password_reset_tokens WHERE user_id=?').get(user.id).token_hash, originalHash);
+  assert.notEqual(pending.token, current.token);
+  await auth.resetPassword(current.token, 'new-password');
+  assert.ok(await auth.login('delivery_account', 'new-password'));
 });

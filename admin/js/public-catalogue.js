@@ -25,7 +25,7 @@ async function changeStatus(entry, status, trigger) {
 function actionsFor(row, entry) {
   const actions = cell(row, '', 'row-actions');
   actions.append(button('Edit', '', () => openEditor(entry)));
-  if (entry.status !== 'public') actions.append(button('Publish', 'primary', event => changeStatus(entry, 'public', event.currentTarget)));
+  if (entry.status === 'candidate') actions.append(button('Publish', 'primary', event => changeStatus(entry, 'public', event.currentTarget)));
   if (entry.status !== 'candidate') actions.append(button('Review', '', event => changeStatus(entry, 'candidate', event.currentTarget)));
   if (entry.status !== 'rejected') actions.append(button('Reject', '', event => changeStatus(entry, 'rejected', event.currentTarget)));
   const remove = button('Delete', 'danger', async () => {

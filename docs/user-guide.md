@@ -24,6 +24,8 @@ Every account has an isolated library. Game ownership is attached to the account
 - A secure HttpOnly cookie carries the random session identifier. Page scripts cannot read it, and the app puts no authentication data in local or session storage.
 - Sessions remain valid for two weeks and are extended while used. Revoked or expired sessions also close their live-update stream within about 20 seconds.
 - Select the username in the top-right corner, then **Log out**, to end the current session.
+- Five incorrect passwords temporarily lock the account for 15 minutes. A local administrator can also lock an account until they explicitly unlock it; that action signs it out everywhere.
+- Select **Forgot?** to replace the sign-in form with the reset-request panel, then enter a username or email. The branded email has a clickable **Reset password** button and a linked fallback address; it opens a dedicated new-password panel. Links expire after one hour and all existing sessions are signed out after a successful reset. An account needs an email address and the local administrator must have configured SMTP delivery.
 
 During refresh, a compact **Mounting authenticated library…** screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; a green-outline controller marks an empty grid while library data arrives, and header and background covers fill in afterward. Existing cards remain visible during later refreshes instead of being replaced by the loader. The public login and registration interface is shown only if that session is absent or invalid.
 
@@ -31,9 +33,9 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Public Kat·a·log
 
-Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index. While signed in, the application shell stays in place: only the content beneath the header changes, the header action becomes **My Kat·a·log**, and **Add a game** remains in its fixed position. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release page shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
+Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes, the header action becomes **My Kat·a·log**, and **Add a game** remains in its fixed position. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release detail dialog shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
 
-When signed in, choose collection and media format on a release page, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favourite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the add is rejected and the existing row is left untouched.
+When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favourite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
 
 The Kat·a·log grows conservatively from member libraries. A release publishes automatically only when all of these are present:
 
@@ -43,7 +45,7 @@ The Kat·a·log grows conservatively from member libraries. A release publishes 
 
 Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only—never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. Once at least two members with linked private copies have rated a release, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
 
-Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its release page, where you can inspect the metadata before adding it.
+Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its public release details over the Kat·a·log, where you can inspect the metadata before adding it. Each release also has a stable shareable URL for search engines; opening one directly lands on the same Kat·a·log detail dialog, and closing it returns to the catalogue without creating a redundant browser-history entry. If the same title and platform are already in your library, the page shows **Already in your Kat·a·log** instead of an add form and links back to your library.
 
 ---
 
@@ -117,7 +119,7 @@ Select **Add a game** on desktop or the **+** floating button on mobile.
 
 Only **Title** and **Platform** are required. Every other field can be added later.
 
-After three title characters, matching games already in the current account appear first, with their platform and collection state. Public Kat·a·log matches follow and open their release page; optional SteamGridDB title suggestions appear last when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
+After three title characters, matching games already in the current account appear first, with their platform and collection state. Public Kat·a·log matches follow and open their release-details dialog; optional SteamGridDB title suggestions appear last when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
 
 An exact title-and-platform match shows an **Already in your library** warning and an **Open existing** action. Saving a new game with that same pair requires a themed **Add anyway** confirmation because multiple copies or editions can be legitimate. The same title on another platform is not considered a duplicate. Suggestions are optional: any title can still be entered manually. If SteamGridDB is unavailable or not configured, its suggestions disappear silently while local duplicate detection and ordinary title entry continue working.
 
@@ -249,7 +251,7 @@ Changing the username does not change ownership of existing games.
 
 ### Add or change email
 
-Enter an optional email address and current password, then save. Email addresses are case-insensitively unique. Email is stored for account identification and future recovery support; the app does not currently send mail or provide automated password recovery.
+Enter an optional email address and current password, then save. Email addresses are case-insensitively unique. The address is used only to deliver a password-reset link when SMTP has been configured by the local administrator.
 
 ### Change password
 
@@ -279,10 +281,11 @@ On the computer running Game Kat·a·log, open `http://127.0.0.1:3005/admin/`. T
 
 The compact terminal-style panel provides:
 
-- Whole-database game, account, cover, session, favourite, platform, ownership, and PEGI summaries.
-- Account inspection, session revocation, and typed-confirmation account deletion. Deleting an account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.
+- Live process health (heap, RSS/CPU, app age, and session uptime, refreshed each second) plus whole-database game, account, cover, description, PEGI, HowLongToBeat, rating, catalogue, favourite, platform, ownership, media-format, and play-state summaries (refreshed each minute). The compact dashboard stacks related cards by library, community catalogue, metadata coverage, runtime, and process/storage health. App age begins with the earliest user or game record; every restart gets a five-second uptime allowance, so only downtime beyond five seconds is deducted and a new session begins with those five seconds included.
+- Account inspection, session revocation, manual lock/unlock, and typed-confirmation account deletion. Locking signs the account out everywhere; automatic temporary locks follow five incorrect passwords. The protected `koldKat` account cannot be locked or deleted. Deleting another account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.
+- SMTP host, port, transport security, credentials, sender address, and a send-test-email action for password resets. SMTP passwords are never returned to the browser after saving.
 - Cross-account private-row search and deliberate, confirmed game deletion.
-- Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup.
+- Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup. Only review candidates have a **Publish** action; a published release can be returned to review or rejected, and a rejected release must first return to review before it can be published.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
 - Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.
