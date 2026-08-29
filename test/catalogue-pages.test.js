@@ -18,9 +18,12 @@ test('catalogue page is crawlable server-rendered HTML', () => {
   assert.match(html, /Portal 2/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /class="catalogue-results"/);
+  assert.match(html, /class="hero catalogue-hero"/);
+  assert.match(html, /class="hero-art catalogue-hero-art"/);
+  assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
   assert.match(html, /class="auth-cover-field app-cover-field"/);
-  assert.match(html, /background-image:url\(&quot;\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg&quot;\)/);
-  assert.match(html, /Discover enriched releases and add them to your private library\.<\/span>/);
+  assert.match(html, /<img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async">/);
+  assert.match(html, /Discover enriched releases and add them to your private library\.<\/p>/);
   assert.doesNotMatch(html, /without entering everything again/);
   assert.match(html, /name="robots" content="index, follow, max-image-preview:large"/);
   assert.doesNotMatch(html, /submittedByUserId|sourceGameId|ownership|notes/);
@@ -50,7 +53,8 @@ test('public release pages show a community aggregate but never offer a public v
   const html = renderGame({ entry, user: { username: 'koldKat' } });
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
   assert.match(html, /<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open/);
-  assert.match(html, /<section class="catalogue-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
+  assert.match(html, /class="close-button" data-catalogue-game-close/);
+  assert.match(html, /<section class="hero catalogue-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
   assert.match(html, /property="og:type" content="video\.game"/);
   assert.match(html, /property="og:image:alt" content="Portal 2 cover"/);
   assert.match(html, /"@type":"AggregateRating"/);
@@ -76,11 +80,11 @@ test('game page escapes text and refuses unsafe source links', () => {
   assert.equal(safeExternalUrl('http://example.com'), '');
 });
 
-test('dynamic sitemap includes each public release and its cover image', () => {
+test('dynamic sitemap uses the plain Gamebooks-style URL-set for each public release', () => {
   const xml = sitemapXml([{ slug: 'portal-2-steam', title: 'Portal 2', coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg', updatedAt: '2026-08-27 12:00:00' }], '2026-08-28');
   assert.match(xml, /https:\/\/gamekat\.net\/katalog/);
   assert.match(xml, /https:\/\/gamekat\.net\/game\/portal-2-steam/);
   assert.match(xml, /<lastmod>2026-08-27<\/lastmod>/);
-  assert.match(xml, /xmlns:image="http:\/\/www\.google\.com\/schemas\/sitemap-image\/1\.1"/);
-  assert.match(xml, /<image:loc>https:\/\/gamekat\.net\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg<\/image:loc>/);
+  assert.doesNotMatch(xml, /xmlns:image|<image:/);
+  assert.match(xml, /<priority>0\.8<\/priority>\n  <\/url>/);
 });

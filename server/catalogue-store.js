@@ -3,7 +3,8 @@
 const { evaluateCatalogueGame, normalizeCatalogueText } = require('./catalogue-policy');
 
 const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
-const PAGE_SIZE_DEFAULT = 24;
+// The wide Kat·a·log grid has six columns: keep ten complete desktop rows visible per page.
+const PAGE_SIZE_DEFAULT = 60;
 const PAGE_SIZE_MAX = 60;
 const SEARCH_MAX_LENGTH = 120;
 const PEGI_RATINGS = new Set([3, 7, 12, 16, 18]);

@@ -54,7 +54,7 @@ The panel is loopback-only. Requests forwarded by nginx with a non-loopback clie
 
 ## Public landing and SEO
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, while each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap exposes the landing page, documentation, Kat·a·log, published releases, their latest update dates, and catalogue cover images. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, while each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## Public Kat·a·log
 

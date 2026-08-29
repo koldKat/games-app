@@ -172,6 +172,8 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /library\.hidden = false; catalogue\.hidden = true/);
   assert.match(navigation, /catalogue\.replaceChildren\(document\.importNode\(main, true\)\)/);
   assert.match(navigation, /window\.history\.pushState/);
+  assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
+  assert.match(navigation, /\}, \{ capture: true \}\);/);
   assert.match(navigation, /toggle\.textContent = catalogueOpen \? 'My Kat·a·log' : 'Kat·a·log'/);
   assert.match(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
   assert.match(navigation, /link\.dataset\.catalogueDestination === 'library'[\s\S]*showLibrary\(\)/);
@@ -256,6 +258,8 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(publicCatalogue, /querySelector\('\.catalogue-results'\)/);
   assert.match(publicCatalogue, /current\.replaceWith\(next\); history\.replaceState/);
   assert.match(publicCatalogue, /closest\('main\.catalogue-main'\)\?\.addEventListener\('click'/);
+  assert.match(publicCatalogue, /target\.pathname\.startsWith\('\/game\/'\)[\s\S]*openCatalogueGameDialog/);
+  assert.match(publicCatalogue, /main\.append\(document\.importNode\(next, true\)\)/);
   assert.match(publicCatalogue, /event\.stopPropagation\(\)/);
   assert.match(publicCatalogue, /setTimeout\(\(\) => \{/);
   assert.match(read('public/js/catalogue-navigation.js'), /async function refreshResults\(url\)/);
@@ -449,8 +453,13 @@ test('rich PEGI metadata is shown with themed progressive disclosure', () => {
 });
 
 test('dialogs stay inside the viewport and scrollbars are themed', () => {
-  const publicCss = readPublicCss(); const adminCss = read('admin/style.css');
-  assert.match(publicCss, /dialog\{max-height:80dvh;overflow:hidden\}/);
+  const publicCss = readPublicCss(); const catalogueCss = read('public/css/catalogue.css'); const adminCss = read('admin/style.css');
+  assert.match(publicCss, /dialog\{max-height:80dvh;overflow:hidden;overscroll-behavior:contain\}/);
+  assert.match(publicCss, /html:has\(dialog\[open\]\)\{overflow:hidden;scrollbar-gutter:stable\}/);
+  assert.match(catalogueCss, /\.catalogue-game-dialog \{[^}]*overscroll-behavior: contain/);
+  assert.match(catalogueCss, /\.close-button \{ display: grid;[^}]*place-items: center;[^}]*min-height: 25px/);
+  assert.match(adminCss, /html:has\(dialog\[open\]\)\{overflow:hidden;scrollbar-gutter:stable\}/);
+  assert.match(adminCss, /\.catalogue-edit-dialog\{[^}]*overscroll-behavior:contain/);
   assert.match(publicCss, /\.modal-card\{max-height:80dvh;overflow:auto/);
   assert.match(publicCss, /\.modal-card\{[^}]*scrollbar-gutter:auto/);
   for (const css of [publicCss, adminCss]) {

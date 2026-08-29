@@ -715,7 +715,9 @@
 dialog {
   max-height: 80dvh;
   overflow: hidden;
+  overscroll-behavior: contain;
 }
+html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
 .modal-card {
   max-height: 80dvh;
   overflow: auto;

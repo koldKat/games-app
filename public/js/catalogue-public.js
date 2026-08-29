@@ -56,6 +56,28 @@ export function bindCatalogueGameDialog(root = document, { onClose = null } = {}
   dialog.showModal();
 }
 
+let catalogueGameSequence = 0;
+export async function openCatalogueGameDialog(root = document, url) {
+  const target = new URL(url, window.location.origin);
+  if (target.origin !== window.location.origin || !target.pathname.startsWith('/game/')) return;
+  const sequence = ++catalogueGameSequence;
+  try {
+    const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Game details could not be loaded.');
+    const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const next = parsed.querySelector('[data-catalogue-game-dialog]');
+    const main = root.querySelector('main.catalogue-main');
+    if (!next || !main || sequence !== catalogueGameSequence) throw new Error('Game details could not be displayed.');
+    main.querySelector('[data-catalogue-game-dialog]')?.remove();
+    main.append(document.importNode(next, true));
+    window.history.pushState({ catalogue: true }, '', `${target.pathname}${target.search}`);
+    bindCatalogueGameDialog(root);
+    bindCatalogueAddForm(root);
+  } catch {
+    window.location.assign(`${target.pathname}${target.search}`);
+  }
+}
+
 let catalogueSearchSequence = 0;
 export function bindCatalogueSearch(root = document, { navigate } = {}) {
   const form = root.querySelector('.catalogue-search');
@@ -79,10 +101,14 @@ export function bindCatalogueSearch(root = document, { navigate } = {}) {
   form.querySelector('input[name="q"]')?.addEventListener('input', update);
   form.querySelector('select[name="platform"]')?.addEventListener('change', () => { clearTimeout(timer); const target = urlForForm(); if (navigate) navigate(target); else void navigateCatalogue(target); });
   form.closest('main.catalogue-main')?.addEventListener('click', event => {
-    const link = event.target.closest('.catalogue-results a[href]');
+    const link = event.target.closest('a[href]');
     if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target || link.hasAttribute('download')) return;
     const target = new URL(link.href, window.location.origin);
-    if (target.origin !== window.location.origin || target.pathname !== '/katalog') return;
+    if (target.origin !== window.location.origin) return;
+    if (target.pathname.startsWith('/game/')) {
+      event.preventDefault(); event.stopPropagation(); void openCatalogueGameDialog(root, `${target.pathname}${target.search}`); return;
+    }
+    if (!link.closest('.catalogue-results') || target.pathname !== '/katalog') return;
     event.preventDefault(); event.stopPropagation(); clearTimeout(timer);
     if (navigate) navigate(`${target.pathname}${target.search}`); else void navigateCatalogue(`${target.pathname}${target.search}`);
   });

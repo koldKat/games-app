@@ -72,5 +72,6 @@ test('dynamic sitemap contains public release pages', async () => {
   await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/sitemap.xml'));
   assert.equal(output.status, 200);
   assert.match(output.body, /https:\/\/gamekat\.net\/game\/portal-2-steam/);
+  assert.equal(output.headers['Content-Type'], 'application/xml; charset=utf-8');
   assert.equal(output.headers['Cache-Control'], 'public, max-age=3600');
 });

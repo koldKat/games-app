@@ -1,4 +1,4 @@
-import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch } from './catalogue-public.js';
+import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, openCatalogueGameDialog } from './catalogue-public.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
 
 const CATALOGUE_PATH = /^\/(?:katalog|game\/)/;
@@ -108,8 +108,10 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   toggle.addEventListener('click', event => {
     if (!isPrimaryNavigation(event)) return;
     event.preventDefault();
+    // This anchor keeps non-JavaScript navigation working; the mounted app must not reload its shell.
+    event.stopImmediatePropagation();
     if (view === 'catalogue') showLibrary(); else void open('/katalog');
-  });
+  }, { capture: true });
   brand.addEventListener('click', event => {
     if (view !== 'catalogue' || !isPrimaryNavigation(event)) return;
     event.preventDefault(); showLibrary();
@@ -123,6 +125,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     }
     if (target.origin !== window.location.origin || !CATALOGUE_PATH.test(target.pathname)) return;
     event.preventDefault();
+    if (target.pathname.startsWith('/game/')) return void openCatalogueGameDialog(catalogue, `${target.pathname}${target.search}`);
     if (target.pathname === '/katalog' && view === 'catalogue') void refreshResults(`${target.pathname}${target.search}`);
     else void open(`${target.pathname}${target.search}`);
   });

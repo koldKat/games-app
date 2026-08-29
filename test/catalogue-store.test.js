@@ -5,6 +5,12 @@ const Database = require('better-sqlite3');
 const { evaluateCatalogueGame } = require('../server/catalogue-policy');
 const { createCatalogueStore } = require('../server/catalogue-store');
 
+test('public Kat·a·log pages default to ten desktop rows', () => {
+  const { database, store } = fixture();
+  try { assert.equal(store.listPublic().pageSize, 60); }
+  finally { database.close(); }
+});
+
 function fixture() {
   const database = new Database(':memory:');
   database.pragma('foreign_keys = ON');
