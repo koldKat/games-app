@@ -330,6 +330,7 @@ body {
 .badge {
   font-size: 9px;
 }
+.badge.esrb { background: #1a3538; color: #9cf2df; border: 1px solid #2b675f; }
 .badge.source-credit {
   text-decoration: none;
 }

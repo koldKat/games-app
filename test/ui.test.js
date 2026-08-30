@@ -209,9 +209,9 @@ test('collection tracking has no unavailable state or dead dashboard control', (
   assert.match(css, /\.stats\{grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
 });
 
-test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, and descriptions', () => {
+test('one data-gaps filter handles missing ESRB and PEGI metadata, covers, HLTB times, and descriptions', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
-  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All four missing/);
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No ESRB info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All missing/);
   assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
   assert.match(application, /filters\.missing\.value === 'either'/);
   assert.match(application, /filters\.missing\.value === 'both'/);

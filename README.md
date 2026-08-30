@@ -2,7 +2,7 @@
 
 A responsive, private-library-first, multi-platform game collection manager with a shared public discovery Kat·a·log, built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
 
-Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI, cover-art, HowLongToBeat estimates, a personal half-star rating, favourite, publisher, release-year, cartridge, and note metadata.
+Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI and ESRB details, cover-art, HowLongToBeat estimates, a personal half-star rating, favourite, publisher, release-year, cartridge, and note metadata.
 
 ## Features
 
@@ -11,6 +11,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - Owned and wishlisted collection states, physical/digital format, play status, personal half-star ratings, favourites, cartridge numbers, publishers, years, and notes.
 - Accent-insensitive search; composable platform, collection, PEGI, status, favourite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
+- Optional ESRB-assisted US rating details, content descriptors, interactive elements, rating summaries, and conservative batch enrichment.
 - SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
 - Editable game descriptions with Steam Store-first and TheGamesDB-fallback lookup and conservative background filling.
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching.
@@ -59,13 +60,17 @@ The authentication landing page doubles as a crawler-readable product page for `
 
 ## Public Kat·a·log
 
-Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; the Kat·a·log/My Kat·a·log action interchanges while Add a game stays fixed.
+Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI **or ESRB** metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; the Kat·a·log/My Kat·a·log action interchanges while Add a game stays fixed.
 
 Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favourites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count once at least two members have rated it. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
 
 ## PEGI lookup
 
 PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
+
+## ESRB lookup
+
+ESRB likewise has no documented public developer API. Its optional integration reads the public search page only when requested, stores the selected US rating, descriptors, interactive elements, summary, and source link, and can fill unambiguous exact-title records in an account-scoped background scan. ESRB does not affect PEGI card colours or automatic public-release eligibility.
 
 ## HowLongToBeat estimates
 

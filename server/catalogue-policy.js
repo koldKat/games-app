@@ -26,6 +26,14 @@ function hasPegiMetadata(game = {}) {
     || String(game.pegiOtherIssues || '').trim()
   );
 }
+function hasEsrbMetadata(game = {}) {
+  return Boolean(String(game.esrbRating || '').trim()) && Boolean(
+    String(game.esrbUrl || '').trim()
+    || (Array.isArray(game.esrbDescriptors) && game.esrbDescriptors.length)
+    || (Array.isArray(game.esrbInteractiveElements) && game.esrbInteractiveElements.length)
+    || String(game.esrbSummary || '').trim()
+  );
+}
 
 function hasHltbMetadata(game = {}) {
   return Number(game.hltbId) > 0 && [
@@ -49,23 +57,23 @@ function evaluateCatalogueGame(game = {}) {
   const title = String(game.title || '').trim();
   const platform = String(game.platform || '').trim();
   const cover = hasDurableCover(game);
-  const pegi = hasPegiMetadata(game);
+  const pegi = hasPegiMetadata(game); const esrb = hasEsrbMetadata(game); const contentRating = pegi || esrb;
   const hltb = hasHltbMetadata(game);
   const coverExact = cover && exactMatch(title, game.coverMatchTitle);
   const hltbExact = hltb && exactMatch(title, game.hltbTitle);
-  const complete = Boolean(title && platform && cover && pegi && hltb);
+  const complete = Boolean(title && platform && cover && contentRating && hltb);
   const reasons = [];
   if (!title) reasons.push('missing-title');
   if (!platform) reasons.push('missing-platform');
   if (!cover) reasons.push('missing-cover');
-  if (!pegi) reasons.push('missing-pegi');
+  if (!contentRating) reasons.push('missing-content-rating');
   if (!hltb) reasons.push('missing-hltb');
   if (cover && !coverExact) reasons.push('cover-title-ambiguous');
   if (hltb && !hltbExact) reasons.push('hltb-title-ambiguous');
   const confidence = Math.min(100,
     (title ? 5 : 0) + (platform ? 5 : 0)
     + (cover ? 20 : 0) + (coverExact ? 15 : 0)
-    + (pegi ? 25 : 0)
+    + (contentRating ? 25 : 0)
     + (hltb ? 15 : 0) + (hltbExact ? 15 : 0));
   return {
     eligible: complete,
@@ -86,6 +94,7 @@ module.exports = {
   exactMatch,
   hasDurableCover,
   hasHltbMetadata,
+  hasEsrbMetadata,
   hasPegiMetadata,
   normalizeCatalogueText,
 };

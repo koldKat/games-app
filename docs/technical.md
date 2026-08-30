@@ -18,6 +18,8 @@ games-app/
     preferences.js          validated per-account view, search, filter and sort state
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     pegi-bulk.js            account-scoped conservative PEGI enrichment jobs
+    esrb.js                 opt-in ESRB public-search parser
+    esrb-bulk.js            account-scoped conservative ESRB enrichment jobs
     hltb.js                 native Node HLTB lookup, endpoint discovery, parsing
     hltb-bulk.js            account-scoped conservative timing enrichment jobs
     events.js               authenticated server-sent event fan-out
@@ -241,7 +243,7 @@ Public projections explicitly remove contributor account ID, source private-game
 
 This join table records which private game rows are represented by a shared release. A private game can link to only one catalogue entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those fields remain hidden until at least two ratings exist, and individual scores or account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
 
-Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
+Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI or ESRB data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 
 `cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets are never returned to the browser.
 
@@ -328,6 +330,9 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/pegi/search?q=...` | Explicit server-side PEGI search |
 | GET | `/api/pegi/status` | Missing-metadata count and current account job state |
 | POST | `/api/pegi/bulk` | Start an account-scoped conservative metadata scan |
+| GET | `/api/esrb/search?q=...` | Explicit server-side ESRB search |
+| GET | `/api/esrb/status` | Missing-ESRB count and current account job state |
+| POST | `/api/esrb/bulk` | Start an account-scoped conservative ESRB metadata scan |
 | GET | `/api/hltb/search?q=...` | Search HLTB for manual timing selection |
 | GET | `/api/hltb/status` | Missing-timing count and current account job state |
 | POST | `/api/hltb/bulk` | Start an account-scoped exact-title timing scan |
@@ -345,7 +350,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
 | POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
 
-List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any of the four data sets is absent and `both` retains its legacy value while now meaning all four are absent. The PEGI condition follows batch eligibility and excludes Evercade, the cover condition requires an empty cover URL, HLTB requires no selected timing record, and description requires empty text. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted. Data-gap selection combines with every other filter.
+List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `esrb`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. The PEGI condition follows batch eligibility and excludes Evercade; ESRB requires no stored ESRB record. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
 
 Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favourites, creation/update timestamps, cartridge number, and ascending/descending values for all four HLTB estimates. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
 

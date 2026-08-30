@@ -40,7 +40,7 @@ When signed in, choose collection and media format in a release detail dialog, t
 The Kat·a·log grows conservatively from member libraries. A release publishes automatically only when all of these are present:
 
 - A durable locally stored cover with an exact normalized title match.
-- A PEGI rating plus substantive PEGI metadata.
+- Substantive PEGI **or** ESRB metadata.
 - A HowLongToBeat record with at least one timing estimate and an exact normalized title match.
 
 Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only—never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. Once at least two members with linked private copies have rated a release, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
@@ -86,7 +86,7 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
-| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all four missing; Evercade is treated as PEGI-not-applicable |
+| **Data gaps** | No PEGI info, no ESRB info, no cover, no HLTB info, no description, any missing, or all missing; Evercade is treated as PEGI-not-applicable |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -115,7 +115,7 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
 
-XP recognises durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; and collection, enrichment, and completion milestones. A compact live notification appears when an action awards XP.
+XP recognises durable collection work: adding a game; setting a cover, PEGI or ESRB details, HLTB times, description, personal note, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once. Each ESRB record awards 20 XP once, whether it comes from manual selection or the background scanner.
 
 Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favourite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.
 
@@ -172,6 +172,10 @@ After selecting a result, **PEGI details** opens beneath the form. It contains:
 
 The longer material stays collapsed when a saved game is opened, keeping routine edits compact. Select **PEGI details** to reveal it.
 
+### ESRB-assisted entry
+
+**Look up title** in the ESRB-assisted entry panel searches ESRB’s public catalogue. Choosing a result stores its US category, content descriptors, interactive elements, available summary, and a source link; the category also appears as an ESRB badge on the card without replacing the PEGI rating that colours it. When ESRB offers a rating summary, it fills an empty game description but never overwrites an existing description. ESRB has no public developer API, so this is an optional public-page lookup. If it is unavailable, simply continue entering the game normally.
+
 ### Cover-assisted entry
 
 1. Open **Account Settings** and connect one or both artwork sources: SteamGridDB or TheGamesDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts.
@@ -209,6 +213,8 @@ Each game has an editable **Description** field. Select **Look up description** 
 Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
 
 Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
+
+Select **Fill ESRB details** to scan games without ESRB data. It accepts only a unique normalized exact-title result, preferring a platform match where ESRB provides one. Ambiguous results remain blank for manual selection. The scan updates ESRB fields only and stops after repeated provider failures.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 

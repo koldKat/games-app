@@ -7,23 +7,27 @@ const ENRICHED_MILESTONES = [10, 25, 50];
 const COMPLETED_MILESTONES = [10, 25, 50];
 const platformKey = value => String(value || '').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 function isEnriched(game) { return hasDurableCover(game) && hasPegiMetadata(game) && hasHltbMetadata(game) && Boolean(String(game.description || '').trim()); }
+function hasEsrbMetadata(game) { return Boolean(game) && (Boolean(String(game.esrbRating || '').trim()) || Boolean(String(game.esrbUrl || '').trim()) || (game.esrbDescriptors || []).length > 0 || (game.esrbInteractiveElements || []).length > 0 || Boolean(String(game.esrbSummary || '').trim())); }
 
 function createProgressionService({ store, data }) {
   function award(userId, event, ref, awarded) { const result = store.award(userId, event, ref); if (result.awarded) awarded.push({ event, amount: result.amount }); return result; }
-  function recordGame(userId, game, { created = false } = {}) {
+  function recordGame(userId, game, { created = false, previous = null } = {}) {
     if (!game?.id) return { progress: store.info(userId), awards: [] };
     const awards = []; let latest = { progress: store.info(userId) };
     const give = (event, ref) => { latest = award(userId, event, ref, awards); };
     if (created) give('game_added', game.id);
     if (hasDurableCover(game)) give('cover_added', game.id);
     if (hasPegiMetadata(game)) give('pegi_added', game.id);
+    if (hasEsrbMetadata(game)) give('esrb_added', game.id);
     if (hasHltbMetadata(game)) give('hltb_added', game.id);
     if (String(game.description || '').trim()) give('description_added', game.id);
+    if (String(game.notes || '').trim()) give('note_added', game.id);
     if (String(game.publisher || '').trim()) give('publisher_added', game.id);
     if (Number(game.releaseYear)) give('release_year_added', game.id);
     if (Number(game.rating)) give('rating_added', game.id);
     if (Number(game.favorite)) give('favourite_added', game.id);
     if (game.ownership === 'wanted') give('wishlisted', game.id);
+    if (previous?.ownership === 'wanted' && game.ownership === 'owned') give('wishlist_fulfilled', game.id);
     if (game.playStatus === 'playing') give('playing_started', game.id);
     if (game.playStatus === 'completed') give('game_completed', game.id);
     if (platformKey(game.platform)) give('platform_first', platformKey(game.platform));
@@ -37,4 +41,4 @@ function createProgressionService({ store, data }) {
   function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {})) { const next = recordGame(userId, game, { created: true }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
   return { backfill, info: store.info, recordAvatar, recordGame };
 }
-module.exports = { createProgressionService, isEnriched };
+module.exports = { createProgressionService, hasEsrbMetadata, isEnriched };

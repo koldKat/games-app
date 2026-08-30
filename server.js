@@ -6,6 +6,8 @@ const path = require('node:path');
 const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
 const { createPegiBulkManager } = require('./server/pegi-bulk');
+const { searchEsrb } = require('./server/esrb');
+const { createEsrbBulkManager } = require('./server/esrb-bulk');
 const hltb = require('./server/hltb');
 const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
@@ -80,6 +82,7 @@ const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProvide
   createCoverProviderBulkManager({ data: db, provider, label: definition.label, lookup: definition.client.bestExactCover,
     saveCover: storeMatchedCover, notify: publishAppEvent })]));
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
+const esrbJobs = createEsrbBulkManager({ data: db, lookup: searchEsrb, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
 const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
@@ -403,6 +406,15 @@ async function handleApi(request, response, url) {
     try { return sendJson(response, 202, pegiJobs.start(user.id)); }
     catch (error) { return sendJson(response, 409, { error: error.message, job: pegiJobs.status(user.id).job }); }
   }
+  if (request.method === 'GET' && url.pathname === '/api/esrb/search') {
+    try { return sendJson(response, 200, await searchEsrb(url.searchParams.get('q'))); }
+    catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: `https://www.esrb.org/search/?searchKeyword=${encodeURIComponent(url.searchParams.get('q') || '')}` }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/esrb/status') return sendJson(response, 200, esrbJobs.status(user.id));
+  if (request.method === 'POST' && url.pathname === '/api/esrb/bulk') {
+    try { return sendJson(response, 202, esrbJobs.start(user.id)); }
+    catch (error) { return sendJson(response, 409, { error: error.message, job: esrbJobs.status(user.id).job }); }
+  }
   if (request.method === 'GET' && url.pathname === '/api/hltb/search') {
     try { return sendJson(response, 200, await hltb.search(url.searchParams.get('q'))); }
     catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: 'https://howlongtobeat.com/' }); }
@@ -455,7 +467,7 @@ async function handleApi(request, response, url) {
       if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
       finishGameCoverChange(existing, game);
       catalogue.syncGameSafely(user.id, game);
-      recordGameProgress(user.id, game);
+      recordGameProgress(user.id, game, { previous: existing });
       return sendJson(response, 200, game);
     } catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);

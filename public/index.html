@@ -208,7 +208,7 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
-            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All four missing</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="esrb">No ESRB info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter"><option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option><option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option><option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favourites first</option><option value="newest">Recently added</option><option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option><option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option><option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -249,6 +249,11 @@
         <button type="button" class="button secondary" id="pegi-search-button">Look up title</button>
       </div>
       <div id="pegi-results" class="pegi-results" hidden></div>
+      <div class="pegi-assist">
+        <div><strong>ESRB-assisted entry</strong><small>Search the ESRB catalogue and apply its US rating details.</small></div>
+        <button type="button" class="button secondary" id="esrb-search-button">Look up title</button>
+      </div>
+      <div id="esrb-results" class="pegi-results" hidden></div>
       <div class="cover-assist">
         <div><strong>Box-art lookup</strong><small>Search connected artwork providers and choose the exact edition.</small></div>
         <div class="cover-assist-actions"><button type="button" class="button ghost" id="cover-remove-button" hidden>Remove cover</button><button type="button" class="button secondary" id="cover-search-button">Request cover</button></div>
@@ -298,6 +303,7 @@
           <a id="game-pegi-source" class="pegi-source" href="https://pegi.info/" target="_blank" rel="noopener">View source on PEGI ↗</a>
         </div>
       </details>
+      <details id="game-esrb-details" class="game-pegi-details" hidden><summary><span>ESRB details</span><small id="game-esrb-summary"></small></summary><div class="pegi-detail-body"><div id="game-esrb-descriptors" class="pegi-detail-descriptors"></div><section id="game-esrb-interactive-section"><h3>Interactive elements</h3><p id="game-esrb-interactive"></p></section><section id="game-esrb-summary-section"><h3>Rating summary</h3><p id="game-esrb-summary-text"></p></section><a id="game-esrb-source" class="pegi-source" href="https://www.esrb.org/" target="_blank" rel="noopener">View source on ESRB ↗</a></div></details>
       <p id="form-error" class="form-error" hidden></p>
       <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
     </form>
@@ -337,6 +343,10 @@
       <section class="integration-panel pegi-integration">
         <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>
         <div class="integration-bulk"><span id="pegi-bulk-status" class="bulk-status" tabindex="0">PEGI scan idle.</span><button type="button" class="button ghost" id="pegi-bulk-start">Fill PEGI details</button></div>
+      </section>
+      <section class="integration-panel pegi-integration">
+        <div class="integration-head"><span><strong>ESRB metadata</strong><small id="esrb-provider-status">Checking library…</small></span><a href="https://www.esrb.org/search/" target="_blank" rel="noopener">Open ESRB ↗</a></div>
+        <div class="integration-bulk"><span id="esrb-bulk-status" class="bulk-status" tabindex="0">ESRB scan idle.</span><button type="button" class="button ghost" id="esrb-bulk-start">Fill ESRB details</button></div>
       </section>
       <section class="integration-panel hltb-integration">
         <div class="integration-head"><span><strong>HowLongToBeat estimates</strong><small id="hltb-provider-status">Checking library…</small></span><a href="https://howlongtobeat.com/" target="_blank" rel="noopener">Open HLTB ↗</a></div>
