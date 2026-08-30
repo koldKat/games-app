@@ -1,5 +1,4 @@
 import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, openCatalogueGameDialog } from './catalogue-public.js';
-import { controllerLoaderMarkup } from './controller-loader.js';
 
 const CATALOGUE_PATH = /^\/(?:katalog|game\/)/;
 
@@ -52,19 +51,18 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     const target = new URL(url, window.location.origin);
     if (!CATALOGUE_PATH.test(target.pathname)) return showLibrary({ push });
     request?.abort(); const controller = new AbortController(); request = controller;
-    view = 'catalogue'; library.hidden = true; catalogue.hidden = false;
-    setHeader(view); loadCatalogueStyles();
-    catalogue.innerHTML = `<div class="catalogue-navigation-loading library-loader" role="status">${controllerLoaderMarkup('Loading public Kat·a·log…')}</div>`;
-    if (push && `${window.location.pathname}${window.location.search}` !== `${target.pathname}${target.search}`) {
-      window.history.pushState({ appView: 'catalogue' }, '', `${target.pathname}${target.search}`);
-    }
     try {
       const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', signal: controller.signal });
       if (!response.ok) throw new Error(`Kat·a·log request failed (${response.status}).`);
       const { main, title } = pageFromResponse(await response.text());
       if (request !== controller) return;
+      view = 'catalogue'; library.hidden = true; catalogue.hidden = false;
+      setHeader(view); loadCatalogueStyles();
       catalogue.replaceChildren(document.importNode(main, true));
       document.title = title || libraryTitle;
+      if (push && `${window.location.pathname}${window.location.search}` !== `${target.pathname}${target.search}`) {
+        window.history.pushState({ appView: 'catalogue' }, '', `${target.pathname}${target.search}`);
+      }
       bindCatalogueAddForm(catalogue, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
       bindCatalogueGameDialog(catalogue, { onClose: () => {
         if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'catalogue' }, '', '/katalog');
@@ -77,7 +75,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
       }
     } catch (error) {
       if (error.name === 'AbortError' || request !== controller) return;
-      catalogue.innerHTML = '<div class="catalogue-empty"><strong>Kat·a·log unavailable.</strong><span>Please try again.</span></div>';
+      // Keep the current workspace intact if the public response cannot be loaded.
     } finally {
       if (request === controller) request = null;
     }

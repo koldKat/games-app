@@ -111,6 +111,16 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 ---
 
+## Collector progression
+
+Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
+
+XP recognises durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; and collection, enrichment, and completion milestones. A compact live notification appears when an action awards XP.
+
+Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favourite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.
+
+---
+
 ## Adding a game
 
 Select **Add a game** on desktop or the **+** floating button on mobile.

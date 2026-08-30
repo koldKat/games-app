@@ -164,7 +164,7 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><a class="button catalogue-button" href="/katalog">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
+      <div class="top-actions"><section id="header-progression" class="header-progression" hidden aria-live="polite"><div><span data-header-progress-level>LV 0</span><b data-header-progress-title>Uncatalogued</b><small data-header-progress-xp>0 XP</small></div><span class="header-progression-meter"><span data-header-progress-meter></span></span><small data-header-progress-next>1,000 XP to LV 1</small></section><a class="button catalogue-button" href="/katalog">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
     </header>
 
     <main id="app-main">
@@ -313,6 +313,11 @@
         <span class="account-identity"><strong id="account-current-name">account</strong><small>Authenticated library owner</small><span class="avatar-actions"><button type="button" class="text-button" id="avatar-upload">Change avatar</button><button type="button" class="text-button avatar-remove" id="avatar-remove" hidden>Remove</button></span></span>
         <input id="avatar-file" type="file" accept="image/*" hidden>
       </div>
+      <section id="account-progression" class="account-progression" hidden>
+        <div class="progression-head"><span data-progress-level>LV 0</span><strong data-progress-title>Uncatalogued</strong><b data-progress-xp>0 XP</b></div>
+        <div class="progression-meter"><span data-progress-meter></span></div>
+        <small data-progress-next>Loading collector progress…</small>
+      </section>
       <section class="integration-panel">
         <div class="integration-head"><span><strong>SteamGridDB covers</strong><small id="cover-provider-status">Checking configuration…</small></span><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank" rel="noopener">Get API key ↗</a></div>
         <div class="integration-key"><input id="cover-api-key" type="text" autocomplete="off" aria-label="SteamGridDB API key" value="Checking…" disabled><button type="button" class="button secondary" id="cover-api-save" disabled>Checking…</button></div>

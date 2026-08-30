@@ -175,7 +175,8 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
   assert.match(navigation, /\}, \{ capture: true \}\);/);
   assert.match(navigation, /toggle\.textContent = catalogueOpen \? 'My Kat·a·log' : 'Kat·a·log'/);
-  assert.match(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
+  assert.doesNotMatch(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
+  assert.match(navigation, /const \{ main, title \} = pageFromResponse[\s\S]*view = 'catalogue'; library\.hidden = true; catalogue\.hidden = false;/);
   assert.match(navigation, /link\.dataset\.catalogueDestination === 'library'[\s\S]*showLibrary\(\)/);
   assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
   assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);

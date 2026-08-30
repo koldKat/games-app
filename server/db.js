@@ -1,5 +1,6 @@
 const path = require('node:path');
 const Database = require('better-sqlite3');
+const { createProgressionStore } = require('./progression-store');
 const {
   MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
@@ -139,6 +140,8 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 `);
+
+const progression = createProgressionStore(db);
 
 const userColumns = db.pragma('table_info(users)').map(column => column.name);
 if (!userColumns.includes('email')) db.exec('ALTER TABLE users ADD COLUMN email TEXT COLLATE NOCASE');
@@ -491,7 +494,7 @@ function stats(userId) {
   return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
 }
 
-module.exports = { db, normalizeGame, listGames, getGame, allGamesForCatalogue, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForCatalogue, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };

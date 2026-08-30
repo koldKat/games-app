@@ -128,6 +128,12 @@ Browser
 
 All authenticated routes resolve the session before dispatching feature logic. They pass the numeric user ID into every database operation rather than trusting a client-provided owner ID.
 
+### Collector progression
+
+Progression is split into three focused server modules. `progression-policy.js` is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (`1000 × level × (level + 1) / 2`), and collector titles. `progression-store.js` owns the SQLite tables, configurable amounts, and atomic idempotency key `(user_id, event, ref)`. `progression-service.js` maps a complete game record to eligible one-time awards and evaluates account milestones.
+
+`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. On first `/api/progression` access the service backfills existing account rows once. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes, allowing `public/js/progression-ui.js` to update the account panel without refreshing the library.
+
 Catalogue dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call `syncGameSafely`; catalogue failures are logged and contained, so they cannot turn a successful account-scoped save into an error.
 
 ---

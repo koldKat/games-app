@@ -19,7 +19,8 @@
     <button data-tab="accounts">02 / ACCOUNTS</button>
     <button data-tab="catalogue">03 / LIBRARY INDEX</button>
     <button data-tab="public-catalogue">04 / KAT·A·LOG</button>
-    <button data-tab="tools">05 / TOOLS</button>
+    <button data-tab="progression">05 / PROGRESSION</button>
+    <button data-tab="tools">06 / TOOLS</button>
   </nav>
 
   <main>
@@ -79,6 +80,12 @@
       <form id="public-catalogue-search" class="search-row"><input id="public-catalogue-query" type="search" placeholder="Search title or platform" autocomplete="off"><select id="public-catalogue-status" aria-label="Publication status"><option value="">All states</option><option value="candidate">Candidates</option><option value="public">Public</option><option value="rejected">Rejected</option></select><button class="button primary">Search</button></form>
       <p class="panel-note">Exact cover and HLTB title matches publish automatically. Ambiguous but complete records wait here for review. Personal tracking fields never enter this index.</p>
       <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>STATE</th><th>SCORE</th><th>CHECKS</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody id="public-catalogue-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-progression" class="panel">
+      <header class="section-head"><div><span>COLLECTOR PROGRESSION</span><h1>XP tuning</h1></div><button id="save-progression" class="button primary">Save amounts</button></header>
+      <p class="panel-note">Awards are permanent per account, action, and reference. The level curve is fixed to Gamebooks: each new level costs another 1,000 XP.</p>
+      <div id="progression-config" class="progression-config" aria-live="polite"></div>
     </section>
 
     <section id="panel-tools" class="panel">

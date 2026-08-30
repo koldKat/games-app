@@ -4,12 +4,14 @@ import { loadCatalogue } from './catalogue.js';
 import { loadPublicCatalogue } from './public-catalogue.js';
 import { loadVersion, loadBackups } from './tools.js';
 import { loadMailSettings } from './mail.js';
+import { loadProgression } from './progression.js';
 
 const loaders = {
   dashboard: loadDashboard,
   accounts: loadAccounts,
   catalogue: loadCatalogue,
   'public-catalogue': loadPublicCatalogue,
+  progression: loadProgression,
   tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings()]); },
 };
 

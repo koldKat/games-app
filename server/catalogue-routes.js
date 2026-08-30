@@ -40,7 +40,7 @@ function readJson(request, maxBytes = 32 * 1024) {
   });
 }
 
-function createCatalogueRoutes({ catalogue, auth, events }) {
+function createCatalogueRoutes({ catalogue, auth, events, onGameCreated = () => {} }) {
   async function handle(request, response, url) {
     if (request.method === 'GET' && url.pathname === '/katalog') {
       const user = auth.authenticate(request);
@@ -88,6 +88,7 @@ function createCatalogueRoutes({ catalogue, auth, events }) {
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
       try {
         const game = catalogue.addToLibrary(user.id, Number(addApi[1]), await readJson(request));
+        onGameCreated(user.id, game);
         events.publish(user.id, 'game-created', { source: 'catalogue', game });
         sendJson(response, 201, { game });
       } catch (error) {

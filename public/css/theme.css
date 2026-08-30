@@ -869,6 +869,7 @@ dialog::backdrop {
   align-items: center;
   gap: 6px;
 }
+.header-progression{width:300px;display:grid;gap:4px;padding:3px 4px;color:#92aaa4}.header-progression>div{display:flex;align-items:baseline;gap:7px;min-width:0;line-height:1}.header-progression [data-header-progress-level]{color:#63e5c6;font-size:11px;font-weight:700;letter-spacing:.08em;white-space:nowrap}.header-progression [data-header-progress-title]{min-width:0;overflow:hidden;color:#d7e4e0;font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis}.header-progression [data-header-progress-xp]{margin-left:auto;color:#9ab1aa;font-size:11px;white-space:nowrap}.header-progression-meter{display:block;height:7px;border:1px solid #285149;background:#07120f;overflow:hidden}.header-progression-meter>span{display:block;width:0;height:100%;background:#4bd9b9;box-shadow:0 0 9px #4bd9b977;transition:none}.header-progression [data-header-progress-next]{color:#718b83;font-size:9px;line-height:1;white-space:nowrap}
 .top-actions > .button {
   position: relative;
   width: 114px;
@@ -1005,6 +1006,7 @@ dialog::backdrop {
   color: #718091;
   margin-top: 2px;
 }
+.account-progression{margin:-1px 0 9px;padding:8px;border:1px solid #285d51;background:#091712}.progression-head{display:flex;align-items:baseline;gap:7px}.progression-head span{color:#63e5c6;font-size:10px;font-weight:700;letter-spacing:.08em}.progression-head strong{min-width:0;flex:1;color:#dcece8;font-size:11px}.progression-head b{color:#95b8ae;font-size:10px;font-weight:500}.progression-meter{height:5px;margin:7px 0 5px;border:1px solid #25453f;background:#06100d}.progression-meter span{display:block;height:100%;width:0;background:#4bd9b9;box-shadow:0 0 8px #4bd9b966;transition:width .2s ease}.account-progression small{color:#78958d;font-size:9px}
 .avatar-actions {
   display: flex;
   gap: 8px;
@@ -1040,6 +1042,7 @@ dialog::backdrop {
   .top-actions {
     gap: 4px;
   }
+  .header-progression{width:102px;gap:4px;padding:2px}.header-progression [data-header-progress-level]{font-size:10px}.header-progression [data-header-progress-title],.header-progression [data-header-progress-xp],.header-progression [data-header-progress-next]{display:none}.header-progression-meter{height:6px}
   .top-actions > .catalogue-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
   .top-actions > .catalogue-button::after { content: "⌕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
   .top-actions > .catalogue-button[data-catalogue-destination="library"]::after { content: "⌂"; }

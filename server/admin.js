@@ -29,6 +29,7 @@ const adminFiles = new Map([
   ['/admin/js/public-catalogue.js', ['js/public-catalogue.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/tools.js', ['js/tools.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/mail.js', ['js/mail.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/progression.js', ['js/progression.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/boot.js', ['js/boot.js', 'application/javascript; charset=utf-8']],
 ]);
 
@@ -212,6 +213,11 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && pathname === '/api/admin/stats') return sendJson(response, 200, adminStats());
   if (request.method === 'GET' && pathname === '/api/admin/live') return sendJson(response, 200, liveStats());
   if (request.method === 'GET' && pathname === '/api/admin/accounts') return sendJson(response, 200, listAccounts());
+  if (request.method === 'GET' && pathname === '/api/admin/progression') return sendJson(response, 200, { config: require('./db').progression.config() });
+  if (request.method === 'PUT' && pathname === '/api/admin/progression') {
+    try { return sendJson(response, 200, { config: require('./db').progression.setConfig((await readJson(request)).amounts || {}) }); }
+    catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
   if (request.method === 'GET' && pathname === '/api/admin/mail') return sendJson(response, 200, mailer.publicSettings());
   if (request.method === 'PUT' && pathname === '/api/admin/mail') {
     try { return sendJson(response, 200, mailer.saveSettings(await readJson(request))); }

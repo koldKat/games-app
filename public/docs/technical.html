@@ -5,6 +5,7 @@
 @media(max-width:760px){header{padding:0 8px}.layout{display:block;padding:7px}.toc{display:none}.content{padding:14px}h1{font-size:21px}h2{font-size:16px;margin-top:25px}body{font-size:11px}header span{display:none}}
 </style></head><body><header><strong>GAME KAT·A·LOG // DOCS</strong><span>Technical Reference</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#architecture">Architecture</a>
 <a class="toc-3" href="#request-flow">Request flow</a>
+<a class="toc-3" href="#collector-progression">Collector progression</a>
 <a class="toc-2" href="#runtime-and-dependencies">Runtime and dependencies</a>
 <a class="toc-2" href="#database">Database</a>
 <a class="toc-3" href="#users">`users`</a>
@@ -154,6 +155,9 @@
 
   &lt;- authenticated /api/events event stream &lt;------ events.js &lt;- job progress/game changes</code></pre>
 <p>All authenticated routes resolve the session before dispatching feature logic. They pass the numeric user ID into every database operation rather than trusting a client-provided owner ID.</p>
+<h3 id="collector-progression">Collector progression<a class="anchor" href="#collector-progression" aria-label="Link to section">#</a></h3>
+<p>Progression is split into three focused server modules. <code>progression-policy.js</code> is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (<code>1000 × level × (level + 1) / 2</code>), and collector titles. <code>progression-store.js</code> owns the SQLite tables, configurable amounts, and atomic idempotency key <code>(user_id, event, ref)</code>. <code>progression-service.js</code> maps a complete game record to eligible one-time awards and evaluates account milestones.</p>
+<p><code>user_progression</code> stores the account XP total and one-time backfill marker. <code>progression_events</code> stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. <code>progression_config</code> is localhost-admin-editable and changes future awards only. On first <code>/api/progression</code> access the service backfills existing account rows once. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a <code>progression-updated</code> SSE event only when XP changes, allowing <code>public/js/progression-ui.js</code> to update the account panel without refreshing the library.</p>
 <p>Catalogue dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call <code>syncGameSafely</code>; catalogue failures are logged and contained, so they cannot turn a successful account-scoped save into an error.</p>
 <hr>
 <h2 id="runtime-and-dependencies">Runtime and dependencies<a class="anchor" href="#runtime-and-dependencies" aria-label="Link to section">#</a></h2>

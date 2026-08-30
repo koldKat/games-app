@@ -12,6 +12,7 @@
 <a class="toc-3" href="#search">Search</a>
 <a class="toc-3" href="#filters">Filters</a>
 <a class="toc-3" href="#card-and-compact-views">Card and compact views</a>
+<a class="toc-2" href="#collector-progression">Collector progression</a>
 <a class="toc-2" href="#adding-a-game">Adding a game</a>
 <a class="toc-3" href="#manual-entry">Manual entry</a>
 <a class="toc-3" href="#pegi-assisted-entry">PEGI-assisted entry</a>
@@ -99,6 +100,11 @@
 <p>The selected view, search text, every filter, and the sort order are stored with the account in SQLite. They follow the account to another browser, desktop, or phone; nothing is kept in local or session storage.</p>
 <p>The signed-in workspace keeps the login screen&#39;s scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes durable local artwork from the current account when the app is entered; those same local files feed the public promo modules and header covers. The decorative layer is non-interactive and does not affect the cards or controls.</p>
 <p>The small release string beside <strong>Game Kat·a·log</strong> comes from the project&#39;s <code>VERSION</code> file and can be changed from the local administrator panel.</p>
+<hr>
+<h2 id="collector-progression">Collector progression<a class="anchor" href="#collector-progression" aria-label="Link to section">#</a></h2>
+<p>Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.</p>
+<p>XP recognises durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; and collection, enrichment, and completion milestones. A compact live notification appears when an action awards XP.</p>
+<p>Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favourite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.</p>
 <hr>
 <h2 id="adding-a-game">Adding a game<a class="anchor" href="#adding-a-game" aria-label="Link to section">#</a></h2>
 <p>Select <strong>Add a game</strong> on desktop or the <strong>+</strong> floating button on mobile.</p>

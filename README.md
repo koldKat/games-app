@@ -15,6 +15,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - Editable game descriptions with Steam Store-first and TheGamesDB-fallback lookup and conservative background filling.
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
+- Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
 - Dense, responsive desktop and mobile interfaces with background enrichment progress and targeted live card updates.
 - A crawlable public release Kat·a·log that grows from fully enriched libraries and lets signed-in members add an existing release without re-entering factual metadata.
@@ -46,7 +47,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 

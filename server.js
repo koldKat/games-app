@@ -25,6 +25,7 @@ const { createCatalogueRoutes } = require('./server/catalogue-routes');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
 const mailer = require('./server/mailer');
+const { createProgressionService } = require('./server/progression-service');
 const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants');
 
 const PORT = Number(process.env.PORT || 3005);
@@ -44,6 +45,7 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8', '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 const coverJobs = new Map();
+const progression = createProgressionService({ store: db.progression, data: db });
 const externalCoverProviders = Object.freeze({
   thegamesdb: {
     label: 'TheGamesDB', client: thegamesdb,
@@ -57,8 +59,14 @@ function passwordResetEmail({ username, link }) {
   return `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#071016;color:#dce6ee;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#071016;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #29404b;background:#0b141b"><tr><td style="padding:18px 22px;border-bottom:1px solid #29404b;background:#101d24;color:#64e8ca;font-size:12px;font-weight:bold;letter-spacing:1.5px">GAME KAT·A·LOG</td></tr><tr><td style="padding:26px 22px"><p style="margin:0 0 14px;color:#90a1af;font-size:12px;letter-spacing:1px;text-transform:uppercase">Account security</p><h1 style="margin:0 0 14px;color:#f2f7fa;font-size:24px;line-height:1.2">Reset your password</h1><p style="margin:0 0 20px;color:#bfccd5;font-size:15px;line-height:1.55">Hello ${safeUsername}, use the button below to choose a new password. This one-time link expires in one hour.</p><p style="margin:0 0 22px"><a href="${safeLink}" style="display:inline-block;padding:12px 17px;background:#1d8b76;border:1px solid #64e8ca;color:#06120f;font-size:14px;font-weight:bold;text-decoration:none">Reset password</a></p><p style="margin:0;color:#8798a6;font-size:12px;line-height:1.55">If the button does not open, copy this address into your browser:<br><a href="${safeLink}" style="color:#72e4c8;word-break:break-all">${safeLink}</a></p></td></tr><tr><td style="padding:14px 22px;border-top:1px solid #29404b;color:#71828f;font-size:12px;line-height:1.5">If you did not request this reset, you can safely ignore this email.</td></tr></table></td></tr></table></body></html>`;
 }
 function publishAppEvent(userId, event, payload) {
-  if (event === 'game-updated' && payload?.game) catalogue.syncGameSafely(userId, payload.game);
+  if (event === 'game-updated' && payload?.game) { catalogue.syncGameSafely(userId, payload.game); recordGameProgress(userId, payload.game); }
   events.publish(userId, event, payload);
+}
+function publishProgression(userId, result) {
+  if (result?.awards?.length) events.publish(userId, 'progression-updated', { progress: result.progress, awards: result.awards });
+}
+function recordGameProgress(userId, game, options) {
+  const result = progression.recordGame(userId, game, options); publishProgression(userId, result); return result;
 }
 async function storeMatchedCover(userId, game, match, source) {
   const localUrl = await coverStorage.storeRemote(match.url);
@@ -74,7 +82,7 @@ const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProvide
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
-const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events });
+const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -263,6 +271,10 @@ async function handleApi(request, response, url) {
     return events.subscribe(request, response, user.id, () => Boolean(auth.authenticate(request)));
   }
   if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user, preferences: preferences.get(user.id) });
+  if (request.method === 'GET' && url.pathname === '/api/progression') {
+    const result = progression.backfill(user.id);
+    return sendJson(response, 200, user.avatarUrl ? progression.recordAvatar(user.id).progress : result.progress);
+  }
   if (request.method === 'GET' && url.pathname === '/api/preferences') return sendJson(response, 200, preferences.get(user.id));
   if (request.method === 'PUT' && url.pathname === '/api/preferences') {
     try { return sendJson(response, 200, preferences.set(user.id, await readJson(request))); }
@@ -286,6 +298,7 @@ async function handleApi(request, response, url) {
       fs.writeFileSync(path.join(AVATARS_DIR, filename), image, { flag: 'wx' });
       const avatarUrl = auth.updateAvatar(user.id, filename);
       removeAvatarFile(old);
+      publishProgression(user.id, progression.recordAvatar(user.id));
       return sendJson(response, 200, { avatarUrl });
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
@@ -419,6 +432,7 @@ async function handleApi(request, response, url) {
       prepared = await prepareGameCover(await readJson(request));
       const game = db.createGame(user.id, prepared.input);
       catalogue.syncGameSafely(user.id, game);
+      recordGameProgress(user.id, game, { created: true });
       return sendJson(response, 201, game);
     }
     catch (error) {
@@ -441,6 +455,7 @@ async function handleApi(request, response, url) {
       if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
       finishGameCoverChange(existing, game);
       catalogue.syncGameSafely(user.id, game);
+      recordGameProgress(user.id, game);
       return sendJson(response, 200, game);
     } catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);

@@ -7,6 +7,7 @@ import { createCatalogueNavigation } from './js/catalogue-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
+import { createProgressionUi } from './js/progression-ui.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
@@ -72,6 +73,7 @@ function toast(message) {
 }
 function showAccountError(message) { $('#account-error').textContent = message; $('#account-error').hidden = false; }
 const coverProviderSettings = createCoverProviderSettings({ api, toast, showError: showAccountError });
+const progressionUi = createProgressionUi({ api });
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
   for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -190,6 +192,7 @@ async function enterApp(user, savedPreferences) {
   $('#app-shell').hidden = false;
   endSessionResume();
   connectEventStream();
+  void progressionUi.load();
   await dataReady;
   if (state.user?.id !== user.id) return;
   void stageAppDecorations(user.id).catch(() => {});
@@ -463,6 +466,7 @@ function connectEventStream() {
   const generation = sessionGeneration;
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'progression-updated') progressionUi.handleEvent(data);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
@@ -861,7 +865,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
-  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus()]);
+  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
