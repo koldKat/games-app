@@ -32,8 +32,8 @@ test('provider requests use the current shared application identity', () => {
 test('browser policies name pagination, lookup, and timing contracts', () => {
   const policy = read('public/js/ui-policy.js');
   const application = read('public/app.js');
-  assert.match(policy, /LIBRARY_PAGE_SIZE = 120/);
+  assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
   assert.match(policy, /debounceMs: 100/);
-  assert.match(application, /state\.limit \+= LIBRARY_PAGE_SIZE/);
-  assert.doesNotMatch(application, /state\.limit (?:=|\+=) 120/);
+  assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
+  assert.doesNotMatch(application, /state\.limit/);
 });

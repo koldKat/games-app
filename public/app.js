@@ -35,7 +35,7 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
-const state = { games: [], stats: null, platforms: [], limit: LIBRARY_PAGE_SIZE, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, esrbStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, esrbStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -135,7 +135,7 @@ function showAuth(message = '') {
   state.coverStatus = null; state.pegiStatus = null; state.esrbStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
-  state.games = []; state.stats = null; state.platforms = []; state.limit = LIBRARY_PAGE_SIZE;
+  state.games = []; state.stats = null; state.platforms = []; state.page = 1;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
   state.user = null;
@@ -397,6 +397,30 @@ function personalRating(rating) {
   const value = Number(rating);
   return value ? `<span class="personal-rating" aria-label="Your rating: ${value} out of 5"><span class="rating-stars">${ratingStars(value)}</span><b>${value.toFixed(1)}</b></span>` : '';
 }
+function cardRatingControl(game) {
+  const value = Number(game.rating) || 0;
+  const stars = Array.from({ length: 5 }, (_, index) => {
+    const position = index + 1; const stateClass = value >= position ? 'on' : value === position - 0.5 ? 'half' : '';
+    return `<button type="button" class="rating-star ${stateClass}" data-action="rate" data-rating-star="${position}" aria-label="Rate ${position} star${position === 1 ? '' : 's'}">★</button>`;
+  }).join('');
+  const label = value ? `${value.toFixed(1)} / 5` : 'Not rated';
+  return `<div class="rating-field card-rating-field"><div class="rating-picker card-rating-picker" data-card-rating="${value}" role="group" aria-label="Your rating: ${label}">${stars}<output>${label}</output><small class="card-rating-inline-label">Your rating</small></div></div>`;
+}
+function paintCardRating(picker, value, preview = false) {
+  const rating = ratingValue(value); const label = rating == null ? 'Not rated' : `${rating.toFixed(1)} / 5`;
+  picker.classList.toggle('previewing', preview); picker.setAttribute('aria-label', `${preview ? 'Rating preview' : 'Your rating'}: ${label}`);
+  picker.querySelector('output').textContent = label;
+  picker.querySelectorAll('[data-rating-star]').forEach(star => {
+    const position = Number(star.dataset.ratingStar);
+    star.classList.toggle('on', rating != null && rating >= position);
+    star.classList.toggle('half', rating != null && rating === position - 0.5);
+  });
+}
+function cardRatingAtPointer(event) {
+  const star = event.target.closest('.card-rating-picker [data-rating-star]'); if (!star) return null;
+  const bounds = star.getBoundingClientRect(); const position = Number(star.dataset.ratingStar);
+  return position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
+}
 function gameCard(game) {
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
@@ -408,7 +432,7 @@ function gameCard(game) {
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${game.esrbRating ? badge(`ESRB ${game.esrbRating}`, 'esrb') : ''}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
-    <div class="card-actions"><button class="view-button" data-action="view">View details</button><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
+    ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
 }
 function gameMatchesFilters(game) {
@@ -434,11 +458,20 @@ function gameMatchesFilters(game) {
 function cardNode(game) {
   const template = document.createElement('template'); template.innerHTML = gameCard(game).trim(); return template.content.firstElementChild;
 }
+function pageCount() { return Math.max(1, Math.ceil(state.games.length / LIBRARY_PAGE_SIZE)); }
+function pagedGames() {
+  state.page = Math.min(Math.max(1, state.page), pageCount());
+  const offset = (state.page - 1) * LIBRARY_PAGE_SIZE;
+  return state.games.slice(offset, offset + LIBRARY_PAGE_SIZE);
+}
 function updateCollectionChrome() {
-  const shown = state.games.slice(0, state.limit);
+  const shown = pagedGames(); const pages = pageCount(); const pagination = $('#library-pagination');
   $('#library-loader').hidden = !state.loading || state.games.length > 0;
   $('#empty').hidden = state.loading || state.games.length > 0;
-  $('#load-more').hidden = shown.length >= state.games.length;
+  pagination.hidden = state.loading || pages < 2;
+  $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
+  pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
+  pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
   $('#result-count').textContent = `${state.games.length.toLocaleString()} ${state.games.length === 1 ? 'game' : 'games'} found`;
 }
 function applyGamePatch(game) {
@@ -449,7 +482,7 @@ function applyGamePatch(game) {
   if (existingIndex !== -1) state.games.splice(existingIndex, 1);
   if (gameMatchesFilters(game)) state.games.push(game);
   state.games.sort((left, right) => compareGames(left, right, filters.sort.value));
-  const visible = state.games.slice(0, state.limit); const visibleIds = new Set(visible.map(item => item.id));
+  const visible = pagedGames(); const visibleIds = new Set(visible.map(item => item.id));
   for (const card of $$('#games .game-card')) if (!visibleIds.has(Number(card.dataset.id))) card.remove();
   visible.forEach((item, index) => {
     const node = $(`.game-card[data-id="${Number(item.id)}"]`) || cardNode(item);
@@ -484,7 +517,7 @@ function mergeLiveJobStatus(status, job) {
   return { ...(status || {}), job, missing };
 }
 function renderGames() {
-  const shown = state.games.slice(0, state.limit);
+  const shown = pagedGames();
   $('#games').innerHTML = shown.map(gameCard).join('');
   $('#games').classList.toggle('list-view', state.view === 'list');
   updateCollectionChrome();
@@ -518,7 +551,7 @@ async function loadGames() {
   try {
     const games = await api(`/api/games?${queryString()}`);
     if (sequence !== gameLoadSequence || state.user?.id !== userId) return;
-    state.games = games; state.limit = LIBRARY_PAGE_SIZE;
+    state.games = games; state.page = 1;
   } catch (error) { if (sequence === gameLoadSequence && state.user?.id === userId) toast(error.message); }
   finally {
     if (sequence === gameLoadSequence && state.user?.id === userId) { state.loading = false; renderGames(); flushPendingGamePatches(); }
@@ -536,7 +569,12 @@ let searchTimer;
 filters.q.addEventListener('input', () => { renderQuickFilter(); schedulePreferenceSave(UI_TIMING.searchPreferenceSaveMs); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, UI_TIMING.librarySearchDebounceMs); });
 Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); schedulePreferenceSave(); loadGames(); }));
 $('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); schedulePreferenceSave(); loadGames(); });
-$('#load-more').addEventListener('click', () => { state.limit += LIBRARY_PAGE_SIZE; renderGames(); });
+$('#library-pagination').addEventListener('click', event => {
+  const direction = event.target.closest('[data-library-page]')?.dataset.libraryPage;
+  if (!direction) return;
+  state.page += direction === 'next' ? 1 : -1;
+  renderGames();
+});
 function renderQuickFilter() {
   $$('[data-stat-kind]').forEach(button => {
     const { statKind: kind, statValue: value = '' } = button.dataset;
@@ -788,14 +826,31 @@ $('#delete-game').addEventListener('click', async () => {
 });
 $('#games').addEventListener('click', async event => {
   const card = event.target.closest('.game-card'); const action = event.target.closest('[data-action]')?.dataset.action;
-  if (!card || !action) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
+  if (!card) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
+  if (!action) return openDetails(game);
   if (action === 'view') return openDetails(game);
   if (action === 'edit') return openForm(game);
   const changed = { ...game };
   if (action === 'favorite') changed.favorite = !changed.favorite;
   if (action === 'own') changed.ownership = 'owned';
-  try { await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : changed.favorite ? 'Added to favourites.' : 'Removed from favourites.'); }
+  if (action === 'rate') {
+    const star = event.target.closest('[data-rating-star]'); const position = Number(star?.dataset.ratingStar);
+    if (!position) return;
+    const bounds = star.getBoundingClientRect();
+    const next = event.detail === 0 ? position : position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
+    changed.rating = Number(game.rating) === next ? null : next;
+  }
+  try { await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favourites.' : 'Removed from favourites.'); }
   catch (error) { toast(error.message); }
+});
+$('#games').addEventListener('pointermove', event => {
+  const rating = cardRatingAtPointer(event); const picker = event.target.closest('.card-rating-picker');
+  if (picker && rating != null) paintCardRating(picker, rating, true);
+});
+$('#games').addEventListener('pointerout', event => {
+  const picker = event.target.closest('.card-rating-picker');
+  if (!picker || picker.contains(event.relatedTarget)) return;
+  paintCardRating(picker, picker.dataset.cardRating, false);
 });
 
 $('#pegi-search-button').addEventListener('click', async () => {

@@ -53,7 +53,7 @@ function publicEntry(entry) {
     submittedByUserId, sourceGameId, confidence, reasons, status, createdAt, ratingAverage, ratingCount, ...visible
   } = entry;
   const count = Number(ratingCount) || 0;
-  return { ...visible, ratingAverage: count >= 2 ? ratingAverage : null, ratingCount: count >= 2 ? count : 0 };
+  return { ...visible, ratingAverage: count >= 1 ? ratingAverage : null, ratingCount: count >= 1 ? count : 0 };
 }
 
 function slugBase(title, platform) {

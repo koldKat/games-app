@@ -59,7 +59,7 @@ test('public release pages show a community aggregate but never offer a public v
   assert.match(html, /property="og:image:alt" content="Portal 2 cover"/);
   assert.match(html, /"@type":"AggregateRating"/);
   assert.doesNotMatch(html, /name="rating"|Your rating/);
-  assert.doesNotMatch(renderGame({ entry: { ...entry, ratingAverage: 5, ratingCount: 1 } }), /Community rating/);
+  assert.match(renderGame({ entry: { ...entry, ratingAverage: 5, ratingCount: 1 } }), /Community rating/);
 });
 
 test('a signed-in user with the release already in their library cannot add it again', () => {

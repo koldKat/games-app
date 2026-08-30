@@ -151,16 +151,27 @@ test('landing footer links to the public repository without replacing the app', 
 });
 
 test('authenticated library carries the family copyright notice with a rolling year', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const css = readPublicCss();
-  assert.match(html, /class="app-footer"[\s\S]*koldKat productions[\s\S]*data-copyright-year>© 2026/);
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const catalogue = read('server/catalogue-pages.js'); const css = readPublicCss();
+  assert.match(html, /class="app-footer" aria-label="Site footer"[\s\S]*koldKat productions[\s\S]*data-copyright-year>© 2026[\s\S]*GAMEKAT\.NET \/\/ GAME KAT·A·LOG[\s\S]*USER GUIDE/);
   assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
   assert.match(css, /\.app-footer-brand\{color:#f5a623;font-weight:600\}/);
+  assert.match(catalogue, /<footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions<\/span> <span>\$\{copyright\}<\/span><\/span><span>GAMEKAT\.NET \/\/ GAME KAT·A·LOG<\/span><a href="\/docs\/user-guide\.html">USER GUIDE<\/a><\/footer>/);
 });
 
 test('common filters never move the viewport', () => {
   const application = read('public/app.js');
   assert.doesNotMatch(application, /scrollIntoView|scrollTo\s*\(/);
+});
+
+test('private Kat·a·log uses ten-row pagination instead of a show-more control', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const css = readPublicCss();
+  assert.match(html, /id="library-pagination" class="library-pagination" aria-label="My Kat·a·log pages"/);
+  assert.doesNotMatch(html, /id="load-more"/);
+  assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
+  assert.match(application, /function pagedGames\(\)/);
+  assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
+  assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);
 });
 
 test('catalogue navigation keeps the authenticated shell mounted and swaps only its content view', () => {
@@ -230,20 +241,30 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.match(application, /function ratingAtPointer\(event\)/);
   assert.match(application, /paintRating\(rating, true\)/);
   assert.match(application, /personalRating\(game\.rating\)/);
+  assert.match(application, /function cardRatingControl\(game\)/);
+  assert.match(application, /data-action="rate"/);
+  assert.match(application, /action === 'rate'/);
+  assert.match(application, /Number\(game\.rating\) === next \? null : next/);
+  assert.match(application, /function paintCardRating/);
   assert.match(application, /rating: \$\('#game-rating'\)\.value/);
   assert.match(database, /rating REAL CHECK/);
   assert.match(database, /Rating must be in half-star steps from 0\.5 to 5/);
   assert.match(css, /\.rating-picker \.rating-star\{[^}]*font-size:19px/);
+  assert.match(css, /\.rating-picker \.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
+  assert.match(application, /rating-picker card-rating-picker/);
+  assert.match(application, /card-rating-inline-label">Your rating/);
+  assert.match(css, /\.card-rating-field\{margin-top:8px/);
   assert.match(css, /\.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
   assert.match(catalogue, /SELECT AVG\(g\.rating\)/);
-  assert.match(catalogue, /count >= 2/);
+  assert.match(catalogue, /count >= 1/);
   assert.doesNotMatch(catalogue, /rating:\s*entry\.rating/);
 });
 
 test('library cards open a read-only details view before editing', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /id="game-details-dialog"/);
-  assert.match(application, /data-action="view">View details/);
+  assert.doesNotMatch(application, /data-action="view">View details/);
+  assert.match(application, /if \(!action\) return openDetails\(game\)/);
   assert.match(application, /function openDetails\(game\)/);
   assert.match(application, /if \(action === 'view'\) return openDetails\(game\)/);
   assert.match(application, /safeDetailLink\(game\.descriptionSourceUrl, 'View description source'\)/);
@@ -313,6 +334,13 @@ test('public release links retain crawlable URLs while opening in the Kat·a·lo
   assert.match(catalogue, /dialog\.showModal\(\)/);
   assert.match(catalogue, /window\.history\.replaceState\(\{ catalogue: true \}, '', '\/katalog'\)/);
   assert.match(css, /\.catalogue-game-dialog/);
+});
+
+test('public Kat·a·log cards overlay community ratings on their covers', () => {
+  const pages = read('server/catalogue-pages.js'); const css = read('public/css/catalogue.css');
+  assert.match(pages, /class="catalogue-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
+  assert.match(css, /\.catalogue-cover \.community-rating\s*\{\s*position: absolute;\s*bottom: 6px;\s*left: 50%/);
+  assert.match(css, /transform: translateX\(-50%\); white-space: nowrap/);
 });
 
 test('sorting is modular and includes catalogue and HLTB duration orders', () => {

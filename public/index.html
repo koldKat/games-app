@@ -229,12 +229,16 @@
         </div>
         <div id="games" class="game-grid" aria-live="polite"></div>
         <div id="empty" class="empty-state" hidden><span>⌁</span><h3>No games found</h3><p>Try clearing a filter, or add a new title.</p><button class="button primary" data-add-game>Add a game</button></div>
-        <button id="load-more" class="button load-more" hidden>Show more</button>
+        <nav id="library-pagination" class="library-pagination" aria-label="My Kat·a·log pages" hidden>
+          <button type="button" data-library-page="previous" aria-label="Previous page">← Previous</button>
+          <span id="library-page-status" aria-live="polite"></span>
+          <button type="button" data-library-page="next" aria-label="Next page">Next →</button>
+        </nav>
       </section>
       </div>
       <section id="catalogue-view" class="catalogue-view" hidden aria-live="polite"></section>
     </main>
-    <footer class="app-footer" aria-label="Copyright"><span class="app-footer-brand">koldKat productions</span> <span data-copyright-year>© 2026</span></footer>
+    <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span data-copyright-year>© 2026</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
   </div>
 
   <button class="fab" data-add-game aria-label="Add a game">＋</button>

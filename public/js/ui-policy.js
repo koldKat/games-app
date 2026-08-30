@@ -1,4 +1,5 @@
-export const LIBRARY_PAGE_SIZE = 120;
+// The private grid has five desktop columns: fifty records make ten complete rows.
+export const LIBRARY_PAGE_SIZE = 50;
 export const LOOKUP_MIN_TITLE_LENGTH = 2;
 export const SOURCE_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 export const PEGI_RELEASE_PREVIEW_LIMIT = 2;

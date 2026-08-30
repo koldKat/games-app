@@ -73,7 +73,7 @@ test('public entries expose only an anonymous aggregate from linked private rati
   database.prepare('UPDATE games SET rating=5 WHERE id=22').run();
   assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [4.75, 2]);
   database.prepare('UPDATE games SET rating=NULL WHERE id=22').run();
-  assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [null, 0]);
+  assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [4.5, 1]);
 });
 
 test('public search filters by title, publisher, and platform', t => {

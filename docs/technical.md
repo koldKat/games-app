@@ -241,7 +241,7 @@ Public projections explicitly remove contributor account ID, source private-game
 
 ### `catalogue_game_links`
 
-This join table records which private game rows are represented by a shared release. A private game can link to only one catalogue entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those fields remain hidden until at least two ratings exist, and individual scores or account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
+This join table records which private game rows are represented by a shared release. A private game can link to only one catalogue entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those aggregate fields appear from the first rating, while individual scores and account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
 
 Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI or ESRB data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 

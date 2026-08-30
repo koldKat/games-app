@@ -356,6 +356,7 @@ body {
 .rating-picker:focus-visible { border-color: #35d6b2; box-shadow: 0 0 0 1px #35d6b244; outline: none; }
 .rating-picker.previewing { border-color: rgba(245,166,35,.72); box-shadow: 0 0 0 1px rgba(245,166,35,.16); }
 .rating-picker .rating-star { padding: 0; border: 0; background: none; font-size: 19px; line-height: 1; cursor: pointer; }
+.rating-picker .rating-star.half { background: linear-gradient(90deg,#f5a623 50%,#44515e 50%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .rating-picker .rating-clear { margin-left: 4px; padding: 2px 5px; border: 0; border-left: 1px solid #293541; background: none; color: #80909e; font-size: 9px; cursor: pointer; }
 .rating-picker .rating-clear:hover,.rating-picker .rating-clear:focus-visible { color: #f0bd52; outline: none; }
 .rating-picker output { min-width: 42px; margin-left: 4px; color: #aebac4; font-size: 10px; font-variant-numeric: tabular-nums; }
@@ -363,6 +364,9 @@ body {
 .card-actions button {
   font-size: 10px;
 }
+.card-rating-field { margin-top: 8px; }
+.card-rating-picker { width: 100%; }
+.card-rating-picker .card-rating-inline-label { margin-left: auto; color: #728092; font-size: 9px; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
 .view-button { color: #aebbc6; }
 .game-details-dialog { width: min(760px,calc(100% - 16px)); }
 .game-details-card { width: 100%; }
@@ -393,6 +397,11 @@ body {
 .card-actions {
   margin-top: auto;
 }
+.library-pagination { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-top: 10px; color: #7f8c98; font-size: 10px; text-align: center; }
+.library-pagination button { justify-self: start; min-height: 32px; padding: 6px 10px; border: 1px solid #26323f; border-radius: 4px; background: #10161e; color: #aebdc7; font: inherit; cursor: pointer; }
+.library-pagination button:last-child { justify-self: end; }
+.library-pagination button:hover:not(:disabled),.library-pagination button:focus-visible { border-color: #35d6b2; color: #35d6b2; outline: none; }
+.library-pagination button:disabled { opacity: .42; cursor: default; }
 .toast {
   font-size: 11px;
 }
@@ -961,6 +970,11 @@ body {
   grid-column: 3;
   grid-row: 1;
 }
+.game-grid.list-view .card-rating-field {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  margin: 6px 0 0;
+}
 .game-grid.list-view .card-hltb {
   display: grid;
   grid-column: 4;
@@ -981,6 +995,7 @@ body {
   }
   .game-grid.list-view .card-hltb,
   .game-grid.list-view .badges,
+  .game-grid.list-view .card-rating-field,
   .game-grid.list-view .card-actions {
     grid-column: 2;
     grid-row: auto;

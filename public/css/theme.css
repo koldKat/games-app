@@ -26,12 +26,25 @@ body {
   padding: 0 16px 28px;
 }
 .app-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 12px 0 0;
   color: #9ca3af;
   font: 400 11px/1.4 ui-monospace, monospace;
-  text-align: center;
-  pointer-events: none;
-  user-select: none;
+}
+.app-footer a {
+  padding: 7px 10px;
+  border: 1px solid #22303a;
+  border-radius: 5px;
+  color: #afbdc5;
+  text-decoration: none;
+}
+.app-footer a:hover,
+.app-footer a:focus-visible {
+  border-color: #35d6b2;
+  color: #35d6b2;
+  outline: none;
 }
 .app-footer-brand {
   color: #f5a623;
@@ -658,6 +671,16 @@ dialog::backdrop {
   }
 }
 @media (max-width: 520px) {
+  .app-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px 12px;
+    text-align: center;
+  }
+  .app-footer>span:nth-child(2) {
+    order: -1;
+    width: 100%;
+  }
   .hero {
     min-height: 96px;
   }
