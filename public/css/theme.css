@@ -878,7 +878,7 @@ dialog::backdrop {
   padding-bottom: 0;
   line-height: 1;
 }
-.top-actions > .catalogue-button { width: auto; padding-inline: 11px; border-color: #28483f; background: #0d1919; color: var(--green); text-decoration: none; }
+.top-actions > .catalogue-button { width: 114px; padding-inline: 11px; border-color: #28483f; background: #0d1919; color: var(--green); text-decoration: none; }
 .desktop-add {
   padding-left: 9px;
   padding-right: 9px;

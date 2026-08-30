@@ -181,6 +181,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
   assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
+  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button \{ width: 114px;/);
 });
 
 test('collection filtering separates owned physical and digital games', () => {
