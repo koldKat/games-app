@@ -1,8 +1,10 @@
 User-agent: *
-# Searchable public surface: catalogue pages, canonical release URLs, and the
-# catalogue-owned cover images referenced from the image sitemap.
+# Searchable public surface: Signal, forum, catalogue pages, canonical release URLs,
+# and the catalogue-owned cover images.
 Allow: /
 Allow: /katalog
+Allow: /signal
+Allow: /forum
 Allow: /game/
 Allow: /covers/
 Disallow: /api/

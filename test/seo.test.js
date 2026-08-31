@@ -24,7 +24,7 @@ test('landing page publishes canonical, social, and structured metadata', () => 
 
 test('landing feature copy reflects the current product surface', () => {
   const html = read('index.html'); const manifest = JSON.parse(read('manifest.webmanifest'));
-  for (const phrase of ['Every system', 'Interrogate the shelf', 'Ratings and runtimes', 'missing covers', 'Your view follows you', 'Private shelf. Public discovery']) {
+  for (const phrase of ['Every system', 'Kat·a·log signal', 'Ratings and runtimes', 'missing covers', 'Your view follows you', 'Private shelf. Public discovery']) {
     assert.match(html, new RegExp(phrase));
   }
   assert.match(manifest.description, /multi-platform.*metadata.*playtime/i);
@@ -33,7 +33,7 @@ test('landing feature copy reflects the current product surface', () => {
 test('public product copy exposes only owned and wishlisted collection states', () => {
   const html = read('index.html');
   const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
-  assert.match(html, /Track owned and wishlisted games—physical or digital/);
+  assert.match(html, /Track owned and wishlisted games \/\/ physical or digital/);
   assert.doesNotMatch(html, />Unavailable<|value="unavailable"|availability/i);
   assert.doesNotMatch(readme, /wishlist, availability|Ownership, wishlist, availability/i);
 });
@@ -44,13 +44,17 @@ test('crawler files expose the landing page without indexing private surfaces', 
   assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Disallow: \/admin\//);
   assert.match(robots, /Allow: \/katalog/);
+  assert.match(robots, /Allow: \/signal/);
+  assert.match(robots, /Allow: \/forum/);
   assert.match(robots, /Allow: \/game\//);
   assert.match(robots, /Allow: \/covers\//);
   assert.match(robots, /Disallow: \/backups\//);
   assert.match(robots, /Sitemap: https:\/\/gamekat\.net\/sitemap\.xml/);
   assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/<\/loc>/);
   assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/katalog<\/loc>/);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 3);
+  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/signal<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/gamekat\.net\/forum<\/loc>/);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 5);
 });
 
 test('social and install assets have production dimensions', () => {

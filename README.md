@@ -2,7 +2,7 @@
 
 A responsive, private-library-first, multi-platform game collection manager with a shared public discovery Kat·a·log, built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
 
-Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI and ESRB details, cover-art, HowLongToBeat estimates, a personal half-star rating, favourite, publisher, release-year, cartridge, and note metadata.
+Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI details, cover-art, HowLongToBeat estimates, a personal half-star rating, favourite, publisher, release-year, cartridge, and note metadata.
 
 ## Features
 
@@ -11,12 +11,13 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - Owned and wishlisted collection states, physical/digital format, play status, personal half-star ratings, favourites, cartridge numbers, publishers, years, and notes.
 - Accent-insensitive search; composable platform, collection, PEGI, status, favourite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
-- Optional ESRB-assisted US rating details, content descriptors, interactive elements, rating summaries, and conservative batch enrichment.
 - SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
 - Editable game descriptions with Steam Store-first and TheGamesDB-fallback lookup and conservative background filling.
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
+- Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), and a per-account hide control.
+- Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
 - Dense, responsive desktop and mobile interfaces with background enrichment progress and targeted live card updates.
 - A crawlable public release Kat·a·log that grows from fully enriched libraries and lets signed-in members add an existing release without re-entering factual metadata.
@@ -48,7 +49,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
@@ -56,21 +57,17 @@ The panel is loopback-only. Requests forwarded by nginx with a non-loopback clie
 
 ## Public landing and SEO
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, while each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## Public Kat·a·log
 
-Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI **or ESRB** metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; the Kat·a·log/My Kat·a·log action interchanges while Add a game stays fixed.
+Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; Kat·a·log, My Kat·a·log, and +Game stay fixed, with the current view visibly inactive.
 
 Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favourites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
 
 ## PEGI lookup
 
 PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
-
-## ESRB lookup
-
-ESRB likewise has no documented public developer API. Its optional integration reads the public search page only when requested, stores the selected US rating, descriptors, interactive elements, summary, and source link, and can fill unambiguous exact-title records in an account-scoped background scan. ESRB does not affect PEGI card colours or automatic public-release eligibility.
 
 ## HowLongToBeat estimates
 

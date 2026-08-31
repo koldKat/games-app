@@ -16,8 +16,6 @@ const storedFields = `id, slug, title, platform, pegi, publisher, release_year A
   pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
-  esrb_rating AS esrbRating, esrb_url AS esrbUrl, esrb_descriptors AS esrbDescriptorsJson,
-  esrb_interactive_elements AS esrbInteractiveElementsJson, esrb_summary AS esrbSummary,
   hltb_id AS hltbId, hltb_title AS hltbTitle, hltb_url AS hltbUrl,
   hltb_main_story AS hltbMainStory, hltb_main_extra AS hltbMainExtra,
   hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles,
@@ -37,12 +35,11 @@ function parseList(value) {
 
 function hydrateEntry(row) {
   if (!row) return row;
-  const { pegiDescriptorsJson, pegiReleasesJson, esrbDescriptorsJson, esrbInteractiveElementsJson, reasonsJson, ...entry } = row;
+  const { pegiDescriptorsJson, pegiReleasesJson, reasonsJson, ...entry } = row;
   return {
     ...entry,
     pegiDescriptors: parseList(pegiDescriptorsJson),
     pegiReleases: parseList(pegiReleasesJson),
-    esrbDescriptors: parseList(esrbDescriptorsJson), esrbInteractiveElements: parseList(esrbInteractiveElementsJson),
     reasons: parseList(reasonsJson),
   };
 }
@@ -93,11 +90,6 @@ function createCatalogueStore(database) {
       pegi_outline TEXT NOT NULL DEFAULT '',
       pegi_content_issues TEXT NOT NULL DEFAULT '',
       pegi_other_issues TEXT NOT NULL DEFAULT '',
-      esrb_rating TEXT NOT NULL DEFAULT '',
-      esrb_url TEXT NOT NULL DEFAULT '',
-      esrb_descriptors TEXT NOT NULL DEFAULT '[]',
-      esrb_interactive_elements TEXT NOT NULL DEFAULT '[]',
-      esrb_summary TEXT NOT NULL DEFAULT '',
       hltb_id INTEGER,
       hltb_title TEXT NOT NULL DEFAULT '',
       hltb_url TEXT NOT NULL DEFAULT '',
@@ -136,11 +128,10 @@ function createCatalogueStore(database) {
   if (!catalogueColumns.includes('description')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description TEXT NOT NULL DEFAULT ''");
   if (!catalogueColumns.includes('description_source')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
   if (!catalogueColumns.includes('description_source_url')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
-  if (!catalogueColumns.includes('esrb_rating')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN esrb_rating TEXT NOT NULL DEFAULT ''");
-  if (!catalogueColumns.includes('esrb_url')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN esrb_url TEXT NOT NULL DEFAULT ''");
-  if (!catalogueColumns.includes('esrb_descriptors')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN esrb_descriptors TEXT NOT NULL DEFAULT '[]'");
-  if (!catalogueColumns.includes('esrb_interactive_elements')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN esrb_interactive_elements TEXT NOT NULL DEFAULT '[]'");
-  if (!catalogueColumns.includes('esrb_summary')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN esrb_summary TEXT NOT NULL DEFAULT ''");
+  if (catalogueColumns.includes('esrb_rating')) database.prepare(`UPDATE catalogue_entries SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
+  for (const column of ['esrb_rating', 'esrb_url', 'esrb_descriptors', 'esrb_interactive_elements', 'esrb_summary']) {
+    if (catalogueColumns.includes(column)) database.exec(`ALTER TABLE catalogue_entries DROP COLUMN ${column}`);
+  }
 
   const findIdentityStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE title_key=? AND platform_key=?`);
   const findSlugStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE slug=?`);
@@ -168,8 +159,7 @@ function createCatalogueStore(database) {
       pegiUrl: String(game.pegiUrl || ''), pegiDescriptors: JSON.stringify(game.pegiDescriptors || []),
       pegiReleases: JSON.stringify(game.pegiReleases || []), pegiAdvice: String(game.pegiAdvice || ''),
       pegiOutline: String(game.pegiOutline || ''), pegiContentIssues: String(game.pegiContentIssues || ''),
-      pegiOtherIssues: String(game.pegiOtherIssues || ''), esrbRating: String(game.esrbRating || ''), esrbUrl: String(game.esrbUrl || ''),
-      esrbDescriptors: JSON.stringify(game.esrbDescriptors || []), esrbInteractiveElements: JSON.stringify(game.esrbInteractiveElements || []), esrbSummary: String(game.esrbSummary || ''), hltbId: game.hltbId ?? null,
+      pegiOtherIssues: String(game.pegiOtherIssues || ''), hltbId: game.hltbId ?? null,
       hltbTitle: String(game.hltbTitle || ''), hltbUrl: String(game.hltbUrl || ''),
       hltbMainStory: game.hltbMainStory ?? null, hltbMainExtra: game.hltbMainExtra ?? null,
       hltbCompletionist: game.hltbCompletionist ?? null, hltbAllStyles: game.hltbAllStyles ?? null,
@@ -201,7 +191,6 @@ function createCatalogueStore(database) {
           publisher=@publisher, release_year=@releaseYear, pegi_url=@pegiUrl,
           pegi_descriptors=@pegiDescriptors, pegi_releases=@pegiReleases, pegi_advice=@pegiAdvice,
           pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues, pegi_other_issues=@pegiOtherIssues,
-          esrb_rating=@esrbRating, esrb_url=@esrbUrl, esrb_descriptors=@esrbDescriptors, esrb_interactive_elements=@esrbInteractiveElements, esrb_summary=@esrbSummary,
           hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
           hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
           hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
@@ -219,13 +208,11 @@ function createCatalogueStore(database) {
     const result = database.prepare(`INSERT INTO catalogue_entries (
       slug, title, title_key, platform, platform_key, pegi, publisher, release_year,
       pegi_url, pegi_descriptors, pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
-      esrb_rating, esrb_url, esrb_descriptors, esrb_interactive_elements, esrb_summary,
       hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles,
       cover_url, cover_source, cover_match_title, description, description_source, description_source_url, status, confidence, reasons,
       submitted_by_user_id, source_game_id, published_at)
       VALUES (@slug,@title,@titleKey,@platform,@platformKey,@pegi,@publisher,@releaseYear,
       @pegiUrl,@pegiDescriptors,@pegiReleases,@pegiAdvice,@pegiOutline,@pegiContentIssues,@pegiOtherIssues,
-      @esrbRating,@esrbUrl,@esrbDescriptors,@esrbInteractiveElements,@esrbSummary,
       @hltbId,@hltbTitle,@hltbUrl,@hltbMainStory,@hltbMainExtra,@hltbCompletionist,@hltbAllStyles,
       @coverUrl,@coverSource,@coverMatchTitle,@description,@descriptionSource,@descriptionSourceUrl,@status,@confidence,@reasons,@userId,@gameId,
       CASE WHEN @status='public' THEN CURRENT_TIMESTAMP ELSE NULL END)`).run({
@@ -350,13 +337,18 @@ function createCatalogueStore(database) {
     return Object.fromEntries(ENTRY_STATUSES.map(status => [status, rows.find(row => row.status === status)?.count || 0]));
   }
 
+  function contributionSources() {
+    return database.prepare(`SELECT submitted_by_user_id AS userId, source_game_id AS gameId
+      FROM catalogue_entries WHERE status='public' AND submitted_by_user_id IS NOT NULL AND source_game_id IS NOT NULL`).all();
+  }
+
   function sitemapEntries() {
     return database.prepare(`SELECT slug, title, cover_url AS coverUrl, updated_at AS updatedAt
       FROM catalogue_entries WHERE status='public' ORDER BY id`).all();
   }
 
   return {
-    addDescriptionIfMissing, counts, findByIdentity, getById, getBySlug, getPublicById, getPublicBySlug,
+    addDescriptionIfMissing, contributionSources, counts, findByIdentity, getById, getBySlug, getPublicById, getPublicBySlug,
     link, listAdmin, listPublic, publicPlatforms, remove, replaceCover, searchPublic, setStatus, sitemapEntries, updateAdmin, upsertFromGame,
   };
 }

@@ -362,7 +362,7 @@
   position: fixed;
   z-index: 0;
   inset: 0;
-  opacity: 0.075;
+  opacity: 0.1;
 }
 #app-shell > .topbar,
 #app-shell > main {

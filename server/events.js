@@ -1,4 +1,6 @@
 const clients = new Map();
+const publicActivityClients = new Set();
+const publicForumClients = new Set();
 const channels = new Map();
 const HISTORY_LIMIT = 2048;
 const RETRY_MS = 2_500;
@@ -62,4 +64,36 @@ function subscribe(request, response, userId, isAuthorized = () => true) {
   request.once('close', close); response.once('close', close);
 }
 
-module.exports = { HISTORY_LIMIT, frame, keepAlive, publish, subscribe };
+function subscribePublicActivity(request, response) {
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no',
+  });
+  response.write(`retry: ${RETRY_MS}\n\n`);
+  publicActivityClients.add(response);
+  const heartbeat = setInterval(() => keepAlive(response), HEARTBEAT_MS); heartbeat.unref?.();
+  const lifetime = setTimeout(() => response.end(), CONNECTION_LIFETIME_MS); lifetime.unref?.();
+  const close = () => { clearInterval(heartbeat); clearTimeout(lifetime); publicActivityClients.delete(response); };
+  request.once('close', close); response.once('close', close);
+}
+function publishPublicActivity() {
+  const packet = frame('activity-changed', {});
+  for (const response of publicActivityClients) if (!response.destroyed && !response.writableEnded) response.write(packet);
+}
+function subscribePublicForum(request, response) {
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no',
+  });
+  response.write(`retry: ${RETRY_MS}\n\n`); publicForumClients.add(response);
+  const heartbeat = setInterval(() => keepAlive(response), HEARTBEAT_MS); heartbeat.unref?.();
+  const lifetime = setTimeout(() => response.end(), CONNECTION_LIFETIME_MS); lifetime.unref?.();
+  const close = () => { clearInterval(heartbeat); clearTimeout(lifetime); publicForumClients.delete(response); };
+  request.once('close', close); response.once('close', close);
+}
+function publishPublicForum() {
+  const packet = frame('forum-changed', {});
+  for (const response of publicForumClients) if (!response.destroyed && !response.writableEnded) response.write(packet);
+}
+
+module.exports = { HISTORY_LIMIT, frame, keepAlive, publish, subscribe, subscribePublicActivity, publishPublicActivity, subscribePublicForum, publishPublicForum };

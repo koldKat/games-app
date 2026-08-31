@@ -25,6 +25,34 @@
 .catalogue-back { padding: 7px 10px; border: 1px solid var(--line); border-radius: 5px; color: #afbdc5; text-decoration: none; }
 .catalogue-back:hover { border-color: var(--green); color: var(--green); }
 .catalogue-main { width: 100%; margin: 0; padding: 8px 0 10px; }
+.signal-main { width: 100%; }
+.signal-feed-panel { margin-top: 10px; padding: 15px; border: 1px solid var(--line); border-radius: 7px; background: linear-gradient(145deg,rgba(53,214,178,.06),transparent 42%),var(--panel); }
+.signal-feed-panel header { padding: 0 1px 12px; border-bottom: 1px solid #233841; }
+.signal-feed-panel h2 { margin: 4px 0; color: #e5f1ec; font-size: 18px; }
+.signal-feed-panel p { margin: 0; color: var(--muted); font-size: 11px; }
+.signal-feed { margin-top: 11px; gap: 10px; }
+.signal-feed .activity-day { display: grid; gap: 5px; }
+.signal-feed .activity-day h3 { margin: 0; padding: 0 1px 4px; border-bottom: 1px solid #24423b; color: #72e5c9; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.signal-feed .activity-day > div { display: grid; gap: 3px; }
+.signal-feed .activity-entry { grid-template-columns: minmax(0,1fr) 28px; gap: 7px; padding: 5px 6px; }
+.signal-feed .activity-entry p { font-size: 11px; line-height: 1.35; }
+.signal-feed .activity-entry time { font-size: 9px; }
+.signal-feed .activity-entry--level_up { border-color: #756339; background: #18160bba; }
+.signal-feed .activity-entry--level_up b,.signal-feed .activity-entry--level_up em { color: #f1c65a; }
+.signal-feed .activity-entry--announcement { grid-template-columns:minmax(0,1fr) 28px; padding:8px; }
+.signal-feed .activity-entry--announcement p { font-size:12px; }
+.signal-feed .activity-entry--announcement p>strong { font-size:13px; }
+.signal-feed .activity-pinned-card { margin:4px 0 12px; padding:14px 13px 11px; }
+.signal-feed .activity-pinned-card header { top:-9px; left:10px; font-size:10px; }
+.signal-feed .activity-pinned-card header svg { width:13px; height:13px; }
+.signal-feed .activity-pinned-card>div { font-size:12px; line-height:1.5; }
+@media (max-width: 520px) {
+  .signal-main { margin: 0; }
+  .signal-hero { min-height: 150px; }
+  .signal-feed-panel { padding: 10px; }
+  .signal-feed .activity-entry { grid-template-columns: minmax(0,1fr) 22px; gap: 6px; padding: 5px; }
+  .signal-feed .activity-entry p { font-size: 10px; }
+}
 .catalogue-hero { margin-top: 0; }
 .catalogue-hero h2 { margin: 0; color: #edf7f3; font: 700 clamp(22px,3vw,33px)/1.05 ui-monospace,monospace; letter-spacing: -.04em; }
 .catalogue-hero h2::before { content: "> "; color: var(--green); }

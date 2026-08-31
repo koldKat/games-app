@@ -14,12 +14,14 @@ games-app/
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
+    activity.js             public-safe Signal ledger plus announcement draft/publish/pin projection
+    forum-data.js           forum categories, threads, posts, ownership, and moderation queries
+    forum-pages.js          server-rendered public forum views using the shared app shell
+    forum-routes.js         forum page/API dispatcher and public contribution boundary
     db.js                   schema, migrations, validation, scoped game queries
     preferences.js          validated per-account view, search, filter and sort state
     pegi.js                 opt-in PEGI HTTP lookup and result parser
     pegi-bulk.js            account-scoped conservative PEGI enrichment jobs
-    esrb.js                 opt-in ESRB public-search parser
-    esrb-bulk.js            account-scoped conservative ESRB enrichment jobs
     hltb.js                 native Node HLTB lookup, endpoint discovery, parsing
     hltb-bulk.js            account-scoped conservative timing enrichment jobs
     events.js               authenticated server-sent event fan-out
@@ -37,13 +39,14 @@ games-app/
     catalogue-cover-store.js independent durable cover copies for shared/private rows
     catalogue-service.js    fail-closed promotion and add-to-library orchestration
     catalogue-runtime.js    single wired catalogue service instance
-    catalogue-pages.js      server-rendered browse/detail pages and dynamic sitemap
+    catalogue-pages.js      server-rendered browse/detail/Signal pages and dynamic sitemap
     catalogue-routes.js     isolated public page and catalogue API dispatcher
     version.js              validated atomic reads/writes of the VERSION file
   admin/
     index.html              localhost control-panel markup
     style.css               dense terminal-style admin theme
-    js/                     dashboard, accounts, private rows, public review, tools and shared ES modules
+    announcements.css       isolated Signal announcement panel styling
+    js/                     dashboard, accounts, announcements, private rows, public review, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
     normalize-covers.js     idempotent existing-cover normalization command
@@ -54,6 +57,8 @@ games-app/
     js/game-sorting.js      client ordering for live incremental card updates
     js/platforms.js         grouped platform catalogue and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
+    js/announcement-format.js safe shared rich-text formatter for Signal notices
+    js/forum-page.js        forum composer, owner actions, themed confirmation, and SSE refresh binding
     js/catalogue-public.js  release-detail dialog and one-click private-library add bindings
     js/catalogue-navigation.js persistent authenticated-shell catalogue navigation
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
@@ -68,6 +73,7 @@ games-app/
       landing.css          authentication landing page and promotional modules
       features.css         later feature-specific components and viewport rules
       catalogue.css        standalone public catalogue and detail-page theme
+      forum.css            public forum surfaces and responsive composer theme
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
     icon-192.png            installable-app icon
@@ -134,7 +140,7 @@ All authenticated routes resolve the session before dispatching feature logic. T
 
 Progression is split into three focused server modules. `progression-policy.js` is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (`1000 × level × (level + 1) / 2`), and collector titles. `progression-store.js` owns the SQLite tables, configurable amounts, and atomic idempotency key `(user_id, event, ref)`. `progression-service.js` maps a complete game record to eligible one-time awards and evaluates account milestones.
 
-`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. On first `/api/progression` access the service backfills existing account rows once. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes, allowing `public/js/progression-ui.js` to update the account panel without refreshing the library.
+`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. On first `/api/progression` access the service backfills existing account rows once. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes, allowing `public/js/progression-ui.js` to update the account panel without refreshing the library. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
 
 Catalogue dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call `syncGameSafely`; catalogue failures are logged and contained, so they cannot turn a successful account-scoped save into an error.
 
@@ -243,7 +249,7 @@ Public projections explicitly remove contributor account ID, source private-game
 
 This join table records which private game rows are represented by a shared release. A private game can link to only one catalogue entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those aggregate fields appear from the first rating, while individual scores and account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
 
-Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI or ESRB data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
+Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 
 `cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets are never returned to the browser.
 
@@ -260,11 +266,11 @@ The authentication design is a reduced version of the gamebooks app's model.
 - `crypto.scrypt` derives a 64-byte hash.
 - Every password receives a random 16-byte salt.
 - Verification uses `crypto.timingSafeEqual`.
-- Passwords must contain 8–200 characters.
+- Passwords must contain 8 to 200 characters.
 
 ### Usernames
 
-- Length: 3–32 characters.
+- Length: 3 to 32 characters.
 - Allowed: Unicode letters and numbers, dot, dash, and underscore.
 - SQLite enforces case-insensitive uniqueness.
 
@@ -327,12 +333,12 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/stats` | Account-scoped aggregates |
 | GET | `/api/meta` | Platforms, version, PEGI capability, current user |
 | GET | `/api/events` | Authenticated SSE stream for job progress and changed games |
+| GET | `/api/activity` | Public Kat·a·log Signal entries plus the optional pinned announcement |
+| GET | `/api/activity/stream` | Public SSE refresh signal for Kat·a·log Signal |
+| GET | `/signal` | Crawlable public Kat·a·log Signal page; attaches to the public SSE stream |
 | GET | `/api/pegi/search?q=...` | Explicit server-side PEGI search |
 | GET | `/api/pegi/status` | Missing-metadata count and current account job state |
 | POST | `/api/pegi/bulk` | Start an account-scoped conservative metadata scan |
-| GET | `/api/esrb/search?q=...` | Explicit server-side ESRB search |
-| GET | `/api/esrb/status` | Missing-ESRB count and current account job state |
-| POST | `/api/esrb/bulk` | Start an account-scoped conservative ESRB metadata scan |
 | GET | `/api/hltb/search?q=...` | Search HLTB for manual timing selection |
 | GET | `/api/hltb/status` | Missing-timing count and current account job state |
 | POST | `/api/hltb/bulk` | Start an account-scoped exact-title timing scan |
@@ -350,7 +356,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
 | POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
 
-List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `esrb`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. The PEGI condition follows batch eligibility and excludes Evercade; ESRB requires no stored ESRB record. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
+List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. The PEGI condition follows batch eligibility and excludes Evercade. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
 
 Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favourites, creation/update timestamps, cartridge number, and ascending/descending values for all four HLTB estimates. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
 
@@ -362,7 +368,7 @@ Avatar filenames contain only the authenticated numeric user ID, timestamp, and 
 |---|---|---|
 | GET | `/katalog` | Server-rendered public browse/search/filter page |
 | GET | `/game/:slug` | Canonical server-rendered public release URL; opens the Kat·a·log detail dialog for browsers and provides `VideoGame` JSON-LD to crawlers |
-| GET | `/sitemap.xml` | Dynamic standard sitemap containing every currently public release URL and current update date |
+| GET | `/sitemap.xml` | Dynamic standard sitemap containing Signal, every currently public release URL, and current update dates |
 | GET | `/api/catalogue/search?q=...` | Small public factual search projection for discovery/autocomplete |
 | GET | `/api/catalogue/game/:slug` | Public factual release projection without contributor/private identifiers |
 | POST | `/api/catalogue/:id/library` | Authenticated one-click private copy with duplicate protection |
@@ -378,6 +384,9 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET | `/api/admin/stats` | Runtime and whole-database counts |
 | GET | `/api/admin/live` | Lightweight one-second process resource and uptime snapshot |
 | GET | `/api/admin/accounts` | Account, collection, cover, and session counts |
+| GET, POST | `/api/admin/announcements` | List all notices or create a draft |
+| PATCH, DELETE | `/api/admin/announcements/:id` | Edit or permanently delete one notice |
+| POST | `/api/admin/announcements/:id/publish`, `/unpublish`, `/pin`, `/unpin` | Change publication or single-pin state and refresh Signal via SSE |
 | GET, PUT | `/api/admin/mail` | Read non-secret SMTP status or save SMTP settings |
 | POST | `/api/admin/mail/test` | Send a test message to the configured sender |
 | DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
@@ -464,7 +473,7 @@ On authenticated entry, the browser starts the core library requests and reveals
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions—including local public-catalogue hits—live in `public/js/title-autocomplete.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`; `public/js/catalogue-navigation.js` fetches and swaps only the public-catalogue content view while retaining the mounted app header, account control, add-game action, library DOM, and browser history; and `public/js/catalogue-public.js` binds native release-detail dialogs and their one-click add action in either the standalone public document or that mounted view. Server-rendered release pages check the signed-in account for the same normalized title/platform private copy; a match renders an already-added state instead of an add form. The POST endpoint retains duplicate validation for races, and the browser turns its duplicate response into that same already-added action instead of showing an error.
+`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions, including local public-catalogue hits, live in `public/js/title-autocomplete.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`; `public/js/catalogue-navigation.js` fetches and swaps only the public-catalogue content view while retaining the mounted app header, account control, add-game action, library DOM, and browser history; and `public/js/catalogue-public.js` binds native release-detail dialogs and their one-click add action in either the standalone public document or that mounted view. Server-rendered release pages check the signed-in account for the same normalized title/platform private copy; a match renders an already-added state instead of an add form. The POST endpoint retains duplicate validation for races, and the browser turns its duplicate response into that same already-added action instead of showing an error.
 
 The authenticated library footer mirrors the family branding used by Gamebooks: **koldKat productions** followed by a copyright year. `COPYRIGHT_START_YEAR` lives in `public/js/ui-policy.js`; the browser displays that year initially and automatically expands it to a range in later years.
 
@@ -529,7 +538,7 @@ Generated documentation is available at:
 
 The public landing page uses `https://gamekat.net/` as its canonical URL. Its focused title and description, Open Graph and Twitter large-image fields, install manifest, and `WebApplication` JSON-LD consistently describe multi-platform collection tracking, public release discovery, wishlists and backlogs, deep filtering, PEGI/HLTB assistance, cover art, and cross-device account preferences. Structured data also links the public guide and GitHub repository. The domain inspires the **Game Kat·a·log** wordmark, whose separators are true middle dots. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
 
-`robots.txt` permits the landing page, `/katalog`, release pages, and public guide while excluding `/api/`, `/admin/`, and account avatars. Runtime `/sitemap.xml` is generated from public catalogue rows as a plain standard URL-set with stable release slugs and their update dates; candidates and rejected entries never appear. The maintained static file remains a landing/Kat·a·log/guide fallback. Browse pages use `CollectionPage` JSON-LD, and release pages use `VideoGame` JSON-LD with eligible aggregate ratings. A canonical release URL renders the public Kat·a·log with that release detail dialog already open, so search visitors get the same detail surface as people browsing the catalogue. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
+`robots.txt` permits the landing page, `/signal`, `/forum`, `/katalog`, release pages, and public guide while excluding `/api/`, `/admin/`, and account avatars. Runtime `/sitemap.xml` is generated as a plain standard URL-set with Signal, Forum, stable public release slugs, public forum threads, and their update dates; candidates and rejected catalogue entries never appear. The maintained static file remains a landing/Signal/Forum/Kat·a·log/guide fallback. Signal uses `CollectionPage` JSON-LD and receives public, filtered activity through `/api/activity/stream`; the forum uses the same public shell and its own `/api/forum/stream`; browse pages use `CollectionPage` JSON-LD, and release pages use `VideoGame` JSON-LD with eligible aggregate ratings. A canonical release URL renders the public Kat·a·log with that release detail dialog already open, so search visitors get the same detail surface as people browsing the catalogue. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
 
 The authentication landing markup contains six visible, descriptive feature cards covering platform breadth, querying, PEGI/HLTB metadata, cover workflows, cross-device preference persistence, and public discovery with private tracking. This gives non-JavaScript crawlers useful product content without exposing any private collection data. Backups and local administration remain documented operational features rather than headline public marketing claims.
 

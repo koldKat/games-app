@@ -2,7 +2,7 @@ import { LOOKUP_MIN_TITLE_LENGTH } from './ui-policy.js';
 
 function hoursLabel(value) {
   const hours = Number(value);
-  if (!Number.isFinite(hours) || hours <= 0) return '—';
+  if (!Number.isFinite(hours) || hours <= 0) return '//';
   if (hours < 1) return `${Math.round(hours * 60)}m`;
   return `${Number(hours.toFixed(1))}h`;
 }

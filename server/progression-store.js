@@ -1,6 +1,6 @@
 'use strict';
 
-const { XP_EVENTS, progressForXp } = require('./progression-policy');
+const { XP_EVENTS, progressForXp, xpForLevel } = require('./progression-policy');
 
 function createProgressionStore(db) {
   db.exec(`CREATE TABLE IF NOT EXISTS user_progression (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, xp INTEGER NOT NULL DEFAULT 0, backfilled_at TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -19,10 +19,14 @@ function createProgressionStore(db) {
   const recentRows = db.prepare('SELECT event, ref, amount, created_at AS createdAt FROM progression_events WHERE user_id=? ORDER BY id DESC LIMIT ?');
   const txAward = db.transaction((userId, event, ref) => {
     if (!XP_EVENTS[event]) throw new Error('Unknown progression event.');
-    ensure.run(userId); const amount = Number(configRows.all().find(row => row.event === event)?.amount ?? XP_EVENTS[event].amount);
+    ensure.run(userId); const before = progressForXp(getXp.get(userId).xp); const amount = Number(configRows.all().find(row => row.event === event)?.amount ?? XP_EVENTS[event].amount);
     const result = eventInsert.run(userId, event, String(ref), amount);
     if (result.changes) addXp.run(amount, userId);
-    return { awarded: Boolean(result.changes), amount, progress: progressForXp(getXp.get(userId).xp) };
+    const progress = progressForXp(getXp.get(userId).xp);
+    const levels = result.changes ? Array.from({ length: Math.max(0, progress.level - before.level) }, (_, index) => {
+      const level = before.level + index + 1; return { level, title: progressForXp(xpForLevel(level)).title, previousTitle: level ? progressForXp(xpForLevel(level - 1)).title : '' };
+    }) : [];
+    return { awarded: Boolean(result.changes), amount, progress, levels };
   });
   function info(userId) { ensure.run(userId); return { ...progressForXp(getXp.get(userId).xp), recent: recentRows.all(userId, 8).map(row => ({ ...row, label: XP_EVENTS[row.event]?.label || row.event })) }; }
   function config() { const saved = Object.fromEntries(configRows.all().map(row => [row.event, row.amount])); return Object.entries(XP_EVENTS).map(([event, definition]) => ({ event, label: definition.label, amount: saved[event] ?? definition.amount })); }

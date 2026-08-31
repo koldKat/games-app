@@ -1,6 +1,7 @@
 'use strict';
 
-const { renderCatalogue, renderGame, renderNotFound, sitemapXml } = require('./catalogue-pages');
+const { renderCatalogue, renderGame, renderNotFound, renderSignal, sitemapXml } = require('./catalogue-pages');
+const forum = require('./forum-data');
 
 function securityHeaders(response) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
@@ -40,33 +41,44 @@ function readJson(request, maxBytes = 32 * 1024) {
   });
 }
 
-function createCatalogueRoutes({ catalogue, auth, events, onGameCreated = () => {} }) {
+function createCatalogueRoutes({ catalogue, auth, events, progression = null, onGameCreated = () => {} }) {
   async function handle(request, response, url) {
+    if (request.method === 'GET' && url.pathname === '/signal') {
+      const user = auth.authenticate(request);
+      const progress = user ? progression?.info(user.id) || null : null;
+      const refreshed = user && auth.refreshSessionCookie(request);
+      if (refreshed) response.setHeader('Set-Cookie', refreshed);
+      const coverUrls = catalogue.listPublic({ limit: 5 }).entries.map(entry => entry.coverUrl);
+      send(response, 200, 'text/html; charset=utf-8', renderSignal({ user, progress, coverUrls }));
+      return true;
+    }
     if (request.method === 'GET' && url.pathname === '/katalog') {
       const user = auth.authenticate(request);
+      const progress = user ? progression?.info(user.id) || null : null;
       const refreshed = user && auth.refreshSessionCookie(request);
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
       const query = String(url.searchParams.get('q') || '').trim().slice(0, 120);
       const platform = String(url.searchParams.get('platform') || '').trim().slice(0, 120);
       const result = catalogue.listPublic({ q: query, platform, page: url.searchParams.get('page') });
       send(response, 200, 'text/html; charset=utf-8', renderCatalogue({
-        result, platforms: catalogue.publicPlatforms(), query, platform, user,
+        result, platforms: catalogue.publicPlatforms(), query, platform, user, progress,
       }));
       return true;
     }
     const gamePage = url.pathname.match(/^\/game\/([a-z0-9-]+)$/);
     if (request.method === 'GET' && gamePage) {
       const user = auth.authenticate(request);
+      const progress = user ? progression?.info(user.id) || null : null;
       const refreshed = user && auth.refreshSessionCookie(request);
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
       const entry = catalogue.getPublicBySlug(gamePage[1]);
       const libraryGame = entry && user ? catalogue.libraryCopy?.(user.id, entry.id) || null : null;
       send(response, entry ? 200 : 404, 'text/html; charset=utf-8', entry
-        ? renderGame({ entry, result: catalogue.listPublic({}), platforms: catalogue.publicPlatforms(), user, libraryGame }) : renderNotFound());
+        ? renderGame({ entry, result: catalogue.listPublic({}), platforms: catalogue.publicPlatforms(), user, progress, libraryGame }) : renderNotFound());
       return true;
     }
     if (request.method === 'GET' && url.pathname === '/sitemap.xml') {
-      send(response, 200, 'application/xml; charset=utf-8', sitemapXml(catalogue.sitemapEntries()), 'public, max-age=3600');
+      send(response, 200, 'application/xml; charset=utf-8', sitemapXml(catalogue.sitemapEntries(), undefined, forum.sitemapThreads()), 'public, max-age=3600');
       return true;
     }
     if (request.method === 'GET' && url.pathname === '/api/catalogue/search') {

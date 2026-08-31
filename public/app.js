@@ -8,6 +8,7 @@ import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
 import { createProgressionUi } from './js/progression-ui.js';
+import { createActivityFeed } from './js/activity-feed.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
@@ -35,7 +36,7 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
-const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, esrbStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -74,6 +75,10 @@ function toast(message) {
 function showAccountError(message) { $('#account-error').textContent = message; $('#account-error').hidden = false; }
 const coverProviderSettings = createCoverProviderSettings({ api, toast, showError: showAccountError });
 const progressionUi = createProgressionUi({ api });
+const activityFeed = createActivityFeed();
+function applySaveProgress(result) {
+  if (result?.progression?.awards?.length) progressionUi.handleEvent({ progress: result.progression.progress });
+}
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
   for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -113,7 +118,13 @@ async function loadAuthCovers() {
   } catch {}
 }
 async function loadAppBackgroundCovers(isCurrent) {
-  const covers = uniqueArtworkUrls(state.games.map(game => game.coverUrl));
+  const libraryCovers = uniqueArtworkUrls(state.games.map(game => game.coverUrl));
+  let showcaseCovers = [];
+  try {
+    const response = await fetch(`/api/showcase/covers?v=${Date.now()}`, { cache: 'no-store' });
+    if (response.ok) showcaseCovers = (await response.json()).covers || [];
+  } catch {}
+  const covers = uniqueArtworkUrls([...libraryCovers, ...showcaseCovers]);
   for (let index = covers.length - 1; index > 0; index--) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
@@ -132,7 +143,7 @@ function showAuth(message = '') {
   decorationSequence += 1;
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
-  state.coverStatus = null; state.pegiStatus = null; state.esrbStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
+  state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   state.games = []; state.stats = null; state.platforms = []; state.page = 1;
@@ -245,7 +256,7 @@ function setAuthMode(mode) {
   $$('[data-auth-mode]').forEach(button => button.classList.toggle('active', button.dataset.authMode === mode));
   $('#forgot-password').classList.remove('active');
   $('#auth-title').textContent = mode === 'register' ? 'Create an identity' : 'Access your library';
-  $('#auth-copy').textContent = mode === 'register' ? 'Create an isolated library account on this server.' : 'Enter your credentials to mount your personal collection.';
+  $('#auth-copy').textContent = mode === 'register' ? 'Create an isolated library account on this server. Your games, settings, and progress stay yours.' : 'Enter your credentials to mount your personal collection.';
   $('#auth-submit').textContent = mode === 'register' ? 'Create account' : 'Authenticate';
   $('#auth-username').placeholder = mode === 'register' ? 'player_one' : '';
   $('#auth-password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
@@ -312,6 +323,7 @@ $('.auth-tabs').addEventListener('click', event => {
   const mode = button.dataset.authMode;
   if (!mode) return;
   showAuthForm(); setAuthMode(mode);
+  setTimeout(() => $('#auth-username').focus(), UI_TIMING.focusDelayMs);
 });
 $('#password-reset-request-form').addEventListener('submit', async event => {
   event.preventDefault(); const submit = $('#password-reset-request-submit'); submit.disabled = true;
@@ -430,7 +442,7 @@ function gameCard(game) {
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${game.esrbRating ? badge(`ESRB ${game.esrbRating}`, 'esrb') : ''}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
@@ -502,10 +514,9 @@ function connectEventStream() {
     else if (event === 'progression-updated') progressionUi.handleEvent(data);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
-    else if (event === 'esrb-job') { state.esrbStatus = mergeLiveJobStatus(state.esrbStatus, data.job); renderEsrbBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
     else if (event === 'description-job') { state.descriptionStatus = mergeLiveJobStatus(state.descriptionStatus, data.job); renderDescriptionBulkStatus(); }
-    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadEsrbStatus(); loadHltbStatus(); loadDescriptionStatus(); }
+    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
     else coverProviderSettings.handleEvent(event, data);
   }, onUnauthorized() {
     if (generation !== sessionGeneration) return;
@@ -617,15 +628,13 @@ function openDetails(game) {
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
   const times = [['Main story', game.hltbMainStory], ['Main + sides', game.hltbMainExtra], ['Completionist', game.hltbCompletionist], ['All styles', game.hltbAllStyles]]
-    .map(([label, value]) => `<div><span>${label}</span><strong>${value == null ? '—' : escapeHtml(String(value)) + 'h'}</strong></div>`).join('');
+    .map(([label, value]) => `<div><span>${label}</span><strong>${value == null ? '//' : escapeHtml(String(value)) + 'h'}</strong></div>`).join('');
   const facts = [['Platform', game.platform], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]
     .filter(([, value]) => value !== '' && value != null).map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
   const pegiText = [['Advice for consumers', game.pegiAdvice], ['Brief outline', game.pegiOutline], ['Content-specific issues', game.pegiContentIssues], ['Other issues', game.pegiOtherIssues]]
     .filter(([, value]) => value).map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`).join('');
   const releases = (game.pegiReleases || []).length ? `<ul>${game.pegiReleases.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : '';
-  const esrb = (game.esrbDescriptors || []).map(item => badge(item, 'descriptor')).join('');
-  const esrbInteractive = (game.esrbInteractiveElements || []).length ? `<p><strong>Interactive elements</strong><br>${escapeHtml(game.esrbInteractiveElements.join(' · '))}</p>` : '';
-  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${game.esrbRating ? badge(`ESRB ${game.esrbRating}`) : ''}${rating}${game.favorite ? badge('Favourite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('ESRB details', `${game.esrbRating ? `<p><strong>${escapeHtml(game.esrbRating)}</strong></p>` : ''}${esrb ? `<div class="game-detail-chips">${esrb}</div>` : ''}${esrbInteractive}${game.esrbSummary ? `<p>${escapeHtml(game.esrbSummary)}</p>` : ''}${safeDetailLink(game.esrbUrl, 'View source on ESRB')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
+  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favourite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
   detailsDialog.showModal();
   setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -714,21 +723,10 @@ function renderPegiDetails() {
   $('#game-pegi-content').textContent = metadata.pegiContentIssues; $('#game-pegi-other').textContent = metadata.pegiOtherIssues;
   const source = $('#game-form').dataset.pegiUrl; $('#game-pegi-source').hidden = !source; if (source) $('#game-pegi-source').href = source;
 }
-function esrbMetadata(game = {}) { const source = game || {}; return { esrbRating: String(source.esrbRating || ''), esrbDescriptors: Array.isArray(source.esrbDescriptors) ? [...source.esrbDescriptors] : [], esrbInteractiveElements: Array.isArray(source.esrbInteractiveElements) ? [...source.esrbInteractiveElements] : [], esrbSummary: String(source.esrbSummary || '') }; }
-function renderEsrbDetails() {
-  const metadata = $('#game-form')._esrbMetadata || esrbMetadata(); const hasDetails = metadata.esrbRating || metadata.esrbDescriptors.length || metadata.esrbInteractiveElements.length || metadata.esrbSummary;
-  const details = $('#game-esrb-details'); details.hidden = !hasDetails; if (!hasDetails) { details.open = false; return; }
-  $('#game-esrb-summary').textContent = [metadata.esrbRating, metadata.esrbDescriptors.length ? `${metadata.esrbDescriptors.length} descriptor${metadata.esrbDescriptors.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
-  $('#game-esrb-descriptors').innerHTML = metadata.esrbDescriptors.map(value => `<span class="pegi-detail-tag">${escapeHtml(value)}</span>`).join('');
-  $('#game-esrb-interactive-section').hidden = !metadata.esrbInteractiveElements.length; $('#game-esrb-interactive').textContent = metadata.esrbInteractiveElements.join(' · ');
-  $('#game-esrb-summary-section').hidden = !metadata.esrbSummary; $('#game-esrb-summary-text').textContent = metadata.esrbSummary;
-  const source = $('#game-form').dataset.esrbUrl; $('#game-esrb-source').hidden = !source; if (source) $('#game-esrb-source').href = source;
-}
 function openForm(game = null) {
   titleAutocomplete.reset();
   $('#game-form').reset(); $('#game-id').value = game?.id || '';
   $('#game-form').dataset.pegiUrl = game?.pegiUrl || '';
-  $('#game-form').dataset.esrbUrl = game?.esrbUrl || '';
   $('#game-form').dataset.coverUrl = game?.coverUrl || '';
   $('#game-form').dataset.coverSource = game?.coverSource || '';
   $('#game-form').dataset.coverMatchTitle = game?.coverMatchTitle || '';
@@ -736,14 +734,13 @@ function openForm(game = null) {
   $('#game-form').dataset.descriptionSourceUrl = game?.descriptionSourceUrl || '';
   $('#game-form').dataset.descriptionInitial = game?.description || '';
   $('#game-form')._pegiMetadata = pegiMetadata(game);
-  $('#game-form')._esrbMetadata = esrbMetadata(game);
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
   $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); setRating(formValue(game, 'rating')); $('#game-description').value = formValue(game, 'description'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#esrb-results').hidden = true; $('#esrb-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails(); renderEsrbDetails();
+  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#game-title').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -788,6 +785,7 @@ async function openExistingGame(id) {
 }
 const catalogueNavigation = createCatalogueNavigation({
   onGameAdded: () => { void loadGames(); void loadStatsAndMeta(); },
+  onSignalVisible: () => { void activityFeed.load(); },
 });
 const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
@@ -800,8 +798,8 @@ function payload() {
   return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value, rating: $('#game-rating').value,
-    notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '', esrbUrl: $('#game-form').dataset.esrbUrl || '',
-    ...($('#game-form')._pegiMetadata || pegiMetadata()), ...($('#game-form')._esrbMetadata || esrbMetadata()), ...hltbLookup.payload(),
+    notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
+    ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(),
     coverUrl: $('#game-form').dataset.coverUrl || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
 $('#game-form').addEventListener('submit', async event => {
@@ -813,7 +811,8 @@ $('#game-form').addEventListener('submit', async event => {
   }
   save.textContent = 'Saving…';
   try {
-    await api(id ? `/api/games/${id}` : '/api/games', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+    const result = await api(id ? `/api/games/${id}` : '/api/games', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+    applySaveProgress(result);
     closeForm(); toast(id ? 'Game updated.' : 'Game added to the shelf.'); await Promise.all([loadGames(), loadStatsAndMeta()]);
   } catch (error) { $('#form-error').textContent = error.message; $('#form-error').hidden = false; }
   finally { save.disabled = false; save.textContent = 'Save game'; }
@@ -840,7 +839,7 @@ $('#games').addEventListener('click', async event => {
     const next = event.detail === 0 ? position : position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
     changed.rating = Number(game.rating) === next ? null : next;
   }
-  try { await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favourites.' : 'Removed from favourites.'); }
+  try { const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); applySaveProgress(result); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favourites.' : 'Removed from favourites.'); }
   catch (error) { toast(error.message); }
 });
 $('#games').addEventListener('pointermove', event => {
@@ -873,25 +872,6 @@ $('#pegi-results').addEventListener('click', event => {
   $('#game-form')._pegiMetadata = pegiMetadata({ pegiDescriptors: result.descriptors, pegiReleases: result.releases, pegiAdvice: result.advice, pegiOutline: result.outline, pegiContentIssues: result.contentIssues, pegiOtherIssues: result.otherIssues });
   $('#pegi-results').hidden = true; renderPegiDetails(); $('#game-pegi-details').open = true; toast('PEGI details applied.');
 });
-$('#esrb-search-button').addEventListener('click', async () => {
-  const title = $('#game-title').value.trim(); const box = $('#esrb-results'); box.hidden = false;
-  if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
-  box.innerHTML = '<p class="pegi-message">Searching ESRB’s catalogue…</p>';
-  try {
-    const results = await api(`/api/esrb/search?q=${encodeURIComponent(title)}`); box._results = results;
-    box.innerHTML = results.length ? `<p class="pegi-message pegi-result-count">${results.length.toLocaleString()} ESRB result${results.length === 1 ? '' : 's'}</p>${results.map((result, index) => `<button type="button" class="pegi-result" data-esrb-index="${index}"><span class="pegi-box">${escapeHtml(result.esrbRating || '?')}</span><span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml([...(result.descriptors || []).slice(0, 2), ...(result.platforms || []).slice(0, 1)].join(' · '))}</small></span></button>`).join('')}` : `<p class="pegi-message">No ESRB match found. You can keep entering the game manually.</p>`;
-  } catch { box.hidden = true; }
-});
-$('#esrb-results').addEventListener('click', event => {
-  const button = event.target.closest('[data-esrb-index]'); if (!button) return;
-  const result = $('#esrb-results')._results?.[Number(button.dataset.esrbIndex)]; if (!result) return;
-  $('#game-form').dataset.esrbUrl = result.esrbUrl || ''; $('#game-form')._esrbMetadata = esrbMetadata({ esrbRating: result.esrbRating, esrbDescriptors: result.descriptors, esrbInteractiveElements: result.interactiveElements, esrbSummary: result.summary });
-  if (!$('#game-description').value.trim() && result.summary) {
-    $('#game-description').value = result.summary; $('#game-form').dataset.descriptionSource = 'ESRB'; $('#game-form').dataset.descriptionSourceUrl = result.esrbUrl || '';
-  }
-  $('#esrb-results').hidden = true; renderEsrbDetails(); $('#game-esrb-details').open = true; toast('ESRB details applied.');
-});
-
 $('#game-description').addEventListener('input', () => {
   if ($('#game-description').value !== $('#game-form').dataset.descriptionInitial) {
     $('#game-form').dataset.descriptionSource = $('#game-description').value.trim() ? 'Manual' : '';
@@ -950,10 +930,11 @@ $('#account-button').addEventListener('click', () => {
   $('#account-current-password').value = '';
   $('#account-new-password').value = '';
   $('#account-confirm-password').value = '';
+  $('#account-hide-from-activity').checked = Boolean(state.user?.hideFromActivity);
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
-  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadEsrbStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
+  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
@@ -1019,17 +1000,6 @@ async function loadPegiStatus() {
   try { state.pegiStatus = await api('/api/pegi/status'); renderPegiBulkStatus(); }
   catch (error) { $('#pegi-provider-status').textContent = error.message; }
 }
-function renderEsrbBulkStatus() {
-  const status = state.esrbStatus; if (!status) return;
-  $('#esrb-provider-status').textContent = `${status.missing.toLocaleString()} games still need ESRB details.`;
-  $('#esrb-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
-  const job = status.job; let shortStatus = 'Unique exact-title matches only.'; let detail = 'ESRB’s public search is used conservatively; ambiguous results remain blank.';
-  if (job?.state === 'running') { shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`; detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${job.errors.toLocaleString()} errors`; }
-  else if (job?.state === 'complete') { shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`; detail = `${job.processed.toLocaleString()} scanned · ${job.errors.toLocaleString()} errors`; }
-  else if (job?.state === 'failed') { shortStatus = 'Scan paused · details'; detail = job.lastError || 'ESRB unavailable.'; }
-  setBulkStatus($('#esrb-bulk-status'), shortStatus, detail);
-}
-async function loadEsrbStatus() { try { state.esrbStatus = await api('/api/esrb/status'); renderEsrbBulkStatus(); } catch (error) { $('#esrb-provider-status').textContent = error.message; } }
 function renderHltbBulkStatus() {
   const status = state.hltbStatus; if (!status) return;
   $('#hltb-provider-status').textContent = `${status.missing.toLocaleString()} games still need HLTB estimates.`;
@@ -1091,11 +1061,6 @@ $('#cover-bulk-start').addEventListener('click', async () => {
 $('#pegi-bulk-start').addEventListener('click', async () => {
   const button = $('#pegi-bulk-start'); button.disabled = true;
   try { await api('/api/pegi/bulk', { method: 'POST' }); toast('Background PEGI scan started.'); await loadPegiStatus(); }
-  catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
-});
-$('#esrb-bulk-start').addEventListener('click', async () => {
-  const button = $('#esrb-bulk-start'); button.disabled = true;
-  try { await api('/api/esrb/bulk', { method: 'POST' }); toast('Background ESRB scan started.'); await loadEsrbStatus(); }
   catch (error) { $('#account-error').textContent = error.message; $('#account-error').hidden = false; button.disabled = false; }
 });
 $('#hltb-bulk-start').addEventListener('click', async () => {
@@ -1166,6 +1131,7 @@ $('#account-form').addEventListener('submit', async event => {
   try {
     const result = await api('/api/account', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
       username: $('#account-username').value, email: $('#account-email').value, currentPassword: $('#account-current-password').value, newPassword,
+      hideFromActivity: $('#account-hide-from-activity').checked,
     }) });
     accountDialog.close();
     if (result.user.sessionInvalidated) {
@@ -1179,6 +1145,7 @@ $('#account-form').addEventListener('submit', async event => {
 
 (async function boot() {
   setAuthMode('login');
+  activityFeed.start();
   loadConfig();
   loadAuthCovers();
   const resetToken = new URLSearchParams(window.location.search).get('reset');

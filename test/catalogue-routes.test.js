@@ -40,6 +40,15 @@ test('public katalog routes render before account authentication', async () => {
   assert.match(output.headers['Content-Security-Policy'], /default-src 'self'/);
 });
 
+test('the public Signal route is available without an account', async () => {
+  const routes = fixture(); const output = response();
+  const handled = await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/signal'));
+  assert.equal(handled, true);
+  assert.equal(output.status, 200);
+  assert.match(output.body, /data-activity-feed data-activity-limit="all" data-activity-grouped="true"/);
+  assert.match(output.body, /signal-page\.js/);
+});
+
 test('the former catalogue path is not a public route', async () => {
   const routes = fixture(); const output = response();
   assert.equal(await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/catalogue')), false);

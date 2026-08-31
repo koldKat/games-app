@@ -33,17 +33,17 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Public Kat·a·log
 
-Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes, the header action becomes **My Kat·a·log**, and **Add a game** remains in its fixed position. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release detail dialog shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
+Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release detail dialog shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
 
 When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favourite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
 
 The Kat·a·log grows conservatively from member libraries. A release publishes automatically only when all of these are present:
 
 - A durable locally stored cover with an exact normalized title match.
-- Substantive PEGI **or** ESRB metadata.
+- Substantive PEGI metadata.
 - A HowLongToBeat record with at least one timing estimate and an exact normalized title match.
 
-Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only—never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. From the first linked private rating, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
+Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only // never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. From the first linked private rating, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
 
 Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its public release details over the Kat·a·log, where you can inspect the metadata before adding it. Each release also has a stable shareable URL for search engines; opening one directly lands on the same Kat·a·log detail dialog, and closing it returns to the catalogue without creating a redundant browser-history entry. If the same title and platform are already in your library, the page shows **Already in your Kat·a·log** instead of an add form and links back to your library.
 
@@ -86,7 +86,7 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
-| **Data gaps** | No PEGI info, no ESRB info, no cover, no HLTB info, no description, any missing, or all missing; Evercade is treated as PEGI-not-applicable |
+| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade is treated as PEGI-not-applicable |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -115,9 +115,25 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
 
-XP recognises durable collection work: adding a game; setting a cover, PEGI or ESRB details, HLTB times, description, personal note, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once. Each ESRB record awards 20 XP once, whether it comes from manual selection or the background scanner.
+XP recognises durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once.
 
 Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favourite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.
+
+## Kat·a·log Signal
+
+**Kat·a·log Signal** is a public page at `/signal`; the landing screen shows a short live preview and links to it. It shows every eligible event from the last 30 days // there is no event-count cap // and groups activity by your local day. It intentionally contains only public-safe events: new accounts, collector level-ups, games contributed to the public Kat·a·log, and published administrator announcements. It uses a server-sent-event connection, so a new event appears without refreshing the page. Private library additions, wishlists, ratings, edits, metadata scans, and play status never appear there.
+
+New accounts are announced by default with a randomly selected message. Level-up messages are also selected from the stored Signal templates and identify a newly gained collector title when one changes. Open **Account settings** and enable **Hide from Kat·a·log Signal** to hide all of your Signal events, including existing ones. The choice is stored with your account and applies across devices.
+
+The localhost-only administrator panel can compose announcements as drafts, edit them, publish or unpublish them, delete them, and pin one published notice. A pinned announcement stays above Signal regardless of age; other published announcements follow the normal 30-day window. Announcement text supports restrained `**bold**`, `*italic*`, `__underline__`, `~~strike~~`, and `{color:teal}colour{/color}` formatting.
+
+---
+
+## Forum
+
+**Forum** is a public, search-visible discussion space at `/forum`. It keeps the same header and cover treatment as Signal and the public Kat·a·log, and switches below the signed-in shell rather than rebuilding the app header. Anyone can read the starting channels: General, Games & recommendations, Collections & hardware, and Kat·a·log.
+
+Choose a channel before starting a thread: its inline composer appears within that channel and locks the selected channel, so a new discussion never falls into General by default. Thread cards identify their author; each thread-page post also shows that account's avatar or initial, username, and collector level. Sign in to start a thread or reply. You can edit or delete only your own thread or reply; deletion uses a themed second-click confirmation, deleting a thread removes its replies, while deleting a reply leaves a clear deleted marker in the conversation. Forum changes use a public server-sent-event stream, so open channels and threads refresh without manual reload. A localhost administrator manages channels and can pin, lock, or remove any thread. Starting a thread awards 25 XP once; each reply awards 5 XP once.
 
 ---
 
@@ -172,10 +188,6 @@ After selecting a result, **PEGI details** opens beneath the form. It contains:
 
 The longer material stays collapsed when a saved game is opened, keeping routine edits compact. Select **PEGI details** to reveal it.
 
-### ESRB-assisted entry
-
-**Look up title** in the ESRB-assisted entry panel searches ESRB’s public catalogue. Choosing a result stores its US category, content descriptors, interactive elements, available summary, and a source link; the category also appears as an ESRB badge on the card without replacing the PEGI rating that colours it. When ESRB offers a rating summary, it fills an empty game description but never overwrites an existing description. ESRB has no public developer API, so this is an optional public-page lookup. If it is unavailable, simply continue entering the game normally.
-
 ### Cover-assisted entry
 
 1. Open **Account Settings** and connect one or both artwork sources: SteamGridDB or TheGamesDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts.
@@ -213,8 +225,6 @@ Each game has an editable **Description** field. Select **Look up description** 
 Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
 
 Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
-
-Select **Fill ESRB details** to scan games without ESRB data. It accepts only a unique normalized exact-title result, preferring a platform match where ESRB provides one. Ambiguous results remain blank for manual selection. The scan updates ESRB fields only and stops after repeated provider failures.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 
@@ -302,6 +312,8 @@ The compact terminal-style panel provides:
 - SMTP host, port, transport security, credentials, sender address, and a send-test-email action for password resets. SMTP passwords are never returned to the browser after saving.
 - Cross-account private-row search and deliberate, confirmed game deletion.
 - Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup. Only review candidates have a **Publish** action; a published release can be returned to review or rejected, and a rejected release must first return to review before it can be published.
+- Signal announcement drafting, editing, publishing, unpublishing, deletion, and a single pinned notice that stays above the public feed.
+- Forum channel administration plus local thread pinning, locking, and removal.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
 - Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.
@@ -342,4 +354,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider—SteamGridDB and/or TheGamesDB—and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. SteamGridDB autocomplete, when configured, also sends the text currently being typed after the third character.
+The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // SteamGridDB and/or TheGamesDB // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. SteamGridDB autocomplete, when configured, also sends the text currently being typed after the third character.

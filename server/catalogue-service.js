@@ -16,11 +16,6 @@ function catalogueGameInput(entry, personal = {}) {
     pegiOutline: entry.pegiOutline,
     pegiContentIssues: entry.pegiContentIssues,
     pegiOtherIssues: entry.pegiOtherIssues,
-    esrbRating: entry.esrbRating,
-    esrbUrl: entry.esrbUrl,
-    esrbDescriptors: entry.esrbDescriptors,
-    esrbInteractiveElements: entry.esrbInteractiveElements,
-    esrbSummary: entry.esrbSummary,
     hltbId: entry.hltbId,
     hltbTitle: entry.hltbTitle,
     hltbUrl: entry.hltbUrl,
@@ -125,6 +120,7 @@ function createCatalogueService({ data, store, covers, logger = console }) {
 
   return {
     addToLibrary,
+    contributionSources: store.contributionSources,
     libraryCopy,
     counts: store.counts,
     getById: store.getById,

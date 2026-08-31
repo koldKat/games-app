@@ -49,7 +49,7 @@ export function bindCatalogueGameDialog(root = document, { onClose = null } = {}
     if (onClose) onClose();
     else if (window.location.pathname.startsWith('/game/')) {
       window.history.replaceState({ catalogue: true }, '', '/katalog');
-      document.title = 'Public Kat·a·log | Game Kat·a·log';
+      document.title = 'Public Kat·a·log // Game Kat·a·log';
     }
   });
   if (dialog.open) dialog.close();
@@ -57,7 +57,7 @@ export function bindCatalogueGameDialog(root = document, { onClose = null } = {}
 }
 
 let catalogueGameSequence = 0;
-export async function openCatalogueGameDialog(root = document, url) {
+export async function openCatalogueGameDialog(root = document, url, { returnUrl = window.location.pathname === '/signal' ? '/signal' : '/katalog' } = {}) {
   const target = new URL(url, window.location.origin);
   if (target.origin !== window.location.origin || !target.pathname.startsWith('/game/')) return;
   const sequence = ++catalogueGameSequence;
@@ -71,7 +71,10 @@ export async function openCatalogueGameDialog(root = document, url) {
     main.querySelector('[data-catalogue-game-dialog]')?.remove();
     main.append(document.importNode(next, true));
     window.history.pushState({ catalogue: true }, '', `${target.pathname}${target.search}`);
-    bindCatalogueGameDialog(root);
+    bindCatalogueGameDialog(root, { onClose: () => {
+      window.history.replaceState({ catalogue: true }, '', returnUrl);
+      document.title = returnUrl === '/signal' ? 'Kat·a·log Signal // Game Kat·a·log' : 'Public Kat·a·log // Game Kat·a·log';
+    } });
     bindCatalogueAddForm(root);
   } catch {
     window.location.assign(`${target.pathname}${target.search}`);

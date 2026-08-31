@@ -15,7 +15,7 @@
   <meta property="og:site_name" content="Game Kat·a·log">
   <meta property="og:locale" content="en_GB">
   <meta property="og:url" content="https://gamekat.net/">
-  <meta property="og:title" content="Game Kat·a·log — Game Collection, Backlog &amp; Wishlist Tracker">
+  <meta property="og:title" content="Game Kat·a·log // Game Collection, Backlog &amp; Wishlist Tracker">
   <meta property="og:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
   <meta property="og:image" content="https://gamekat.net/social-preview.png">
   <meta property="og:image:type" content="image/png">
@@ -23,11 +23,11 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Game Kat·a·log personal game collection manager">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Game Kat·a·log — Game Collection, Backlog &amp; Wishlist Tracker">
+  <meta name="twitter:title" content="Game Kat·a·log // Game Collection, Backlog &amp; Wishlist Tracker">
   <meta name="twitter:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
   <meta name="twitter:image" content="https://gamekat.net/social-preview.png">
   <meta name="twitter:image:alt" content="Game Kat·a·log personal game collection manager">
-  <title>Game Kat·a·log — Video Game Collection, Backlog &amp; Wishlist Tracker</title>
+  <title>Game Kat·a·log // Video Game Collection, Backlog &amp; Wishlist Tracker</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="/css/library.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
+  <link rel="stylesheet" href="/css/activity.css">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -65,7 +66,8 @@
         "Responsive desktop and mobile interface",
         "Private account-scoped libraries",
         "Background metadata and cover enrichment with live card updates",
-        "Public, search-indexed game discovery with one-click private library adds"
+        "Public, search-indexed game discovery with one-click private library adds",
+        "Public-safe Kat·a·log Signal activity feed"
       ]
     }
   </script>
@@ -82,14 +84,14 @@
         <article class="auth-promo promo-library" data-cover-decoration="promo-loose-cover">
           <span class="promo-code">LIBRARY // 01</span>
           <h2>One library.<br>Every system.</h2>
-          <p>Track owned and wishlisted games—physical or digital—across built-in and custom platforms.</p>
+          <p>Track owned and wishlisted games // physical or digital // across built-in and custom platforms.</p>
           <div class="promo-platforms"><span>NINTENDO</span><span>PLAYSTATION</span><span>XBOX</span><span>PC + CUSTOM</span></div>
         </article>
-        <article class="auth-promo promo-query">
-          <span class="promo-code">QUERY // READY</span>
-          <h2>Interrogate the shelf.</h2>
-          <div class="promo-command"><b>&gt;</b> filter --missing hltb</div>
-          <div class="promo-result"><span>FILTERS</span><strong>COMBINED</strong></div><div class="promo-result"><span>SORT</span><strong>PLAYTIME_ASC</strong></div>
+        <article class="auth-promo promo-signal" aria-label="Kat·a·log Signal activity feed">
+          <span class="promo-code">SIGNAL // LIVE</span>
+          <h2>Kat·a·log signal.</h2>
+          <div id="activity-feed" class="activity-feed" data-activity-feed data-activity-limit="3" aria-live="polite"><p class="activity-feed-empty">Tuning the signal…</p></div>
+          <a class="promo-signal-link" href="/signal">Open the public signal →</a>
         </article>
         <article class="auth-promo promo-metadata">
           <span class="promo-code">METADATA // ASSISTED</span>
@@ -100,6 +102,10 @@
       </aside>
 
       <div class="auth-center">
+        <nav class="auth-public-nav" aria-label="Explore Game Kat·a·log">
+          <a class="button auth-public-link auth-public-link--signal" href="/signal">Signal</a>
+          <a class="button auth-public-link auth-public-link--catalogue" href="/katalog">Kat·a·log</a>
+        </nav>
         <section class="auth-card">
           <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
           <div class="auth-body">
@@ -164,7 +170,7 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version">…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><section id="header-progression" class="header-progression" hidden aria-live="polite"><div><span data-header-progress-level>LV 0</span><b data-header-progress-title>Uncatalogued</b><small data-header-progress-xp>0 XP</small></div><span class="header-progression-meter"><span data-header-progress-meter></span></span><small data-header-progress-next>1,000 XP to LV 1</small></section><a class="button catalogue-button" href="/katalog">Kat·a·log</a><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button><button class="button primary desktop-add" data-add-game><span class="button-icon">＋</span><span class="button-label">Add a game</span></button></div>
+      <div class="top-actions"><section id="header-progression" class="header-progression" hidden aria-live="polite"><div><span data-header-progress-level>LV 0</span><b data-header-progress-title>Uncatalogued</b><small data-header-progress-xp>0 XP</small></div><span class="header-progression-meter"><span data-header-progress-meter></span></span><small data-header-progress-next>1,000 XP to LV 1</small></section><a class="button signal-button" href="/signal">Signal</a><a class="button forum-button" href="/forum">Forum</a><a class="button catalogue-button" href="/katalog">Kat·a·log</a><a class="button library-button" href="/">My Kat·a·log</a><button class="button primary desktop-add" data-add-game><span class="button-icon">+</span><span class="button-label">Game</span></button><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button></div>
     </header>
 
     <main id="app-main">
@@ -179,16 +185,16 @@
       </section>
 
       <section class="stats" aria-label="Collection summary">
-        <button class="stat-card stat-tone-neutral" data-stat-kind="all"><span><b id="stat-total">—</b><small>Total</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#total"></use></svg></button>
-        <button class="stat-card stat-tone-green" data-stat-kind="ownership" data-stat-value="owned_physical"><span><b id="stat-owned-physical">—</b><small>Owned physical</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#physical"></use></svg></button>
-        <button class="stat-card stat-tone-cyan" data-stat-kind="ownership" data-stat-value="owned_digital"><span><b id="stat-owned-digital">—</b><small>Owned digital</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#digital"></use></svg></button>
-        <button class="stat-card stat-tone-amber" data-stat-kind="ownership" data-stat-value="wanted"><span><b id="stat-wanted">—</b><small>Wishlisted</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#wishlist"></use></svg></button>
-        <button class="stat-card stat-tone-blue" data-stat-kind="playStatus" data-stat-value="backlog"><span><b id="stat-backlog">—</b><small>Backlog</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#backlog"></use></svg></button>
-        <button class="stat-card stat-tone-cyan" data-stat-kind="playStatus" data-stat-value="playing"><span><b id="stat-playing">—</b><small>Playing</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#playing"></use></svg></button>
-        <button class="stat-card stat-tone-violet" data-stat-kind="playStatus" data-stat-value="completed"><span><b id="stat-completed">—</b><small>Completed</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#completed"></use></svg></button>
-        <button class="stat-card stat-tone-orange" data-stat-kind="playStatus" data-stat-value="paused"><span><b id="stat-paused">—</b><small>Paused</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#paused"></use></svg></button>
-        <button class="stat-card stat-tone-grey" data-stat-kind="playStatus" data-stat-value="abandoned"><span><b id="stat-abandoned">—</b><small>Abandoned</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#abandoned"></use></svg></button>
-        <button class="stat-card stat-tone-pink" data-stat-kind="favorite" data-stat-value="1"><span><b id="stat-favorites">—</b><small>Favourites</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#favourite"></use></svg></button>
+        <button class="stat-card stat-tone-neutral" data-stat-kind="all"><span><b id="stat-total">//</b><small>Total</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#total"></use></svg></button>
+        <button class="stat-card stat-tone-green" data-stat-kind="ownership" data-stat-value="owned_physical"><span><b id="stat-owned-physical">//</b><small>Owned physical</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#physical"></use></svg></button>
+        <button class="stat-card stat-tone-cyan" data-stat-kind="ownership" data-stat-value="owned_digital"><span><b id="stat-owned-digital">//</b><small>Owned digital</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#digital"></use></svg></button>
+        <button class="stat-card stat-tone-amber" data-stat-kind="ownership" data-stat-value="wanted"><span><b id="stat-wanted">//</b><small>Wishlisted</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#wishlist"></use></svg></button>
+        <button class="stat-card stat-tone-blue" data-stat-kind="playStatus" data-stat-value="backlog"><span><b id="stat-backlog">//</b><small>Backlog</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#backlog"></use></svg></button>
+        <button class="stat-card stat-tone-cyan" data-stat-kind="playStatus" data-stat-value="playing"><span><b id="stat-playing">//</b><small>Playing</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#playing"></use></svg></button>
+        <button class="stat-card stat-tone-violet" data-stat-kind="playStatus" data-stat-value="completed"><span><b id="stat-completed">//</b><small>Completed</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#completed"></use></svg></button>
+        <button class="stat-card stat-tone-orange" data-stat-kind="playStatus" data-stat-value="paused"><span><b id="stat-paused">//</b><small>Paused</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#paused"></use></svg></button>
+        <button class="stat-card stat-tone-grey" data-stat-kind="playStatus" data-stat-value="abandoned"><span><b id="stat-abandoned">//</b><small>Abandoned</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#abandoned"></use></svg></button>
+        <button class="stat-card stat-tone-pink" data-stat-kind="favorite" data-stat-value="1"><span><b id="stat-favorites">//</b><small>Favourites</small></span><svg class="stat-art" aria-hidden="true"><use href="/assets/stat-icons.svg#favourite"></use></svg></button>
       </section>
 
       <section class="library">
@@ -208,7 +214,7 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
-            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="esrb">No ESRB info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter"><option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option><option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option><option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favourites first</option><option value="newest">Recently added</option><option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option><option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option><option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option></select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -253,11 +259,6 @@
         <button type="button" class="button secondary" id="pegi-search-button">Look up title</button>
       </div>
       <div id="pegi-results" class="pegi-results" hidden></div>
-      <div class="pegi-assist">
-        <div><strong>ESRB-assisted entry</strong><small>Search the ESRB catalogue and apply its US rating details.</small></div>
-        <button type="button" class="button secondary" id="esrb-search-button">Look up title</button>
-      </div>
-      <div id="esrb-results" class="pegi-results" hidden></div>
       <div class="cover-assist">
         <div><strong>Box-art lookup</strong><small>Search connected artwork providers and choose the exact edition.</small></div>
         <div class="cover-assist-actions"><button type="button" class="button ghost" id="cover-remove-button" hidden>Remove cover</button><button type="button" class="button secondary" id="cover-search-button">Request cover</button></div>
@@ -307,7 +308,6 @@
           <a id="game-pegi-source" class="pegi-source" href="https://pegi.info/" target="_blank" rel="noopener">View source on PEGI ↗</a>
         </div>
       </details>
-      <details id="game-esrb-details" class="game-pegi-details" hidden><summary><span>ESRB details</span><small id="game-esrb-summary"></small></summary><div class="pegi-detail-body"><div id="game-esrb-descriptors" class="pegi-detail-descriptors"></div><section id="game-esrb-interactive-section"><h3>Interactive elements</h3><p id="game-esrb-interactive"></p></section><section id="game-esrb-summary-section"><h3>Rating summary</h3><p id="game-esrb-summary-text"></p></section><a id="game-esrb-source" class="pegi-source" href="https://www.esrb.org/" target="_blank" rel="noopener">View source on ESRB ↗</a></div></details>
       <p id="form-error" class="form-error" hidden></p>
       <footer class="modal-actions"><button type="button" class="button danger-text" id="delete-game" hidden>Delete</button><button type="button" class="button ghost" data-close>Cancel</button><button type="submit" class="button primary" id="save-game">Save game</button></footer>
     </form>
@@ -348,10 +348,6 @@
         <div class="integration-head"><span><strong>PEGI metadata</strong><small id="pegi-provider-status">Checking library…</small></span><a href="https://pegi.info/search-pegi" target="_blank" rel="noopener">Open PEGI ↗</a></div>
         <div class="integration-bulk"><span id="pegi-bulk-status" class="bulk-status" tabindex="0">PEGI scan idle.</span><button type="button" class="button ghost" id="pegi-bulk-start">Fill PEGI details</button></div>
       </section>
-      <section class="integration-panel pegi-integration">
-        <div class="integration-head"><span><strong>ESRB metadata</strong><small id="esrb-provider-status">Checking library…</small></span><a href="https://www.esrb.org/search/" target="_blank" rel="noopener">Open ESRB ↗</a></div>
-        <div class="integration-bulk"><span id="esrb-bulk-status" class="bulk-status" tabindex="0">ESRB scan idle.</span><button type="button" class="button ghost" id="esrb-bulk-start">Fill ESRB details</button></div>
-      </section>
       <section class="integration-panel hltb-integration">
         <div class="integration-head"><span><strong>HowLongToBeat estimates</strong><small id="hltb-provider-status">Checking library…</small></span><a href="https://howlongtobeat.com/" target="_blank" rel="noopener">Open HLTB ↗</a></div>
         <div class="integration-bulk"><span id="hltb-bulk-status" class="bulk-status" tabindex="0">HLTB scan idle.</span><button type="button" class="button ghost" id="hltb-bulk-start">Fill HLTB times</button></div>
@@ -362,6 +358,7 @@
         <label class="span-2"><span>Current password *</span><input id="account-current-password" type="password" required autocomplete="current-password" placeholder="Required to save changes"></label>
         <label class="span-2"><span>New password</span><input id="account-new-password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Leave blank to keep current password"></label>
         <label class="span-2"><span>Confirm new password</span><input id="account-confirm-password" type="password" minlength="8" maxlength="200" autocomplete="new-password" placeholder="Repeat new password"></label>
+        <label class="span-2 account-activity-toggle"><input id="account-hide-from-activity" type="checkbox"><span><strong>Hide from Kat·a·log Signal</strong><small>Hide your joins, level-ups, and public Kat·a·log contributions from the activity feed.</small></span></label>
       </div>
       <p id="account-error" class="form-error" hidden></p>
       <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>

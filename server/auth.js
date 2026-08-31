@@ -29,7 +29,7 @@ class AccountLockedError extends Error {
 }
 
 function publicUser(row) {
-  return { id: row.id, username: row.username, email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null };
+  return { id: row.id, username: row.username, email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null, hideFromActivity: Boolean(row.hide_from_activity) };
 }
 
 async function hashPassword(password) {
@@ -65,7 +65,7 @@ async function register(username, password, email) {
   const { hash, salt } = await hashPassword(password);
   try {
     const result = db.prepare('INSERT INTO users (username, email, password_hash, salt) VALUES (?, ?, ?, ?)').run(clean, cleanEmail, hash, salt);
-    return { id: Number(result.lastInsertRowid), username: clean, email: cleanEmail, avatarUrl: null };
+    return { id: Number(result.lastInsertRowid), username: clean, email: cleanEmail, avatarUrl: null, hideFromActivity: false };
   } catch (error) {
     if (String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE')) throw new Error(cleanEmail ? 'Username or email already in use.' : 'Username already taken.');
     throw error;
@@ -202,19 +202,20 @@ async function updateAccount(userId, input) {
   const email = input.email == null ? row.email : normalizeEmail(input.email);
   let passwordHash = row.password_hash;
   let salt = row.salt;
+  const hideFromActivity = input.hideFromActivity == null ? Boolean(row.hide_from_activity) : Boolean(input.hideFromActivity);
   if (input.newPassword) {
     validateCredentials(username, input.newPassword);
     const next = await hashPassword(input.newPassword);
     passwordHash = next.hash; salt = next.salt;
   }
   try {
-    db.prepare('UPDATE users SET username=?, email=?, password_hash=?, salt=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(username, email, passwordHash, salt, userId);
+    db.prepare('UPDATE users SET username=?, email=?, password_hash=?, salt=?, hide_from_activity=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(username, email, passwordHash, salt, hideFromActivity ? 1 : 0, userId);
   } catch (error) {
     if (String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE')) throw new Error('Username or email already in use.');
     throw error;
   }
   if (input.newPassword) db.prepare('DELETE FROM sessions WHERE user_id=?').run(userId);
-  return { ...publicUser({ id: userId, username, email, avatar_path: row.avatar_path }), sessionInvalidated: Boolean(input.newPassword) };
+  return { ...publicUser({ id: userId, username, email, avatar_path: row.avatar_path, hide_from_activity: hideFromActivity }), sessionInvalidated: Boolean(input.newPassword) };
 }
 
 function avatarPath(userId) { return db.prepare('SELECT avatar_path FROM users WHERE id=?').get(userId)?.avatar_path || null; }

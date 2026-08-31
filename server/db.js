@@ -108,6 +108,36 @@ db.exec(`
     sort_order TEXT NOT NULL DEFAULT 'title',
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS forum_categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+    slug TEXT NOT NULL COLLATE NOCASE UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS forum_threads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL REFERENCES forum_categories(id) ON DELETE RESTRICT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    reply_count INTEGER NOT NULL DEFAULT 0,
+    is_locked INTEGER NOT NULL DEFAULT 0 CHECK (is_locked IN (0, 1)),
+    is_pinned INTEGER NOT NULL DEFAULT 0 CHECK (is_pinned IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_post_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    edited_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS forum_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    thread_id INTEGER NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    body TEXT NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    edited_at TEXT
+  );
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -130,11 +160,6 @@ db.exec(`
     pegi_outline TEXT NOT NULL DEFAULT '',
     pegi_content_issues TEXT NOT NULL DEFAULT '',
     pegi_other_issues TEXT NOT NULL DEFAULT '',
-    esrb_rating TEXT NOT NULL DEFAULT '',
-    esrb_url TEXT NOT NULL DEFAULT '',
-    esrb_descriptors TEXT NOT NULL DEFAULT '[]',
-    esrb_interactive_elements TEXT NOT NULL DEFAULT '[]',
-    esrb_summary TEXT NOT NULL DEFAULT '',
     cover_url TEXT NOT NULL DEFAULT '',
     cover_source TEXT NOT NULL DEFAULT '',
     cover_match_title TEXT NOT NULL DEFAULT '',
@@ -154,6 +179,7 @@ if (!userColumns.includes('avatar_path')) db.exec('ALTER TABLE users ADD COLUMN 
 if (!userColumns.includes('failed_login_count')) db.exec('ALTER TABLE users ADD COLUMN failed_login_count INTEGER NOT NULL DEFAULT 0');
 if (!userColumns.includes('locked_until')) db.exec('ALTER TABLE users ADD COLUMN locked_until INTEGER');
 if (!userColumns.includes('admin_locked')) db.exec('ALTER TABLE users ADD COLUMN admin_locked INTEGER NOT NULL DEFAULT 0');
+if (!userColumns.includes('hide_from_activity')) db.exec('ALTER TABLE users ADD COLUMN hide_from_activity INTEGER NOT NULL DEFAULT 0');
 const gameColumns = db.pragma('table_info(games)').map(column => column.name);
 if (!gameColumns.includes('user_id')) db.exec('ALTER TABLE games ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
 if (!gameColumns.includes('cover_url')) db.exec("ALTER TABLE games ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''");
@@ -165,20 +191,14 @@ if (!gameColumns.includes('pegi_advice')) db.exec("ALTER TABLE games ADD COLUMN 
 if (!gameColumns.includes('pegi_outline')) db.exec("ALTER TABLE games ADD COLUMN pegi_outline TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('pegi_content_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_content_issues TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('pegi_other_issues')) db.exec("ALTER TABLE games ADD COLUMN pegi_other_issues TEXT NOT NULL DEFAULT ''");
-if (!gameColumns.includes('esrb_rating')) db.exec("ALTER TABLE games ADD COLUMN esrb_rating TEXT NOT NULL DEFAULT ''");
-if (!gameColumns.includes('esrb_url')) db.exec("ALTER TABLE games ADD COLUMN esrb_url TEXT NOT NULL DEFAULT ''");
-if (!gameColumns.includes('esrb_descriptors')) db.exec("ALTER TABLE games ADD COLUMN esrb_descriptors TEXT NOT NULL DEFAULT '[]'");
-if (!gameColumns.includes('esrb_interactive_elements')) db.exec("ALTER TABLE games ADD COLUMN esrb_interactive_elements TEXT NOT NULL DEFAULT '[]'");
-if (!gameColumns.includes('esrb_summary')) db.exec("ALTER TABLE games ADD COLUMN esrb_summary TEXT NOT NULL DEFAULT ''");
-// Remove the short-lived bad records produced while the ESRB parser was
-// reading the site's “Content Included” filter as a game result.
-db.prepare(`UPDATE games SET esrb_rating='', esrb_url='', esrb_descriptors='[]', esrb_interactive_elements='[]', esrb_summary=''
-  WHERE esrb_descriptors LIKE '%Content Included%' AND esrb_summary=''`).run();
-db.prepare(`UPDATE games SET esrb_rating='', esrb_url='', esrb_descriptors='[]', esrb_interactive_elements='[]', esrb_summary='',
-  description=CASE WHEN description_source='ESRB' THEN '' ELSE description END,
-  description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END,
-  description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END
-  WHERE esrb_summary LIKE '%"@context"%'`).run();
+for (const column of ['esrb_rating', 'esrb_url', 'esrb_descriptors', 'esrb_interactive_elements', 'esrb_summary']) {
+  if (gameColumns.includes(column)) db.exec(`ALTER TABLE games DROP COLUMN ${column}`);
+}
+db.transaction(() => {
+  db.prepare(`UPDATE user_progression SET xp=MAX(0, xp - COALESCE((SELECT SUM(amount) FROM progression_events WHERE progression_events.user_id=user_progression.user_id AND event='esrb_added'), 0))`).run();
+  db.prepare("DELETE FROM progression_events WHERE event='esrb_added'").run();
+  db.prepare("DELETE FROM progression_config WHERE event='esrb_added'").run();
+})();
 if (!gameColumns.includes('hltb_id')) db.exec('ALTER TABLE games ADD COLUMN hltb_id INTEGER');
 if (!gameColumns.includes('hltb_title')) db.exec("ALTER TABLE games ADD COLUMN hltb_title TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('hltb_url')) db.exec("ALTER TABLE games ADD COLUMN hltb_url TEXT NOT NULL DEFAULT ''");
@@ -190,6 +210,7 @@ if (!gameColumns.includes('hltb_updated_at')) db.exec('ALTER TABLE games ADD COL
 if (!gameColumns.includes('description')) db.exec("ALTER TABLE games ADD COLUMN description TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('description_source')) db.exec("ALTER TABLE games ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('description_source_url')) db.exec("ALTER TABLE games ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
+if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 
 db.exec(`
@@ -200,6 +221,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_games_ownership ON games(ownership);
   CREATE INDEX IF NOT EXISTS idx_games_pegi ON games(pegi);
   CREATE INDEX IF NOT EXISTS idx_games_title ON games(title COLLATE NOCASE);
+  CREATE INDEX IF NOT EXISTS idx_forum_threads_category ON forum_threads(category_id, is_pinned DESC, last_post_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_forum_posts_thread ON forum_posts(thread_id, created_at);
 `);
 
 const selectFields = `id, title, platform, pegi, ownership, play_status AS playStatus,
@@ -208,8 +231,6 @@ const selectFields = `id, title, platform, pegi, ownership, play_status AS playS
   pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
-  esrb_rating AS esrbRating, esrb_url AS esrbUrl, esrb_descriptors AS esrbDescriptorsJson,
-  esrb_interactive_elements AS esrbInteractiveElementsJson, esrb_summary AS esrbSummary,
   hltb_id AS hltbId, hltb_title AS hltbTitle, hltb_url AS hltbUrl,
   hltb_main_story AS hltbMainStory, hltb_main_extra AS hltbMainExtra,
   hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles,
@@ -221,12 +242,12 @@ const selectFields = `id, title, platform, pegi, ownership, play_status AS playS
 const insert = db.prepare(`
   INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, media_format,
     cartridge_number, publisher, release_year, notes, rating, favorite, pegi_url, pegi_descriptors,
-    pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues, esrb_rating, esrb_url, esrb_descriptors, esrb_interactive_elements, esrb_summary,
+    pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
     cover_url, cover_source, cover_match_title, description, description_source, description_source_url)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
-    @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues, @esrbRating, @esrbUrl, @esrbDescriptorsJson, @esrbInteractiveElementsJson, @esrbSummary,
+    @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
     @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl)
 `);
@@ -236,7 +257,7 @@ const update = db.prepare(`
     publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=@rating, favorite=@favorite,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
-    pegi_other_issues=@pegiOtherIssues, esrb_rating=@esrbRating, esrb_url=@esrbUrl, esrb_descriptors=@esrbDescriptorsJson, esrb_interactive_elements=@esrbInteractiveElementsJson, esrb_summary=@esrbSummary, hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
+    pegi_other_issues=@pegiOtherIssues, hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
     hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
     hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles, hltb_updated_at=@hltbUpdatedAt,
     cover_url=@coverUrl, cover_source=@coverSource,
@@ -280,8 +301,6 @@ function normalizeGame(input = {}) {
     pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
     pegiAdvice: safeText(input.pegiAdvice), pegiOutline: safeText(input.pegiOutline),
     pegiContentIssues: safeText(input.pegiContentIssues), pegiOtherIssues: safeText(input.pegiOtherIssues),
-    esrbRating: safeText(input.esrbRating, 80), esrbUrl: safeText(input.esrbUrl, URL_MAX_LENGTH),
-    esrbDescriptorsJson: JSON.stringify(safeList(input.esrbDescriptors)), esrbInteractiveElementsJson: JSON.stringify(safeList(input.esrbInteractiveElements)), esrbSummary: safeText(input.esrbSummary, DESCRIPTION_MAX_LENGTH),
     hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, TITLE_MAX_LENGTH) : '',
     hltbUrl: hltbId ? safeText(input.hltbUrl, URL_MAX_LENGTH) : '',
     hltbMainStory: hltbId ? hltbHours(input.hltbMainStory) : null,
@@ -304,8 +323,8 @@ function parseStoredList(value) {
 }
 function hydrateGame(row) {
   if (!row) return row;
-  const { pegiDescriptorsJson, pegiReleasesJson, esrbDescriptorsJson, esrbInteractiveElementsJson, ...game } = row;
-  return { ...game, pegiDescriptors: parseStoredList(pegiDescriptorsJson), pegiReleases: parseStoredList(pegiReleasesJson), esrbDescriptors: parseStoredList(esrbDescriptorsJson), esrbInteractiveElements: parseStoredList(esrbInteractiveElementsJson) };
+  const { pegiDescriptorsJson, pegiReleasesJson, ...game } = row;
+  return { ...game, pegiDescriptors: parseStoredList(pegiDescriptorsJson), pegiReleases: parseStoredList(pegiReleasesJson) };
 }
 
 function listGames(userId, filters = {}) {
@@ -331,14 +350,12 @@ function listGames(userId, filters = {}) {
   const missingPegi = `(platform NOT LIKE 'Evercade%'
     AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='')`;
-  const missingEsrb = `(esrb_rating='' AND esrb_url='' AND esrb_descriptors='[]' AND esrb_interactive_elements='[]' AND esrb_summary='')`;
   if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
-  if (filters.missing === 'esrb') clauses.push(missingEsrb);
   if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
   if (filters.missing === 'hltb') clauses.push('hltb_id IS NULL');
   if (filters.missing === 'description') clauses.push("description=''");
-  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR ${missingEsrb} OR cover_url='' OR hltb_id IS NULL OR description='')`);
-  if (filters.missing === 'both') clauses.push(`${missingPegi} AND ${missingEsrb} AND cover_url='' AND hltb_id IS NULL AND description=''`);
+  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL OR description='')`);
+  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL AND description=''`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
   const titleAsc = 'search_normalize(title) ASC, id ASC';
   const titleDesc = 'search_normalize(title) DESC, id DESC';
@@ -465,26 +482,6 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
   return result.changes ? getGame(userId, id) : null;
 }
 
-function gamesMissingEsrbMetadata(userId) {
-  return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=?
-    AND esrb_rating='' AND esrb_url='' AND esrb_descriptors='[]' AND esrb_interactive_elements='[]' AND esrb_summary=''
-    ORDER BY title COLLATE NOCASE`).all(userId);
-}
-function updateGameEsrbMetadata(userId, id, metadata = {}) {
-  const summary = safeText(metadata.summary, DESCRIPTION_MAX_LENGTH);
-  const result = db.prepare(`UPDATE games SET esrb_rating=@esrbRating, esrb_url=@esrbUrl,
-    esrb_descriptors=@esrbDescriptorsJson, esrb_interactive_elements=@esrbInteractiveElementsJson, esrb_summary=@esrbSummary,
-    description=CASE WHEN description='' AND @esrbSummary<>'' THEN @esrbSummary ELSE description END,
-    description_source=CASE WHEN description='' AND @esrbSummary<>'' THEN 'ESRB' ELSE description_source END,
-    description_source_url=CASE WHEN description='' AND @esrbSummary<>'' THEN @esrbUrl ELSE description_source_url END,
-    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
-    AND esrb_rating='' AND esrb_url='' AND esrb_descriptors='[]' AND esrb_interactive_elements='[]' AND esrb_summary=''`).run({
-    id, userId, esrbRating: safeText(metadata.esrbRating ?? metadata.rating, 80), esrbUrl: safeText(metadata.esrbUrl ?? metadata.url, URL_MAX_LENGTH),
-    esrbDescriptorsJson: JSON.stringify(safeList(metadata.descriptors)), esrbInteractiveElementsJson: JSON.stringify(safeList(metadata.interactiveElements)), esrbSummary: summary,
-  });
-  return result.changes ? getGame(userId, id) : null;
-}
-
 function gamesMissingHltb(userId) {
   return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
 }
@@ -542,4 +539,4 @@ function stats(userId) {
 module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForCatalogue, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
-  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingEsrbMetadata, updateGameEsrbMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };

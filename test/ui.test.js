@@ -9,6 +9,11 @@ const publicStylesheets = ['foundation.css', 'theme.css', 'library.css', 'landin
 const readPublicCss = () => publicStylesheets.map(file => read(`public/css/${file}`)).join('')
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}').replace(/\s+/g, ' ').trim();
 
+test('browser modules do not assign through an optional chain', () => {
+  const modules = fs.readdirSync(path.join(root, 'public/js')).filter(file => file.endsWith('.js')).map(file => read(`public/js/${file}`)).join('\n');
+  assert.doesNotMatch(modules, /\?\.[\w$]*\([^)]*\)\s*\.\s*[\w$]+\s*=/);
+});
+
 test('destructive actions never invoke native browser dialogs', () => {
   const sources = ['public/app.js', 'admin/js/accounts.js', 'admin/js/catalogue.js', 'admin/js/public-catalogue.js', 'admin/js/tools.js', 'admin/js/core.js'];
   const nativeDialog = /\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/;
@@ -38,6 +43,33 @@ test('authentication landing keeps a dense real-cover background', () => {
   assert.match(application, /document\.createElement\('i'\)/);
 });
 
+test('Kat·a·log Signal is a modular public feed with a global account privacy control', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const activity = read('server/activity.js');
+  assert.match(html, /id="activity-feed"/); assert.match(html, /data-activity-feed data-activity-limit="3"/); assert.match(html, /href="\/signal">Open the public signal/); assert.match(html, /id="account-hide-from-activity"/);
+  assert.match(application, /createActivityFeed/); assert.match(activity, /activity_templates/); assert.match(activity, /activity_events/);
+  assert.match(activity, /JOIN_TEMPLATES/); assert.match(activity, /LEVEL_TEMPLATES/);
+  assert.match(read('public/js/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
+  assert.match(read('public/js/signal-page.js'), /createActivityFeed\(\)\.start\(\)/);
+  assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt\)/);
+  assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
+  assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
+  assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
+  assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
+  assert.match(read('public/js/activity-feed.js'), /const targets = hosts\(\)/);
+  assert.match(read('public/js/catalogue-navigation.js'), /onSignalVisible\(\)/);
+  assert.match(read('public/css/catalogue.css'), /\.signal-feed \.activity-day h3/);
+  assert.match(read('public/js/activity-feed.js'), /entry\.type === 'announcement'/);
+  assert.match(read('public/js/activity-feed.js'), /body\.pinned/);
+  assert.match(read('public/js/activity-feed.js'), /function pinnedCard\(entry\)/);
+  assert.match(read('public/css/activity.css'), /\.activity-pinned-card/);
+  assert.match(read('public/js/announcement-format.js'), /formatAnnouncementBody/);
+  assert.match(read('admin/index.html'), /data-tab="announcements"/);
+  assert.match(read('admin/index.html'), /id="announcement-form"/);
+  assert.match(read('admin/js/boot.js'), /loadAnnouncements/);
+  assert.match(read('admin/js/announcements.js'), /\/api\/admin\/announcements/);
+  assert.match(read('server/admin.js'), /activity\.publishAnnouncement/);
+});
+
 test('maintained markup does not hardcode decorative placeholder clusters', () => {
   const html = read('public/index.html'); const admin = read('admin/index.html'); const application = read('public/app.js');
   assert.doesNotMatch(html + admin, /<i\b[^>]*>\s*<\/i>/);
@@ -64,7 +96,7 @@ test('authenticated app matches the login account-cover background visibility', 
   assert.match(application, /setTimeout\(\(\) => finish\('\'\), UI_TIMING\.artworkLoadTimeoutMs\)/);
   assert.match(application, /loaded\[nextSlot % loaded\.length\]/);
   assert.doesNotMatch(application, /applyDecorativeCovers\(slots, covers\.slice/);
-  assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.075/);
+  assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.1/);
   assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
   assert.match(css, /#app-shell>\.topbar,#app-shell>main\{position:relative;z-index:1\}/);
 });
@@ -133,11 +165,17 @@ test('an empty library request uses the favicon controller as its loading state'
 test('login and registration keep a stable desktop rail without filler content', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /id="auth-screen" class="auth-screen" data-auth-mode="login"/);
+  assert.match(html, /class="auth-public-nav"[\s\S]*href="\/signal">Signal<[\s\S]*href="\/katalog">Kat·a·log</);
   assert.match(html, /class="auth-center"[\s\S]*class="auth-card"/);
   assert.doesNotMatch(html + application + css, /auth-login-promo|promo-pipeline|BACKLOG \/\/ ROUTED/);
   assert.match(application, /#auth-screen'\)\.dataset\.authMode = mode/);
+  assert.match(application, /showAuthForm\(\); setAuthMode\(mode\);\s*setTimeout\(\(\) => \$\('#auth-username'\)\.focus\(\), UI_TIMING\.focusDelayMs\)/);
   assert.match(css, /\.auth-center\{width:100%;height:510px;display:flex;flex-direction:column;gap:10px\}/);
   assert.match(css, /@media \(max-width:580px\)[\s\S]*\.auth-center\{width:100%;height:auto\}/);
+  assert.match(css, /\.auth-public-nav\{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:30px\}/);
+  assert.match(css, /\.auth-public-link\{[\s\S]*text-decoration:none/);
+  assert.match(css, /\.auth-public-link:after\{[\s\S]*animation:auth-public-pulse 4s ease-in-out infinite/);
+  assert.match(css, /@keyframes auth-public-pulse\{[\s\S]*50%\{box-shadow:0 0 0 3px rgb\(88 225 198 \/ 26%\)/);
 });
 
 test('landing promo descriptions remain readable', () => {
@@ -156,6 +194,7 @@ test('authenticated library carries the family copyright notice with a rolling y
   assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
   assert.match(css, /\.app-footer-brand\{color:#f5a623;font-weight:600\}/);
+  assert.match(css, /\.app-footer\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/);
   assert.match(catalogue, /<footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions<\/span> <span>\$\{copyright\}<\/span><\/span><span>GAMEKAT\.NET \/\/ GAME KAT·A·LOG<\/span><a href="\/docs\/user-guide\.html">USER GUIDE<\/a><\/footer>/);
 });
 
@@ -174,6 +213,16 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
   assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);
 });
 
+test('game saves animate awarded progression even if the event stream is late', () => {
+  const application = read('public/app.js'); const server = read('server.js'); const progressionUi = read('public/js/progression-ui.js');
+  assert.match(application, /function applySaveProgress\(result\)/);
+  assert.match(application, /applySaveProgress\(result\);/);
+  assert.match(server, /progression: progressionResult/);
+  assert.match(progressionUi, /Number\(next\.xp\) <= highestQueuedXp/);
+  assert.match(server, /catalogueContribution: isCatalogueContribution/);
+  assert.match(server, /backfillCatalogueContributions\(catalogue\.contributionSources\(\)\)/);
+});
+
 test('catalogue navigation keeps the authenticated shell mounted and swaps only its content view', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const navigation = read('public/js/catalogue-navigation.js');
   assert.match(html, /<main id="app-main">\s*<div id="library-view">/);
@@ -185,14 +234,25 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /window\.history\.pushState/);
   assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
   assert.match(navigation, /\}, \{ capture: true \}\);/);
-  assert.match(navigation, /toggle\.textContent = catalogueOpen \? 'My Kat·a·log' : 'Kat·a·log'/);
+  assert.match(html, /class="button signal-button" href="\/signal">Signal<\/a><a class="button forum-button" href="\/forum">Forum<\/a><a class="button catalogue-button" href="\/katalog">Kat·a·log<\/a><a class="button library-button" href="\/">My Kat·a·log<\/a>/);
+  assert.match(navigation, /libraryButton\.classList\.toggle\('active', libraryOpen\)/);
+  assert.match(navigation, /catalogueButton\.classList\.toggle\('active', catalogueOpen\)/);
+  assert.doesNotMatch(navigation, /toggle\.textContent/);
+  assert.match(navigation, /const signal = document\.querySelector\('\.signal-button'\)/);
+  assert.match(navigation, /void open\('\/signal'\)/);
   assert.doesNotMatch(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
-  assert.match(navigation, /const \{ main, title \} = pageFromResponse[\s\S]*view = 'catalogue'; library\.hidden = true; catalogue\.hidden = false;/);
+  assert.match(navigation, /const \{ main, title \} = pageFromResponse[\s\S]*const nextView = target\.pathname === '\/signal' \? 'signal' : target\.pathname\.startsWith\('\/forum'\) \? 'forum' : 'catalogue';[\s\S]*view = nextView; library\.hidden = true; catalogue\.hidden = false;/);
   assert.match(navigation, /link\.dataset\.catalogueDestination === 'library'[\s\S]*showLibrary\(\)/);
   assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
   assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
-  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button \{ width: 114px;/);
+  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button,\.top-actions > \.library-button,\.top-actions > \.forum-button \{ width:auto; min-width:0;/);
+  assert.match(read('public/css/theme.css'), /\.button \{[\s\S]*text-decoration: none/);
+  assert.match(read('public/css/theme.css'), /@media \(max-width: 680px\) \{[\s\S]*\.auth-screen \{[\s\S]*\.brand strong \{ font-size: 13px; white-space: nowrap; \}/);
+  assert.match(read('public/css/theme.css'), /\.brand strong em \{ display: none; \}/);
+  assert.match(read('public/css/theme.css'), /\.header-progression\{display:none\}/);
+  assert.match(read('public/css/theme.css'), /\.top-actions > \.account-button \{ width: 38px; min-width: 38px; max-width: 38px; padding: 0; \}/);
+  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button\.active,[\s\S]*background:#173f3a;\s*color:transparent/);
 });
 
 test('collection filtering separates owned physical and digital games', () => {
@@ -220,9 +280,9 @@ test('collection tracking has no unavailable state or dead dashboard control', (
   assert.match(css, /\.stats\{grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
 });
 
-test('one data-gaps filter handles missing ESRB and PEGI metadata, covers, HLTB times, and descriptions', () => {
+test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, and descriptions', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
-  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No ESRB info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All missing/);
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All missing/);
   assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
   assert.match(application, /filters\.missing\.value === 'either'/);
   assert.match(application, /filters\.missing\.value === 'both'/);
@@ -258,6 +318,12 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.match(catalogue, /SELECT AVG\(g\.rating\)/);
   assert.match(catalogue, /count >= 1/);
   assert.doesNotMatch(catalogue, /rating:\s*entry\.rating/);
+});
+
+test('compact rows do not mistake the favourite control for a one-star rating', () => {
+  const css = readPublicCss();
+  assert.match(css, /\.game-grid\.list-view \.card-rating-field\{display:none\}/);
+  assert.match(css, /\.game-grid\.list-view \.favorite-button\{display:none\}/);
 });
 
 test('library cards open a read-only details view before editing', () => {

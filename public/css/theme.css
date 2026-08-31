@@ -26,13 +26,14 @@ body {
   padding: 0 16px 28px;
 }
 .app-footer {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
   align-items: center;
   padding: 12px 0 0;
   color: #9ca3af;
   font: 400 11px/1.4 ui-monospace, monospace;
 }
+.app-footer > :last-child { justify-self: end; }
 .app-footer a {
   padding: 7px 10px;
   border: 1px solid #22303a;
@@ -94,6 +95,7 @@ body {
   border-radius: 5px;
   padding: 7px 10px;
   font-size: 11px;
+  text-decoration: none;
   box-shadow: none !important;
 }
 .button:hover {
@@ -122,9 +124,9 @@ body {
   color: #ff756b;
 }
 .hero {
-  min-height: 132px;
+  min-height: 112px;
   border-radius: 7px;
-  padding: 19px 22px;
+  padding: 15px 22px;
   margin-top: 10px;
   background: #0b1017;
   border: 1px solid #222d3a;
@@ -670,7 +672,7 @@ dialog::backdrop {
     font-size: 8px;
   }
 }
-@media (max-width: 520px) {
+@media (max-width: 680px) {
   .app-footer {
     flex-wrap: wrap;
     justify-content: center;
@@ -901,19 +903,16 @@ dialog::backdrop {
   padding-bottom: 0;
   line-height: 1;
 }
-.top-actions > .catalogue-button { width: 114px; padding-inline: 11px; border-color: #28483f; background: #0d1919; color: var(--green); text-decoration: none; }
-.desktop-add {
-  padding-left: 9px;
-  padding-right: 9px;
-}
+.top-actions > .catalogue-button,.top-actions > .library-button,.top-actions > .forum-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
+.top-actions > .catalogue-button.active,.top-actions > .library-button.active,.top-actions > .signal-button.active,.top-actions > .forum-button.active { border-color:#2b343c; background:#11161b; color:#68737d; cursor:default; pointer-events:none; }
+.top-actions > .signal-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
+.top-actions > .desktop-add { width:auto; min-width:0; gap:0; padding-inline:8px; }
 .desktop-add > .button-icon {
-  position: absolute;
-  left: 9px;
-  top: 50%;
+  position: static;
   line-height: 1;
-  transform: translateY(-50%);
+  transform: none;
 }
-.desktop-add > .button-label,
+.desktop-add > .button-label { display:block; width:auto; height:auto; line-height:1; transform:none; }
 .account-button #account-name {
   display: flex;
   align-items: center;
@@ -1048,25 +1047,31 @@ dialog::backdrop {
 .account-grid .span-2 {
   grid-column: span 1;
 }
-@media (max-width: 520px) {
+@media (max-width: 680px) {
   .auth-screen {
     padding: 7px;
   }
   .auth-body {
     padding: 14px;
   }
-  .account-button {
-    padding: 6px 7px;
-    max-width: 110px;
-  }
-  .account-button #account-name {
-    max-width: 65px;
-  }
+  .brand { gap: 5px; min-width: 0; }
+  .brand-mark { width: 30px; height: 24px; }
+  .brand strong { font-size: 13px; white-space: nowrap; }
+  .brand strong em { display: none; }
+  .brand small { display: none; }
   .top-actions {
     gap: 4px;
   }
-  .header-progression{width:102px;gap:4px;padding:2px}.header-progression [data-header-progress-level]{font-size:10px}.header-progression [data-header-progress-title],.header-progression [data-header-progress-xp],.header-progression [data-header-progress-next]{display:none}.header-progression-meter{height:6px}
-  .top-actions > .catalogue-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
+  .header-progression{display:none}
+  .top-actions > .catalogue-button,.top-actions > .library-button,.top-actions > .forum-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
   .top-actions > .catalogue-button::after { content: "⌕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
-  .top-actions > .catalogue-button[data-catalogue-destination="library"]::after { content: "⌂"; }
+  .top-actions > .library-button::after { content: "⌂"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
+  .top-actions > .signal-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
+  .top-actions > .signal-button::after { content: "⌁"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
+  .top-actions > .forum-button::after { content: "◌"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
+  .top-actions > .account-button { width: 38px; min-width: 38px; max-width: 38px; padding: 0; }
+  .account-button #account-name { display: none; }
+  .account-button .nav-avatar { left: 50%; transform: translate(-50%, -50%); }
+  .top-actions > .catalogue-button.active,.top-actions > .library-button.active,.top-actions > .signal-button.active,.top-actions > .forum-button.active { border-color:#287b6c; background:#173f3a; color:transparent; }
+  .top-actions > .catalogue-button.active::after,.top-actions > .library-button.active::after,.top-actions > .signal-button.active::after,.top-actions > .forum-button.active::after { color:#72efd1; opacity:.78; }
 }

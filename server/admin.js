@@ -8,6 +8,9 @@ const backup = require('./backup');
 const coverStorage = require('./cover-storage');
 const mailer = require('./mailer');
 const catalogue = require('./catalogue-runtime');
+const activity = require('./activity');
+const events = require('./events');
+const forum = require('./forum-data');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -22,6 +25,8 @@ const adminFiles = new Map([
   ['/admin', ['index.html', 'text/html; charset=utf-8']],
   ['/admin/', ['index.html', 'text/html; charset=utf-8']],
   ['/admin/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/admin/announcements.css', ['announcements.css', 'text/css; charset=utf-8']],
+  ['/admin/js/forum.js', ['js/forum.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
@@ -30,6 +35,7 @@ const adminFiles = new Map([
   ['/admin/js/tools.js', ['js/tools.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/mail.js', ['js/mail.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/progression.js', ['js/progression.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/announcements.js', ['js/announcements.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/boot.js', ['js/boot.js', 'application/javascript; charset=utf-8']],
 ]);
 
@@ -213,6 +219,50 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && pathname === '/api/admin/stats') return sendJson(response, 200, adminStats());
   if (request.method === 'GET' && pathname === '/api/admin/live') return sendJson(response, 200, liveStats());
   if (request.method === 'GET' && pathname === '/api/admin/accounts') return sendJson(response, 200, listAccounts());
+  if (request.method === 'GET' && pathname === '/api/admin/forum') return sendJson(response, 200, { categories: forum.categories(), recent: forum.recentThreads(30) });
+  let forumMatch = pathname.match(/^\/api\/admin\/forum\/categories(?:\/(\d+))?$/);
+  if (forumMatch) {
+    try {
+      if (request.method === 'POST' && !forumMatch[1]) { const category = forum.saveCategory(await readJson(request)); events.publishPublicForum(); return sendJson(response, 201, { category }); }
+      if (request.method === 'PUT' && forumMatch[1]) { const category = forum.saveCategory(await readJson(request), forumMatch[1]); events.publishPublicForum(); return category ? sendJson(response, 200, { category }) : sendJson(response, 404, { error: 'Category not found.' }); }
+      if (request.method === 'DELETE' && forumMatch[1]) { const deleted = forum.deleteCategory(forumMatch[1]); if (deleted) events.publishPublicForum(); return deleted ? sendJson(response, 200, { ok: true }) : sendJson(response, 409, { error: 'Categories with threads cannot be deleted.' }); }
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
+  forumMatch = pathname.match(/^\/api\/admin\/forum\/threads\/(\d+)(?:\/(lock|pin))?$/);
+  if (forumMatch) {
+    const [, id, action] = forumMatch;
+    if (request.method === 'DELETE' && !action) { const deleted = forum.adminDeleteThread(id); if (deleted) events.publishPublicForum(); return deleted ? sendJson(response, 200, { ok: true }) : sendJson(response, 404, { error: 'Thread not found.' }); }
+    if (request.method === 'PATCH' && action) { const state = action === 'lock' ? 'locked' : 'pinned'; const item = forum.setThreadState(id, state, Boolean((await readJson(request)).value)); if (item) events.publishPublicForum(); return item ? sendJson(response, 200, { thread: item.thread }) : sendJson(response, 404, { error: 'Thread not found.' }); }
+  }
+  if (request.method === 'GET' && pathname === '/api/admin/announcements') return sendJson(response, 200, activity.listAnnouncements());
+  if (request.method === 'POST' && pathname === '/api/admin/announcements') {
+    try { return sendJson(response, 201, { announcement: activity.createAnnouncement(await readJson(request)) }); }
+    catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
+  let announcement = pathname.match(/^\/api\/admin\/announcements\/(\d+)(?:\/(publish|unpublish|pin|unpin))?$/);
+  if (announcement) {
+    const [, id, action] = announcement;
+    try {
+      if (request.method === 'PATCH' && !action) {
+        const item = activity.updateAnnouncement(Number(id), await readJson(request));
+        if (item?.draft === false) events.publishPublicActivity();
+        return item ? sendJson(response, 200, { announcement: item }) : sendJson(response, 404, { error: 'Announcement not found.' });
+      }
+      if (request.method === 'DELETE' && !action) {
+        const item = activity.listAnnouncements().find(row => row.id === Number(id));
+        const deleted = activity.deleteAnnouncement(Number(id));
+        if (deleted && item?.draft === false) events.publishPublicActivity();
+        return deleted ? sendJson(response, 200, { ok: true }) : sendJson(response, 404, { error: 'Announcement not found.' });
+      }
+      if (request.method === 'POST' && action) {
+        const operations = { publish: activity.publishAnnouncement, unpublish: activity.unpublishAnnouncement, pin: activity.pinAnnouncement, unpin: activity.unpinAnnouncement };
+        const item = operations[action]?.(Number(id));
+        if (!item) return sendJson(response, 404, { error: 'Announcement is not available for that action.' });
+        events.publishPublicActivity();
+        return sendJson(response, 200, { announcement: item });
+      }
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
   if (request.method === 'GET' && pathname === '/api/admin/progression') return sendJson(response, 200, { config: require('./db').progression.config() });
   if (request.method === 'PUT' && pathname === '/api/admin/progression') {
     try { return sendJson(response, 200, { config: require('./db').progression.setConfig((await readJson(request)).amounts || {}) }); }

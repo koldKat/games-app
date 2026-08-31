@@ -20,11 +20,11 @@ export function formatDuration(seconds) {
   const hours = Math.floor(value / 3600); const minutes = Math.floor((value % 3600) / 60);
   return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
-export function formatDate(value) { return value ? new Date(value).toLocaleString() : '—'; }
+export function formatDate(value) { return value ? new Date(value).toLocaleString() : '//'; }
 export function button(label, className, handler) {
   const element = document.createElement('button'); element.className = `button ${className || ''}`; element.textContent = label; element.addEventListener('click', handler); return element;
 }
-export function cell(row, value, className = '') { const td = row.insertCell(); td.className = className; td.textContent = value ?? '—'; return td; }
+export function cell(row, value, className = '') { const td = row.insertCell(); td.className = className; td.textContent = value ?? '//'; return td; }
 export function emptyRow(body, columns, message) { const row = body.insertRow(); const td = cell(row, message, 'empty'); td.colSpan = columns; }
 export function confirmAction({ title = 'Confirm action', message = '', confirmLabel = 'Confirm', requiredText = '', inputCaption = '', kicker = 'CONFIRM ACTION' } = {}) {
   const dialog = document.getElementById('confirm-dialog');

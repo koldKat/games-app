@@ -330,7 +330,6 @@ body {
 .badge {
   font-size: 9px;
 }
-.badge.esrb { background: #1a3538; color: #9cf2df; border: 1px solid #2b675f; }
 .badge.source-credit {
   text-decoration: none;
 }
@@ -963,6 +962,9 @@ body {
 .game-grid.list-view .game-title {
   display: block;
 }
+.game-grid.list-view .favorite-button {
+  display: none;
+}
 .game-grid.list-view .game-card {
   grid-template-columns: 135px minmax(180px, 1fr) auto minmax(250px, 310px) auto;
 }
@@ -971,9 +973,7 @@ body {
   grid-row: 1;
 }
 .game-grid.list-view .card-rating-field {
-  grid-column: 2 / 4;
-  grid-row: 2;
-  margin: 6px 0 0;
+  display: none;
 }
 .game-grid.list-view .card-hltb {
   display: grid;
@@ -995,7 +995,6 @@ body {
   }
   .game-grid.list-view .card-hltb,
   .game-grid.list-view .badges,
-  .game-grid.list-view .card-rating-field,
   .game-grid.list-view .card-actions {
     grid-column: 2;
     grid-row: auto;

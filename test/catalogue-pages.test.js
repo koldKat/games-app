@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { renderCatalogue, renderGame, safeExternalUrl, sitemapXml } = require('../server/catalogue-pages');
+const { renderCatalogue, renderGame, renderSignal, safeExternalUrl, sitemapXml } = require('../server/catalogue-pages');
 
 const entry = {
   id: 3, slug: 'portal-2-steam', title: 'Portal 2', platform: 'Steam', pegi: 12,
@@ -36,6 +36,7 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
     user: { username: 'koldKat', avatarUrl: '/avatars/koldkat.jpg' },
   });
   assert.match(html, /href="\/css\/theme\.css"/);
+  assert.match(html, /href="\/css\/library\.css"/);
   assert.match(html, /class="topbar"/);
   assert.match(html, /class="brand"/);
   assert.match(html, /class="brand-mark"/);
@@ -45,8 +46,32 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
   assert.match(html, /Your collection, one place/);
   assert.match(html, /avatars\/koldkat\.jpg/);
   assert.match(html, /My Kat·a·log/);
-  assert.match(html, /data-catalogue-destination="library"/);
-  assert.match(html, /button-label">Add a game/);
+  assert.match(html, /class="button library-button" href="\/">My Kat·a·log/);
+  assert.match(html, /class="button catalogue-button(?: active)?" href="\/katalog">Kat·a·log/);
+  assert.match(html, /button-label">Game/);
+  assert.match(html, /class="button signal-button" href="\/signal">Signal/);
+});
+
+test('Signal is a crawlable public page that attaches to the live feed client', () => {
+  const html = renderSignal({ user: { username: 'signal_user' }, progress: { level: 17, title: 'Kat·a·log Architect', xp: 153995, progress: 4, nextLevelXp: 171000 }, coverUrls: [entry.coverUrl] });
+  assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/signal">/);
+  assert.match(html, /Kat·a·log Signal/);
+  assert.match(html, /data-activity-feed data-activity-limit="all" data-activity-grouped="true"/);
+  assert.match(html, /src="\/js\/signal-page\.js"/);
+  assert.match(html, /Personal libraries, ratings, wishlists, edits, and play status stay private/);
+  assert.match(html, /id="header-progression" class="header-progression"/);
+  assert.match(html, /LV 17/);
+  assert.match(html, /Kat·a·log Architect/);
+  assert.match(html, /class="button signal-button active" href="\/signal">Signal/);
+  assert.match(html, /class="hero-art catalogue-hero-art"/);
+  assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
+});
+
+test('guest public navigation marks the current Signal or Kat·a·log section inactive', () => {
+  const catalogue = renderCatalogue({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
+  const signal = renderSignal();
+  assert.match(catalogue, /class="button catalogue-button active" href="\/katalog">Kat·a·log/);
+  assert.match(signal, /class="button signal-button active" href="\/signal">Signal/);
 });
 
 test('public release pages show a community aggregate but never offer a public voting control', () => {
@@ -83,6 +108,7 @@ test('game page escapes text and refuses unsafe source links', () => {
 test('dynamic sitemap uses the plain Gamebooks-style URL-set for each public release', () => {
   const xml = sitemapXml([{ slug: 'portal-2-steam', title: 'Portal 2', coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg', updatedAt: '2026-08-27 12:00:00' }], '2026-08-28');
   assert.match(xml, /https:\/\/gamekat\.net\/katalog/);
+  assert.match(xml, /https:\/\/gamekat\.net\/signal/);
   assert.match(xml, /https:\/\/gamekat\.net\/game\/portal-2-steam/);
   assert.match(xml, /<lastmod>2026-08-27<\/lastmod>/);
   assert.doesNotMatch(xml, /xmlns:image|<image:/);

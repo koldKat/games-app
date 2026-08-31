@@ -11,7 +11,7 @@ export async function loadAccounts() {
       const locked = Boolean(account.adminLocked) || temporaryLock;
       const access = account.protected ? 'PROTECTED' : account.adminLocked ? 'LOCKED' : temporaryLock ? 'TEMP LOCK' : 'ACTIVE';
       const accessClass = account.protected ? 'good' : account.adminLocked ? 'rejected' : temporaryLock ? 'warn' : 'good';
-      cell(row, account.id); cell(row, account.username, 'cell-title'); cell(row, account.email || '—'); cell(row, access, `state ${accessClass}`); cell(row, account.games); cell(row, account.covered); cell(row, account.activeSessions); cell(row, formatDate(account.createdAt));
+      cell(row, account.id); cell(row, account.username, 'cell-title'); cell(row, account.email || '//'); cell(row, access, `state ${accessClass}`); cell(row, account.games); cell(row, account.covered); cell(row, account.activeSessions); cell(row, formatDate(account.createdAt));
       const actions = cell(row, '', 'row-actions');
       const revoke = button('Revoke sessions', '', async () => {
         if (!account.activeSessions || !await confirmAction({ title: 'Revoke active sessions?', message: `${account.username} will be signed out on every device.`, confirmLabel: 'Revoke sessions', kicker: 'IDENTITY CONTROL' })) return;

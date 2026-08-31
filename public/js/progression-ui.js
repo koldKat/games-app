@@ -10,7 +10,7 @@ function progressAt(xp, target) {
 
 export function createProgressionUi({ api }) {
   let progress = null;
-  let displayedXp = null; let queue = []; let animating = false;
+  let displayedXp = null; let queue = []; let animating = false; let highestQueuedXp = 0;
   function render(next = progress) {
     progress = next || progress; if (!progress) return;
     const percent = Math.max(0, Math.min(100, progress.progress || 0));
@@ -43,9 +43,11 @@ export function createProgressionUi({ api }) {
     };
     requestAnimationFrame(step);
   }
-  async function load() { try { const loaded = await api('/api/progression'); displayedXp = loaded.xp; render(loaded); } catch { /* Progress should never block the library. */ } }
+  async function load() { try { const loaded = await api('/api/progression'); displayedXp = loaded.xp; highestQueuedXp = loaded.xp; render(loaded); } catch { /* Progress should never block the library. */ } }
   function handleEvent(data) {
-    if (!data?.progress) return; queue.push(data.progress); runQueue();
+    const next = data?.progress;
+    if (!next || Number(next.xp) <= highestQueuedXp) return;
+    highestQueuedXp = Number(next.xp); queue.push(next); runQueue();
   }
   return { handleEvent, load, render };
 }

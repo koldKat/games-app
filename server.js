@@ -6,8 +6,6 @@ const path = require('node:path');
 const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
 const { createPegiBulkManager } = require('./server/pegi-bulk');
-const { searchEsrb } = require('./server/esrb');
-const { createEsrbBulkManager } = require('./server/esrb-bulk');
 const hltb = require('./server/hltb');
 const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
@@ -19,11 +17,13 @@ const coverStorage = require('./server/cover-storage');
 const imagePolicy = require('./server/image-policy');
 const showcaseCovers = require('./server/showcase-covers');
 const events = require('./server/events');
+const activity = require('./server/activity');
 const auth = require('./server/auth');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const catalogue = require('./server/catalogue-runtime');
 const { createCatalogueRoutes } = require('./server/catalogue-routes');
+const { createForumRoutes } = require('./server/forum-routes');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
 const mailer = require('./server/mailer');
@@ -60,12 +60,27 @@ function passwordResetEmail({ username, link }) {
   const safeUsername = escapeEmailHtml(username); const safeLink = escapeEmailHtml(link);
   return `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#071016;color:#dce6ee;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#071016;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #29404b;background:#0b141b"><tr><td style="padding:18px 22px;border-bottom:1px solid #29404b;background:#101d24;color:#64e8ca;font-size:12px;font-weight:bold;letter-spacing:1.5px">GAME KAT·A·LOG</td></tr><tr><td style="padding:26px 22px"><p style="margin:0 0 14px;color:#90a1af;font-size:12px;letter-spacing:1px;text-transform:uppercase">Account security</p><h1 style="margin:0 0 14px;color:#f2f7fa;font-size:24px;line-height:1.2">Reset your password</h1><p style="margin:0 0 20px;color:#bfccd5;font-size:15px;line-height:1.55">Hello ${safeUsername}, use the button below to choose a new password. This one-time link expires in one hour.</p><p style="margin:0 0 22px"><a href="${safeLink}" style="display:inline-block;padding:12px 17px;background:#1d8b76;border:1px solid #64e8ca;color:#06120f;font-size:14px;font-weight:bold;text-decoration:none">Reset password</a></p><p style="margin:0;color:#8798a6;font-size:12px;line-height:1.55">If the button does not open, copy this address into your browser:<br><a href="${safeLink}" style="color:#72e4c8;word-break:break-all">${safeLink}</a></p></td></tr><tr><td style="padding:14px 22px;border-top:1px solid #29404b;color:#71828f;font-size:12px;line-height:1.5">If you did not request this reset, you can safely ignore this email.</td></tr></table></td></tr></table></body></html>`;
 }
+function isCatalogueContribution(userId, game, result) {
+  const entry = result?.entry;
+  return entry?.status === 'public' && Number(entry.submittedByUserId) === Number(userId) && Number(entry.sourceGameId) === Number(game?.id);
+}
+function syncCatalogueAndRecordProgress(userId, game, options) {
+  const catalogueResult = catalogue.syncGameSafely(userId, game);
+  return recordGameProgress(userId, game, { ...options, catalogueContribution: isCatalogueContribution(userId, game, catalogueResult) });
+}
 function publishAppEvent(userId, event, payload) {
-  if (event === 'game-updated' && payload?.game) { catalogue.syncGameSafely(userId, payload.game); recordGameProgress(userId, payload.game); }
+  if (event === 'game-updated' && payload?.game) syncCatalogueAndRecordProgress(userId, payload.game);
   events.publish(userId, event, payload);
 }
 function publishProgression(userId, result) {
-  if (result?.awards?.length) events.publish(userId, 'progression-updated', { progress: result.progress, awards: result.awards });
+  if (!result?.awards?.length) return;
+  events.publish(userId, 'progression-updated', { progress: result.progress, awards: result.awards });
+  let changed = false;
+  for (const award of result.awards) {
+    for (const level of award.levels || []) changed = activity.recordLevelUp(userId, level.level, level.title, level.previousTitle) || changed;
+    if (award.event === 'catalogue_contribution') changed = activity.recordContribution(userId, award.ref || '') || changed;
+  }
+  if (changed) events.publishPublicActivity();
 }
 function recordGameProgress(userId, game, options) {
   const result = progression.recordGame(userId, game, options); publishProgression(userId, result); return result;
@@ -82,10 +97,10 @@ const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProvide
   createCoverProviderBulkManager({ data: db, provider, label: definition.label, lookup: definition.client.bestExactCover,
     saveCover: storeMatchedCover, notify: publishAppEvent })]));
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
-const esrbJobs = createEsrbBulkManager({ data: db, lookup: searchEsrb, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
-const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
+const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, progression, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
+const forumRoutes = createForumRoutes({ catalogue, auth, events, progression, onProgression: publishProgression });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -219,8 +234,9 @@ async function handleApi(request, response, url) {
       if (input.password !== input.passwordConfirm) return sendJson(response, 400, { error: 'Passwords do not match.' });
       const user = await auth.register(input.username, input.password, input.email);
       const token = auth.createSession(user.id);
+      if (activity.recordJoin(user.id)) events.publishPublicActivity();
       auth.clearFailures(ip);
-      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl }, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
+      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl, hideFromActivity: user.hideFromActivity }, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) { auth.recordFailure(ip); return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/login') {
@@ -266,6 +282,8 @@ async function handleApi(request, response, url) {
     auth.logout(request);
     return sendJson(response, 200, { ok: true }, { 'Set-Cookie': auth.clearSessionCookie(request) });
   }
+  if (request.method === 'GET' && url.pathname === '/api/activity') return sendJson(response, 200, activity.feed());
+  if (request.method === 'GET' && url.pathname === '/api/activity/stream') return events.subscribePublicActivity(request, response);
   const user = auth.authenticate(request);
   if (!user) return sendJson(response, 401, { error: 'Unauthorized.' });
   const refreshedCookie = auth.refreshSessionCookie(request);
@@ -286,6 +304,7 @@ async function handleApi(request, response, url) {
   if (request.method === 'PUT' && url.pathname === '/api/account') {
     try {
       const updated = await auth.updateAccount(user.id, await readJson(request));
+      events.publishPublicActivity();
       return sendJson(response, 200, { user: updated }, updated.sessionInvalidated ? { 'Set-Cookie': auth.clearSessionCookie(request) } : {});
     }
     catch (error) { return sendJson(response, 400, { error: error.message }); }
@@ -406,15 +425,6 @@ async function handleApi(request, response, url) {
     try { return sendJson(response, 202, pegiJobs.start(user.id)); }
     catch (error) { return sendJson(response, 409, { error: error.message, job: pegiJobs.status(user.id).job }); }
   }
-  if (request.method === 'GET' && url.pathname === '/api/esrb/search') {
-    try { return sendJson(response, 200, await searchEsrb(url.searchParams.get('q'))); }
-    catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: `https://www.esrb.org/search/?searchKeyword=${encodeURIComponent(url.searchParams.get('q') || '')}` }); }
-  }
-  if (request.method === 'GET' && url.pathname === '/api/esrb/status') return sendJson(response, 200, esrbJobs.status(user.id));
-  if (request.method === 'POST' && url.pathname === '/api/esrb/bulk') {
-    try { return sendJson(response, 202, esrbJobs.start(user.id)); }
-    catch (error) { return sendJson(response, 409, { error: error.message, job: esrbJobs.status(user.id).job }); }
-  }
   if (request.method === 'GET' && url.pathname === '/api/hltb/search') {
     try { return sendJson(response, 200, await hltb.search(url.searchParams.get('q'))); }
     catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: 'https://howlongtobeat.com/' }); }
@@ -443,9 +453,8 @@ async function handleApi(request, response, url) {
     try {
       prepared = await prepareGameCover(await readJson(request));
       const game = db.createGame(user.id, prepared.input);
-      catalogue.syncGameSafely(user.id, game);
-      recordGameProgress(user.id, game, { created: true });
-      return sendJson(response, 201, game);
+      const progressionResult = syncCatalogueAndRecordProgress(user.id, game, { created: true });
+      return sendJson(response, 201, { ...game, progression: progressionResult });
     }
     catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
@@ -466,9 +475,8 @@ async function handleApi(request, response, url) {
       const game = db.updateGame(user.id, Number(match[1]), prepared.input);
       if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
       finishGameCoverChange(existing, game);
-      catalogue.syncGameSafely(user.id, game);
-      recordGameProgress(user.id, game, { previous: existing });
-      return sendJson(response, 200, game);
+      const progressionResult = syncCatalogueAndRecordProgress(user.id, game, { previous: existing });
+      return sendJson(response, 200, { ...game, progression: progressionResult });
     } catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
       return sendJson(response, 400, { error: error.message });
@@ -487,6 +495,7 @@ const server = http.createServer(async (request, response) => {
   try {
     if (await admin.handle(request, response, url)) return;
     if (await catalogueRoutes.handle(request, response, url)) return;
+    if (await forumRoutes.handle(request, response, url)) return;
   } catch (error) { return sendJson(response, 500, { error: error.message || 'Request failed.' }); }
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));
@@ -510,6 +519,12 @@ server.listen(PORT, HOST, () => {
     });
     showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
     const catalogueSummary = catalogue.syncAll(db.allGamesForCatalogue());
+    const activityBackfill = activity.backfillContributions();
+    if (activityBackfill) console.log(`[activity] recorded ${activityBackfill} Kat·a·log contribution${activityBackfill === 1 ? '' : 's'}`);
+    const levelActivityBackfill = activity.backfillLevelUps();
+    if (levelActivityBackfill) console.log(`[activity] recorded ${levelActivityBackfill} historical level-up${levelActivityBackfill === 1 ? '' : 's'}`);
+    const contributionBackfill = progression.backfillCatalogueContributions(catalogue.contributionSources());
+    if (contributionBackfill.awards.length) console.log(`[progression] awarded ${contributionBackfill.awards.length} Kat·a·log contribution${contributionBackfill.awards.length === 1 ? '' : 's'}`);
     if (catalogueSummary.public || catalogueSummary.candidate || catalogueSummary.errors) {
       console.log(`[catalogue] public ${catalogueSummary.public}; candidates ${catalogueSummary.candidate}; linked ${catalogueSummary.linked}; errors ${catalogueSummary.errors}`);
     }

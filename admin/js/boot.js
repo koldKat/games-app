@@ -5,6 +5,8 @@ import { loadPublicCatalogue } from './public-catalogue.js';
 import { loadVersion, loadBackups } from './tools.js';
 import { loadMailSettings } from './mail.js';
 import { loadProgression } from './progression.js';
+import { loadAnnouncements } from './announcements.js';
+import { loadForum } from './forum.js';
 
 const loaders = {
   dashboard: loadDashboard,
@@ -12,6 +14,8 @@ const loaders = {
   catalogue: loadCatalogue,
   'public-catalogue': loadPublicCatalogue,
   progression: loadProgression,
+  announcements: loadAnnouncements,
+  forum: loadForum,
   tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings()]); },
 };
 

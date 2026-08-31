@@ -26,15 +26,6 @@ function hasPegiMetadata(game = {}) {
     || String(game.pegiOtherIssues || '').trim()
   );
 }
-function hasEsrbMetadata(game = {}) {
-  return Boolean(String(game.esrbRating || '').trim()) && Boolean(
-    String(game.esrbUrl || '').trim()
-    || (Array.isArray(game.esrbDescriptors) && game.esrbDescriptors.length)
-    || (Array.isArray(game.esrbInteractiveElements) && game.esrbInteractiveElements.length)
-    || String(game.esrbSummary || '').trim()
-  );
-}
-
 function hasHltbMetadata(game = {}) {
   return Number(game.hltbId) > 0 && [
     game.hltbMainStory,
@@ -57,7 +48,7 @@ function evaluateCatalogueGame(game = {}) {
   const title = String(game.title || '').trim();
   const platform = String(game.platform || '').trim();
   const cover = hasDurableCover(game);
-  const pegi = hasPegiMetadata(game); const esrb = hasEsrbMetadata(game); const contentRating = pegi || esrb;
+  const contentRating = hasPegiMetadata(game);
   const hltb = hasHltbMetadata(game);
   const coverExact = cover && exactMatch(title, game.coverMatchTitle);
   const hltbExact = hltb && exactMatch(title, game.hltbTitle);
@@ -94,7 +85,6 @@ module.exports = {
   exactMatch,
   hasDurableCover,
   hasHltbMetadata,
-  hasEsrbMetadata,
   hasPegiMetadata,
   normalizeCatalogueText,
 };

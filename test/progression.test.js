@@ -29,19 +29,10 @@ test('backfill credits existing enriched games once and remains safe to rerun', 
   const user = await auth.register('xp_backfill', 'password-two');
   const game = data.createGame(user.id, { title: 'Test Shelf', platform: 'PC', ownership: 'wanted', favorite: true, rating: 4,
     publisher: 'Studio', releaseYear: 2020, description: 'A properly recorded game.', coverUrl: '/covers/0123456789abcdef0123456789abcdef.jpg',
-    pegi: 12, pegiUrl: 'https://pegi.info/test', esrbRating: 'Teen', esrbUrl: 'https://www.esrb.org/ratings/1/test/', hltbId: 7, hltbTitle: 'Test Shelf', hltbMainStory: 5 });
+    pegi: 12, pegiUrl: 'https://pegi.info/test', hltbId: 7, hltbTitle: 'Test Shelf', hltbMainStory: 5 });
   const service = createProgressionService({ store: data.progression, data });
   const first = service.backfill(user.id); const second = service.backfill(user.id);
   assert.ok(first.awards.length > 0); assert.equal(second.awards.length, 0); assert.ok(first.progress.xp >= 50); assert.equal(game.title, 'Test Shelf');
-});
-
-test('ESRB enrichment awards its own one-time catalogue event', async () => {
-  const user = await auth.register('xp_esrb', 'password-three');
-  const game = data.createGame(user.id, { title: 'US Rated', platform: 'PC' });
-  const service = createProgressionService({ store: data.progression, data });
-  const enriched = { ...game, esrbRating: 'Teen', esrbUrl: 'https://www.esrb.org/ratings/1/us-rated/' };
-  assert.deepEqual(service.recordGame(user.id, enriched).awards.filter(item => item.event === 'esrb_added').map(item => item.amount), [20]);
-  assert.equal(service.recordGame(user.id, enriched).awards.some(item => item.event === 'esrb_added'), false);
 });
 
 test('notes and fulfilled wishlists award their one-time events', async () => {
@@ -52,4 +43,25 @@ test('notes and fulfilled wishlists award their one-time events', async () => {
   const events = service.recordGame(user.id, updated, { previous: game }).awards.map(item => item.event);
   assert.ok(events.includes('note_added')); assert.ok(events.includes('wishlist_fulfilled'));
   assert.equal(service.recordGame(user.id, updated, { previous: game }).awards.some(item => ['note_added', 'wishlist_fulfilled'].includes(item.event)), false);
+});
+
+test('public Kat·a·log contributions award once and safely backfill', async () => {
+  const user = await auth.register('xp_contributor', 'password-five');
+  const game = data.createGame(user.id, { title: 'Public Record', platform: 'PC' });
+  const service = createProgressionService({ store: data.progression, data });
+  assert.deepEqual(service.recordGame(user.id, game, { catalogueContribution: true }).awards.filter(item => item.event === 'catalogue_contribution').map(item => item.amount), [30]);
+  assert.equal(service.recordGame(user.id, game, { catalogueContribution: true }).awards.some(item => item.event === 'catalogue_contribution'), false);
+  const next = data.createGame(user.id, { title: 'Another Public Record', platform: 'PC' });
+  const backfill = service.backfillCatalogueContributions([{ userId: user.id, gameId: game.id }, { userId: user.id, gameId: next.id }]);
+  assert.deepEqual(backfill.awards.map(item => item.event), ['catalogue_contribution']);
+});
+
+test('awards report each crossed collector level for Signal to record', async () => {
+  const user = await auth.register('xp_signal_level', 'password-six');
+  const game = data.createGame(user.id, { title: 'Signal Level', platform: 'PC' });
+  data.progression.setConfig({ game_added: 1000 });
+  const service = createProgressionService({ store: data.progression, data });
+  const award = service.recordGame(user.id, game, { created: true }).awards.find(item => item.event === 'game_added');
+  assert.deepEqual(award.levels, [{ level: 1, title: 'Shelf Scout', previousTitle: 'Uncatalogued' }]);
+  data.progression.setConfig({ game_added: 50 });
 });

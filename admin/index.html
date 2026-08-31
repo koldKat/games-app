@@ -7,6 +7,7 @@
   <title>Game Kat·a·log // Admin</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/admin/style.css">
+  <link rel="stylesheet" href="/admin/announcements.css">
 </head>
 <body>
   <header class="admin-head">
@@ -20,7 +21,9 @@
     <button data-tab="catalogue">03 / LIBRARY INDEX</button>
     <button data-tab="public-catalogue">04 / KAT·A·LOG</button>
     <button data-tab="progression">05 / PROGRESSION</button>
-    <button data-tab="tools">06 / TOOLS</button>
+    <button data-tab="announcements">06 / SIGNAL</button>
+    <button data-tab="forum">07 / FORUM</button>
+    <button data-tab="tools">08 / TOOLS</button>
   </nav>
 
   <main>
@@ -28,31 +31,31 @@
       <header class="section-head"><div><span>RUNTIME OVERVIEW</span><h1>Dashboard</h1></div><button id="refresh-dashboard" class="button">Refresh</button></header>
       <div class="metric-grid">
         <div class="metric-stack" aria-label="Library totals">
-          <article><span>GAMES</span><strong id="metric-games">—</strong></article>
-          <article><span>ACCOUNTS</span><strong id="metric-users">—</strong></article>
-          <article><span>SESSIONS</span><strong id="metric-sessions">—</strong></article>
+          <article><span>GAMES</span><strong id="metric-games">//</strong></article>
+          <article><span>ACCOUNTS</span><strong id="metric-users">//</strong></article>
+          <article><span>SESSIONS</span><strong id="metric-sessions">//</strong></article>
         </div>
         <div class="metric-stack" aria-label="Community catalogue">
-          <article><span>PUBLIC</span><strong id="metric-public">—</strong><small id="metric-public-sub"></small></article>
-          <article><span>FAVOURITES</span><strong id="metric-favorites">—</strong></article>
-          <article><span>RATINGS</span><strong id="metric-ratings">—</strong><small id="metric-ratings-sub"></small></article>
+          <article><span>PUBLIC</span><strong id="metric-public">//</strong><small id="metric-public-sub"></small></article>
+          <article><span>FAVOURITES</span><strong id="metric-favorites">//</strong></article>
+          <article><span>RATINGS</span><strong id="metric-ratings">//</strong><small id="metric-ratings-sub"></small></article>
         </div>
         <div class="metric-stack" aria-label="Metadata coverage">
-          <article><span>COVERS</span><strong id="metric-covers">—</strong><small id="metric-covers-sub"></small></article>
-          <article><span>DESCRIPTIONS</span><strong id="metric-descriptions">—</strong><small id="metric-descriptions-sub"></small></article>
-          <article><span>PEGI</span><strong id="metric-pegi">—</strong><small id="metric-pegi-sub"></small></article>
-          <article><span>HOWLONGTOBEAT</span><strong id="metric-hltb">—</strong><small id="metric-hltb-sub"></small></article>
+          <article><span>COVERS</span><strong id="metric-covers">//</strong><small id="metric-covers-sub"></small></article>
+          <article><span>DESCRIPTIONS</span><strong id="metric-descriptions">//</strong><small id="metric-descriptions-sub"></small></article>
+          <article><span>PEGI</span><strong id="metric-pegi">//</strong><small id="metric-pegi-sub"></small></article>
+          <article><span>HOWLONGTOBEAT</span><strong id="metric-hltb">//</strong><small id="metric-hltb-sub"></small></article>
         </div>
         <div class="metric-stack" aria-label="Runtime health">
-          <article><span>UPTIME</span><strong id="metric-uptime">—</strong><small id="metric-uptime-sub"></small></article>
-          <article><span>APP AGE</span><strong id="metric-app-age">—</strong></article>
-          <article><span>SESSION UPTIME</span><strong id="metric-session-uptime">—</strong></article>
-          <article><span>VERSION</span><strong id="metric-version">—</strong></article>
+          <article><span>UPTIME</span><strong id="metric-uptime">//</strong><small id="metric-uptime-sub"></small></article>
+          <article><span>APP AGE</span><strong id="metric-app-age">//</strong></article>
+          <article><span>SESSION UPTIME</span><strong id="metric-session-uptime">//</strong></article>
+          <article><span>VERSION</span><strong id="metric-version">//</strong></article>
         </div>
         <div class="metric-stack" aria-label="Process and storage">
-          <article><span>DATABASE</span><strong id="metric-database">—</strong></article>
-          <article><span>HEAP</span><strong id="metric-heap">—</strong><small id="metric-heap-sub"></small></article>
-          <article><span>RSS / CPU</span><strong id="metric-rss">—</strong><small id="metric-cpu"></small></article>
+          <article><span>DATABASE</span><strong id="metric-database">//</strong></article>
+          <article><span>HEAP</span><strong id="metric-heap">//</strong><small id="metric-heap-sub"></small></article>
+          <article><span>RSS / CPU</span><strong id="metric-rss">//</strong><small id="metric-cpu"></small></article>
         </div>
       </div>
       <div class="split-grid">
@@ -86,6 +89,31 @@
       <header class="section-head"><div><span>COLLECTOR PROGRESSION</span><h1>XP tuning</h1></div><button id="save-progression" class="button primary">Save amounts</button></header>
       <p class="panel-note">Awards are permanent per account, action, and reference. The level curve is fixed to Gamebooks: each new level costs another 1,000 XP.</p>
       <div id="progression-config" class="progression-config" aria-live="polite"></div>
+    </section>
+
+    <section id="panel-announcements" class="panel">
+      <header class="section-head"><div><span>PUBLIC SIGNAL</span><h1>Announcements</h1></div></header>
+      <p class="panel-note">Draft notices privately, then publish them to Signal. A pinned notice stays above the live feed until unpinned or unpublished.</p>
+      <form id="announcement-form" class="announcement-compose" novalidate>
+        <header><span id="announcement-form-mode">NEW ANNOUNCEMENT</span><button id="announcement-cancel-edit" class="button" type="button" hidden>Cancel edit</button></header>
+        <label><span>Title</span><input id="announcement-title" maxlength="120" required autocomplete="off" placeholder="What changed?"></label>
+        <label><span>Message</span><textarea id="announcement-body" maxlength="4000" required placeholder="Tell the Kat·a·log…"></textarea></label>
+        <p class="announcement-format">Formatting: <b>**bold**</b> · <i>*italic*</i> · <u>__underline__</u> · <s>~~strike~~</s> · <span>{color:teal}colour{/color}</span></p>
+        <p id="announcement-error" class="announcement-error" hidden></p>
+        <footer><button class="button" type="submit" data-announcement-intent="draft">Save draft</button><button class="button primary" type="submit" data-announcement-intent="publish">Publish</button></footer>
+      </form>
+      <div class="announcement-columns">
+        <section><header><span>DRAFTS</span><b id="announcement-draft-count">0</b></header><div id="announcement-drafts" class="announcement-list"></div></section>
+        <section><header><span>PUBLISHED</span><b id="announcement-published-count">0</b></header><div id="announcement-published" class="announcement-list"></div></section>
+      </div>
+    </section>
+
+    <section id="panel-forum" class="panel">
+      <header class="section-head"><div><span>PUBLIC DISCUSSION</span><h1>Forum moderation</h1></div><button id="refresh-forum" class="button">Refresh</button></header>
+      <p class="panel-note">Forum reading is public. Accounts can edit or remove only their own posts; this local panel can pin, lock, or remove any thread and maintain channels.</p>
+      <form id="forum-category-form" class="edit-grid"><input type="hidden" id="forum-category-id"><label><span>Channel name</span><input id="forum-category-name" maxlength="56" required></label><label><span>Slug</span><input id="forum-category-slug" maxlength="56" required></label><label><span>Order</span><input id="forum-category-order" type="number" min="0" max="9999" value="10"></label><label class="wide"><span>Description</span><input id="forum-category-description" maxlength="240"></label><footer class="wide"><button id="forum-category-cancel" class="button" type="button" hidden>Cancel edit</button><button class="button primary" type="submit">Save channel</button></footer></form>
+      <div class="table-shell"><table><thead><tr><th>CHANNEL</th><th>SLUG</th><th>THREADS</th><th>ACTIONS</th></tr></thead><tbody id="forum-categories-body"></tbody></table></div>
+      <div class="table-shell"><table><thead><tr><th>THREAD</th><th>CHANNEL</th><th>AUTHOR</th><th>REPLIES</th><th>STATE</th><th>ACTIONS</th></tr></thead><tbody id="forum-threads-body"></tbody></table></div>
     </section>
 
     <section id="panel-tools" class="panel">

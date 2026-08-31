@@ -146,6 +146,8 @@ test('login, sessions, and account password changes work', async () => {
   assert.equal((await auth.login('library_owner', 'replacement-password')).avatarUrl, '/avatars/1_test.jpg');
   assert.equal(auth.updateAvatar(user.id, null), null);
   assert.equal(auth.avatarPath(user.id), null);
+  const activityHidden = await auth.updateAccount(user.id, { currentPassword: 'replacement-password', hideFromActivity: true });
+  assert.equal(activityHidden.hideFromActivity, true);
 });
 
 test('failed password attempts temporarily lock accounts, while admin locks revoke sessions', async () => {

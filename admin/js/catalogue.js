@@ -9,7 +9,7 @@ export async function loadCatalogue() {
     if (!games.length) return emptyRow(body, 8, 'No matching games.');
     games.forEach(game => {
       const row = body.insertRow();
-      cell(row, game.id); cell(row, game.title, 'cell-title'); cell(row, game.platform); cell(row, game.pegi ?? '—'); cell(row, game.ownership); cell(row, game.username || 'UNASSIGNED');
+      cell(row, game.id); cell(row, game.title, 'cell-title'); cell(row, game.platform); cell(row, game.pegi ?? '//'); cell(row, game.ownership); cell(row, game.username || 'UNASSIGNED');
       const cover = cell(row, game.hasCover ? 'YES' : 'NO', `state ${game.hasCover ? 'good' : 'warn'}`); cover.textContent = game.hasCover ? 'YES' : 'NO';
       const actions = cell(row, '', 'row-actions');
       const remove = button('Delete', 'danger', async () => {

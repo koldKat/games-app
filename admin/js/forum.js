@@ -1,0 +1,17 @@
+import { api, button, cell, confirmAction, emptyRow, toast } from './core.js';
+
+const $ = selector => document.querySelector(selector);
+let state = { categories: [], recent: [] };
+function categoryForm(category = null) { $('#forum-category-id').value = category?.id || ''; $('#forum-category-name').value = category?.name || ''; $('#forum-category-slug').value = category?.slug || ''; $('#forum-category-description').value = category?.description || ''; $('#forum-category-order').value = category?.sortOrder ?? 10; $('#forum-category-cancel').hidden = !category; }
+function render() {
+  const categories = $('#forum-categories-body'); categories.replaceChildren();
+  if (!state.categories.length) emptyRow(categories, 4, 'No forum channels.');
+  for (const item of state.categories) { const row = categories.insertRow(); cell(row, item.name); cell(row, item.slug); cell(row, item.threadCount); const actions = row.insertCell(); actions.append(button('Edit', '', () => categoryForm(item))); actions.append(button('Delete', 'danger', async () => { if (!await confirmAction({ title:'Delete channel?', message:`Delete ${item.name}? It must have no threads.`, confirmLabel:'Delete channel', kicker:'FORUM // CHANNEL' })) return; try { await api('DELETE', `/api/admin/forum/categories/${item.id}`); toast('Channel deleted.'); loadForum(); } catch (error) { toast(error.message, true); } })); }
+  const threads = $('#forum-threads-body'); threads.replaceChildren(); if (!state.recent.length) emptyRow(threads, 6, 'No forum threads yet.');
+  for (const item of state.recent) { const row = threads.insertRow(); cell(row, item.title); cell(row, item.categoryName); cell(row, item.username); cell(row, item.replyCount); cell(row, [item.pinned && 'PINNED', item.locked && 'LOCKED'].filter(Boolean).join(' / ') || 'OPEN'); const actions = row.insertCell(); actions.append(button(item.pinned ? 'Unpin' : 'Pin', '', () => setState(item, 'pin', !item.pinned))); actions.append(button(item.locked ? 'Unlock' : 'Lock', '', () => setState(item, 'lock', !item.locked))); actions.append(button('Delete', 'danger', async () => { if (!await confirmAction({ title:'Delete thread?', message:`Permanently delete “${item.title}” and every reply?`, confirmLabel:'Delete thread', kicker:'FORUM // MODERATION' })) return; await api('DELETE', `/api/admin/forum/threads/${item.id}`); toast('Thread deleted.'); loadForum(); })); }
+}
+async function setState(item, action, value) { try { await api('PATCH', `/api/admin/forum/threads/${item.id}/${action}`, { value }); loadForum(); } catch (error) { toast(error.message, true); } }
+export async function loadForum() { try { state = await api('GET', '/api/admin/forum'); render(); } catch (error) { toast(error.message, true); } }
+$('#refresh-forum').addEventListener('click', loadForum);
+$('#forum-category-cancel').addEventListener('click', () => categoryForm());
+$('#forum-category-form').addEventListener('submit', async event => { event.preventDefault(); const id = $('#forum-category-id').value; const body = { name:$('#forum-category-name').value, slug:$('#forum-category-slug').value, description:$('#forum-category-description').value, sortOrder:$('#forum-category-order').value }; try { await api(id ? 'PUT' : 'POST', id ? `/api/admin/forum/categories/${id}` : '/api/admin/forum/categories', body); categoryForm(); toast('Forum channel saved.'); loadForum(); } catch (error) { toast(error.message, true); } });

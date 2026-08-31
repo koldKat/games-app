@@ -28,12 +28,23 @@ function avatarMarkup(user) {
     : `<span>${initial}</span>`;
 }
 
-function headerActions(user) {
-  if (!user) return `<div class="top-actions"><a class="button primary" href="/">Sign in</a></div>`;
+function headerProgression(progress) {
+  if (!progress) return '';
+  const remaining = Math.max(0, Number(progress.nextLevelXp || 0) - Number(progress.xp || 0));
+  const next = Number(progress.level) >= 100 ? 'Maximum level reached' : `${remaining.toLocaleString()} XP to LV ${Number(progress.level) + 1}`;
+  return `<section id="header-progression" class="header-progression" aria-live="polite"><div><span data-header-progress-level>LV ${escapeHtml(progress.level)}</span><b data-header-progress-title>${escapeHtml(progress.title)}</b><small data-header-progress-xp>${escapeHtml(Number(progress.xp || 0).toLocaleString())} XP</small></div><span class="header-progression-meter"><span data-header-progress-meter style="width:${Math.max(0, Math.min(100, Number(progress.progress) || 0))}%"></span></span><small data-header-progress-next>${escapeHtml(next)}</small></section>`;
+}
+
+function headerActions(user, progress = null, currentView = '') {
+  if (!user) return `<div class="top-actions"><a class="button signal-button${currentView === 'signal' ? ' active' : ''}" href="/signal">Signal</a><a class="button forum-button${currentView === 'forum' ? ' active' : ''}" href="/forum">Forum</a><a class="button catalogue-button${currentView === 'catalogue' ? ' active' : ''}" href="/katalog">Kat·a·log</a><a class="button primary" href="/">Sign in</a></div>`;
   return `<div class="top-actions">
-    <a class="button catalogue-button" data-catalogue-destination="library" href="/">My Kat·a·log</a>
+    ${headerProgression(progress)}
+    <a class="button signal-button${currentView === 'signal' ? ' active' : ''}" href="/signal">Signal</a>
+    <a class="button forum-button${currentView === 'forum' ? ' active' : ''}" href="/forum">Forum</a>
+    <a class="button catalogue-button${currentView === 'catalogue' ? ' active' : ''}" href="/katalog">Kat·a·log</a>
+    <a class="button library-button${currentView === 'library' ? ' active' : ''}" href="/">My Kat·a·log</a>
+    <a class="button primary desktop-add" href="/"><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
     <a class="button account-button" href="/" aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
-    <a class="button primary desktop-add" href="/"><span class="button-icon" aria-hidden="true">＋</span><span class="button-label">Add a game</span></a>
   </div>`;
 }
 
@@ -46,7 +57,7 @@ function decorativeCoverField(coverUrls = []) {
   return `<div class="auth-cover-field app-cover-field" aria-hidden="true">${slots}</div>`;
 }
 
-function pageShell({ title, description, canonical, content, structuredData, user = null, coverUrls = [], socialImage = `${SITE_URL}/social-preview.png`, socialImageAlt = 'Game Kat·a·log', socialType = 'website' }) {
+function pageShell({ title, description, canonical, content, structuredData, user = null, progress = null, coverUrls = [], socialImage = `${SITE_URL}/social-preview.png`, socialImageAlt = 'Game Kat·a·log', socialType = 'website', currentView = '', extraStyles = '', extraScripts = '' }) {
   const currentYear = new Date().getFullYear();
   const copyright = currentYear > 2026 ? `© 2026-${currentYear}` : '© 2026';
   return `<!doctype html>
@@ -75,9 +86,12 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/foundation.css">
   <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/library.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
+  <link rel="stylesheet" href="/css/activity.css">
   <link rel="stylesheet" href="/css/catalogue.css">
+  ${extraStyles}
   <script type="application/ld+json">${jsonLd(structuredData)}</script>
 </head>
 <body class="catalogue-document" data-signed-in="${user ? 'true' : 'false'}">
@@ -85,12 +99,14 @@ function pageShell({ title, description, canonical, content, structuredData, use
     ${decorativeCoverField(coverUrls)}
     <header class="topbar">
       <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span><strong>Game Kat·a·log <em>${escapeHtml(readVersion())}</em></strong><small>Your collection, one place</small></span></a>
-      ${headerActions(user)}
+      ${headerActions(user, progress, currentView || (canonical === `${SITE_URL}/signal` ? 'signal' : canonical === `${SITE_URL}/katalog` || canonical.includes('/game/') ? 'catalogue' : 'library'))}
     </header>
     ${content}
     <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span>${copyright}</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
   </div>
   <script type="module" src="/js/catalogue-public.js"></script>
+  ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
+  ${extraScripts}
 </body>
 </html>`;
 }
@@ -118,7 +134,7 @@ function renderCatalogueMain({ result, platforms, query = '', platform = '', det
     <a class="catalogue-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
     <div class="catalogue-card-body"><span class="catalogue-platform">${escapeHtml(entry.platform)}</span><h2><a href="/game/${encodeURIComponent(entry.slug)}">${escapeHtml(entry.title)}</a></h2>
       <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
-      <div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '—'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}</div>
+      <div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}</div>
     </div>
   </article>`).join('');
   const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(item.platform)} (${item.count})</option>`).join('');
@@ -133,12 +149,21 @@ function renderCatalogueMain({ result, platforms, query = '', platform = '', det
       <section class="catalogue-grid">${cards || '<div class="catalogue-empty"><strong>No matching releases.</strong><span>The Kat·a·log grows as members enrich their private libraries.</span></div>'}</section>${pagination}</div>${detail}</main>`;
 }
 
-function renderCatalogue({ result, platforms, query = '', platform = '', user = null }) {
+function renderCatalogue({ result, platforms, query = '', platform = '', user = null, progress = null }) {
   const description = 'Browse the public Game Kat·a·log, inspect platform releases, PEGI ratings, cover art, and HowLongToBeat estimates.';
   return pageShell({
-    title: 'Public Kat·a·log | Game Kat·a·log', description, canonical: `${SITE_URL}/katalog`, user, coverUrls: result.entries.map(entry => entry.coverUrl),
+    title: 'Public Kat·a·log // Game Kat·a·log', description, canonical: `${SITE_URL}/katalog`, user, progress, coverUrls: result.entries.map(entry => entry.coverUrl),
     structuredData: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Game Kat·a·log Public Kat·a·log', url: `${SITE_URL}/katalog`, numberOfItems: result.total },
     content: renderCatalogueMain({ result, platforms, query, platform }),
+  });
+}
+
+function renderSignal({ user = null, progress = null, coverUrls = [] } = {}) {
+  const description = 'Follow public-safe Game Kat·a·log activity: new curators, collector level-ups, and public catalogue contributions.';
+  return pageShell({
+    title: 'Kat·a·log Signal // Game Kat·a·log', description, canonical: `${SITE_URL}/signal`, user, progress,
+    structuredData: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Game Kat·a·log Signal', url: `${SITE_URL}/signal`, description },
+    content: `<main class="catalogue-main signal-main"><section class="hero catalogue-hero signal-hero"><div><p class="kicker">PUBLIC // LIVE</p><h1>Kat·a·log Signal</h1><p class="hero-copy">A public pulse of new curators, collector level-ups, and games that joined the shared Kat·a·log.</p></div>${heroCoverDeck(coverUrls)}</section><section class="signal-feed-panel"><header><span class="kicker">LAST 30 DAYS</span><h2>Recent public activity</h2><p>Personal libraries, ratings, wishlists, edits, and play status stay private.</p></header><div class="activity-feed signal-feed" data-activity-feed data-activity-limit="all" data-activity-grouped="true" aria-live="polite"><p class="activity-feed-empty">Tuning the signal…</p></div></section></main>`,
   });
 }
 
@@ -157,8 +182,8 @@ function communityRating(entry) {
   return `<span class="community-rating" aria-label="Community rating ${average.toFixed(1)} out of 5 from ${count} ratings"><span class="rating-stars">${stars}</span><b>${average.toFixed(1)}</b><small>${count} ratings</small></span>`;
 }
 
-function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1 }, platforms = [], user = null, libraryGame = null }) {
-  const ratingLabel = entry.pegi ? `PEGI ${entry.pegi}` : entry.esrbRating ? `ESRB ${entry.esrbRating}` : 'unrated';
+function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1 }, platforms = [], user = null, progress = null, libraryGame = null }) {
+  const ratingLabel = entry.pegi ? `PEGI ${entry.pegi}` : 'unrated';
   const description = entry.description || `${entry.title} for ${entry.platform}: ${ratingLabel} information, cover art, publisher details, and HowLongToBeat estimates.`;
   const canonical = `${SITE_URL}/game/${encodeURIComponent(entry.slug)}`;
   const addPanel = user && libraryGame
@@ -175,35 +200,38 @@ function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1
   const descriptionUrl = safeExternalUrl(entry.descriptionSourceUrl);
   const descriptionPanel = entry.description ? `<article class="game-description"><header><span>OVERVIEW // ${escapeHtml(entry.descriptionSource || 'SOURCE')}</span><h2>About this game</h2></header><p>${escapeHtml(entry.description)}</p>${descriptionUrl ? `<a href="${escapeHtml(descriptionUrl)}" target="_blank" rel="noopener noreferrer">View description source ↗</a>` : ''}</article>` : '';
   return pageShell({
-    title: `${entry.title} (${entry.platform}) | Game Kat·a·log`, description, canonical, user, coverUrls: [entry.coverUrl, ...result.entries.map(item => item.coverUrl)],
+    title: `${entry.title} (${entry.platform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: [entry.coverUrl, ...result.entries.map(item => item.coverUrl)],
     socialImage: `${SITE_URL}${entry.coverUrl}`, socialImageAlt: `${entry.title} cover`, socialType: 'video.game',
     structuredData: { '@context': 'https://schema.org', '@type': 'VideoGame', name: entry.title, gamePlatform: entry.platform,
-      contentRating: entry.pegi ? `PEGI ${entry.pegi}` : entry.esrbRating ? `ESRB ${entry.esrbRating}` : undefined, image: `${SITE_URL}${entry.coverUrl}`, url: canonical,
+      contentRating: entry.pegi ? `PEGI ${entry.pegi}` : undefined, image: `${SITE_URL}${entry.coverUrl}`, url: canonical,
       description: entry.description || undefined, datePublished: entry.releaseYear ? `${entry.releaseYear}-01-01` : undefined,
       aggregateRating: Number(entry.ratingCount) >= 1 ? { '@type': 'AggregateRating', ratingValue: Number(entry.ratingAverage).toFixed(1), ratingCount: Number(entry.ratingCount), bestRating: 5, worstRating: 0.5 } : undefined,
       publisher: entry.publisher ? { '@type': 'Organization', name: entry.publisher } : undefined },
-    content: renderCatalogueMain({ result, platforms, detail: `<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}"><article class="catalogue-game-dialog-card"><header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-catalogue-game-close aria-label="Close game details">×</button></header><div class="game-detail"><article class="game-overview"><div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div><div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1><div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${entry.esrbRating && entry.pegi ? `<span>ESRB ${escapeHtml(entry.esrbRating)}</span>` : ''}${communityRating(entry)}${entry.releaseYear ? `<span>${entry.releaseYear}</span>` : ''}${entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : ''}</div>${addPanel}${descriptionPanel}</div></article>
+    content: renderCatalogueMain({ result, platforms, detail: `<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}"><article class="catalogue-game-dialog-card"><header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-catalogue-game-close aria-label="Close game details">×</button></header><div class="game-detail"><article class="game-overview"><div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div><div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1><div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${communityRating(entry)}${entry.releaseYear ? `<span>${entry.releaseYear}</span>` : ''}${entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : ''}</div>${addPanel}${descriptionPanel}</div></article>
       <section class="game-metadata"><article><header><span>PLAYTIME // HLTB</span><h2>How long it takes</h2></header><div class="time-grid">${hours('Main story', entry.hltbMainStory)}${hours('Main + sides', entry.hltbMainExtra)}${hours('Completionist', entry.hltbCompletionist)}${hours('All styles', entry.hltbAllStyles)}</div>${hltbUrl ? `<a href="${escapeHtml(hltbUrl)}" target="_blank" rel="noopener noreferrer">View source on HowLongToBeat ↗</a>` : ''}</article>
-      <article><header><span>CONTENT // ${entry.pegi ? 'PEGI' : 'ESRB'}</span><h2>Rating information</h2></header>${entry.pegiDescriptors.length ? `<div class="descriptor-list">${entry.pegiDescriptors.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}${pegiDetails}${pegiUrl ? `<a href="${escapeHtml(pegiUrl)}" target="_blank" rel="noopener noreferrer">View source on PEGI ↗</a>` : ''}${entry.esrbRating ? `<section><h3>ESRB ${escapeHtml(entry.esrbRating)}</h3>${entry.esrbDescriptors.length ? `<div class="descriptor-list">${entry.esrbDescriptors.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}${entry.esrbInteractiveElements.length ? `<p>${escapeHtml(entry.esrbInteractiveElements.join(' · '))}</p>` : ''}${entry.esrbSummary ? `<p>${escapeHtml(entry.esrbSummary)}</p>` : ''}${safeExternalUrl(entry.esrbUrl) ? `<a href="${escapeHtml(safeExternalUrl(entry.esrbUrl))}" target="_blank" rel="noopener noreferrer">View source on ESRB ↗</a>` : ''}</section>` : ''}</article></section></div></article></dialog>` }),
+      <article><header><span>CONTENT // PEGI</span><h2>Rating information</h2></header>${entry.pegiDescriptors.length ? `<div class="descriptor-list">${entry.pegiDescriptors.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}${pegiDetails}${pegiUrl ? `<a href="${escapeHtml(pegiUrl)}" target="_blank" rel="noopener noreferrer">View source on PEGI ↗</a>` : ''}</article></section></div></article></dialog>` }),
   });
 }
 
 function renderNotFound() {
   return pageShell({
-    title: 'Game not found | Game Kat·a·log', description: 'The requested catalogue release could not be found.',
+    title: 'Game not found // Game Kat·a·log', description: 'The requested catalogue release could not be found.',
     canonical: `${SITE_URL}/katalog`, structuredData: { '@context': 'https://schema.org', '@type': 'WebPage', name: 'Game not found' },
     content: '<main class="catalogue-main"><div class="catalogue-empty"><strong>That release is not public.</strong><a href="/katalog">Browse the Kat·a·log</a></div></main>',
   });
 }
 
-function sitemapXml(entries, today = new Date().toISOString().slice(0, 10)) {
+function sitemapXml(entries, today = new Date().toISOString().slice(0, 10), forumThreads = []) {
   const urls = [
     [`${SITE_URL}/`, 'weekly', '1.0', today],
     [`${SITE_URL}/katalog`, 'daily', '0.9', today],
+    [`${SITE_URL}/signal`, 'daily', '0.6', today],
+    [`${SITE_URL}/forum`, 'daily', '0.7', today],
     [`${SITE_URL}/docs/user-guide.html`, 'monthly', '0.5', today],
     ...entries.map(entry => [`${SITE_URL}/game/${encodeURIComponent(entry.slug)}`, 'monthly', '0.8', String(entry.updatedAt || today).slice(0, 10)]),
+    ...forumThreads.map(thread => [`${SITE_URL}/forum/thread/${Number(thread.id)}`, 'weekly', '0.5', String(thread.lastPostAt || today).slice(0, 10)]),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([url, frequency, priority, lastmod]) => `  <url>\n    <loc>${escapeHtml(url)}</loc>\n    <lastmod>${escapeHtml(lastmod)}</lastmod>\n    <changefreq>${frequency}</changefreq>\n    <priority>${priority}</priority>\n  </url>`).join('\n')}\n</urlset>`;
 }
 
-module.exports = { SITE_URL, escapeHtml, renderCatalogue, renderGame, renderNotFound, safeExternalUrl, sitemapXml };
+module.exports = { SITE_URL, escapeHtml, pageShell, renderCatalogue, renderGame, renderNotFound, renderSignal, safeExternalUrl, sitemapXml };

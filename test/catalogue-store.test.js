@@ -48,6 +48,7 @@ test('store deduplicates title/platform identities and links separate users', t 
   assert.equal(reused.usedCover, false);
   assert.equal(store.counts().public, 1);
   assert.equal(database.prepare('SELECT COUNT(*) count FROM catalogue_game_links').get().count, 2);
+  assert.deepEqual(store.contributionSources(), [{ userId: 1, gameId: first.id }]);
 });
 
 test('public projections never expose contributing account or private row identifiers', t => {

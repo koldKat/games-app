@@ -358,9 +358,48 @@
 .auth-center .auth-card {
   flex: 0 0 auto;
 }
+.auth-public-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  min-height: 30px;
+}
+.auth-public-link {
+  position: relative;
+  min-width: 0;
+  height: 30px;
+  justify-content: center;
+  border-color: #2f7769;
+  background: #0d1b20e6;
+  color: #71dfc6;
+  font-size: 9px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.auth-public-link:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: auth-public-pulse 4s ease-in-out infinite;
+}
+.auth-public-link:hover,
+.auth-public-link:focus-visible {
+  border-color: #68e8cd;
+  background: #123029;
+  color: #d7fff5;
+}
+.auth-public-link:hover:after,
+.auth-public-link:focus-visible:after { animation: none; opacity: 0; }
+@keyframes auth-public-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(88 225 198 / 0%); }
+  50% { box-shadow: 0 0 0 3px rgb(88 225 198 / 26%); }
+}
 .auth-promo-rail {
   display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .auth-promo {
@@ -764,6 +803,9 @@
   .auth-center {
     width: 100%;
     height: auto;
+  }
+  .auth-public-nav {
+    gap: 6px;
   }
   .auth-promo-rail {
     display: grid;
