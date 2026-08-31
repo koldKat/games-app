@@ -24,6 +24,7 @@ const admin = require('./server/admin');
 const catalogue = require('./server/catalogue-runtime');
 const { createCatalogueRoutes } = require('./server/catalogue-routes');
 const { createForumRoutes } = require('./server/forum-routes');
+const { createPatchRoutes } = require('./server/patch-routes');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
 const mailer = require('./server/mailer');
@@ -101,6 +102,7 @@ const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: 
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
 const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, progression, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
 const forumRoutes = createForumRoutes({ catalogue, auth, events, progression, onProgression: publishProgression });
+const patchRoutes = createPatchRoutes({ auth, events });
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -496,6 +498,7 @@ const server = http.createServer(async (request, response) => {
     if (await admin.handle(request, response, url)) return;
     if (await catalogueRoutes.handle(request, response, url)) return;
     if (await forumRoutes.handle(request, response, url)) return;
+    if (await patchRoutes.handle(request, response, url)) return;
   } catch (error) { return sendJson(response, 500, { error: error.message || 'Request failed.' }); }
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));

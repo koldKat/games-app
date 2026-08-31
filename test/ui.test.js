@@ -234,7 +234,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /window\.history\.pushState/);
   assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
   assert.match(navigation, /\}, \{ capture: true \}\);/);
-  assert.match(html, /class="button signal-button" href="\/signal">Signal<\/a><a class="button forum-button" href="\/forum">Forum<\/a><a class="button catalogue-button" href="\/katalog">Kat·a·log<\/a><a class="button library-button" href="\/">My Kat·a·log<\/a>/);
+  assert.match(html, /header-community-actions[\s\S]*class="button signal-button" href="\/signal">[\s\S]*header-nav-label">Signal[\s\S]*class="button forum-button" href="\/forum">[\s\S]*header-nav-label">Forum[\s\S]*header-progression[\s\S]*header-library-actions[\s\S]*class="button catalogue-button" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log[\s\S]*class="button library-button" href="\/">[\s\S]*header-nav-label">My Kat·a·log/);
   assert.match(navigation, /libraryButton\.classList\.toggle\('active', libraryOpen\)/);
   assert.match(navigation, /catalogueButton\.classList\.toggle\('active', catalogueOpen\)/);
   assert.doesNotMatch(navigation, /toggle\.textContent/);
@@ -246,13 +246,16 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
   assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
-  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button,\.top-actions > \.library-button,\.top-actions > \.forum-button \{ width:auto; min-width:0;/);
+  assert.match(read('public/css/theme.css'), /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
+  assert.match(read('public/css/theme.css'), /\.top-actions \.catalogue-button,\.top-actions \.library-button,\.top-actions \.forum-button \{ width:auto; min-width:0;/);
   assert.match(read('public/css/theme.css'), /\.button \{[\s\S]*text-decoration: none/);
   assert.match(read('public/css/theme.css'), /@media \(max-width: 680px\) \{[\s\S]*\.auth-screen \{[\s\S]*\.brand strong \{ font-size: 13px; white-space: nowrap; \}/);
   assert.match(read('public/css/theme.css'), /\.brand strong em \{ display: none; \}/);
   assert.match(read('public/css/theme.css'), /\.header-progression\{display:none\}/);
-  assert.match(read('public/css/theme.css'), /\.top-actions > \.account-button \{ width: 38px; min-width: 38px; max-width: 38px; padding: 0; \}/);
-  assert.match(read('public/css/theme.css'), /\.top-actions > \.catalogue-button\.active,[\s\S]*background:#173f3a;\s*color:transparent/);
+  assert.match(read('public/css/theme.css'), /\.top-actions \.account-button \{ width: 38px; min-width: 38px; max-width: 38px; padding: 0; \}/);
+  assert.match(read('public/css/theme.css'), /\.header-nav-icon \{ display:none; \}/);
+  assert.match(read('public/css/theme.css'), /\.header-nav-icon \{ display:block; width:18px; height:18px; stroke:currentColor;/);
+  assert.doesNotMatch(read('public/css/theme.css'), /content: "[⌁◌⌂⌕]"/);
 });
 
 test('collection filtering separates owned physical and digital games', () => {

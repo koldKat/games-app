@@ -35,16 +35,33 @@ function headerProgression(progress) {
   return `<section id="header-progression" class="header-progression" aria-live="polite"><div><span data-header-progress-level>LV ${escapeHtml(progress.level)}</span><b data-header-progress-title>${escapeHtml(progress.title)}</b><small data-header-progress-xp>${escapeHtml(Number(progress.xp || 0).toLocaleString())} XP</small></div><span class="header-progression-meter"><span data-header-progress-meter style="width:${Math.max(0, Math.min(100, Number(progress.progress) || 0))}%"></span></span><small data-header-progress-next>${escapeHtml(next)}</small></section>`;
 }
 
+function navIcon(kind) {
+  const paths = {
+    signal: '<circle cx="12" cy="12" r="1.5"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9.2 9.2 0 0 0 0 13M18.5 5.5a9.2 9.2 0 0 1 0 13"/>',
+    forum: '<path d="M4 5h16v11H10l-5 4v-4H4V5Z"/><path d="M8 10h8M8 13h5"/>',
+    catalogue: '<path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h4M9 12h6M9 16h6"/>',
+    library: '<path d="M4 11.5 12 4l8 7.5V20H5v-8.5Z"/><path d="M10 20v-5h4v5"/>',
+  };
+  return `<svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[kind]}</svg>`;
+}
+function headerNav(kind, label, href, active = false) { return `<a class="button ${kind}-button${active ? ' active' : ''}" href="${href}">${navIcon(kind)}<span class="header-nav-label">${label}</span></a>`; }
+
 function headerActions(user, progress = null, currentView = '') {
-  if (!user) return `<div class="top-actions"><a class="button signal-button${currentView === 'signal' ? ' active' : ''}" href="/signal">Signal</a><a class="button forum-button${currentView === 'forum' ? ' active' : ''}" href="/forum">Forum</a><a class="button catalogue-button${currentView === 'catalogue' ? ' active' : ''}" href="/katalog">Kat·a·log</a><a class="button primary" href="/">Sign in</a></div>`;
+  if (!user) return `<div class="top-actions">${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}${headerNav('catalogue', 'Kat·a·log', '/katalog', currentView === 'catalogue')}<button class="button patch-button" type="button" data-patch-open>Patch</button><a class="button primary" href="/">Sign in</a></div>`;
   return `<div class="top-actions">
+    <div class="header-community-actions">
+    ${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}
+    ${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}
+    <button class="button patch-button" type="button" data-patch-open>Patch</button>
+    <button class="button ping-button" type="button" data-ping-open>Ping <b class="ping-badge" data-ping-badge hidden></b></button>
+    </div>
     ${headerProgression(progress)}
-    <a class="button signal-button${currentView === 'signal' ? ' active' : ''}" href="/signal">Signal</a>
-    <a class="button forum-button${currentView === 'forum' ? ' active' : ''}" href="/forum">Forum</a>
-    <a class="button catalogue-button${currentView === 'catalogue' ? ' active' : ''}" href="/katalog">Kat·a·log</a>
-    <a class="button library-button${currentView === 'library' ? ' active' : ''}" href="/">My Kat·a·log</a>
+    <div class="header-library-actions">
+    ${headerNav('catalogue', 'Kat·a·log', '/katalog', currentView === 'catalogue')}
+    ${headerNav('library', 'My Kat·a·log', '/', currentView === 'library')}
     <a class="button primary desktop-add" href="/"><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
     <a class="button account-button" href="/" aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
+    </div>
   </div>`;
 }
 
@@ -90,6 +107,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
   <link rel="stylesheet" href="/css/activity.css">
+  <link rel="stylesheet" href="/css/patch.css">
   <link rel="stylesheet" href="/css/catalogue.css">
   ${extraStyles}
   <script type="application/ld+json">${jsonLd(structuredData)}</script>
@@ -105,6 +123,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
     <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span>${copyright}</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
   </div>
   <script type="module" src="/js/catalogue-public.js"></script>
+  <script type="module" src="/js/patch-page.js"></script>
   ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
   ${extraScripts}
 </body>

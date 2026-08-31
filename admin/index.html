@@ -8,6 +8,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/admin/style.css">
   <link rel="stylesheet" href="/admin/announcements.css">
+  <link rel="stylesheet" href="/admin/patch.css">
 </head>
 <body>
   <header class="admin-head">
@@ -23,7 +24,8 @@
     <button data-tab="progression">05 / PROGRESSION</button>
     <button data-tab="announcements">06 / SIGNAL</button>
     <button data-tab="forum">07 / FORUM</button>
-    <button data-tab="tools">08 / TOOLS</button>
+    <button data-tab="patch">08 / PATCH</button>
+    <button data-tab="tools">09 / TOOLS</button>
   </nav>
 
   <main>
@@ -114,6 +116,12 @@
       <form id="forum-category-form" class="edit-grid"><input type="hidden" id="forum-category-id"><label><span>Channel name</span><input id="forum-category-name" maxlength="56" required></label><label><span>Slug</span><input id="forum-category-slug" maxlength="56" required></label><label><span>Order</span><input id="forum-category-order" type="number" min="0" max="9999" value="10"></label><label class="wide"><span>Description</span><input id="forum-category-description" maxlength="240"></label><footer class="wide"><button id="forum-category-cancel" class="button" type="button" hidden>Cancel edit</button><button class="button primary" type="submit">Save channel</button></footer></form>
       <div class="table-shell"><table><thead><tr><th>CHANNEL</th><th>SLUG</th><th>THREADS</th><th>ACTIONS</th></tr></thead><tbody id="forum-categories-body"></tbody></table></div>
       <div class="table-shell"><table><thead><tr><th>THREAD</th><th>CHANNEL</th><th>AUTHOR</th><th>REPLIES</th><th>STATE</th><th>ACTIONS</th></tr></thead><tbody id="forum-threads-body"></tbody></table></div>
+    </section>
+
+    <section id="panel-patch" class="panel">
+      <header class="section-head"><div><span>PRIVATE OPERATOR LINK</span><h1>Patch queue</h1></div><button id="refresh-patch" class="button">Refresh</button></header>
+      <p class="panel-note">Patches are private support threads. Replying sends a live update into the account's Ping inbox; none of this is published to Signal or the forum.</p>
+      <div id="patch-meta" class="section-meta"></div><div id="patch-list" class="admin-patch-list"></div>
     </section>
 
     <section id="panel-tools" class="panel">

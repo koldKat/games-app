@@ -17,6 +17,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
 - Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), and a per-account hide control.
+- Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, and moderation controls.
 - Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
 - Dense, responsive desktop and mobile interfaces with background enrichment progress and targeted live card updates.
@@ -49,7 +50,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 

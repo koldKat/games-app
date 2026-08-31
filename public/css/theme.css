@@ -894,8 +894,9 @@ dialog::backdrop {
   align-items: center;
   gap: 6px;
 }
+.header-community-actions,.header-library-actions{display:flex;align-items:center;gap:6px}
 .header-progression{width:300px;display:grid;gap:4px;padding:3px 4px;color:#92aaa4}.header-progression>div{display:flex;align-items:baseline;gap:7px;min-width:0;line-height:1}.header-progression [data-header-progress-level]{color:#63e5c6;font-size:11px;font-weight:700;letter-spacing:.08em;white-space:nowrap}.header-progression [data-header-progress-title]{min-width:0;overflow:hidden;color:#d7e4e0;font-size:12px;font-weight:600;white-space:nowrap;text-overflow:ellipsis}.header-progression [data-header-progress-xp]{margin-left:auto;color:#9ab1aa;font-size:11px;white-space:nowrap}.header-progression-meter{display:block;height:7px;border:1px solid #285149;background:#07120f;overflow:hidden}.header-progression-meter>span{display:block;width:0;height:100%;background:#4bd9b9;box-shadow:0 0 9px #4bd9b977;transition:none}.header-progression [data-header-progress-next]{color:#718b83;font-size:9px;line-height:1;white-space:nowrap}
-.top-actions > .button {
+.top-actions .button {
   position: relative;
   width: 114px;
   height: 36px;
@@ -903,10 +904,11 @@ dialog::backdrop {
   padding-bottom: 0;
   line-height: 1;
 }
-.top-actions > .catalogue-button,.top-actions > .library-button,.top-actions > .forum-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
-.top-actions > .catalogue-button.active,.top-actions > .library-button.active,.top-actions > .signal-button.active,.top-actions > .forum-button.active { border-color:#2b343c; background:#11161b; color:#68737d; cursor:default; pointer-events:none; }
-.top-actions > .signal-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
-.top-actions > .desktop-add { width:auto; min-width:0; gap:0; padding-inline:8px; }
+.top-actions .catalogue-button,.top-actions .library-button,.top-actions .forum-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
+.top-actions .catalogue-button.active,.top-actions .library-button.active,.top-actions .signal-button.active,.top-actions .forum-button.active { border-color:#2b343c; background:#11161b; color:#68737d; cursor:default; pointer-events:none; }
+.top-actions .signal-button { width:auto; min-width:0; padding-inline:11px; border-color:#28483f; background:#0d1919; color:var(--green); text-decoration:none; }
+.header-nav-icon { display:none; }
+.top-actions .desktop-add { width:auto; min-width:0; gap:0; padding-inline:8px; }
 .desktop-add > .button-icon {
   position: static;
   line-height: 1;
@@ -1062,16 +1064,13 @@ dialog::backdrop {
   .top-actions {
     gap: 4px;
   }
+  .header-community-actions,.header-library-actions{display:contents}
   .header-progression{display:none}
-  .top-actions > .catalogue-button,.top-actions > .library-button,.top-actions > .forum-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
-  .top-actions > .catalogue-button::after { content: "⌕"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
-  .top-actions > .library-button::after { content: "⌂"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
-  .top-actions > .signal-button { width: 38px; overflow: hidden; padding: 0; color: transparent; }
-  .top-actions > .signal-button::after { content: "⌁"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
-  .top-actions > .forum-button::after { content: "◌"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--green); font-size: 18px; }
-  .top-actions > .account-button { width: 38px; min-width: 38px; max-width: 38px; padding: 0; }
+  .top-actions .catalogue-button,.top-actions .library-button,.top-actions .forum-button,.top-actions .signal-button { width:38px; min-width:38px; padding:0; }
+  .header-nav-label { display:none; }
+  .header-nav-icon { display:block; width:18px; height:18px; stroke:currentColor; stroke-width:1.7; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .top-actions .account-button { width: 38px; min-width: 38px; max-width: 38px; padding: 0; }
   .account-button #account-name { display: none; }
   .account-button .nav-avatar { left: 50%; transform: translate(-50%, -50%); }
-  .top-actions > .catalogue-button.active,.top-actions > .library-button.active,.top-actions > .signal-button.active,.top-actions > .forum-button.active { border-color:#287b6c; background:#173f3a; color:transparent; }
-  .top-actions > .catalogue-button.active::after,.top-actions > .library-button.active::after,.top-actions > .signal-button.active::after,.top-actions > .forum-button.active::after { color:#72efd1; opacity:.78; }
+  .top-actions .catalogue-button.active,.top-actions .library-button.active,.top-actions .signal-button.active,.top-actions .forum-button.active { border-color:#287b6c; background:#173f3a; color:#72efd1; }
 }

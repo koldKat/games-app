@@ -7,6 +7,7 @@ import { loadMailSettings } from './mail.js';
 import { loadProgression } from './progression.js';
 import { loadAnnouncements } from './announcements.js';
 import { loadForum } from './forum.js';
+import { loadPatch } from './patch.js';
 
 const loaders = {
   dashboard: loadDashboard,
@@ -16,6 +17,7 @@ const loaders = {
   progression: loadProgression,
   announcements: loadAnnouncements,
   forum: loadForum,
+  patch: loadPatch,
   tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings()]); },
 };
 
@@ -28,5 +30,6 @@ document.querySelectorAll('[data-tab]').forEach(button => button.addEventListene
 
 loadDashboard();
 loadLive();
+document.getElementById('refresh-patch')?.addEventListener('click', loadPatch);
 setInterval(loadLive, 1_000);
 setInterval(loadDashboard, 60_000);

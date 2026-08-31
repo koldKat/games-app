@@ -11,6 +11,7 @@ const catalogue = require('./catalogue-runtime');
 const activity = require('./activity');
 const events = require('./events');
 const forum = require('./forum-data');
+const patch = require('./patch-data');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -26,7 +27,9 @@ const adminFiles = new Map([
   ['/admin/', ['index.html', 'text/html; charset=utf-8']],
   ['/admin/style.css', ['style.css', 'text/css; charset=utf-8']],
   ['/admin/announcements.css', ['announcements.css', 'text/css; charset=utf-8']],
+  ['/admin/patch.css', ['patch.css', 'text/css; charset=utf-8']],
   ['/admin/js/forum.js', ['js/forum.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/patch.js', ['js/patch.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
@@ -220,6 +223,22 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && pathname === '/api/admin/live') return sendJson(response, 200, liveStats());
   if (request.method === 'GET' && pathname === '/api/admin/accounts') return sendJson(response, 200, listAccounts());
   if (request.method === 'GET' && pathname === '/api/admin/forum') return sendJson(response, 200, { categories: forum.categories(), recent: forum.recentThreads(30) });
+  if (request.method === 'GET' && pathname === '/api/admin/patch') return sendJson(response, 200, { threads: patch.all(), unread: patch.adminUnread() });
+  let patchMatch = pathname.match(/^\/api\/admin\/patch\/(\d+)(?:\/(read|reply))?$/);
+  if (patchMatch) {
+    const id = Number(patchMatch[1]); const item = patch.thread(id);
+    if (!item) return sendJson(response, 404, { error: 'Patch thread not found.' });
+    try {
+      if (request.method === 'POST' && patchMatch[2] === 'read') { patch.markAdminRead(id); const operatorId = auth.operatorUserId(); if (operatorId) events.publish(operatorId, 'ping-updated', { unread: patch.adminUnread() }); return sendJson(response, 200, { ok: true }); }
+      if (request.method === 'POST' && patchMatch[2] === 'reply') {
+        const body = String((await readJson(request)).body || '').trim().slice(0, 4000); if (!body) return sendJson(response, 400, { error: 'Write a reply before sending.' });
+        patch.addMessage(id, 'admin', body); if (item.userId) events.publish(item.userId, 'ping-updated', { unread: patch.unreadForUser(item.userId) });
+        if (item.email) mailer.send({ to: item.email, subject: 'Reply to your Patch // Game Kat·a·log', text: `A reply was posted to your Patch:\n\n${body}\n\nSign in to Game Kat·a·log to continue the conversation in Ping.` }).catch(() => {});
+        return sendJson(response, 201, { thread: patch.thread(id) });
+      }
+      if (request.method === 'DELETE' && !patchMatch[2]) { const removed = patch.removeForAdmin(id); const operatorId = auth.operatorUserId(); if (removed && operatorId) events.publish(operatorId, 'ping-updated', { unread: patch.adminUnread() }); return sendJson(response, removed ? 200 : 404, { ok: true }); }
+    } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
   let forumMatch = pathname.match(/^\/api\/admin\/forum\/categories(?:\/(\d+))?$/);
   if (forumMatch) {
     try {

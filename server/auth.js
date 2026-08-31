@@ -132,6 +132,7 @@ async function login(username, password) {
 }
 
 function isProtectedUsername(username) { return String(username || '').trim().toLocaleLowerCase() === PROTECTED_USERNAME; }
+function operatorUserId() { return db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE').get(PROTECTED_USERNAME)?.id || null; }
 function protectedAccountError() { return Object.assign(new Error('The protected koldKat account cannot be changed by admin controls.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
 
 function setAccountLocked(userId, locked) {
@@ -235,4 +236,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

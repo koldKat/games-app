@@ -135,6 +135,12 @@ The localhost-only administrator panel can compose announcements as drafts, edit
 
 Choose a channel before starting a thread: its inline composer appears within that channel and locks the selected channel, so a new discussion never falls into General by default. Thread cards identify their author; each thread-page post also shows that account's avatar or initial, username, and collector level. Sign in to start a thread or reply. You can edit or delete only your own thread or reply; deletion uses a themed second-click confirmation, deleting a thread removes its replies, while deleting a reply leaves a clear deleted marker in the conversation. Forum changes use a public server-sent-event stream, so open channels and threads refresh without manual reload. A localhost administrator manages channels and can pin, lock, or remove any thread. Starting a thread awards 25 XP once; each reply awards 5 XP once.
 
+## Patch and Ping
+
+**Patch** is the private operator link. Use it for bugs, ideas, and game-data corrections. Signed-in accounts automatically identify themselves; visitors can leave a name and optional email. Patch threads never enter Signal, the public Kat·a·log, or the forum.
+
+**Ping** is the signed-in private inbox for Patch replies. It remains muted and unavailable until there is at least one conversation, then shows unread conversations, supports replying, and lets you hide a thread from your own list. Operator replies arrive live through the authenticated event stream, so the Ping badge updates without reloading the library and pulses until read. The operator account sees the same Patch conversations through Ping with the operator unread state, so later user replies become unread again. If you left an email address, a reply also sends a short email notice when SMTP is configured. The localhost-only admin panel has the matching Patch queue: it can read, reply to, and remove threads.
+
 ---
 
 ## Adding a game
@@ -314,6 +320,7 @@ The compact terminal-style panel provides:
 - Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup. Only review candidates have a **Publish** action; a published release can be returned to review or rejected, and a rejected release must first return to review before it can be published.
 - Signal announcement drafting, editing, publishing, unpublishing, deletion, and a single pinned notice that stays above the public feed.
 - Forum channel administration plus local thread pinning, locking, and removal.
+- Patch queue triage, unread state, private replies delivered through Ping, and thread removal.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
 - Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.

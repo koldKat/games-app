@@ -9,6 +9,7 @@ import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
 import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
+import { createPatchUi } from './js/patch-ui.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
@@ -76,6 +77,7 @@ function showAccountError(message) { $('#account-error').textContent = message; 
 const coverProviderSettings = createCoverProviderSettings({ api, toast, showError: showAccountError });
 const progressionUi = createProgressionUi({ api });
 const activityFeed = createActivityFeed();
+const patchUi = createPatchUi({ api, toast, getUser: () => state.user });
 function applySaveProgress(result) {
   if (result?.progression?.awards?.length) progressionUi.handleEvent({ progress: result.progression.progress });
 }
@@ -203,6 +205,7 @@ async function enterApp(user, savedPreferences) {
   $('#app-shell').hidden = false;
   endSessionResume();
   connectEventStream();
+  void patchUi.refreshUnread();
   void progressionUi.load();
   await dataReady;
   if (state.user?.id !== user.id) return;
@@ -516,6 +519,7 @@ function connectEventStream() {
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
     else if (event === 'description-job') { state.descriptionStatus = mergeLiveJobStatus(state.descriptionStatus, data.job); renderDescriptionBulkStatus(); }
+    else if (event === 'ping-updated') patchUi.handleEvent(event, data);
     else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
     else coverProviderSettings.handleEvent(event, data);
   }, onUnauthorized() {

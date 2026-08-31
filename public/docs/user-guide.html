@@ -15,6 +15,7 @@
 <a class="toc-2" href="#collector-progression">Collector progression</a>
 <a class="toc-2" href="#kat-a-log-signal">Kat·a·log Signal</a>
 <a class="toc-2" href="#forum">Forum</a>
+<a class="toc-2" href="#patch-and-ping">Patch and Ping</a>
 <a class="toc-2" href="#adding-a-game">Adding a game</a>
 <a class="toc-3" href="#manual-entry">Manual entry</a>
 <a class="toc-3" href="#pegi-assisted-entry">PEGI-assisted entry</a>
@@ -115,6 +116,9 @@
 <h2 id="forum">Forum<a class="anchor" href="#forum" aria-label="Link to section">#</a></h2>
 <p><strong>Forum</strong> is a public, search-visible discussion space at <code>/forum</code>. It keeps the same header and cover treatment as Signal and the public Kat·a·log, and switches below the signed-in shell rather than rebuilding the app header. Anyone can read the starting channels: General, Games &amp; recommendations, Collections &amp; hardware, and Kat·a·log.</p>
 <p>Choose a channel before starting a thread: its inline composer appears within that channel and locks the selected channel, so a new discussion never falls into General by default. Thread cards identify their author; each thread-page post also shows that account&#39;s avatar or initial, username, and collector level. Sign in to start a thread or reply. You can edit or delete only your own thread or reply; deletion uses a themed second-click confirmation, deleting a thread removes its replies, while deleting a reply leaves a clear deleted marker in the conversation. Forum changes use a public server-sent-event stream, so open channels and threads refresh without manual reload. A localhost administrator manages channels and can pin, lock, or remove any thread. Starting a thread awards 25 XP once; each reply awards 5 XP once.</p>
+<h2 id="patch-and-ping">Patch and Ping<a class="anchor" href="#patch-and-ping" aria-label="Link to section">#</a></h2>
+<p><strong>Patch</strong> is the private operator link. Use it for bugs, ideas, and game-data corrections. Signed-in accounts automatically identify themselves; visitors can leave a name and optional email. Patch threads never enter Signal, the public Kat·a·log, or the forum.</p>
+<p><strong>Ping</strong> is the signed-in private inbox for Patch replies. It remains muted and unavailable until there is at least one conversation, then shows unread conversations, supports replying, and lets you hide a thread from your own list. Operator replies arrive live through the authenticated event stream, so the Ping badge updates without reloading the library and pulses until read. The operator account sees the same Patch conversations through Ping with the operator unread state, so later user replies become unread again. If you left an email address, a reply also sends a short email notice when SMTP is configured. The localhost-only admin panel has the matching Patch queue: it can read, reply to, and remove threads.</p>
 <hr>
 <h2 id="adding-a-game">Adding a game<a class="anchor" href="#adding-a-game" aria-label="Link to section">#</a></h2>
 <p>Select <strong>Add a game</strong> on desktop or the <strong>+</strong> floating button on mobile.</p>
@@ -225,6 +229,7 @@
 <li>Public Kat·a·log factual editing and moderation with candidate, published, and rejected states, confidence checks, supported-provider cover replacement, and independent shared-cover cleanup. Only review candidates have a <strong>Publish</strong> action; a published release can be returned to review or rejected, and a rejected release must first return to review before it can be published.</li>
 <li>Signal announcement drafting, editing, publishing, unpublishing, deletion, and a single pinned notice that stays above the public feed.</li>
 <li>Forum channel administration plus local thread pinning, locking, and removal.</li>
+<li>Patch queue triage, unread state, private replies delivered through Ping, and thread removal.</li>
 <li>An arbitrary release-string editor. Saving writes directly to <code>VERSION</code>; reload the main app to see the new string in its header.</li>
 <li>SQLite WAL checkpoint, query-planner optimization, and vacuum actions.</li>
 <li>Hourly compressed live backups stored in the ignored <code>backups/</code> directory. One runs at startup and then on the hour; archives are retained for 15 days.</li>

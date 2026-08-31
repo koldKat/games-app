@@ -46,10 +46,10 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
   assert.match(html, /Your collection, one place/);
   assert.match(html, /avatars\/koldkat\.jpg/);
   assert.match(html, /My Kat·a·log/);
-  assert.match(html, /class="button library-button" href="\/">My Kat·a·log/);
-  assert.match(html, /class="button catalogue-button(?: active)?" href="\/katalog">Kat·a·log/);
+  assert.match(html, /class="button library-button" href="\/">[\s\S]*header-nav-label">My Kat·a·log/);
+  assert.match(html, /class="button catalogue-button(?: active)?" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(html, /button-label">Game/);
-  assert.match(html, /class="button signal-button" href="\/signal">Signal/);
+  assert.match(html, /class="button signal-button" href="\/signal">[\s\S]*header-nav-label">Signal/);
 });
 
 test('Signal is a crawlable public page that attaches to the live feed client', () => {
@@ -62,7 +62,7 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
   assert.match(html, /id="header-progression" class="header-progression"/);
   assert.match(html, /LV 17/);
   assert.match(html, /Kat·a·log Architect/);
-  assert.match(html, /class="button signal-button active" href="\/signal">Signal/);
+  assert.match(html, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
   assert.match(html, /class="hero-art catalogue-hero-art"/);
   assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
 });
@@ -70,8 +70,8 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
 test('guest public navigation marks the current Signal or Kat·a·log section inactive', () => {
   const catalogue = renderCatalogue({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
   const signal = renderSignal();
-  assert.match(catalogue, /class="button catalogue-button active" href="\/katalog">Kat·a·log/);
-  assert.match(signal, /class="button signal-button active" href="\/signal">Signal/);
+  assert.match(catalogue, /class="button catalogue-button active" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
+  assert.match(signal, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
 });
 
 test('public release pages show a community aggregate but never offer a public voting control', () => {

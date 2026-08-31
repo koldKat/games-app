@@ -138,6 +138,25 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     edited_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS patch_threads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    username TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    kind TEXT NOT NULL DEFAULT 'other' CHECK (kind IN ('bug', 'idea', 'game_data', 'other')),
+    admin_unread INTEGER NOT NULL DEFAULT 0 CHECK (admin_unread >= 0),
+    user_unread INTEGER NOT NULL DEFAULT 0 CHECK (user_unread >= 0),
+    deleted_by_user INTEGER NOT NULL DEFAULT 0 CHECK (deleted_by_user IN (0, 1)),
+    deleted_by_admin INTEGER NOT NULL DEFAULT 0 CHECK (deleted_by_admin IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS patch_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    thread_id INTEGER NOT NULL REFERENCES patch_threads(id) ON DELETE CASCADE,
+    sender TEXT NOT NULL CHECK (sender IN ('user', 'admin')),
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -223,6 +242,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_games_title ON games(title COLLATE NOCASE);
   CREATE INDEX IF NOT EXISTS idx_forum_threads_category ON forum_threads(category_id, is_pinned DESC, last_post_at DESC);
   CREATE INDEX IF NOT EXISTS idx_forum_posts_thread ON forum_posts(thread_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_patch_threads_user ON patch_threads(user_id, deleted_by_user, user_unread);
+  CREATE INDEX IF NOT EXISTS idx_patch_threads_admin ON patch_threads(deleted_by_admin, admin_unread);
+  CREATE INDEX IF NOT EXISTS idx_patch_messages_thread ON patch_messages(thread_id, created_at);
 `);
 
 const selectFields = `id, title, platform, pegi, ownership, play_status AS playStatus,

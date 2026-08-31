@@ -15,6 +15,8 @@ games-app/
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
     activity.js             public-safe Signal ledger plus announcement draft/publish/pin projection
+    patch-data.js           private Patch-thread storage and read/unread lifecycle
+    patch-routes.js         authenticated Ping and public/private Patch HTTP boundary
     forum-data.js           forum categories, threads, posts, ownership, and moderation queries
     forum-pages.js          server-rendered public forum views using the shared app shell
     forum-routes.js         forum page/API dispatcher and public contribution boundary
@@ -46,6 +48,7 @@ games-app/
     index.html              localhost control-panel markup
     style.css               dense terminal-style admin theme
     announcements.css       isolated Signal announcement panel styling
+    patch.css               isolated private Patch queue styling
     js/                     dashboard, accounts, announcements, private rows, public review, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
@@ -59,6 +62,9 @@ games-app/
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/announcement-format.js safe shared rich-text formatter for Signal notices
     js/forum-page.js        forum composer, owner actions, themed confirmation, and SSE refresh binding
+    js/patch.js             admin Patch queue rendering and reply controls
+    js/patch-ui.js          reusable Patch composer and Ping conversation UI
+    js/patch-page.js        public server-rendered page adapter for Patch and Ping
     js/catalogue-public.js  release-detail dialog and one-click private-library add bindings
     js/catalogue-navigation.js persistent authenticated-shell catalogue navigation
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
@@ -72,6 +78,7 @@ games-app/
       library.css          legible typography, header art, cards, and game tools
       landing.css          authentication landing page and promotional modules
       features.css         later feature-specific components and viewport rules
+      patch.css            private Patch and Ping dialogs, unread alert state
       catalogue.css        standalone public catalogue and detail-page theme
       forum.css            public forum surfaces and responsive composer theme
     manifest.webmanifest    installable-app metadata
@@ -141,6 +148,8 @@ All authenticated routes resolve the session before dispatching feature logic. T
 Progression is split into three focused server modules. `progression-policy.js` is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (`1000 × level × (level + 1) / 2`), and collector titles. `progression-store.js` owns the SQLite tables, configurable amounts, and atomic idempotency key `(user_id, event, ref)`. `progression-service.js` maps a complete game record to eligible one-time awards and evaluates account milestones.
 
 `user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. On first `/api/progression` access the service backfills existing account rows once. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes, allowing `public/js/progression-ui.js` to update the account panel without refreshing the library. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
+
+Patch and Ping use `patch_threads` and `patch_messages`. A Patch can be submitted anonymously or under the authenticated account; ordinary accounts see only their own Ping threads while the protected operator account maps the same view to every Patch using the distinct admin unread state. Rows maintain separate sender and admin unread state plus independent soft-delete flags. New Patches and user replies target the operator through `ping-updated`; operator replies target the owning account. The normal authenticated SSE stream updates the persistent Ping badge, attention state, and disabled availability without exposing message content. When a Patch supplied an email address, an operator reply additionally attempts a short SMTP notification without making delivery a requirement for the saved reply. Neither support thread content nor metadata is eligible for Signal, catalogue, sitemap, or forum output.
 
 Catalogue dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call `syncGameSafely`; catalogue failures are logged and contained, so they cannot turn a successful account-scoped save into an error.
 
@@ -333,6 +342,10 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/stats` | Account-scoped aggregates |
 | GET | `/api/meta` | Platforms, version, PEGI capability, current user |
 | GET | `/api/events` | Authenticated SSE stream for job progress and changed games |
+| POST | `/api/patch` | Create a private operator-support Patch, anonymously or as the signed-in account |
+| GET | `/api/ping` | Signed-in account's private Patch conversations and unread count; operator sees the admin queue |
+| POST | `/api/ping/:id/read`, `/reply` | Mark a Ping thread read or append an owner/operator reply |
+| DELETE | `/api/ping/:id` | Hide a thread for its owner or the operator queue |
 | GET | `/api/activity` | Public Kat·a·log Signal entries plus the optional pinned announcement |
 | GET | `/api/activity/stream` | Public SSE refresh signal for Kat·a·log Signal |
 | GET | `/signal` | Crawlable public Kat·a·log Signal page; attaches to the public SSE stream |
@@ -387,6 +400,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET, POST | `/api/admin/announcements` | List all notices or create a draft |
 | PATCH, DELETE | `/api/admin/announcements/:id` | Edit or permanently delete one notice |
 | POST | `/api/admin/announcements/:id/publish`, `/unpublish`, `/pin`, `/unpin` | Change publication or single-pin state and refresh Signal via SSE |
+| GET/POST/DELETE | `/api/admin/patch` and `/api/admin/patch/:id/*` | Localhost-only Patch queue, read state, replies, and removal |
 | GET, PUT | `/api/admin/mail` | Read non-secret SMTP status or save SMTP settings |
 | POST | `/api/admin/mail/test` | Send a test message to the configured sender |
 | DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
