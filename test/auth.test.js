@@ -86,7 +86,9 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.deepEqual(data.listGames(other.id, { missing: 'pegi' }).map(game => game.id), [coverCandidate.id]);
   assert.ok(data.listGames(other.id, { missing: 'cover' }).some(game => game.id === pending.id));
   assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));
-  assert.ok(!data.listGames(other.id, { missing: 'pegi' }).some(game => game.platform === 'Evercade'));
+  const unratedEvercade = data.createGame(other.id, { title: 'Evercade With No PEGI', platform: 'Evercade' });
+  assert.ok(data.listGames(other.id, { missing: 'pegi' }).some(game => game.id === unratedEvercade.id));
+  assert.ok(data.gamesMissingPegiMetadata(other.id).some(game => game.id === unratedEvercade.id));
   assert.ok(data.listGames(other.id, { missing: 'either' }).length > data.listGames(other.id, { missing: 'both' }).length);
   assert.ok(data.listGames(other.id, { missing: 'description' }).some(game => game.id === coverCandidate.id));
   const described = data.updateGameDescription(other.id, coverCandidate.id, { description: 'A durable game overview.', source: 'Steam Store', sourceUrl: 'https://store.steampowered.com/app/1/' });

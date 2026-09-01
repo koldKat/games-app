@@ -86,7 +86,7 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
-| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade is treated as PEGI-not-applicable |
+| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
@@ -230,7 +230,7 @@ Each game has an editable **Description** field. Select **Look up description** 
 
 Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
 
-Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalog and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favorite state, and cover remain untouched.
+Select **Fill PEGI details** in Account Settings to scan existing games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalog and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favorite state, and cover remain untouched.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 

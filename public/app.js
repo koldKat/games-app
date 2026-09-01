@@ -404,7 +404,7 @@ function coverCredit(source) {
   return source === 'steamgriddb' ? badge('SGDB art') : '';
 }
 function isMissingPegiInfo(game) {
-  return !/^Evercade/i.test(String(game.platform || '')) && !game.pegiUrl
+  return !game.pegiUrl
     && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
     && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
 }
@@ -453,7 +453,7 @@ function gameCard(game) {
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;

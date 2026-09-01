@@ -38,7 +38,7 @@ function bestExactPegi(game, results) {
 }
 
 function needsPegiMetadata(game) {
-  return Boolean(game) && !/^Evercade/i.test(String(game.platform || '')) && !game.pegiUrl
+  return Boolean(game) && !game.pegiUrl
     && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
     && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
 }

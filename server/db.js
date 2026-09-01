@@ -369,8 +369,7 @@ function listGames(userId, filters = {}) {
   if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
   if (filters.pegi === 'none') clauses.push('pegi IS NULL');
   else if (filters.pegi) { clauses.push('pegi = @pegi'); params.pegi = Number(filters.pegi); }
-  const missingPegi = `(platform NOT LIKE 'Evercade%'
-    AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
+  const missingPegi = `(pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='')`;
   if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
   if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
@@ -473,7 +472,6 @@ function replaceGameCoverUrl(userId, id, expectedUrl, localUrl) {
 
 function gamesMissingPegiMetadata(userId) {
   return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=?
-    AND platform NOT LIKE 'Evercade%'
     AND pegi_url=''
     AND pegi_descriptors='[]' AND pegi_releases='[]' AND pegi_advice=''
     AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''
