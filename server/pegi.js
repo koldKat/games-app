@@ -9,19 +9,29 @@ const RESPONSE_MAX_LENGTH = 4_000_000;
 const RESULTS_PER_PAGE = 10;
 const QUERY_MAX_LENGTH = 128;
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const TRANSIENT_HTTP_STATUS = new Set([429, 500, 502, 503, 504]);
+const RETRY_DELAYS_MS = Object.freeze([300, 900]);
 const decode = value => String(value || '')
   .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&#039;|&apos;/g, "'")
   .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/\s+/g, ' ').trim();
 
-function fetchPage(url) {
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+function httpError(statusCode) {
+  const error = new Error(`PEGI returned HTTP ${statusCode}.`);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function fetchPageOnce(url) {
   return new Promise((resolve, reject) => {
     const request = https.get(url, { headers: { 'User-Agent': APP_USER_AGENT }, timeout: REQUEST_TIMEOUT_MS }, response => {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.resume();
-        return resolve(fetchPage(new URL(response.headers.location, url)));
+        return resolve(fetchPageOnce(new URL(response.headers.location, url)));
       }
-      if (response.statusCode !== 200) { response.resume(); return reject(new Error(`PEGI returned HTTP ${response.statusCode}.`)); }
+      if (response.statusCode !== 200) { response.resume(); return reject(httpError(response.statusCode)); }
       let body = '';
       response.setEncoding('utf8');
       response.on('data', chunk => { if (body.length < RESPONSE_MAX_LENGTH) body += chunk; });
@@ -30,6 +40,19 @@ function fetchPage(url) {
     request.on('timeout', () => request.destroy(new Error('PEGI lookup timed out.')));
     request.on('error', reject);
   });
+}
+
+async function fetchPage(url, { requestPage = fetchPageOnce } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try { return await requestPage(url); }
+    catch (error) {
+      lastError = error;
+      if (!TRANSIENT_HTTP_STATUS.has(Number(error?.statusCode)) || attempt === RETRY_DELAYS_MS.length) throw error;
+      await delay(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError;
 }
 
 function parseResults(html, query) {
@@ -105,4 +128,4 @@ async function searchPegi(query, { fetcher = fetchPage } = {}) {
   return results;
 }
 
-module.exports = { MAX_PAGES, mergeResults, parseResults, resultPageCount, searchPegi };
+module.exports = { MAX_PAGES, RETRY_DELAYS_MS, fetchPage, mergeResults, parseResults, resultPageCount, searchPegi };

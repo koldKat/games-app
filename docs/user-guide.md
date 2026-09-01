@@ -337,7 +337,7 @@ If this notice appears after the library was open, sign in again. Sessions expir
 
 ### PEGI lookup failed
 
-Continue with manual entry. The failure does not prevent saving a game.
+The app automatically retries brief PEGI rate-limit or server failures. If PEGI remains unavailable, wait a moment and try again or continue with manual entry. The failure does not prevent saving a game.
 
 If a background PEGI scan encounters five consecutive provider errors, it stops to avoid hammering a failing service. Open Account Settings after PEGI is available again and restart the scan; already enriched games are not repeated.
 

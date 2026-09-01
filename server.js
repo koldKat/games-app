@@ -418,7 +418,7 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/pegi/search') {
     try { return sendJson(response, 200, await searchPegi(url.searchParams.get('q'))); }
-    catch (error) { return sendJson(response, 502, { error: error.message, fallbackUrl: `https://pegi.info/search-pegi?q=${encodeURIComponent(url.searchParams.get('q') || '')}` }); }
+    catch { return sendJson(response, 502, { error: 'PEGI is temporarily unavailable. Try again shortly.', fallbackUrl: `https://pegi.info/search-pegi?q=${encodeURIComponent(url.searchParams.get('q') || '')}` }); }
   }
   if (request.method === 'GET' && url.pathname === '/api/pegi/status') return sendJson(response, 200, pegiJobs.status(user.id));
   if (request.method === 'POST' && url.pathname === '/api/pegi/bulk') {
