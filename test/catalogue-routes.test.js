@@ -12,7 +12,7 @@ function response() {
   };
 }
 
-function fixture({ user = null, libraryGame = null } = {}) {
+function fixture({ user = null, libraryGame = null, eventHandlers = {} } = {}) {
   const entry = {
     id: 2, slug: 'portal-2-steam', title: 'Portal 2', platform: 'Steam', pegi: 12,
     publisher: 'Valve', releaseYear: 2011, coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg',
@@ -27,7 +27,7 @@ function fixture({ user = null, libraryGame = null } = {}) {
       searchPublic: () => [entry],
     },
     auth: { authenticate: () => user, refreshSessionCookie: () => null },
-    events: { publish() {} },
+    events: { publish() {}, subscribePublicSite() {}, ...eventHandlers },
   });
 }
 
@@ -38,6 +38,14 @@ test('public katalog routes render before account authentication', async () => {
   assert.equal(output.status, 200);
   assert.match(output.body, /Portal 2/);
   assert.match(output.headers['Content-Security-Policy'], /default-src 'self'/);
+});
+
+test('the public site stream is available for live header version updates', async () => {
+  let subscriptions = 0;
+  const routes = fixture({ eventHandlers: { subscribePublicSite() { subscriptions++; } } }); const output = response();
+  const handled = await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/api/site/stream'));
+  assert.equal(handled, true);
+  assert.equal(subscriptions, 1);
 });
 
 test('the public Signal route is available without an account', async () => {

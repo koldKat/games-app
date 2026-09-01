@@ -1,6 +1,7 @@
 const clients = new Map();
 const publicActivityClients = new Set();
 const publicForumClients = new Set();
+const publicSiteClients = new Set();
 const channels = new Map();
 const HISTORY_LIMIT = 2048;
 const RETRY_MS = 2_500;
@@ -23,6 +24,10 @@ function publish(userId, event, data) {
   for (const response of clients.get(userId) || []) {
     if (!response.destroyed && !response.writableEnded) response.write(packet);
   }
+}
+
+function publishAll(event, data) {
+  for (const userId of clients.keys()) publish(userId, event, data);
 }
 
 function keepAlive(response, isAuthorized = () => true) {
@@ -96,4 +101,20 @@ function publishPublicForum() {
   for (const response of publicForumClients) if (!response.destroyed && !response.writableEnded) response.write(packet);
 }
 
-module.exports = { HISTORY_LIMIT, frame, keepAlive, publish, subscribe, subscribePublicActivity, publishPublicActivity, subscribePublicForum, publishPublicForum };
+function subscribePublicSite(request, response) {
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no',
+  });
+  response.write(`retry: ${RETRY_MS}\n\n`); publicSiteClients.add(response);
+  const heartbeat = setInterval(() => keepAlive(response), HEARTBEAT_MS); heartbeat.unref?.();
+  const lifetime = setTimeout(() => response.end(), CONNECTION_LIFETIME_MS); lifetime.unref?.();
+  const close = () => { clearInterval(heartbeat); clearTimeout(lifetime); publicSiteClients.delete(response); };
+  request.once('close', close); response.once('close', close);
+}
+function publishPublicSite(event, data) {
+  const packet = frame(event, data);
+  for (const response of publicSiteClients) if (!response.destroyed && !response.writableEnded) response.write(packet);
+}
+
+module.exports = { HISTORY_LIMIT, frame, keepAlive, publish, publishAll, subscribe, subscribePublicActivity, publishPublicActivity, subscribePublicForum, publishPublicForum, subscribePublicSite, publishPublicSite };

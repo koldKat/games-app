@@ -117,13 +117,14 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <div class="shell catalogue-shell">
     ${decorativeCoverField(coverUrls)}
     <header class="topbar">
-      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span><strong>Game Kat·a·log <em>${escapeHtml(readVersion())}</em></strong><small>Your collection, one place</small></span></a>
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span><span><strong>Game Kat·a·log <em data-app-version>${escapeHtml(readVersion())}</em></strong><small>Your collection, one place</small></span></a>
       ${headerActions(user, progress, currentView || (canonical === `${SITE_URL}/signal` ? 'signal' : canonical === `${SITE_URL}/katalog` || canonical.includes('/game/') ? 'catalogue' : 'library'))}
     </header>
     ${content}
     <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span>${copyright}</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
   </div>
   <script type="module" src="/js/catalogue-public.js"></script>
+  <script type="module" src="/js/site-header.js"></script>
   <script type="module" src="/js/patch-page.js"></script>
   ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
   ${extraScripts}
@@ -150,13 +151,16 @@ function heroCoverDeck(coverUrls = []) {
 
 function renderCatalogueMain({ result, platforms, query = '', platform = '', detail = '' }) {
   const heroTitle = detail ? '<h2>The public Kat·a·log</h2>' : '<h1>The public Kat·a·log</h1>';
-  const cards = result.entries.map(entry => `<article class="catalogue-card">
+  const cards = result.entries.map(entry => {
+    const releases = entry.releases || [entry];
+    const platformLabel = platform ? entry.platform : releases.map(release => release.platform).join(' · ');
+    return `<article class="catalogue-card">
     <a class="catalogue-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
-    <div class="catalogue-card-body"><span class="catalogue-platform">${escapeHtml(entry.platform)}</span><h2><a href="/game/${encodeURIComponent(entry.slug)}">${escapeHtml(entry.title)}</a></h2>
+    <div class="catalogue-card-body"><span class="catalogue-platform">${escapeHtml(platformLabel)}</span><h2><a href="/game/${encodeURIComponent(entry.slug)}">${escapeHtml(entry.title)}</a></h2>
       <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
-      <div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}</div>
-    </div>
-  </article>`).join('');
+      <div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}${releases.length > 1 ? `<span>${releases.length} platforms</span>` : ''}</div>
+    </div></article>`;
+  }).join('');
   const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(item.platform)} (${item.count})</option>`).join('');
   const pagination = result.pages > 1 ? `<nav class="catalogue-pagination" aria-label="Kat·a·log pages">
     ${result.page > 1 ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page - 1 }))}">← Previous</a>` : '<span></span>'}
@@ -219,6 +223,8 @@ function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1
   const pegiUrl = safeExternalUrl(entry.pegiUrl);
   const descriptionUrl = safeExternalUrl(entry.descriptionSourceUrl);
   const descriptionPanel = entry.description ? `<article class="game-description"><header><span>OVERVIEW // ${escapeHtml(entry.descriptionSource || 'SOURCE')}</span><h2>About this game</h2></header><p>${escapeHtml(entry.description)}</p>${descriptionUrl ? `<a href="${escapeHtml(descriptionUrl)}" target="_blank" rel="noopener noreferrer">View description source ↗</a>` : ''}</article>` : '';
+  const releases = entry.releases || [entry];
+  const releasePanel = releases.length > 1 ? `<section class="catalogue-release-panel"><header><span>PLATFORM RELEASES</span><h2>${releases.length} editions in the Kat·a·log</h2></header><div>${releases.map(release => `<a class="${release.slug === entry.slug ? 'active' : ''}" href="/game/${encodeURIComponent(release.slug)}"><strong>${escapeHtml(release.platform)}</strong><small>${escapeHtml([release.publisher, release.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</small></a>`).join('')}</div></section>` : '';
   return pageShell({
     title: `${entry.title} (${entry.platform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: [entry.coverUrl, ...result.entries.map(item => item.coverUrl)],
     socialImage: `${SITE_URL}${entry.coverUrl}`, socialImageAlt: `${entry.title} cover`, socialType: 'video.game',
@@ -227,7 +233,7 @@ function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1
       description: entry.description || undefined, datePublished: entry.releaseYear ? `${entry.releaseYear}-01-01` : undefined,
       aggregateRating: Number(entry.ratingCount) >= 1 ? { '@type': 'AggregateRating', ratingValue: Number(entry.ratingAverage).toFixed(1), ratingCount: Number(entry.ratingCount), bestRating: 5, worstRating: 0.5 } : undefined,
       publisher: entry.publisher ? { '@type': 'Organization', name: entry.publisher } : undefined },
-    content: renderCatalogueMain({ result, platforms, detail: `<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}"><article class="catalogue-game-dialog-card"><header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-catalogue-game-close aria-label="Close game details">×</button></header><div class="game-detail"><article class="game-overview"><div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div><div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1><div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${communityRating(entry)}${entry.releaseYear ? `<span>${entry.releaseYear}</span>` : ''}${entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : ''}</div>${addPanel}${descriptionPanel}</div></article>
+    content: renderCatalogueMain({ result, platforms, detail: `<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}"><article class="catalogue-game-dialog-card"><header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-catalogue-game-close aria-label="Close game details">×</button></header><div class="game-detail"><article class="game-overview"><div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div><div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1><div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${communityRating(entry)}${entry.releaseYear ? `<span>${entry.releaseYear}</span>` : ''}${entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : ''}</div>${releasePanel}${addPanel}${descriptionPanel}</div></article>
       <section class="game-metadata"><article><header><span>PLAYTIME // HLTB</span><h2>How long it takes</h2></header><div class="time-grid">${hours('Main story', entry.hltbMainStory)}${hours('Main + sides', entry.hltbMainExtra)}${hours('Completionist', entry.hltbCompletionist)}${hours('All styles', entry.hltbAllStyles)}</div>${hltbUrl ? `<a href="${escapeHtml(hltbUrl)}" target="_blank" rel="noopener noreferrer">View source on HowLongToBeat ↗</a>` : ''}</article>
       <article><header><span>CONTENT // PEGI</span><h2>Rating information</h2></header>${entry.pegiDescriptors.length ? `<div class="descriptor-list">${entry.pegiDescriptors.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}${pegiDetails}${pegiUrl ? `<a href="${escapeHtml(pegiUrl)}" target="_blank" rel="noopener noreferrer">View source on PEGI ↗</a>` : ''}</article></section></div></article></dialog>` }),
   });

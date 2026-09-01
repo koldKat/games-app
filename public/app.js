@@ -7,6 +7,7 @@ import { createCatalogueNavigation } from './js/catalogue-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
+import { groupGames } from './js/game-groups.js';
 import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
@@ -445,14 +446,17 @@ function cardRatingAtPointer(event) {
   return position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
 }
 function gameCard(game) {
+  const versions = game.versions || [game];
+  const versionStrip = versions.length > 1 ? `<div class="game-versions" aria-label="${versions.length} platform versions">${versions.map(version => `<button type="button" data-action="version" data-game-id="${version.id}">${escapeHtml(version.platform)}</button>`).join('')}</div>` : '';
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
   const quick = game.ownership === 'wanted' ? '<button class="quick-button" data-action="own">Mark owned</button>' : '';
   const descriptorBadges = (game.pegiDescriptors || []).map(descriptor => badge(descriptor, /purchases|random items/i.test(descriptor) ? 'descriptor purchase' : 'descriptor')).join('');
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
-    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
+    <div class="card-top"><span class="platform-tag">${versions.length > 1 ? `${versions.length} platforms` : escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
+    ${versionStrip}
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
@@ -481,11 +485,12 @@ function gameMatchesFilters(game) {
 function cardNode(game) {
   const template = document.createElement('template'); template.innerHTML = gameCard(game).trim(); return template.content.firstElementChild;
 }
-function pageCount() { return Math.max(1, Math.ceil(state.games.length / LIBRARY_PAGE_SIZE)); }
+function displayedGames() { return groupGames(state.games, { splitPlatforms: Boolean(filters.platform.value) }); }
+function pageCount() { return Math.max(1, Math.ceil(displayedGames().length / LIBRARY_PAGE_SIZE)); }
 function pagedGames() {
   state.page = Math.min(Math.max(1, state.page), pageCount());
   const offset = (state.page - 1) * LIBRARY_PAGE_SIZE;
-  return state.games.slice(offset, offset + LIBRARY_PAGE_SIZE);
+  return displayedGames().slice(offset, offset + LIBRARY_PAGE_SIZE);
 }
 function updateCollectionChrome() {
   const shown = pagedGames(); const pages = pageCount(); const pagination = $('#library-pagination');
@@ -495,23 +500,17 @@ function updateCollectionChrome() {
   $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
-  $('#result-count').textContent = `${state.games.length.toLocaleString()} ${state.games.length === 1 ? 'game' : 'games'} found`;
+  const count = displayedGames().length; const grouped = !filters.platform.value;
+  $('#result-count').textContent = `${count.toLocaleString()} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
 }
 function applyGamePatch(game) {
   if (!game?.id) return;
   if (state.loading) { state.pendingGamePatches.set(game.id, game); return; }
   const existingIndex = state.games.findIndex(item => item.id === game.id);
-  const existingCard = $(`.game-card[data-id="${Number(game.id)}"]`); existingCard?.remove();
   if (existingIndex !== -1) state.games.splice(existingIndex, 1);
   if (gameMatchesFilters(game)) state.games.push(game);
   state.games.sort((left, right) => compareGames(left, right, filters.sort.value));
-  const visible = pagedGames(); const visibleIds = new Set(visible.map(item => item.id));
-  for (const card of $$('#games .game-card')) if (!visibleIds.has(Number(card.dataset.id))) card.remove();
-  visible.forEach((item, index) => {
-    const node = $(`.game-card[data-id="${Number(item.id)}"]`) || cardNode(item);
-    const current = $('#games').children[index]; if (current !== node) $('#games').insertBefore(node, current || null);
-  });
-  updateCollectionChrome();
+  renderGames();
 }
 function flushPendingGamePatches() {
   const pending = [...state.pendingGamePatches.values()]; state.pendingGamePatches.clear();
@@ -522,6 +521,7 @@ function connectEventStream() {
   const generation = sessionGeneration;
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'version-updated') $('#app-version').textContent = data.version || 'dev';
     else if (event === 'progression-updated') progressionUi.handleEvent(data);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
@@ -839,6 +839,11 @@ $('#delete-game').addEventListener('click', async () => {
 $('#games').addEventListener('click', async event => {
   const card = event.target.closest('.game-card'); const action = event.target.closest('[data-action]')?.dataset.action;
   if (!card) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
+  if (action === 'version') {
+    const version = state.games.find(item => item.id === Number(event.target.closest('[data-game-id]')?.dataset.gameId));
+    if (version) openDetails(version);
+    return;
+  }
   if (!action) return openDetails(game);
   if (action === 'view') return openDetails(game);
   if (action === 'edit') return openForm(game);

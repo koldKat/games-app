@@ -14,6 +14,25 @@ test('browser modules do not assign through an optional chain', () => {
   assert.doesNotMatch(modules, /\?\.[\w$]*\([^)]*\)\s*\.\s*[\w$]+\s*=/);
 });
 
+test('private Kat·a·log groups multi-platform titles unless a platform filter is active', () => {
+  const application = read('public/app.js'); const groups = read('public/js/game-groups.js');
+  assert.match(application, /import \{ groupGames \} from '\.\/js\/game-groups\.js'/);
+  assert.match(application, /groupGames\(state\.games, \{ splitPlatforms: Boolean\(filters\.platform\.value\) \}\)/);
+  assert.match(application, /data-action="version" data-game-id=/);
+  assert.match(groups, /export function groupGames/);
+});
+
+test('admin version changes update authenticated headers over SSE', () => {
+  const application = read('public/app.js'); const admin = read('server/admin.js'); const events = read('server/events.js');
+  assert.match(admin, /events\.publishAll\('version-updated', \{ version \}\)/);
+  assert.match(admin, /events\.publishPublicSite\('version-updated', \{ version \}\)/);
+  assert.match(events, /function publishAll\(event, data\)/);
+  assert.match(events, /function subscribePublicSite\(request, response\)/);
+  assert.match(application, /event === 'version-updated'\) \$\('#app-version'\)\.textContent = data\.version \|\| 'dev'/);
+  assert.match(read('public/js/site-header.js'), /new EventSource\('\/api\/site\/stream'\)/);
+  assert.match(read('public/index.html'), /id="app-version" data-app-version/);
+});
+
 test('destructive actions never invoke native browser dialogs', () => {
   const sources = ['public/app.js', 'admin/js/accounts.js', 'admin/js/catalogue.js', 'admin/js/public-catalogue.js', 'admin/js/tools.js', 'admin/js/core.js'];
   const nativeDialog = /\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/;
@@ -547,7 +566,7 @@ test('durable public covers stream from disk instead of buffering whole images',
   assert.match(server, /'Content-Length': stats\.size/);
 });
 
-test('batch updates use cookie-authenticated SSE and patch individual cards', () => {
+test('batch updates use cookie-authenticated SSE and rerender grouped cards safely', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/events.js'); const server = read('server.js');
   assert.match(html, /id="pegi-bulk-start"[\s\S]*Fill PEGI details/);
   assert.match(stream, /credentials: 'same-origin'/);
@@ -555,7 +574,7 @@ test('batch updates use cookie-authenticated SSE and patch individual cards', ()
   assert.match(stream, /headers\['Last-Event-ID'\] = lastEventId/);
   assert.match(server, /X-Accel-Buffering|events\.subscribe/);
   assert.match(application, /event === 'game-updated'\) applyGamePatch\(data\.game\)/);
-  assert.match(application, /existingCard\?\.remove\(\)/);
+  assert.match(application, /state\.games\.sort\([\s\S]*renderGames\(\);/);
   assert.match(application, /pendingGamePatches\.set\(game\.id, game\)/);
   assert.match(application, /renderGames\(\); flushPendingGamePatches\(\)/);
   assert.match(application, /sequence !== gameLoadSequence \|\| state\.user\?\.id !== userId/);

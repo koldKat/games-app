@@ -43,6 +43,10 @@ function readJson(request, maxBytes = 32 * 1024) {
 
 function createCatalogueRoutes({ catalogue, auth, events, progression = null, onGameCreated = () => {} }) {
   async function handle(request, response, url) {
+    if (request.method === 'GET' && url.pathname === '/api/site/stream') {
+      events.subscribePublicSite(request, response);
+      return true;
+    }
     if (request.method === 'GET' && url.pathname === '/signal') {
       const user = auth.authenticate(request);
       const progress = user ? progression?.info(user.id) || null : null;

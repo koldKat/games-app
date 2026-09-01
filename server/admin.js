@@ -351,7 +351,12 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && pathname === '/api/admin/version') return sendJson(response, 200, { version: readVersion() });
   if (request.method === 'PUT' && pathname === '/api/admin/version') {
-    try { return sendJson(response, 200, { version: writeVersion((await readJson(request)).version) }); }
+    try {
+      const version = writeVersion((await readJson(request)).version);
+      events.publishAll('version-updated', { version });
+      events.publishPublicSite('version-updated', { version });
+      return sendJson(response, 200, { version });
+    }
     catch (error) { return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && pathname === '/api/admin/database/checkpoint') {

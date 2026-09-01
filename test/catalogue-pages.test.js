@@ -22,12 +22,24 @@ test('catalogue page is crawlable server-rendered HTML', () => {
   assert.match(html, /class="hero-art catalogue-hero-art"/);
   assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
   assert.match(html, /class="auth-cover-field app-cover-field"/);
+  assert.match(html, /data-app-version/);
+  assert.match(html, /src="\/js\/site-header\.js"/);
   assert.match(html, /<img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async">/);
   assert.match(html, /Discover enriched releases and add them to your private library\.<\/p>/);
   assert.doesNotMatch(html, /without entering everything again/);
   assert.match(html, /name="robots" content="index, follow, max-image-preview:large"/);
   assert.doesNotMatch(html, /submittedByUserId|sourceGameId|ownership|notes/);
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
+});
+
+test('catalogue cards summarize platform variants and release dialogs expose each edition', () => {
+  const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
+  const catalogue = renderCatalogue({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
+  assert.match(catalogue, /Steam · PlayStation 5/);
+  assert.match(catalogue, /2 platforms/);
+  const detail = renderGame({ entry: { ...entry, releases, releaseCount: 2 } });
+  assert.match(detail, /PLATFORM RELEASES/);
+  assert.match(detail, /portal-2-ps5/);
 });
 
 test('an authenticated catalogue page uses the same account-aware header vocabulary as the app', () => {

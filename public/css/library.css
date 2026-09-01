@@ -393,6 +393,9 @@ body {
   display: flex;
   flex-direction: column;
 }
+.game-versions { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0 1px; }
+.game-versions button { min-height:22px; padding:2px 6px; border:1px solid #315047; border-radius:3px; background:#0a1513cc; color:#81d7c3; font:inherit; font-size:9px; line-height:1.1; cursor:pointer; }
+.game-versions button:hover,.game-versions button:focus-visible { border-color:#52d9bb; color:#d5fff3; outline:none; }
 .card-actions {
   margin-top: auto;
 }

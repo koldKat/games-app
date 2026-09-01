@@ -87,6 +87,21 @@ test('public search filters by title, publisher, and platform', t => {
   assert.equal(store.listPublic({ q: 'playstation' }).total, 0);
 });
 
+test('public Kat·a·log groups title variants, but a platform filter returns individual releases', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const switchRelease = game();
+  const steamRelease = game({ id: 22, platform: 'Steam', coverMatchTitle: 'Metroid Dread', hltbTitle: 'Metroid Dread' });
+  store.upsertFromGame(1, switchRelease, evaluateCatalogueGame(switchRelease), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(2, steamRelease, evaluateCatalogueGame(steamRelease), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const grouped = store.listPublic();
+  assert.equal(grouped.total, 1);
+  assert.equal(grouped.entries[0].releases.length, 2);
+  assert.equal(store.listPublic({ platform: 'Steam' }).total, 1);
+  assert.equal(store.listPublic({ platform: 'Steam' }).entries[0].releases, undefined);
+  assert.equal(store.getPublicBySlug(grouped.entries[0].slug).releases.length, 2);
+  assert.equal(store.sitemapEntries().length, 1);
+});
+
 test('candidate records remain absent from public pages until reviewed', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game({ coverMatchTitle: 'Metroid Collection' });

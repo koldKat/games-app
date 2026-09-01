@@ -33,7 +33,7 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Public Kat·a·log
 
-Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release detail dialog shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
+Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. With no platform filter, one card represents a game title and lists its available platform releases; applying a platform filter deliberately shows the matching release rows separately. A release detail dialog shows its cover, PEGI details, publisher and year, all available HowLongToBeat estimates, and links to the other public platform editions.
 
 When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favorite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. Opening My Kat·a·log from either state closes the details dialog first, leaving the private library immediately interactive. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
 
@@ -89,7 +89,7 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
-Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
+Select **Clear filters** to return to the complete library. Results are paginated in ten desktop rows.
 
 HLTB duration sorts always place games without that particular estimate after games with a known time. This keeps missing data from appearing as zero-hour games. Live batch updates use the same selected order as a full library reload.
 
@@ -101,13 +101,14 @@ Use the two view buttons beside **My Kat·a·log**:
 - **Compact view** places each game on a denser horizontal row.
 - The left card rail uses the PEGI color: green for 3/7, amber for 12/16, red for 18, and muted gray when unrated.
 - The platform appears inside each card as its own label.
+- With no platform filter, copies of the same normalized title are collected into one card with platform buttons. Select a platform button to inspect that specific private version. Applying a platform filter intentionally expands the matching records into separate cards.
 - Games with saved HLTB data show compact Main, Main +, 100%, and All Styles estimates.
 
 The selected view, search text, every filter, and the sort order are stored with the account in SQLite. They follow the account to another browser, desktop, or phone; nothing is kept in local or session storage.
 
 The signed-in workspace keeps the login screen's scattered box-art atmosphere at the same visibility behind the interface. It selects and randomizes durable local artwork from the current account when the app is entered; those same local files feed the public promo modules and header covers. Artwork finishes loading in the background and waits for an open filter menu to close before changing the decorative layer, so it cannot interrupt filtering. The decorative layer is non-interactive and does not affect the cards or controls.
 
-The small release string beside **Game Kat·a·log** comes from the project's `VERSION` file and can be changed from the local administrator panel.
+The small release string beside **Game Kat·a·log** comes from the project's `VERSION` file and can be changed from the local administrator panel. A saved change appears immediately in open signed-in and public headers without a refresh.
 
 ---
 

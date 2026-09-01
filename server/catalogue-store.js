@@ -12,7 +12,7 @@ const RELEASE_YEAR_MIN = 1970;
 const RELEASE_YEAR_MAX = 2100;
 const HLTB_HOURS_MAX = 100000;
 
-const storedFields = `id, slug, title, platform, pegi, publisher, release_year AS releaseYear,
+const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
   pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
@@ -47,10 +47,22 @@ function hydrateEntry(row) {
 function publicEntry(entry) {
   if (!entry) return null;
   const {
-    submittedByUserId, sourceGameId, confidence, reasons, status, createdAt, ratingAverage, ratingCount, ...visible
+    submittedByUserId, sourceGameId, confidence, reasons, status, createdAt, titleKey, ratingAverage, ratingCount, ...visible
   } = entry;
   const count = Number(ratingCount) || 0;
   return { ...visible, ratingAverage: count >= 1 ? ratingAverage : null, ratingCount: count >= 1 ? count : 0 };
+}
+
+function groupedPublicEntries(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = entry.titleKey || normalizeCatalogueText(entry.title);
+    const group = groups.get(key) || []; group.push(entry); groups.set(key, group);
+  }
+  return [...groups.values()].map(releases => {
+    const primary = releases.find(entry => entry.coverUrl) || releases[0];
+    return { ...primary, releases: releases.map(publicEntry), releaseCount: releases.length };
+  });
 }
 
 function slugBase(title, platform) {
@@ -149,7 +161,12 @@ function createCatalogueStore(database) {
   function getById(id) { return hydrateEntry(findIdStatement.get(Number(id))); }
   function getBySlug(slug) { return hydrateEntry(findSlugStatement.get(String(slug || ''))); }
   function getPublicById(id) { const entry = getById(id); return entry?.status === 'public' ? publicEntry(entry) : null; }
-  function getPublicBySlug(slug) { const entry = getBySlug(slug); return entry?.status === 'public' ? publicEntry(entry) : null; }
+  function getPublicBySlug(slug) {
+    const entry = getBySlug(slug);
+    if (entry?.status !== 'public') return null;
+    const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE status='public' AND title_key=? ORDER BY platform COLLATE NOCASE`).all(entry.titleKey).map(hydrateEntry).map(publicEntry);
+    return { ...publicEntry(entry), releases, releaseCount: releases.length };
+  }
 
   function values(game, evaluation, coverUrl) {
     return {
@@ -236,11 +253,13 @@ function createCatalogueStore(database) {
     };
     const where = `status='public' AND (@q='%%' OR title_key LIKE @q OR platform_key LIKE @q OR publisher LIKE @rawQ COLLATE NOCASE)
       AND (@platform='' OR platform_key=@platform)`;
-    const total = database.prepare(`SELECT COUNT(*) count FROM catalogue_entries WHERE ${where}`).get(params).count;
-    const entries = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE ${where}
-      ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE LIMIT @limit OFFSET @offset`)
-      .all({ ...params, limit: pageSize, offset: (currentPage - 1) * pageSize }).map(hydrateEntry).map(publicEntry);
-    return { entries, total, page: currentPage, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
+    const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE ${where}
+      ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE`).all(params).map(hydrateEntry);
+    const entries = cleanPlatform ? releases.map(publicEntry) : groupedPublicEntries(releases);
+    const total = entries.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(currentPage, pages);
+    return { entries: entries.slice((safePage - 1) * pageSize, safePage * pageSize), total, page: safePage, pageSize, pages };
   }
 
   function searchPublic(query, limit = 8) {
@@ -343,8 +362,8 @@ function createCatalogueStore(database) {
   }
 
   function sitemapEntries() {
-    return database.prepare(`SELECT slug, title, cover_url AS coverUrl, updated_at AS updatedAt
-      FROM catalogue_entries WHERE status='public' ORDER BY id`).all();
+    return groupedPublicEntries(database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE status='public' ORDER BY id`).all().map(hydrateEntry))
+      .map(entry => ({ slug: entry.slug, title: entry.title, coverUrl: entry.coverUrl, updatedAt: entry.updatedAt }));
   }
 
   return {
