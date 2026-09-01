@@ -31,7 +31,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   const signal = document.querySelector('.signal-button');
   const forumButton = document.querySelector('.forum-button');
   const brand = document.querySelector('.brand');
-  if (!library || !catalogue || !libraryButton || !catalogueButton || !brand) return { open: () => {}, showLibrary: () => {}, isOpen: () => false };
+  if (!library || !catalogue || !libraryButton || !catalogueButton || !brand) return { open: () => {}, restoreCurrent: () => {}, showLibrary: () => {}, isOpen: () => false };
 
   let view = 'library';
   let request = null;
@@ -78,7 +78,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     if (!CATALOGUE_PATH.test(target.pathname)) return showLibrary({ push });
     request?.abort(); const controller = new AbortController(); request = controller;
     try {
-      const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', signal: controller.signal });
+      const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', headers: { 'X-GameKat-Partial': '1' }, signal: controller.signal });
       if (!response.ok) throw new Error(`Kat·a·log request failed (${response.status}).`);
       const { main, title } = pageFromResponse(await response.text());
       if (request !== controller) return;
@@ -119,7 +119,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     if (!current) return open(url);
     request?.abort(); const controller = new AbortController(); request = controller;
     try {
-      const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', signal: controller.signal });
+      const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', headers: { 'X-GameKat-Partial': '1' }, signal: controller.signal });
       if (!response.ok) throw new Error(`Kat·a·log request failed (${response.status}).`);
       const { main, title } = pageFromResponse(await response.text()); const next = main.querySelector('.catalogue-results');
       if (!next) throw new Error('Kat·a·log results could not be displayed.');
@@ -178,5 +178,10 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     else showLibrary({ push: false });
   });
 
-  return { open, showLibrary, isOpen: () => view === 'catalogue' };
+  function restoreCurrent() {
+    if (!CATALOGUE_PATH.test(window.location.pathname)) return Promise.resolve();
+    return open(`${window.location.pathname}${window.location.search}${window.location.hash}`, { push: false });
+  }
+
+  return { open, restoreCurrent, showLibrary, isOpen: () => view === 'catalogue' };
 }

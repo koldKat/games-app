@@ -225,7 +225,10 @@ test('game saves animate awarded progression even if the event stream is late', 
   assert.match(server, /preferences: preferences\.get\(user\.id\), progress: progression\.info\(user\.id\)/);
   assert.match(server, /url\.pathname === '\/api\/progression'\) return sendJson\(response, 200, progression\.info\(user\.id\)\)/);
   assert.match(application, /async function enterApp\(user, savedPreferences, progress = null\)/);
-  assert.match(application, /if \(progress\) progressionUi\.render\(progress\)/);
+  assert.match(application, /if \(progress\) progressionUi\.hydrate\(progress\)/);
+  assert.match(progressionUi, /function hydrate\(next\)/);
+  assert.match(progressionUi, /displayedXp = Number\(next\.xp\) \|\| 0;[\s\S]*highestQueuedXp = displayedXp/);
+  assert.match(progressionUi, /data-header-progress-meter[^\n]*\.value = percent/);
   assert.doesNotMatch(server, /server\.listen\([\s\S]*?catalogue\.syncAll\(/);
   assert.doesNotMatch(server, /server\.listen\([\s\S]*?normalizeExistingCovers\(/);
   assert.match(progressionUi, /if \(root\) \{/);

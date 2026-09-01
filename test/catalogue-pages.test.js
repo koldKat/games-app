@@ -62,6 +62,8 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
   assert.match(html, /id="header-progression" class="header-progression"/);
   assert.match(html, /LV 17/);
   assert.match(html, /Kat·a·log Architect/);
+  assert.match(html, /<progress class="header-progression-meter" data-header-progress-meter max="100" value="4"/);
+  assert.doesNotMatch(html, /data-header-progress-meter style=/);
   assert.match(html, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
   assert.match(html, /class="hero-art catalogue-hero-art"/);
   assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);

@@ -29,9 +29,16 @@ export function createProgressionUi({ api }) {
       header.querySelector('[data-header-progress-level]').textContent = `LV ${progress.level}`;
       header.querySelector('[data-header-progress-title]').textContent = progress.title;
       header.querySelector('[data-header-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
-      header.querySelector('[data-header-progress-meter]').style.width = `${percent}%`;
+      header.querySelector('[data-header-progress-meter]').value = percent;
       header.querySelector('[data-header-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to LV ${progress.level + 1}`;
     }
+  }
+  function hydrate(next) {
+    if (!next) return;
+    queue = []; animating = false;
+    displayedXp = Number(next.xp) || 0;
+    highestQueuedXp = displayedXp;
+    render(next);
   }
   function runQueue() {
     if (animating || !queue.length) return;
@@ -54,7 +61,7 @@ export function createProgressionUi({ api }) {
   function load({ retry = true } = {}) {
     if (loadPromise) return loadPromise;
     loadPromise = api('/api/progression').then(loaded => {
-      displayedXp = loaded.xp; highestQueuedXp = loaded.xp; render(loaded);
+      hydrate(loaded);
     }).catch(() => {
       // A newly opened tab can race the restored session cookie. Retry quietly so
       // a transient request never leaves the header progression hidden.
@@ -67,5 +74,5 @@ export function createProgressionUi({ api }) {
     if (!next || Number(next.xp) <= highestQueuedXp) return;
     highestQueuedXp = Number(next.xp); queue.push(next); runQueue();
   }
-  return { handleEvent, load, render };
+  return { handleEvent, hydrate, load, render };
 }

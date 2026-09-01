@@ -204,8 +204,9 @@ async function enterApp(user, savedPreferences, progress = null) {
   $('#auth-screen').hidden = true;
   $('#app-shell').hidden = false;
   endSessionResume();
-  if (progress) progressionUi.render(progress);
+  if (progress) progressionUi.hydrate(progress);
   connectEventStream();
+  void catalogueNavigation.restoreCurrent();
   void patchUi.refreshUnread();
   if (!progress) void progressionUi.load();
   await dataReady;

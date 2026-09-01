@@ -25,6 +25,7 @@ const catalogue = require('./server/catalogue-runtime');
 const { createCatalogueRoutes } = require('./server/catalogue-routes');
 const { createForumRoutes } = require('./server/forum-routes');
 const { createPatchRoutes } = require('./server/patch-routes');
+const { isAppViewPath, wantsAuthenticatedShell } = require('./server/app-shell');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
 const mailer = require('./server/mailer');
@@ -493,6 +494,10 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
     if (await admin.handle(request, response, url)) return;
+    if (isAppViewPath(url.pathname)) {
+      const shellUser = auth.authenticate(request, { touch: false });
+      if (wantsAuthenticatedShell(request, url, shellUser)) return serveStatic(request, '/', response);
+    }
     if (await catalogueRoutes.handle(request, response, url)) return;
     if (await forumRoutes.handle(request, response, url)) return;
     if (await patchRoutes.handle(request, response, url)) return;

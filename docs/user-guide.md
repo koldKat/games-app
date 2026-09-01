@@ -113,7 +113,7 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 ## Collector progression
 
-Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
+Your account has a private collector level. The persistent application header and account panel show its current level, title, total XP, and distance to the next level on My Kat·a·log, Signal, Forum, and the public Kat·a·log, including after a direct refresh. The same `+Game` control remains available in every signed-in view and opens the game form without navigating back to My Kat·a·log. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
 
 XP recognizes durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favorite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once.
 

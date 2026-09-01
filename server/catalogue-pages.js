@@ -32,7 +32,8 @@ function headerProgression(progress) {
   if (!progress) return '';
   const remaining = Math.max(0, Number(progress.nextLevelXp || 0) - Number(progress.xp || 0));
   const next = Number(progress.level) >= 100 ? 'Maximum level reached' : `${remaining.toLocaleString()} XP to LV ${Number(progress.level) + 1}`;
-  return `<section id="header-progression" class="header-progression" aria-live="polite"><div><span data-header-progress-level>LV ${escapeHtml(progress.level)}</span><b data-header-progress-title>${escapeHtml(progress.title)}</b><small data-header-progress-xp>${escapeHtml(Number(progress.xp || 0).toLocaleString())} XP</small></div><span class="header-progression-meter"><span data-header-progress-meter style="width:${Math.max(0, Math.min(100, Number(progress.progress) || 0))}%"></span></span><small data-header-progress-next>${escapeHtml(next)}</small></section>`;
+  const percent = Math.max(0, Math.min(100, Number(progress.progress) || 0));
+  return `<section id="header-progression" class="header-progression" aria-live="polite"><div><span data-header-progress-level>LV ${escapeHtml(progress.level)}</span><b data-header-progress-title>${escapeHtml(progress.title)}</b><small data-header-progress-xp>${escapeHtml(Number(progress.xp || 0).toLocaleString())} XP</small></div><progress class="header-progression-meter" data-header-progress-meter max="100" value="${percent}" aria-label="Progress to next level"></progress><small data-header-progress-next>${escapeHtml(next)}</small></section>`;
 }
 
 function navIcon(kind) {
