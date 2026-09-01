@@ -37,8 +37,8 @@
 .activity-preview-trigger { position: relative; }
 .activity-preview-trigger > img { position: absolute; z-index: 30; bottom: calc(100% + 9px); left: 0; display: block; width: 138px; max-height: 192px; opacity: 0; pointer-events: none; border: 1px solid #4b9788; background: #09120f; box-shadow: 0 12px 28px #000d; object-fit: cover; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease; visibility: hidden; }
 .activity-preview-trigger--avatar > img { width: 112px; height: 112px; max-height: none; }
-.activity-preview-trigger:hover > img,
-.activity-preview-trigger:focus-within > img { opacity: 1; transform: translateY(0); visibility: visible; }
+.activity-preview-trigger:not(.activity-preview-dismissed):hover > img,
+.activity-preview-trigger:not(.activity-preview-dismissed):focus-within > img { opacity: 1; transform: translateY(0); visibility: visible; }
 .activity-entry time { color: #66847c; font-size: 8px; text-align: right; }
 .activity-feed-empty { margin: auto 0; color: #718a83; font-size: 9px; line-height: 1.45; }
 .activity-entry--announcement { position:relative; grid-template-columns:minmax(0,1fr) 17px; border-color:#356257; background:linear-gradient(110deg,#103129cc,#09130fdd); }

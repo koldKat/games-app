@@ -54,6 +54,10 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/signal-page.js'), /pagehide'[\s\S]*activityFeed\.stop\(\)/);
   assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt\)/);
   assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
+  assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
+  assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerenter'/);
+  assert.match(read('public/js/signal-page.js'), /dismissActivityPreview\(link\)/);
+  assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
   assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
   assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);

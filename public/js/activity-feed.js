@@ -10,6 +10,12 @@ function preview(content, url, kind, alt) {
   if (!url) return content;
   return `<span class="activity-preview-trigger activity-preview-trigger--${kind}">${content}<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"></span>`;
 }
+export function dismissActivityPreview(link) {
+  const trigger = link?.closest?.('.activity-preview-trigger');
+  if (!trigger) return;
+  trigger.classList.add('activity-preview-dismissed');
+  trigger.addEventListener('pointerenter', () => trigger.classList.remove('activity-preview-dismissed'), { once: true });
+}
 function userLabel(entry) {
   return preview(`<b>${escapeHtml(entry.username)}</b>`, entry.avatarUrl, 'avatar', `${entry.username} avatar`);
 }

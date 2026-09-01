@@ -1,5 +1,6 @@
 import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, openCatalogueGameDialog } from './catalogue-public.js';
 import { bindForum } from './forum-page.js';
+import { dismissActivityPreview } from './activity-feed.js';
 
 const CATALOGUE_PATH = /^\/(?:katalog|signal|forum(?:\/|$)|game\/)/;
 
@@ -173,7 +174,10 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     }
     if (target.origin !== window.location.origin || !CATALOGUE_PATH.test(target.pathname)) return;
     event.preventDefault();
-    if (target.pathname.startsWith('/game/')) return void openCatalogueGameDialog(catalogue, `${target.pathname}${target.search}`);
+    if (target.pathname.startsWith('/game/')) {
+      dismissActivityPreview(link);
+      return void openCatalogueGameDialog(catalogue, `${target.pathname}${target.search}`);
+    }
     if (target.pathname === '/katalog' && view === 'catalogue') void refreshResults(`${target.pathname}${target.search}`);
     else void open(`${target.pathname}${target.search}${target.hash}`);
   });
