@@ -163,6 +163,15 @@ function removeAvatarFile(filename) {
 
 async function prepareGameCover(input, existing = null) {
   const requested = String(input?.coverUrl || '').trim();
+  const uploaded = String(input?.coverUpload || '');
+  if (uploaded) {
+    const match = uploaded.match(/^data:image\/(?:jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/);
+    if (!match) throw new Error('Uploaded cover must be a JPEG, PNG, or WebP image.');
+    const source = Buffer.from(match[1], 'base64');
+    if (!source.length || source.toString('base64') !== match[1]) throw new Error('Uploaded cover data is invalid.');
+    const createdUrl = await coverStorage.storeUpload(source);
+    return { input: { ...input, coverUpload: undefined, coverUrl: createdUrl, coverSource: 'upload', coverMatchTitle: String(input.coverMatchTitle || 'Uploaded cover') }, createdUrl };
+  }
   if (!requested || (requested === existing?.coverUrl && coverStorage.localFilename(requested))) return { input, createdUrl: '' };
   if (coverStorage.localFilename(requested)) throw new Error('Saved cover paths cannot be assigned manually. Request the cover again.');
   const createdUrl = await coverStorage.storeRemote(requested);

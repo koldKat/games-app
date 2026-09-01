@@ -524,6 +524,8 @@ body {
 .cover-assist-actions {
   display: flex;
   gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   flex: none;
 }
 .cover-selection {

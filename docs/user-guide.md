@@ -199,7 +199,8 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 1. Open **Account Settings** and connect one or both artwork sources: SteamGridDB or TheGamesDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts.
 2. Type a title in the game form and select **Request cover**.
 3. Review the portrait artwork and game names, then select the correct edition.
-4. Save the game. Select **Remove cover** before saving if the match is wrong.
+4. Or select **Upload cover** to choose your own JPEG, PNG, or WebP image. The preview is local until you save; the server then normalizes it to the same durable cover format used by provider artwork.
+5. Save the game. Select **Remove cover** before saving if the match is wrong.
 
 After validation, that provider's disabled field shows **Connected** in green. Secrets are deliberately never returned to the browser. Select **Replace key** or **Replace credentials** to open empty replacement fields.
 

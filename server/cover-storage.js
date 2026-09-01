@@ -50,6 +50,24 @@ async function responseBuffer(response) {
   return Buffer.concat(chunks, bytes);
 }
 
+async function persistCover(source, invalidMessage) {
+  if (!Buffer.isBuffer(source) || !imageExtension(source)) throw new Error(invalidMessage);
+  let image;
+  try { image = await processCover(source); }
+  catch { throw new Error(invalidMessage); }
+  fs.mkdirSync(COVER_DIR, { recursive: true });
+  const filename = `${crypto.randomBytes(16).toString('hex')}.jpg`;
+  const temporary = path.join(COVER_DIR, `.${filename}.${process.pid}.tmp`); const destination = path.join(COVER_DIR, filename);
+  try { await fs.promises.writeFile(temporary, image, { flag: 'wx', mode: 0o644 }); await fs.promises.rename(temporary, destination); }
+  catch (error) { await fs.promises.unlink(temporary).catch(() => {}); throw error; }
+  return `${PUBLIC_PREFIX}${filename}`;
+}
+
+async function storeUpload(source) {
+  if (!Buffer.isBuffer(source) || source.length > MAX_SOURCE_IMAGE_BYTES) throw new Error('Uploaded cover exceeds the 12 MB processing limit.');
+  return persistCover(source, 'Uploaded cover must be a valid JPEG, PNG, or WebP image.');
+}
+
 async function storeRemote(remoteUrl) {
   if (!allowedRemoteUrl(remoteUrl)) throw new Error('That cover is not hosted by a supported artwork provider.');
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS); let currentUrl = String(remoteUrl); let response;
@@ -64,17 +82,8 @@ async function storeRemote(remoteUrl) {
     currentUrl = nextUrl;
   }
   if (!response.ok) throw new Error(`Cover download returned HTTP ${response.status}.`);
-  const source = await responseBuffer(response); const extension = imageExtension(source);
-  if (!extension) throw new Error('Cover provider did not return a supported JPEG, PNG, or WebP image.');
-  let image;
-  try { image = await processCover(source); }
-  catch { throw new Error('Cover provider returned an invalid or unprocessable image.'); }
-  fs.mkdirSync(COVER_DIR, { recursive: true });
-  const filename = `${crypto.randomBytes(16).toString('hex')}.jpg`;
-  const temporary = path.join(COVER_DIR, `.${filename}.${process.pid}.tmp`); const destination = path.join(COVER_DIR, filename);
-  try { await fs.promises.writeFile(temporary, image, { flag: 'wx', mode: 0o644 }); await fs.promises.rename(temporary, destination); }
-  catch (error) { await fs.promises.unlink(temporary).catch(() => {}); throw error; }
-  return `${PUBLIC_PREFIX}${filename}`;
+  const source = await responseBuffer(response);
+  return persistCover(source, 'Cover provider did not return a supported JPEG, PNG, or WebP image.');
 }
 
 async function normalizeExistingCovers(data, { onStored = () => {}, onError = () => {} } = {}) {
@@ -128,4 +137,4 @@ async function localizeExistingCovers(data, { onStored = () => {}, onError = () 
 }
 
 module.exports = { ALLOWED_HOSTS, ALLOWED_HOST_SUFFIXES, COVER_DIR, IMAGE_MAX_BYTES, MAX_REDIRECTS, MAX_SOURCE_IMAGE_BYTES, allowedRemoteUrl, imageExtension,
-  localFilename, localizeExistingCovers, normalizeExistingCovers, removeLocal, storeRemote };
+  localFilename, localizeExistingCovers, normalizeExistingCovers, removeLocal, storeRemote, storeUpload };

@@ -740,6 +740,7 @@ function openForm(game = null) {
   $('#game-form').reset(); $('#game-id').value = game?.id || '';
   $('#game-form').dataset.pegiUrl = game?.pegiUrl || '';
   $('#game-form').dataset.coverUrl = game?.coverUrl || '';
+  clearCoverUpload();
   $('#game-form').dataset.coverSource = game?.coverSource || '';
   $('#game-form').dataset.coverMatchTitle = game?.coverMatchTitle || '';
   $('#game-form').dataset.descriptionSource = game?.descriptionSource || '';
@@ -812,7 +813,7 @@ function payload() {
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value, rating: $('#game-rating').value,
     notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
     ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(),
-    coverUrl: $('#game-form').dataset.coverUrl || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
+    coverUrl: $('#game-form').dataset.coverUrl || '', coverUpload: $('#game-form').dataset.coverUpload || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
 $('#game-form').addEventListener('submit', async event => {
   event.preventDefault(); const id = $('#game-id').value; const save = $('#save-game');
@@ -908,12 +909,53 @@ $('#description-results').addEventListener('click', event => {
 });
 
 function renderCoverSelection() {
-  const url = $('#game-form').dataset.coverUrl || ''; const box = $('#cover-selection');
+  const url = $('#game-form').dataset.coverPreview || $('#game-form').dataset.coverUrl || ''; const box = $('#cover-selection');
   $('#cover-remove-button').hidden = !url; box.hidden = !url;
-  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
+  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat', upload: 'Uploaded' };
   const details = [$('#game-form').dataset.coverMatchTitle || 'Custom match', sourceLabels[source]].filter(Boolean).join(' · ');
   box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
 }
+function clearCoverUpload() {
+  const preview = $('#game-form').dataset.coverPreview || '';
+  if (preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+  delete $('#game-form').dataset.coverUpload; delete $('#game-form').dataset.coverPreview;
+}
+function coverDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return reject(new Error('Choose a JPEG, PNG, or WebP cover.'));
+    if (file.size > SOURCE_IMAGE_MAX_BYTES) return reject(new Error('Source image is too large (maximum 20 MB).'));
+    const image = new Image(); const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      const encode = quality => canvas.toBlob(blob => {
+        if (!blob) return reject(new Error('Could not process that cover.'));
+        if (blob.size <= 512 * 1024) {
+          const reader = new FileReader(); reader.onload = () => resolve({ dataUrl: String(reader.result || ''), previewUrl: URL.createObjectURL(blob) }); reader.onerror = () => reject(new Error('Could not read that cover.')); reader.readAsDataURL(blob); return;
+        }
+        if (quality <= .2) return reject(new Error('Could not compress cover enough to upload.'));
+        encode(quality - .1);
+      }, 'image/jpeg', quality);
+      encode(.9);
+    };
+    image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that cover.')); };
+    image.src = objectUrl;
+  });
+}
+$('#cover-upload-button').addEventListener('click', () => $('#cover-file').click());
+$('#cover-file').addEventListener('change', async event => {
+  const file = event.target.files[0]; event.target.value = ''; if (!file) return;
+  const button = $('#cover-upload-button'); button.disabled = true; button.textContent = 'Preparing…';
+  try {
+    const upload = await coverDataUrl(file); clearCoverUpload();
+    $('#game-form').dataset.coverUpload = upload.dataUrl; $('#game-form').dataset.coverPreview = upload.previewUrl; $('#game-form').dataset.coverUrl = '';
+    $('#game-form').dataset.coverSource = 'upload'; $('#game-form').dataset.coverMatchTitle = $('#game-title').value.trim() || file.name.replace(/\.[^.]+$/, '') || 'Uploaded cover';
+    $('#cover-results').hidden = true; renderCoverSelection(); toast('Cover ready. Save the game to upload it.');
+  } catch (error) { toast(error.message); }
+  finally { button.disabled = false; button.textContent = 'Upload cover'; }
+});
 $('#cover-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#cover-results'); box.hidden = false;
   if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
@@ -928,10 +970,12 @@ $('#cover-search-button').addEventListener('click', async () => {
 $('#cover-results').addEventListener('click', event => {
   const button = event.target.closest('[data-cover-index]'); if (!button) return;
   const result = $('#cover-results')._results?.[Number(button.dataset.coverIndex)]; if (!result) return;
+  clearCoverUpload();
   $('#game-form').dataset.coverUrl = result.url; $('#game-form').dataset.coverSource = result.source; $('#game-form').dataset.coverMatchTitle = result.gameTitle;
   $('#cover-results').hidden = true; renderCoverSelection(); toast('Cover selected. Save the game to keep it.');
 });
 $('#cover-remove-button').addEventListener('click', () => {
+  clearCoverUpload();
   $('#game-form').dataset.coverUrl = ''; $('#game-form').dataset.coverSource = ''; $('#game-form').dataset.coverMatchTitle = ''; renderCoverSelection();
 });
 

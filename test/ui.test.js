@@ -315,6 +315,17 @@ test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, an
   assert.match(database, /filters\.missing === 'description'/);
 });
 
+test('game editor supports an own cover upload without storing it before save', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const server = read('server.js');
+  assert.match(html, /id="cover-upload-button">Upload cover<\/button>/);
+  assert.match(html, /id="cover-file" type="file" accept="image\/jpeg,image\/png,image\/webp" hidden/);
+  assert.match(application, /function coverDataUrl\(file\)/);
+  assert.match(application, /coverUpload: \$\('#game-form'\)\.dataset\.coverUpload \|\| ''/);
+  assert.match(application, /toast\('Cover ready\. Save the game to upload it\.'\)/);
+  assert.match(server, /const uploaded = String\(input\?\.coverUpload \|\| ''\)/);
+  assert.match(server, /coverStorage\.storeUpload\(source\)/);
+});
+
 test('personal ratings use private half-star values and card rendering', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const css = readPublicCss(); const database = read('server/db.js'); const catalogue = read('server/catalogue-store.js');

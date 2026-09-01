@@ -29,6 +29,16 @@ test('provider images are signature-checked and stored at public immutable paths
   } finally { global.fetch = originalFetch; }
 });
 
+test('uploaded cover images are normalized into the same durable public storage', async () => {
+  const source = await sharp({ create: { width: 1400, height: 2100, channels: 3, background: '#3c7e69' } }).png().toBuffer();
+  const publicUrl = await storage.storeUpload(source);
+  assert.match(publicUrl, /^\/covers\/[a-f0-9]{32}\.jpg$/);
+  const stored = fs.readFileSync(path.join(coverDir, path.basename(publicUrl)));
+  assert.ok(stored.length <= 256 * 1024);
+  assert.equal(storage.removeLocal(publicUrl), true);
+  await assert.rejects(() => storage.storeUpload(Buffer.from('not an image')), /valid JPEG, PNG, or WebP/);
+});
+
 test('storage rejects arbitrary hosts and non-image responses', async () => {
   await assert.rejects(() => storage.storeRemote('https://example.com/not-allowed.jpg'), /not hosted by a supported/);
   assert.equal(storage.allowedRemoteUrl('https://howlongtobeat.com/games/Portal2cover.jpg'), true);
