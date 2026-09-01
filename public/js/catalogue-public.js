@@ -46,6 +46,7 @@ export function bindCatalogueGameDialog(root = document, { onClose = null } = {}
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
   dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
   dialog.addEventListener('close', () => {
+    if (dialog.dataset.skipCloseNavigation === 'true') { delete dialog.dataset.skipCloseNavigation; return; }
     if (onClose) onClose();
     else if (window.location.pathname.startsWith('/game/')) {
       window.history.replaceState({ catalogue: true }, '', '/katalog');

@@ -67,6 +67,10 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   function showLibrary({ push = true } = {}) {
     request?.abort(); request = null;
     stopForumLive();
+    catalogue.querySelectorAll('[data-catalogue-game-dialog][open]').forEach(dialog => {
+      dialog.dataset.skipCloseNavigation = 'true';
+      dialog.close();
+    });
     view = 'library'; library.hidden = false; catalogue.hidden = true;
     setHeader(view); document.title = libraryTitle;
     if (push && window.location.pathname !== '/') window.history.pushState({ appView: 'library' }, '', '/');

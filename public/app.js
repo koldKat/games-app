@@ -41,6 +41,7 @@ const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', lo
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
+let authDecorationSequence = 0;
 let sessionGeneration = 0;
 let preferencesReady = false;
 let preferencesDirty = false;
@@ -83,10 +84,9 @@ function applySaveProgress(result) {
 }
 function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
 async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
-  for (const slot of slots) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
   const candidates = uniqueArtworkUrls(covers);
   if (!slots.length || !candidates.length) return;
-  const loaded = []; let nextSlot = 0;
+  const loaded = [];
   const loadCandidate = url => new Promise(resolve => {
     const preload = new Image(); let settled = false;
     const finish = value => { if (settled) return; settled = true; clearTimeout(timeout); preload.onload = null; preload.onerror = null; resolve(value); };
@@ -94,20 +94,24 @@ async function applyDecorativeCovers(slots, covers, isCurrent = () => true) {
     preload.onload = () => finish(url); preload.onerror = () => finish(''); preload.src = url;
   });
   for (const candidate of candidates) {
-    if (!isCurrent() || nextSlot >= slots.length) break;
+    if (!isCurrent() || loaded.length >= slots.length) break;
     const url = await loadCandidate(candidate);
     if (!url || !isCurrent()) continue;
     loaded.push(url);
-    const slot = slots[nextSlot++];
-    slot.style.backgroundImage = `url(${JSON.stringify(url)})`; slot.classList.add('has-art');
   }
   if (!isCurrent() || !loaded.length) return;
-  while (nextSlot < slots.length) {
-    const slot = slots[nextSlot]; const url = loaded[nextSlot % loaded.length]; nextSlot++;
+  if (document.activeElement?.matches('select')) {
+    await new Promise(resolve => document.activeElement.addEventListener('blur', resolve, { once: true }));
+  }
+  if (!isCurrent()) return;
+  for (let index = 0; index < slots.length; index++) {
+    const slot = slots[index]; const url = loaded[index % loaded.length];
     slot.style.backgroundImage = `url(${JSON.stringify(url)})`; slot.classList.add('has-art');
   }
 }
 async function loadAuthCovers() {
+  const sequence = ++authDecorationSequence;
+  const isCurrent = () => sequence === authDecorationSequence && !$('#auth-screen').hidden;
   try {
     const response = await fetch(`/api/showcase/covers?v=${Date.now()}`, { cache: 'no-store' });
     let covers = response.ok ? (await response.json()).covers || [] : [];
@@ -116,7 +120,7 @@ async function loadAuthCovers() {
       if (fallback.ok) covers = (await fallback.json()).covers || [];
     }
     const slots = [...$$('.promo-cover-deck i'), $('.promo-loose-cover'), ...$$('#auth-screen .auth-cover-field i')].filter(Boolean);
-    await applyDecorativeCovers(slots, covers);
+    await applyDecorativeCovers(slots, covers, isCurrent);
   } catch {}
 }
 async function loadAppBackgroundCovers(isCurrent) {
@@ -154,6 +158,7 @@ function showAuth(message = '') {
   state.user = null;
   $('#app-shell').hidden = true;
   $('#auth-screen').hidden = false;
+  void loadAuthCovers();
   showAuthForm();
   endSessionResume();
   $('#auth-error').textContent = message;
@@ -195,6 +200,7 @@ function applyPreferences(preferences = {}) {
   renderQuickFilter(); preferencesDirty = false; preferencesReady = true;
 }
 async function enterApp(user, savedPreferences, progress = null) {
+  authDecorationSequence += 1;
   state.user = user;
   $('#account-name').textContent = user.username;
   $('#account-current-name').textContent = user.username;

@@ -96,7 +96,10 @@ test('authenticated app matches the login account-cover background visibility', 
   assert.match(application, /for \(const candidate of candidates\)[\s\S]*await loadCandidate\(candidate\)/);
   assert.doesNotMatch(application, /Promise\.all\(slots\.map|Math\.min\(8, candidates\.length\)/);
   assert.match(application, /setTimeout\(\(\) => finish\('\'\), UI_TIMING\.artworkLoadTimeoutMs\)/);
-  assert.match(application, /loaded\[nextSlot % loaded\.length\]/);
+  assert.match(application, /document\.activeElement\?\.matches\('select'\)[\s\S]*addEventListener\('blur', resolve/);
+  assert.match(application, /const url = loaded\[index % loaded\.length\]/);
+  assert.doesNotMatch(application, /const slot = slots\[nextSlot\+\+\]/);
+  assert.match(application, /authDecorationSequence \+= 1;[\s\S]*state\.user = user/);
   assert.doesNotMatch(application, /applyDecorativeCovers\(slots, covers\.slice/);
   assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.1/);
   assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
@@ -257,7 +260,10 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /const \{ main, title \} = pageFromResponse[\s\S]*const nextView = target\.pathname === '\/signal' \? 'signal' : target\.pathname\.startsWith\('\/forum'\) \? 'forum' : 'catalogue';[\s\S]*view = nextView; library\.hidden = true; catalogue\.hidden = false;/);
   assert.match(navigation, /link\.dataset\.catalogueDestination === 'library'[\s\S]*showLibrary\(\)/);
   assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
-  assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
+  assert.match(navigation, /function showLibrary[\s\S]*\[data-catalogue-game-dialog\]\[open\][\s\S]*skipCloseNavigation = 'true'[\s\S]*dialog\.close\(\)[\s\S]*library\.hidden = false/);
+  const publicCatalogue = read('public/js/catalogue-public.js');
+  assert.match(publicCatalogue, /response\.status === 409 && body\.existing/);
+  assert.match(publicCatalogue, /if \(dialog\.dataset\.skipCloseNavigation === 'true'\) \{ delete dialog\.dataset\.skipCloseNavigation; return; \}/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
   assert.match(read('public/css/theme.css'), /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
   assert.match(read('public/css/theme.css'), /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
