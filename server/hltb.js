@@ -3,13 +3,17 @@
 const { TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
 
 const BASE_URL = 'https://howlongtobeat.com';
-const FALLBACK_SEARCH_PATH = '/api/s';
+// HLTB's current token-gated game search endpoint. Bundle discovery has proved
+// unreliable because it can surface legacy endpoints that still exist in code
+// but no longer expose `/init`.
+const SEARCH_PATH = '/api/search/site';
 const CACHE_MS = 30 * 60 * 1000;
 const SESSION_MS = 10 * 60 * 1000;
 const TIMEOUT_MS = 20_000;
 const USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131 Safari/537.36';
 const QUERY_MAX_LENGTH = 220;
 const RESULT_LIMIT = 20;
+const HLTB_COVER_LIMIT = 12;
 const cache = new Map();
 let session = null;
 let queue = Promise.resolve();
@@ -41,37 +45,13 @@ async function request(url, options = {}) {
   return response;
 }
 
-function scriptUrls(html, appOnly) {
-  return [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)]
-    .map(match => new URL(match[1], `${BASE_URL}/`).href).filter(url => !appOnly || /_app-/i.test(url));
-}
-
-function searchPath(source) {
-  const match = source.match(/fetch\s*\(\s*["']\/api\/([a-zA-Z0-9_/]+)[^"']*["']\s*,\s*\{[^}]*method:\s*["']POST["'][^}]*}/is);
-  if (!match) return '';
-  return `/api/${match[1].split('/')[0]}`;
-}
-
-async function discoverSearchPath() {
-  const headers = { 'User-Agent': USER_AGENT, Referer: `${BASE_URL}/` };
-  const html = await (await request(`${BASE_URL}/`, { headers })).text();
-  for (const appOnly of [true, false]) {
-    for (const url of scriptUrls(html, appOnly)) {
-      const path = searchPath(await (await request(url, { headers })).text());
-      if (path) return path;
-    }
-  }
-  return FALLBACK_SEARCH_PATH;
-}
-
 async function createSession() {
-  const path = await discoverSearchPath();
   const headers = { 'User-Agent': USER_AGENT, Referer: `${BASE_URL}/` };
-  const auth = await (await request(`${BASE_URL}${path}/init?t=${Date.now()}`, { headers })).json();
+  const auth = await (await request(`${BASE_URL}${SEARCH_PATH}/init?t=${Date.now()}`, { headers })).json();
   const dynamicKey = Object.entries(auth).find(([key]) => /key/i.test(key));
   const dynamicValue = Object.entries(auth).find(([key]) => /val/i.test(key));
   if (!auth.token || !dynamicKey || !dynamicValue) throw new Error('HLTB authentication response changed.');
-  return { at: Date.now(), path, token: auth.token, key: dynamicKey[1], value: dynamicValue[1] };
+  return { at: Date.now(), path: SEARCH_PATH, token: auth.token, key: dynamicKey[1], value: dynamicValue[1] };
 }
 
 async function activeSession() {
@@ -84,12 +64,18 @@ function hours(seconds) {
   return Number.isFinite(value) && value > 0 ? Math.round(value / 36) / 100 : null;
 }
 
+function coverUrl(filename) {
+  const clean = String(filename || '').trim();
+  return clean && !/[\\/?#]/.test(clean) && /\.(?:jpe?g|png|webp)$/i.test(clean)
+    ? `${BASE_URL}/games/${encodeURIComponent(clean)}` : '';
+}
+
 function parseGame(game, query) {
   return {
     id: Number(game.game_id), title: String(game.game_name || '').trim(),
     url: `${BASE_URL}/game/${Number(game.game_id)}`,
     mainStory: hours(game.comp_main), mainExtra: hours(game.comp_plus),
-    completionist: hours(game.comp_100), allStyles: hours(game.comp_all),
+    completionist: hours(game.comp_100), allStyles: hours(game.comp_all), coverUrl: coverUrl(game.game_image),
     similarity: Math.round(similarity(query, game.game_name) * 10_000) / 10_000,
   };
 }
@@ -128,4 +114,11 @@ async function search(title) {
   const results = await run; cache.set(key, { at: Date.now(), results }); return results;
 }
 
-module.exports = { discoverSearchPath, hours, normalize, parseGame, search, searchPath, similarity };
+async function searchCovers(title) {
+  return (await search(title)).filter(item => item.coverUrl).slice(0, HLTB_COVER_LIMIT).map(item => ({
+    providerGameId: item.id, gameTitle: item.title, url: item.coverUrl, thumbnailUrl: `${item.coverUrl}?width=100`,
+    width: null, height: null, style: 'HLTB game cover', source: 'hltb', sourceUrl: item.url,
+  }));
+}
+
+module.exports = { coverUrl, hours, normalize, parseGame, search, searchCovers, similarity };

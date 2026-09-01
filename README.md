@@ -2,18 +2,18 @@
 
 A responsive, private-library-first, multi-platform game collection manager with a shared public discovery Kat·a·log, built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
 
-Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI details, cover-art, HowLongToBeat estimates, a personal half-star rating, favourite, publisher, release-year, cartridge, and note metadata.
+Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI details, cover-art, HowLongToBeat estimates, a personal half-star rating, favorite, publisher, release-year, cartridge, and note metadata.
 
 ## Features
 
 - Multi-account, account-scoped libraries with responsive card and compact views.
 - Broad platform taxonomy plus custom platforms for unusual hardware and editions.
-- Owned and wishlisted collection states, physical/digital format, play status, personal half-star ratings, favourites, cartridge numbers, publishers, years, and notes.
-- Accent-insensitive search; composable platform, collection, PEGI, status, favourite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
+- Owned and wishlisted collection states, physical/digital format, play status, personal half-star ratings, favorites, cartridge numbers, publishers, years, and notes.
+- Accent-insensitive search; composable platform, collection, PEGI, status, favorite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
 - SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
 - Editable game descriptions with Steam Store-first and TheGamesDB-fallback lookup and conservative background filling.
-- HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching.
+- HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching, plus opt-in HLTB cover choices inside Request cover.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
 - Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), and a per-account hide control.
@@ -31,7 +31,7 @@ New accounts begin with isolated, empty libraries. Existing game ownership is st
 
 Library view, search text, filters, and sorting are stored per account in SQLite. Signing in from another desktop or phone therefore restores the same workspace settings.
 
-The add/edit form includes a broad grouped platform list plus a custom-platform escape hatch. PEGI rating colours provide the card rail identity; the platform remains visible on each card.
+The add/edit form includes a broad grouped platform list plus a custom-platform escape hatch. PEGI rating colors provide the card rail identity; the platform remains visible on each card.
 
 ## Run
 
@@ -64,7 +64,7 @@ The authentication landing page doubles as a crawler-readable product page for `
 
 Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; Kat·a·log, My Kat·a·log, and +Game stay fixed, with the current view visibly inactive.
 
-Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favourites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
+Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favorites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
 
 ## PEGI lookup
 

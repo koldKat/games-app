@@ -109,7 +109,7 @@ function appBirthAt() {
   return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : startedAt;
 }
 
-function initialiseUptimeTracking() {
+function initializeUptimeTracking() {
   const stoppedAt = Number(setting('server_stopped_at')) || 0;
   const lastHeartbeat = Number(setting('server_last_heartbeat')) || 0;
   const reference = stoppedAt || lastHeartbeat;
@@ -153,7 +153,7 @@ function liveStats() {
   return { heapUsed: memory.heapUsed, heapTotal: memory.heapTotal, rss: memory.rss, cpuPct, ...uptimeStats() };
 }
 
-initialiseUptimeTracking();
+initializeUptimeTracking();
 const heartbeat = setInterval(updateHeartbeat, 10_000);
 heartbeat.unref?.();
 

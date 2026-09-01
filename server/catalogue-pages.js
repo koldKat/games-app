@@ -88,7 +88,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <link rel="canonical" href="${escapeHtml(canonical)}">
   <meta property="og:type" content="${escapeHtml(socialType)}">
   <meta property="og:site_name" content="Game Kat·a·log">
-  <meta property="og:locale" content="en_GB">
+  <meta property="og:locale" content="en_US">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${escapeHtml(canonical)}">

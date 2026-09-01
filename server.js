@@ -238,7 +238,7 @@ async function handleApi(request, response, url) {
       const token = auth.createSession(user.id);
       if (activity.recordJoin(user.id)) events.publishPublicActivity();
       auth.clearFailures(ip);
-      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl, hideFromActivity: user.hideFromActivity }, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
+      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl, hideFromActivity: user.hideFromActivity }, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) { auth.recordFailure(ip); return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/login') {
@@ -250,7 +250,7 @@ async function handleApi(request, response, url) {
       if (!user) { auth.recordFailure(ip); return sendJson(response, 401, { error: 'Invalid username or password.' }); }
       auth.clearFailures(ip);
       const token = auth.createSession(user.id);
-      return sendJson(response, 200, { user, preferences: preferences.get(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
+      return sendJson(response, 200, { user, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) {
       if (error.code === 'ACCOUNT_LOCKED') return sendJson(response, error.status, { error: error.message });
       auth.recordFailure(ip);
@@ -291,13 +291,10 @@ async function handleApi(request, response, url) {
   const refreshedCookie = auth.refreshSessionCookie(request);
   if (refreshedCookie) response.setHeader('Set-Cookie', refreshedCookie);
   if (request.method === 'GET' && url.pathname === '/api/events') {
-    return events.subscribe(request, response, user.id, () => Boolean(auth.authenticate(request)));
+    return events.subscribe(request, response, user.id, () => Boolean(auth.authenticate(request, { touch: false })));
   }
-  if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user, preferences: preferences.get(user.id) });
-  if (request.method === 'GET' && url.pathname === '/api/progression') {
-    const result = progression.backfill(user.id);
-    return sendJson(response, 200, user.avatarUrl ? progression.recordAvatar(user.id).progress : result.progress);
-  }
+  if (request.method === 'GET' && url.pathname === '/api/auth/me') return sendJson(response, 200, { user, preferences: preferences.get(user.id), progress: progression.info(user.id) });
+  if (request.method === 'GET' && url.pathname === '/api/progression') return sendJson(response, 200, progression.info(user.id));
   if (request.method === 'GET' && url.pathname === '/api/preferences') return sendJson(response, 200, preferences.get(user.id));
   if (request.method === 'PUT' && url.pathname === '/api/preferences') {
     try { return sendJson(response, 200, preferences.set(user.id, await readJson(request))); }
@@ -378,7 +375,7 @@ async function handleApi(request, response, url) {
       const credentials = providerCredentials(user.id, provider);
       if (credentials) searches.push(definition.client.searchCovers(credentials, title, platform));
     }
-    if (!searches.length) return sendJson(response, 409, { error: 'Configure at least one cover provider in Account Settings first.' });
+    searches.push(hltb.searchCovers(title));
     const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : []);
     if (results.length || settled.some(result => result.status === 'fulfilled')) return sendJson(response, 200, results.slice(0, 30));
     return sendJson(response, 502, { error: settled.find(result => result.status === 'rejected')?.reason?.message || 'Cover providers are unavailable.' });
@@ -511,28 +508,11 @@ auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
   console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
   backup.start();
-  coverStorage.localizeExistingCovers(db, {
-    onStored: (userId, game) => publishAppEvent(userId, 'game-updated', { source: 'cover-storage', game }),
-    onError: (game, error) => console.error(`[covers] could not store game ${game.id}: ${error.message}`),
-  }).then(async result => {
-    if (result.total) console.log(`[covers] localized ${result.stored}/${result.total}; ${result.failed} failed`);
-    const normalized = await coverStorage.normalizeExistingCovers(db, {
-      onStored: (userId, game) => publishAppEvent(userId, 'game-updated', { source: 'cover-storage', game }),
-      onError: (game, error) => console.error(`[covers] could not normalize game ${game.id}: ${error.message}`),
-    });
-    showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
-    const catalogueSummary = catalogue.syncAll(db.allGamesForCatalogue());
-    const activityBackfill = activity.backfillContributions();
-    if (activityBackfill) console.log(`[activity] recorded ${activityBackfill} Kat·a·log contribution${activityBackfill === 1 ? '' : 's'}`);
-    const levelActivityBackfill = activity.backfillLevelUps();
-    if (levelActivityBackfill) console.log(`[activity] recorded ${levelActivityBackfill} historical level-up${levelActivityBackfill === 1 ? '' : 's'}`);
-    const contributionBackfill = progression.backfillCatalogueContributions(catalogue.contributionSources());
-    if (contributionBackfill.awards.length) console.log(`[progression] awarded ${contributionBackfill.awards.length} Kat·a·log contribution${contributionBackfill.awards.length === 1 ? '' : 's'}`);
-    if (catalogueSummary.public || catalogueSummary.candidate || catalogueSummary.errors) {
-      console.log(`[catalogue] public ${catalogueSummary.public}; candidates ${catalogueSummary.candidate}; linked ${catalogueSummary.linked}; errors ${catalogueSummary.errors}`);
-    }
-    if (normalized.total) console.log(`[covers] normalized ${normalized.stored}/${normalized.total}; ${normalized.skipped} already compliant; ${normalized.failed} failed`);
-  }).catch(error => console.error('[covers] migration failed:', error.message));
+  // Startup must stay cheap. A complete image normalization and catalogue replay
+  // touches every game and can monopolize Node for a long time on a real library.
+  // New and edited games are synchronized immediately in their request paths;
+  // one-off cover maintenance remains available through the explicit scripts.
+  showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
 });
 
 function shutdown() {

@@ -13,12 +13,13 @@ const MAX_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 25_000;
 const MAX_REDIRECTS = 3;
 const ALLOWED_HOST_SUFFIXES = Object.freeze(['.steamgriddb.com', '.thegamesdb.net']);
+const ALLOWED_HOSTS = Object.freeze(['howlongtobeat.com']);
 
 function allowedRemoteUrl(value) {
   try {
     const url = new URL(String(value || ''));
     const hostname = url.hostname.toLocaleLowerCase();
-    return url.protocol === 'https:' && ALLOWED_HOST_SUFFIXES.some(suffix => hostname.endsWith(suffix));
+    return url.protocol === 'https:' && (ALLOWED_HOSTS.includes(hostname) || ALLOWED_HOST_SUFFIXES.some(suffix => hostname.endsWith(suffix)));
   } catch { return false; }
 }
 
@@ -126,5 +127,5 @@ async function localizeExistingCovers(data, { onStored = () => {}, onError = () 
   return { total: rows.length, stored, failed };
 }
 
-module.exports = { ALLOWED_HOST_SUFFIXES, COVER_DIR, IMAGE_MAX_BYTES, MAX_REDIRECTS, MAX_SOURCE_IMAGE_BYTES, allowedRemoteUrl, imageExtension,
+module.exports = { ALLOWED_HOSTS, ALLOWED_HOST_SUFFIXES, COVER_DIR, IMAGE_MAX_BYTES, MAX_REDIRECTS, MAX_SOURCE_IMAGE_BYTES, allowedRemoteUrl, imageExtension,
   localFilename, localizeExistingCovers, normalizeExistingCovers, removeLocal, storeRemote };

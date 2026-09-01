@@ -37,8 +37,11 @@ function parseCovers(body) {
     for (const image of images) {
       if (image.type !== 'boxart' || image.side !== 'front' || !image.filename) continue;
       const resolution = String(image.resolution || '').match(/^(\d+)x(\d+)$/);
-      results.push({ providerGameId: game.id, gameTitle: game.game_title, url: `${base.original || base.large || ''}${image.filename}`,
-        thumbnailUrl: `${base.small || base.thumb || base.original || ''}${image.filename}`,
+      const originalUrl = `${base.original || base.large || ''}${image.filename}`;
+      results.push({ providerGameId: game.id, gameTitle: game.game_title, url: originalUrl,
+        // TheGamesDB's generated small variants are intermittently missing. The
+        // original is authoritative and the chooser has only a few manual rows.
+        thumbnailUrl: originalUrl,
         width: resolution ? Number(resolution[1]) : null, height: resolution ? Number(resolution[2]) : null,
         style: platformName || 'Front boxart', source: 'thegamesdb', sourceUrl: 'https://thegamesdb.net/', platforms: [platformName].filter(Boolean) });
     }

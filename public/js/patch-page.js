@@ -14,4 +14,13 @@ function toast(message) {
 }
 const patchUi = createPatchUi({ api, toast, getUser: () => document.body.dataset.signedIn === 'true' ? {} : null });
 void patchUi.refreshUnread();
-if (document.body.dataset.signedIn === 'true') openEventStream({ onEvent(event, data) { if (event === 'ping-updated') patchUi.handleEvent(event, data); } });
+let stopEvents = null;
+function startEvents() {
+  stopEvents?.();
+  stopEvents = document.body.dataset.signedIn === 'true'
+    ? openEventStream({ onEvent(event, data) { if (event === 'ping-updated') patchUi.handleEvent(event, data); } })
+    : null;
+}
+startEvents();
+window.addEventListener('pagehide', () => { stopEvents?.(); stopEvents = null; });
+window.addEventListener('pageshow', event => { if (event.persisted) startEvents(); });

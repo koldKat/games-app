@@ -35,7 +35,7 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. Each release detail dialog shows its cover, PEGI details, publisher and year, and all available HowLongToBeat estimates.
 
-When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favourite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
+When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favorite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
 
 The Kat·a·log grows conservatively from member libraries. A release publishes automatically only when all of these are present:
 
@@ -43,7 +43,7 @@ The Kat·a·log grows conservatively from member libraries. A release publishes 
 - Substantive PEGI metadata.
 - A HowLongToBeat record with at least one timing estimate and an exact normalized title match.
 
-Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only // never the contributing account, ownership, media format, play state, personal rating, favourite, cartridge number, notes, or private game-row ID. From the first linked private rating, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
+Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only // never the contributing account, ownership, media format, play state, personal rating, favorite, cartridge number, notes, or private game-row ID. From the first linked private rating, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
 
 Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its public release details over the Kat·a·log, where you can inspect the metadata before adding it. Each release also has a stable shareable URL for search engines; opening one directly lands on the same Kat·a·log detail dialog, and closing it returns to the catalogue without creating a redundant browser-history entry. If the same title and platform are already in your library, the page shows **Already in your Kat·a·log** instead of an add form and links back to your library.
 
@@ -64,7 +64,7 @@ The ten compact cards summarize the current account and act as one-click major f
 | **Completed** | Games with play status set to Completed |
 | **Paused** | Games intentionally put on hold |
 | **Abandoned** | Games no longer being pursued |
-| **Favourites** | Games marked as favourites |
+| **Favorites** | Games marked as favorites |
 
 Selecting a summary card applies its corresponding library filter and highlights the active card. **Total** clears search and every library filter while retaining the selected sort order.
 
@@ -87,7 +87,7 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade is treated as PEGI-not-applicable |
-| **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favourites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
+| **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Large result sets initially render 120 cards; **Show more** renders the next batch.
 
@@ -99,7 +99,7 @@ Use the two view buttons beside **My Kat·a·log**:
 
 - **Card view** gives titles more space and is the default.
 - **Compact view** places each game on a denser horizontal row.
-- The left card rail uses the PEGI colour: green for 3/7, amber for 12/16, red for 18, and muted grey when unrated.
+- The left card rail uses the PEGI color: green for 3/7, amber for 12/16, red for 18, and muted gray when unrated.
 - The platform appears inside each card as its own label.
 - Games with saved HLTB data show compact Main, Main +, 100%, and All Styles estimates.
 
@@ -115,9 +115,9 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 Your account has a private collector level. The header and account panel show its current level, title, total XP, and distance to the next level. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
 
-XP recognises durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favourite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once.
+XP recognizes durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favorite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once.
 
-Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favourite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.
+Each award is permanently recorded against the account, action, and relevant game or milestone. Removing a favorite, cover, or other field and adding it back cannot award XP twice. Existing libraries are safely credited once on their first progression check. XP amounts are controlled only from the localhost administrator panel; the level curve and titles remain stable.
 
 ## Kat·a·log Signal
 
@@ -125,7 +125,7 @@ Each award is permanently recorded against the account, action, and relevant gam
 
 New accounts are announced by default with a randomly selected message. Level-up messages are also selected from the stored Signal templates and identify a newly gained collector title when one changes. Open **Account settings** and enable **Hide from Kat·a·log Signal** to hide all of your Signal events, including existing ones. The choice is stored with your account and applies across devices.
 
-The localhost-only administrator panel can compose announcements as drafts, edit them, publish or unpublish them, delete them, and pin one published notice. A pinned announcement stays above Signal regardless of age; other published announcements follow the normal 30-day window. Announcement text supports restrained `**bold**`, `*italic*`, `__underline__`, `~~strike~~`, and `{color:teal}colour{/color}` formatting.
+The localhost-only administrator panel can compose announcements as drafts, edit them, publish or unpublish them, delete them, and pin one published notice. A pinned announcement stays above Signal regardless of age; other published announcements follow the normal 30-day window. Announcement text supports restrained `**bold**`, `*italic*`, `__underline__`, `~~strike~~`, and `{color:teal}color{/color}` formatting.
 
 ---
 
@@ -157,7 +157,7 @@ An exact title-and-platform match shows an **Already in your library** warning a
 
 PC libraries can be tracked by storefront rather than only by operating system. The built-in platform list includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
 
-Each library card has **View details** for a read-only record of its metadata, description, PEGI and HLTB information, notes, and your rating. Use **Edit details** only when you want to change it.
+Select any non-control area of a library card to open its read-only record of metadata, description, PEGI and HLTB information, notes, and your rating. Use **Edit details** only when you want to change it.
 
 | Field | Purpose |
 |---|---|
@@ -172,7 +172,7 @@ Each library card has **View details** for a read-only record of its metadata, d
 | **Publisher** | Optional publisher or label |
 | **Release year** | Four-digit release year |
 | **Notes** | Edition, condition, storage location, purchase notes, or anything else |
-| **Favourite** | Adds a visible favourite marker |
+| **Favorite** | Adds a visible favorite marker |
 
 ### PEGI-assisted entry
 
@@ -205,9 +205,9 @@ After validation, that provider's disabled field shows **Connected** in green. S
 
 If a provider cannot be reached while Account Settings loads, its scan action stays disabled and its credential fields remain available instead of displaying a stale connection from an earlier session.
 
-**Request cover** searches every connected source and labels each result with its provider. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. TheGamesDB cards carry a source-credit link.
+**Request cover** searches every connected source plus HowLongToBeat and labels each result with its provider. HLTB is available only in this deliberate per-game request flow // it is never used for a bulk cover scan. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. TheGamesDB and HLTB cards carry a source-credit link.
 
-Cover choices initially use each provider's smaller preview image. If a TheGamesDB preview derivative is missing or fails to load, the chooser retries that result's original image automatically.
+TheGamesDB's smaller preview derivatives are not reliable, so its chooser rows load the authoritative original artwork directly. This avoids broken preview tiles; selecting and saving a result still stores the app's own optimized durable copy.
 
 ### HowLongToBeat-assisted entry
 
@@ -230,7 +230,7 @@ Each game has an editable **Description** field. Select **Look up description** 
 
 Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
 
-Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalogue and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favourite state, and cover remain untouched.
+Select **Fill PEGI details** in Account Settings to scan existing non-Evercade games without a saved PEGI source record or extended PEGI metadata. The scanner searches the paginated PEGI catalog and prefers one exact-title result for the game's platform. Ambiguous matches are skipped for manual review. It updates only PEGI information, publisher, and release year; your title, platform, ownership, play state, format, notes, favorite state, and cover remain untouched.
 
 Select **Fill HLTB times** in Account Settings to scan every game without timing data. Automatic matching requires exactly one normalized exact-title result. Platform is not used because HLTB times describe the title rather than a particular physical copy; ambiguous editions remain blank so you can choose one manually.
 
@@ -244,7 +244,7 @@ All metadata, description, and artwork scanners continue in the background while
 
 Select **Edit details** on a game. Change any field and select **Save game**.
 
-### Favourites
+### Favorites
 
 Select the star in the top-right corner of a card. The change is saved immediately.
 
@@ -256,7 +256,7 @@ Wishlisted cards include **Mark owned**. It changes only the collection state; o
 
 Open **Edit details**, select **Delete**, and confirm. Deletion is permanent for that account and cannot affect another user's library.
 
-### Dialog behaviour
+### Dialog behavior
 
 - Select **×**, **Cancel**, press **Escape**, or click directly on the backdrop to close a dialog.
 - Selecting text and releasing the pointer outside the dialog does not close it.
@@ -271,7 +271,7 @@ Select the username in the top-right corner.
 
 ### Add or change avatar
 
-Select the avatar or **Change avatar**, then choose an image. The browser centre-crops it to a 512×512 square and compresses it before upload. The stored JPEG is limited to 256 KB. Select **Remove** to return to the username initial.
+Select the avatar or **Change avatar**, then choose an image. The browser center-crops it to a 512×512 square and compresses it before upload. The stored JPEG is limited to 256 KB. Select **Remove** to return to the username initial.
 
 Downloaded game covers are also normalized automatically: each is stored as a JPEG with a maximum 900-pixel edge and a maximum size of 256 KB. This keeps card, header, and decorative background artwork quick to load without changing its public `/covers/...` availability.
 
@@ -313,7 +313,7 @@ On the computer running Game Kat·a·log, open `http://127.0.0.1:3005/admin/`. T
 
 The compact terminal-style panel provides:
 
-- Live process health (heap, RSS/CPU, app age, and session uptime, refreshed each second) plus whole-database game, account, cover, description, PEGI, HowLongToBeat, rating, catalogue, favourite, platform, ownership, media-format, and play-state summaries (refreshed each minute). The compact dashboard stacks related cards by library, community catalogue, metadata coverage, runtime, and process/storage health. App age begins with the earliest user or game record; every restart gets a five-second uptime allowance, so only downtime beyond five seconds is deducted and a new session begins with those five seconds included.
+- Live process health (heap, RSS/CPU, app age, and session uptime, refreshed each second) plus whole-database game, account, cover, description, PEGI, HowLongToBeat, rating, catalog, favorite, platform, ownership, media-format, and play-state summaries (refreshed each minute). The compact dashboard stacks related cards by library, community catalog, metadata coverage, runtime, and process/storage health. App age begins with the earliest user or game record; every restart gets a five-second uptime allowance, so only downtime beyond five seconds is deducted and a new session begins with those five seconds included.
 - Account inspection, session revocation, manual lock/unlock, and typed-confirmation account deletion. Locking signs the account out everywhere; automatic temporary locks follow five incorrect passwords. The protected `koldKat` account cannot be locked or deleted. Deleting another account also deletes its avatar, games, sessions, integration settings, and saved interface preferences.
 - SMTP host, port, transport security, credentials, sender address, and a send-test-email action for password resets. SMTP passwords are never returned to the browser after saving.
 - Cross-account private-row search and deliberate, confirmed game deletion.

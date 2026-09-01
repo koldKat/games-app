@@ -1,15 +1,23 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const { Readable } = require('node:stream');
 const { EventEmitter } = require('node:events');
 const path = require('node:path');
 const os = require('node:os');
 
-process.env.DB_PATH = path.join(os.tmpdir(), `games-app-patch-routes-${process.pid}.sqlite`);
+const dbPath = path.join(os.tmpdir(), `games-app-patch-routes-${process.pid}.sqlite`);
+for (const suffix of ['', '-shm', '-wal']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
+process.env.DB_PATH = dbPath;
 const { db } = require('../server/db');
 const { createPatchRoutes } = require('../server/patch-routes');
 const patch = require('../server/patch-data');
 const liveEvents = require('../server/events');
+
+test.after(() => {
+  db.close();
+  for (const suffix of ['', '-shm', '-wal']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
+});
 
 function request(user, body = null) {
   const stream = Readable.from(body == null ? [] : [JSON.stringify(body)]);

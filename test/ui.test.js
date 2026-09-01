@@ -49,7 +49,9 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(application, /createActivityFeed/); assert.match(activity, /activity_templates/); assert.match(activity, /activity_events/);
   assert.match(activity, /JOIN_TEMPLATES/); assert.match(activity, /LEVEL_TEMPLATES/);
   assert.match(read('public/js/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
-  assert.match(read('public/js/signal-page.js'), /createActivityFeed\(\)\.start\(\)/);
+  assert.match(read('public/js/signal-page.js'), /const activityFeed = createActivityFeed\(\)/);
+  assert.match(read('public/js/signal-page.js'), /activityFeed\.start\(\)/);
+  assert.match(read('public/js/signal-page.js'), /pagehide'[\s\S]*activityFeed\.stop\(\)/);
   assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt\)/);
   assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
@@ -135,7 +137,7 @@ test('account preferences use SQLite-backed API state instead of browser storage
   assert.match(server, /pathname === '\/api\/preferences'/);
   assert.match(application, /api\('\/api\/preferences', \{ method: 'PUT'/);
   assert.match(application, /applyPreferences\(savedPreferences\)/);
-  assert.match(application, /window\.addEventListener\('pagehide',[^\n]*savePreferences\(true\)/);
+  assert.match(application, /window\.addEventListener\('pagehide',[\s\S]*?savePreferences\(true\)/);
   assert.match(application, /#logout-button'[\s\S]*await savePreferences\(\);[\s\S]*api\('\/api\/logout'/);
   assert.match(preferences, /new Set\(SORT_VALUES\)/);
   assert.match(constants, /'hltb_main_short'/);
@@ -220,7 +222,15 @@ test('game saves animate awarded progression even if the event stream is late', 
   assert.match(server, /progression: progressionResult/);
   assert.match(progressionUi, /Number\(next\.xp\) <= highestQueuedXp/);
   assert.match(server, /catalogueContribution: isCatalogueContribution/);
-  assert.match(server, /backfillCatalogueContributions\(catalogue\.contributionSources\(\)\)/);
+  assert.match(server, /preferences: preferences\.get\(user\.id\), progress: progression\.info\(user\.id\)/);
+  assert.match(server, /url\.pathname === '\/api\/progression'\) return sendJson\(response, 200, progression\.info\(user\.id\)\)/);
+  assert.match(application, /async function enterApp\(user, savedPreferences, progress = null\)/);
+  assert.match(application, /if \(progress\) progressionUi\.render\(progress\)/);
+  assert.doesNotMatch(server, /server\.listen\([\s\S]*?catalogue\.syncAll\(/);
+  assert.doesNotMatch(server, /server\.listen\([\s\S]*?normalizeExistingCovers\(/);
+  assert.match(progressionUi, /if \(root\) \{/);
+  assert.match(progressionUi, /if \(header\) \{/);
+  assert.match(progressionUi, /scheduleRetry\(\)/);
 });
 
 test('catalogue navigation keeps the authenticated shell mounted and swaps only its content view', () => {
@@ -247,6 +257,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(read('public/js/catalogue-public.js'), /response\.status === 409 && body\.existing/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
   assert.match(read('public/css/theme.css'), /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
+  assert.match(read('public/css/theme.css'), /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
   assert.match(read('public/css/theme.css'), /\.top-actions \.catalogue-button,\.top-actions \.library-button,\.top-actions \.forum-button \{ width:auto; min-width:0;/);
   assert.match(read('public/css/theme.css'), /\.button \{[\s\S]*text-decoration: none/);
   assert.match(read('public/css/theme.css'), /@media \(max-width: 680px\) \{[\s\S]*\.auth-screen \{[\s\S]*\.brand strong \{ font-size: 13px; white-space: nowrap; \}/);
@@ -323,7 +334,7 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.doesNotMatch(catalogue, /rating:\s*entry\.rating/);
 });
 
-test('compact rows do not mistake the favourite control for a one-star rating', () => {
+test('compact rows do not mistake the favorite control for a one-star rating', () => {
   const css = readPublicCss();
   assert.match(css, /\.game-grid\.list-view \.card-rating-field\{display:none\}/);
   assert.match(css, /\.game-grid\.list-view \.favorite-button\{display:none\}/);

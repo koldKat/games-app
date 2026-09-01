@@ -180,13 +180,13 @@ function refreshSessionCookie(request) {
   return token ? sessionCookie(token, request) : '';
 }
 
-function authenticate(request) {
+function authenticate(request, { touch = true } = {}) {
   const token = tokenFromRequest(request);
   if (!token) return null;
   const now = Math.floor(Date.now() / 1000);
   const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
   if (!row) return null;
-  db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
+  if (touch) db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
   return publicUser(row);
 }
 

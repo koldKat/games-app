@@ -194,7 +194,7 @@ function applyPreferences(preferences = {}) {
   setView(preferences.view === 'list' ? 'list' : 'grid', false);
   renderQuickFilter(); preferencesDirty = false; preferencesReady = true;
 }
-async function enterApp(user, savedPreferences) {
+async function enterApp(user, savedPreferences, progress = null) {
   state.user = user;
   $('#account-name').textContent = user.username;
   $('#account-current-name').textContent = user.username;
@@ -204,9 +204,10 @@ async function enterApp(user, savedPreferences) {
   $('#auth-screen').hidden = true;
   $('#app-shell').hidden = false;
   endSessionResume();
+  if (progress) progressionUi.render(progress);
   connectEventStream();
   void patchUi.refreshUnread();
-  void progressionUi.load();
+  if (!progress) void progressionUi.load();
   await dataReady;
   if (state.user?.id !== user.id) return;
   void stageAppDecorations(user.id).catch(() => {});
@@ -283,7 +284,7 @@ $('#auth-form').addEventListener('submit', async event => {
     });
     sessionGeneration++;
     $('#auth-error').hidden = true;
-    await enterApp(result.user, result.preferences);
+    await enterApp(result.user, result.preferences, result.progress);
   } catch (error) { $('#auth-error').textContent = error.message; $('#auth-error').hidden = false; }
   finally { submit.disabled = false; submit.textContent = state.authMode === 'register' ? 'Create account' : 'Authenticate'; }
 });
@@ -389,7 +390,7 @@ $('#game-platform').addEventListener('change', () => toggleCustomPlatform());
 function badge(text, className = '') { return `<span class="badge ${className}">${escapeHtml(text)}</span>`; }
 function coverCredit(source) {
   const credits = {
-    thegamesdb: ['TheGamesDB art ↗', 'https://thegamesdb.net/'],
+    thegamesdb: ['TheGamesDB art ↗', 'https://thegamesdb.net/'], hltb: ['HLTB art ↗', 'https://howlongtobeat.com/'],
   };
   const credit = credits[source];
   if (credit) return `<a class="badge source-credit" href="${credit[1]}" target="_blank" rel="noopener" data-card-link>${credit[0]}</a>`;
@@ -443,9 +444,9 @@ function gameCard(game) {
   const descriptorBadges = (game.pegiDescriptors || []).map(descriptor => badge(descriptor, /purchases|random items/i.test(descriptor) ? 'descriptor purchase' : 'descriptor')).join('');
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
-    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favourite' : 'Mark favourite'}">★</button></div>
+    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favourite') : ''}${coverCredit(game.coverSource)}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : game.platform === 'Evercade' ? 'No PEGI' : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
@@ -638,7 +639,7 @@ function openDetails(game) {
   const pegiText = [['Advice for consumers', game.pegiAdvice], ['Brief outline', game.pegiOutline], ['Content-specific issues', game.pegiContentIssues], ['Other issues', game.pegiOtherIssues]]
     .filter(([, value]) => value).map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`).join('');
   const releases = (game.pegiReleases || []).length ? `<ul>${game.pegiReleases.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : '';
-  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favourite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
+  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favorite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
   detailsDialog.showModal();
   setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -843,7 +844,7 @@ $('#games').addEventListener('click', async event => {
     const next = event.detail === 0 ? position : position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
     changed.rating = Number(game.rating) === next ? null : next;
   }
-  try { const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); applySaveProgress(result); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favourites.' : 'Removed from favourites.'); }
+  try { const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); applySaveProgress(result); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favorites.' : 'Removed from favorites.'); }
   catch (error) { toast(error.message); }
 });
 $('#games').addEventListener('pointermove', event => {
@@ -902,17 +903,17 @@ $('#description-results').addEventListener('click', event => {
 function renderCoverSelection() {
   const url = $('#game-form').dataset.coverUrl || ''; const box = $('#cover-selection');
   $('#cover-remove-button').hidden = !url; box.hidden = !url;
-  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB' };
+  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
   const details = [$('#game-form').dataset.coverMatchTitle || 'Custom match', sourceLabels[source]].filter(Boolean).join(' · ');
   box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
 }
 $('#cover-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#cover-results'); box.hidden = false;
   if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
-  box.innerHTML = '<p class="pegi-message">Querying connected cover providers…</p>';
+  box.innerHTML = '<p class="pegi-message">Querying cover sources…</p>';
   try {
     const results = await api(`/api/covers/search?q=${encodeURIComponent(title)}&platform=${encodeURIComponent(selectedPlatform())}`); box._results = results;
-    const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB' };
+    const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
     box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="cover-result" data-cover-index="${index}"><img src="${escapeHtml(result.thumbnailUrl)}" data-cover-image-index="${index}" alt="" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml([providerLabels[result.source] || result.source, result.width && result.height ? `${result.width}×${result.height}` : '', result.style].filter(Boolean).join(' · '))}</small></span></button>`).join('') : '<p class="pegi-message">No portrait covers found. Try a shorter or more exact title.</p>';
     bindCoverResultFallbacks(box, results);
   } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)}</p>`; }
@@ -1124,7 +1125,16 @@ $('#logout-button').addEventListener('click', async () => {
   $('#auth-form').reset();
   showAuth();
 });
-window.addEventListener('pagehide', () => { void savePreferences(true); });
+window.addEventListener('pagehide', () => {
+  state.stopEvents?.(); state.stopEvents = null;
+  activityFeed.stop();
+  void savePreferences(true);
+});
+window.addEventListener('pageshow', event => {
+  if (!event.persisted || !state.user) return;
+  connectEventStream();
+  activityFeed.start();
+});
 $('#account-form').addEventListener('submit', async event => {
   event.preventDefault();
   const newPassword = $('#account-new-password').value;
@@ -1154,6 +1164,6 @@ $('#account-form').addEventListener('submit', async event => {
   loadAuthCovers();
   const resetToken = new URLSearchParams(window.location.search).get('reset');
   if (resetToken) { history.replaceState({}, '', window.location.pathname); showAuth(); showPasswordResetComplete(resetToken); return; }
-  try { const result = await api('/api/auth/me'); await enterApp(result.user, result.preferences); }
+  try { const result = await api('/api/auth/me'); await enterApp(result.user, result.preferences, result.progress); }
   catch { showAuth(); }
 })();

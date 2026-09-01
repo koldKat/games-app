@@ -22,6 +22,7 @@ test('TheGamesDB parser keeps front boxart and constructs CDN URLs', () => {
     } }, platform: { data: { 18: { id: 18, name: 'Sega Genesis' } } } },
   });
   assert.equal(results.length, 1); assert.equal(results[0].url, 'https://cdn.example/original/front.jpg');
+  assert.equal(results[0].thumbnailUrl, results[0].url);
   assert.deepEqual([results[0].width, results[0].height, results[0].platforms[0]], [800, 1100, 'Sega Genesis']);
 });
 

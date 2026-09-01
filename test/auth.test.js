@@ -128,6 +128,12 @@ test('login, sessions, and account password changes work', async () => {
   const token = auth.createSession(user.id);
   const request = { headers: { authorization: `Bearer ${token}` } };
   assert.equal(auth.authenticate(request).id, user.id);
+  const untouchedExpiry = data.db.prepare('SELECT expires_at FROM sessions WHERE token=?').get(token).expires_at;
+  data.db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(untouchedExpiry - 60, token);
+  assert.equal(auth.authenticate(request, { touch: false }).id, user.id);
+  assert.equal(data.db.prepare('SELECT expires_at FROM sessions WHERE token=?').get(token).expires_at, untouchedExpiry - 60);
+  assert.equal(auth.authenticate(request).id, user.id);
+  assert.ok(data.db.prepare('SELECT expires_at FROM sessions WHERE token=?').get(token).expires_at > untouchedExpiry - 60);
   const cookie = auth.sessionCookie(token, { headers: { 'x-forwarded-proto': 'https' }, socket: {} });
   assert.match(cookie, /^games_session=[a-f0-9]{64}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=1209600; Secure$/);
   assert.equal(auth.authenticate({ headers: { cookie }, socket: {} }).id, user.id);

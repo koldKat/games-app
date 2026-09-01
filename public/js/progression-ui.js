@@ -9,25 +9,29 @@ function progressAt(xp, target) {
 }
 
 export function createProgressionUi({ api }) {
-  let progress = null;
+  let progress = null; let loadPromise = null; let retryTimer = null;
   let displayedXp = null; let queue = []; let animating = false; let highestQueuedXp = 0;
   function render(next = progress) {
     progress = next || progress; if (!progress) return;
     const percent = Math.max(0, Math.min(100, progress.progress || 0));
-    const root = document.getElementById('account-progression'); if (!root) return;
-    root.hidden = false;
-    root.querySelector('[data-progress-level]').textContent = `LV ${progress.level}`;
-    root.querySelector('[data-progress-title]').textContent = progress.title;
-    root.querySelector('[data-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
-    const meter = root.querySelector('[data-progress-meter]'); meter.style.width = `${percent}%`;
-    root.querySelector('[data-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached.' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to level ${progress.level + 1}`;
-    const header = document.getElementById('header-progression'); if (!header) return;
-    header.hidden = false;
-    header.querySelector('[data-header-progress-level]').textContent = `LV ${progress.level}`;
-    header.querySelector('[data-header-progress-title]').textContent = progress.title;
-    header.querySelector('[data-header-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
-    header.querySelector('[data-header-progress-meter]').style.width = `${percent}%`;
-    header.querySelector('[data-header-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to LV ${progress.level + 1}`;
+    const root = document.getElementById('account-progression');
+    if (root) {
+      root.hidden = false;
+      root.querySelector('[data-progress-level]').textContent = `LV ${progress.level}`;
+      root.querySelector('[data-progress-title]').textContent = progress.title;
+      root.querySelector('[data-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
+      root.querySelector('[data-progress-meter]').style.width = `${percent}%`;
+      root.querySelector('[data-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached.' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to level ${progress.level + 1}`;
+    }
+    const header = document.getElementById('header-progression');
+    if (header) {
+      header.hidden = false;
+      header.querySelector('[data-header-progress-level]').textContent = `LV ${progress.level}`;
+      header.querySelector('[data-header-progress-title]').textContent = progress.title;
+      header.querySelector('[data-header-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
+      header.querySelector('[data-header-progress-meter]').style.width = `${percent}%`;
+      header.querySelector('[data-header-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to LV ${progress.level + 1}`;
+    }
   }
   function runQueue() {
     if (animating || !queue.length) return;
@@ -43,7 +47,21 @@ export function createProgressionUi({ api }) {
     };
     requestAnimationFrame(step);
   }
-  async function load() { try { const loaded = await api('/api/progression'); displayedXp = loaded.xp; highestQueuedXp = loaded.xp; render(loaded); } catch { /* Progress should never block the library. */ } }
+  function scheduleRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(() => { retryTimer = null; void load({ retry: false }); }, 750);
+  }
+  function load({ retry = true } = {}) {
+    if (loadPromise) return loadPromise;
+    loadPromise = api('/api/progression').then(loaded => {
+      displayedXp = loaded.xp; highestQueuedXp = loaded.xp; render(loaded);
+    }).catch(() => {
+      // A newly opened tab can race the restored session cookie. Retry quietly so
+      // a transient request never leaves the header progression hidden.
+      if (retry) scheduleRetry();
+    }).finally(() => { loadPromise = null; });
+    return loadPromise;
+  }
   function handleEvent(data) {
     const next = data?.progress;
     if (!next || Number(next.xp) <= highestQueuedXp) return;

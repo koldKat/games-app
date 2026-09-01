@@ -10,7 +10,7 @@ const XP_EVENTS = Object.freeze({
   publisher_added: { amount: 5, label: 'Recorded a publisher' },
   release_year_added: { amount: 5, label: 'Recorded a release year' },
   rating_added: { amount: 10, label: 'Rated a game' },
-  favourite_added: { amount: 10, label: 'Marked a favourite' },
+  favourite_added: { amount: 10, label: 'Marked a favorite' },
   wishlisted: { amount: 10, label: 'Wishlisted a game' },
   wishlist_fulfilled: { amount: 25, label: 'Fulfilled a wishlist' },
   playing_started: { amount: 10, label: 'Started playing' },

@@ -1,4 +1,7 @@
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+const RECONNECT_MIN_MS = 2_500;
+const RECONNECT_MAX_MS = 30_000;
+const STABLE_CONNECTION_MS = 15_000;
 
 function decodeFrame(frame) {
   let event = 'message'; let id = null; const data = [];
@@ -13,9 +16,10 @@ function decodeFrame(frame) {
 }
 
 export function openEventStream({ onEvent, onUnauthorized = () => {} }) {
-  let stopped = false; let controller = null; let lastEventId = null;
+  let stopped = false; let controller = null; let lastEventId = null; let reconnectMs = RECONNECT_MIN_MS;
   (async function connect() {
     while (!stopped) {
+      const connectedAt = performance.now();
       try {
         controller = new AbortController();
         const headers = { Accept: 'text/event-stream' };
@@ -44,7 +48,12 @@ export function openEventStream({ onEvent, onUnauthorized = () => {} }) {
       } catch (error) {
         if (stopped || error.name === 'AbortError') return;
       }
-      if (!stopped) await delay(2500);
+      if (!stopped) {
+        reconnectMs = performance.now() - connectedAt >= STABLE_CONNECTION_MS
+          ? RECONNECT_MIN_MS
+          : Math.min(RECONNECT_MAX_MS, reconnectMs * 2);
+        await delay(reconnectMs);
+      }
     }
   })();
   return () => { stopped = true; controller?.abort(); };

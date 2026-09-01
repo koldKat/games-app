@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { frame, keepAlive, publish, subscribe } = require('../server/events');
+const clientSource = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'public', 'js', 'events.js'), 'utf8');
 
 test('SSE frames carry named JSON events', () => {
   assert.equal(frame('game-updated', { game: { id: 7 } }), 'event: game-updated\ndata: {"game":{"id":7}}\n\n');
@@ -45,4 +46,10 @@ test('SSE heartbeats close streams whose bearer session was revoked', () => {
   const revoked = connection().response;
   assert.equal(keepAlive(revoked, () => false), false);
   assert.equal(revoked.writableEnded, true);
+});
+
+test('browser SSE reconnects back off and page owners can stop them', () => {
+  assert.match(clientSource, /RECONNECT_MAX_MS = 30_000/);
+  assert.match(clientSource, /Math\.min\(RECONNECT_MAX_MS, reconnectMs \* 2\)/);
+  assert.match(clientSource, /return \(\) => \{ stopped = true; controller\?\.abort\(\); \}/);
 });

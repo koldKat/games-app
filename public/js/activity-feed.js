@@ -67,5 +67,5 @@ export function createActivityFeed() {
     void load(); source?.close(); source = new EventSource('/api/activity/stream');
     source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load(), 120); });
   }
-  return { start, stop: () => source?.close(), load };
+  return { start, stop: () => { clearTimeout(refreshTimer); refreshTimer = null; source?.close(); source = null; }, load };
 }
