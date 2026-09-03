@@ -79,6 +79,9 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
   assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
+  assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 5/);
+  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex\)/);
+  assert.match(read('public/js/activity-feed.js'), /activity-group-chevron/);
   assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
   assert.match(read('public/js/activity-feed.js'), /const targets = hosts\(\)/);
   assert.match(read('public/js/catalogue-navigation.js'), /onSignalVisible\(\)/);
@@ -87,6 +90,7 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/activity-feed.js'), /body\.pinned/);
   assert.match(read('public/js/activity-feed.js'), /function pinnedCard\(entry\)/);
   assert.match(read('public/css/activity.css'), /\.activity-pinned-card/);
+  assert.match(read('public/css/activity.css'), /\.activity-contribution-group/);
   assert.match(read('public/js/announcement-format.js'), /formatAnnouncementBody/);
   assert.match(read('admin/index.html'), /data-tab="announcements"/);
   assert.match(read('admin/index.html'), /id="announcement-form"/);

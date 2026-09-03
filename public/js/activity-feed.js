@@ -43,6 +43,28 @@ function dayLabel(value) {
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
+const CONTRIBUTION_COLLAPSE_THRESHOLD = 5;
+function contributionGroup(entry, entries, id) {
+  const count = entries.length;
+  const username = escapeHtml(entry.username);
+  return `<section class="activity-contribution-group"><button type="button" class="activity-group-toggle" data-activity-group-toggle="${id}" aria-controls="${id}" aria-expanded="false" aria-label="Show ${username}'s ${count} contributed games"><span class="activity-group-chevron" aria-hidden="true">▶</span>${userLabel(entry)}<span class="activity-group-count">contributed ${count} game${count === 1 ? '' : 's'}</span></button><div class="activity-group-items" id="${id}" hidden>${entries.map(card).join('')}</div></section>`;
+}
+function collapseContributions(entries, dayIndex) {
+  const byUser = new Map();
+  for (const entry of entries) {
+    if (entry.type !== 'catalogue_contribution') continue;
+    const group = byUser.get(entry.username) || []; group.push(entry); byUser.set(entry.username, group);
+  }
+  const collapsed = new Set([...byUser.values()].filter(group => group.length >= CONTRIBUTION_COLLAPSE_THRESHOLD).flat());
+  const rendered = new Set(); let groupIndex = 0;
+  return entries.map(entry => {
+    if (!collapsed.has(entry)) return card(entry);
+    const group = byUser.get(entry.username);
+    if (rendered.has(group)) return '';
+    rendered.add(group);
+    return contributionGroup(entry, group, `activity-contributions-${dayIndex}-${groupIndex++}`);
+  }).join('');
+}
 function groupedCards(entries) {
   const groups = new Map();
   for (const entry of entries) {
@@ -50,7 +72,7 @@ function groupedCards(entries) {
     const group = groups.get(key) || { label: dayLabel(entry.createdAt), entries: [] };
     group.entries.push(entry); groups.set(key, group);
   }
-  return [...groups.values()].map(group => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${group.entries.map(card).join('')}</div></section>`).join('');
+  return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index)}</div></section>`).join('');
 }
 export function createActivityFeed() {
   const hosts = () => [...document.querySelectorAll('[data-activity-feed]')]; let refreshTimer = null; let source = null;
@@ -66,6 +88,16 @@ export function createActivityFeed() {
         const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
         const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
         host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
+        if (host.dataset.activityGroupsBound !== 'true') {
+          host.dataset.activityGroupsBound = 'true';
+          host.addEventListener('click', event => {
+            const toggle = event.target.closest('[data-activity-group-toggle]'); if (!toggle) return;
+            const list = document.getElementById(toggle.dataset.activityGroupToggle); if (!list || !host.contains(list)) return;
+            list.hidden = !list.hidden; const expanded = !list.hidden;
+            toggle.setAttribute('aria-expanded', String(expanded));
+            toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} ${toggle.querySelector('b')?.textContent || 'account'}'s contributed games`);
+          });
+        }
       }
     } catch { for (const host of targets) host.innerHTML = '<p class="activity-feed-empty">Signal temporarily unavailable.</p>'; }
   }

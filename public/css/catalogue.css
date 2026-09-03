@@ -34,6 +34,8 @@
 .signal-feed .activity-day { display: grid; gap: 5px; }
 .signal-feed .activity-day h3 { margin: 0; padding: 0 1px 4px; border-bottom: 1px solid #24423b; color: #72e5c9; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .signal-feed .activity-day > div { display: grid; gap: 3px; }
+.catalogue-main .signal-feed .activity-group-toggle { min-height:0; padding:2px 0; border:0; border-radius:0; background:none; color:#9ab3ac; font-size:10px; font-weight:600; }
+.catalogue-main .signal-feed .activity-group-toggle:hover,.catalogue-main .signal-feed .activity-group-toggle:focus-visible { border:0; background:none; color:#dcebe6; }
 .signal-feed .activity-entry { grid-template-columns: minmax(0,1fr) 28px; gap: 7px; padding: 5px 6px; }
 .signal-feed .activity-entry p { font-size: 11px; line-height: 1.35; }
 .signal-feed .activity-entry time { font-size: 9px; }
