@@ -18,10 +18,13 @@ test('catalogue page is crawlable server-rendered HTML', () => {
   assert.match(html, /Portal 2/);
   assert.match(html, /application\/ld\+json/);
   assert.match(html, /class="catalogue-results"/);
+  assert.match(html, /class="catalogue-title" data-catalogue-title data-full-title="Portal 2"/);
   assert.match(html, /class="hero catalogue-hero"/);
   assert.match(html, /class="hero-art catalogue-hero-art"/);
   assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
   assert.match(html, /class="auth-cover-field app-cover-field"/);
+  assert.match(html, /<i class="has-art"><img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async"><\/i>/);
+  assert.doesNotMatch(html, /style="background-image:/);
   assert.match(html, /data-app-version/);
   assert.match(html, /src="\/js\/site-header\.js"/);
   assert.match(html, /<img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async">/);

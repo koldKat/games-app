@@ -246,6 +246,12 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
   assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);
 });
 
+test('public Kat·a·log prioritizes covers with a ten-column desktop grid', () => {
+  const css = read('public/css/catalogue.css');
+  assert.match(css, /\.catalogue-grid \{ display: grid; grid-template-columns: repeat\(10,minmax\(0,1fr\)\); gap: 9px; \}/);
+  assert.match(css, /max-width: 680px\)[\s\S]*\.catalogue-grid \{ grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
+});
+
 test('game saves animate awarded progression even if the event stream is late', () => {
   const application = read('public/app.js'); const server = read('server.js'); const progressionUi = read('public/js/progression-ui.js');
   assert.match(application, /function applySaveProgress\(result\)/);
@@ -407,7 +413,7 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(privateApp, /setTimeout\(loadGames, UI_TIMING\.librarySearchDebounceMs\)/);
   assert.match(publicCatalogue, /catalogueSearchSequence/);
   assert.match(publicCatalogue, /querySelector\('\.catalogue-results'\)/);
-  assert.match(publicCatalogue, /current\.replaceWith\(next\); history\.replaceState/);
+  assert.match(publicCatalogue, /current\.replaceWith\(next\); bindCatalogueTitleTooltips\(\); history\.replaceState/);
   assert.match(publicCatalogue, /closest\('main\.catalogue-main'\)\?\.addEventListener\('click'/);
   assert.match(publicCatalogue, /target\.pathname\.startsWith\('\/game\/'\)[\s\S]*openCatalogueGameDialog/);
   assert.match(publicCatalogue, /main\.append\(document\.importNode\(next, true\)\)/);
@@ -469,6 +475,24 @@ test('public Kat·a·log cards overlay community ratings on their covers', () =>
   assert.match(pages, /class="catalogue-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
   assert.match(css, /\.catalogue-cover \.community-rating\s*\{\s*position: absolute;\s*bottom: 6px;\s*left: 50%/);
   assert.match(css, /transform: translateX\(-50%\); white-space: nowrap/);
+});
+
+test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
+  const css = read('public/css/catalogue.css'); const catalogue = read('public/js/catalogue-public.js');
+  assert.match(css, /\.catalogue-title\[data-truncated="true"\]::after/);
+  assert.match(css, /content:attr\(data-full-title\)/);
+  assert.match(css, /\.catalogue-title\[data-truncated="true"\]:hover::after/);
+  assert.match(catalogue, /function updateCatalogueTitleTooltips/);
+  assert.match(catalogue, /text\.scrollWidth > text\.clientWidth/);
+});
+
+test('logged-out public pages load their cover background after rendering', () => {
+  const catalogue = read('public/js/catalogue-public.js');
+  assert.match(catalogue, /async function loadPublicBackgroundCovers/);
+  assert.match(catalogue, /fetch\('\/api\/showcase\/covers', \{ cache: 'no-store' \}\)/);
+  assert.match(catalogue, /await new Promise\(resolve =>/);
+  assert.match(catalogue, /slots\[index\]\.style\.backgroundImage/);
+  assert.match(catalogue, /void loadPublicBackgroundCovers\(\)/);
 });
 
 test('sorting is modular and includes catalogue and HLTB duration orders', () => {

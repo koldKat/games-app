@@ -70,7 +70,7 @@ function decorativeCoverField(coverUrls = []) {
   const covers = coverUrls.filter(value => /^\/covers\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(value || '')));
   const slots = Array.from({ length: 32 }, (_, index) => {
     const cover = covers.length ? covers[index % covers.length] : '';
-    return cover ? `<i class="has-art" style="background-image:${escapeHtml(`url(${JSON.stringify(cover)})`)}"></i>` : '<i></i>';
+    return cover ? `<i class="has-art"><img src="${escapeHtml(cover)}" alt="" decoding="async"></i>` : '<i></i>';
   }).join('');
   return `<div class="auth-cover-field app-cover-field" aria-hidden="true">${slots}</div>`;
 }
@@ -156,7 +156,7 @@ function renderCatalogueMain({ result, platforms, query = '', platform = '', det
     const platformLabel = platform ? entry.platform : releases.map(release => release.platform).join(' · ');
     return `<article class="catalogue-card">
     <a class="catalogue-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
-    <div class="catalogue-card-body"><span class="catalogue-platform">${escapeHtml(platformLabel)}</span><h2><a href="/game/${encodeURIComponent(entry.slug)}">${escapeHtml(entry.title)}</a></h2>
+    <div class="catalogue-card-body"><span class="catalogue-platform">${escapeHtml(platformLabel)}</span><h2><a class="catalogue-title" data-catalogue-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
       <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
       <div class="catalogue-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}${releases.length > 1 ? `<span>${releases.length} platforms</span>` : ''}</div>
     </div></article>`;

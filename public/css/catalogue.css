@@ -80,16 +80,19 @@
 .catalogue-main button:disabled { opacity: .55; cursor: wait; }
 .catalogue-result-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 1px 9px; color: var(--muted); font-size: 11px; }
 .catalogue-result-head strong { color: #b9c7cd; }
-.catalogue-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 9px; }
+.catalogue-grid { display: grid; grid-template-columns: repeat(10,minmax(0,1fr)); gap: 9px; }
 .catalogue-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: linear-gradient(160deg,rgba(53,214,178,.035),transparent 38%),var(--panel); transition: border-color .15s,transform .15s; }
 .catalogue-card:hover { transform: translateY(-2px); border-color: #36505a; }
 .catalogue-cover { position: relative; display: block; aspect-ratio: 2/3; overflow: hidden; background: #06090d; }
 .catalogue-cover img,.game-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .catalogue-card-body { padding: 9px; }
 .catalogue-platform { display: block; overflow: hidden; color: var(--green); font-size: 9px; letter-spacing: .09em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-.catalogue-card h2 { margin: 4px 0 3px; overflow: hidden; font-size: 14px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
-.catalogue-card h2 a { text-decoration: none; }
-.catalogue-card h2 a:hover { color: var(--green); }
+.catalogue-card h2 { position:relative; z-index:1; margin:4px 0 3px; overflow:visible; font-size:14px; line-height:1.25; }
+.catalogue-title { position:relative; display:block; color:inherit; text-decoration:none; }
+.catalogue-title>span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.catalogue-title[data-truncated="true"]::after { content:attr(data-full-title); position:absolute; z-index:6; bottom:calc(100% + 5px); left:0; box-sizing:border-box; width:100%; padding:5px 6px; border:1px solid #438878; border-radius:4px; background:#0b1815; box-shadow:0 7px 18px #000b; color:#dcf8f0; font-size:10px; font-weight:600; line-height:1.35; opacity:0; pointer-events:none; transform:translateY(3px); transition:opacity .12s ease,transform .12s ease; visibility:hidden; white-space:normal; }
+.catalogue-title[data-truncated="true"]:hover::after,.catalogue-title[data-truncated="true"]:focus-visible::after { opacity:1; transform:translateY(0); visibility:visible; }
+.catalogue-title:hover { color:var(--green); }
 .catalogue-card p { min-height: 18px; margin: 0 0 7px; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .catalogue-chips,.descriptor-list { display: flex; flex-wrap: wrap; gap: 5px; }
 .catalogue-chips span,.descriptor-list span { padding: 3px 6px; border: 1px solid #283844; border-radius: 4px; color: #9eacb4; font-size: 9px; }
@@ -160,6 +163,5 @@
 .time-grid strong { margin-top: 2px; color: var(--amber); font-size: 18px; }
 .descriptor-list { margin-bottom: 9px; }
 
-@media (max-width: 1180px) { .catalogue-grid { grid-template-columns: repeat(5,minmax(0,1fr)); } }
-@media (max-width: 920px) { .catalogue-grid { grid-template-columns: repeat(4,minmax(0,1fr)); } .catalogue-add { grid-template-columns: 1fr 1fr; } .catalogue-add>div { grid-column: 1/-1; } }
+@media (max-width: 920px) { .catalogue-add { grid-template-columns: 1fr 1fr; } .catalogue-add>div { grid-column: 1/-1; } }
 @media (max-width: 680px) { .catalogue-shell { padding-bottom: 10px; } .catalogue-main { padding-top: 8px; } .catalogue-hero { min-height: 0; padding: 15px; } .catalogue-search { grid-template-columns: 1fr; } .catalogue-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .game-overview { grid-template-columns: 108px minmax(0,1fr); gap: 12px; align-items: start; padding: 9px; } .game-summary h1 { font-size: clamp(21px,8vw,34px); } .catalogue-add { grid-column: 1/-1; grid-template-columns: 1fr 1fr; margin-top: 14px; } .catalogue-add>div,.catalogue-add button,.catalogue-add p { grid-column: 1/-1; } .catalogue-signin { grid-column: 1/-1; grid-template-columns: 1fr; } .catalogue-signin a { grid-column: 1; grid-row: auto; } .game-metadata { grid-template-columns: 1fr; } }

@@ -1,4 +1,4 @@
-import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, openCatalogueGameDialog } from './catalogue-public.js';
+import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, bindCatalogueTitleTooltips, openCatalogueGameDialog } from './catalogue-public.js';
 import { bindForum } from './forum-page.js';
 import { dismissActivityPreview } from './activity-feed.js';
 
@@ -104,6 +104,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
         document.title = 'Public Kat·a·log // Game Kat·a·log';
       } });
       bindCatalogueSearch(catalogue, { navigate: targetUrl => void refreshResults(targetUrl) });
+      bindCatalogueTitleTooltips(catalogue);
       if (view === 'forum') { bindForum(catalogue, { navigate: targetUrl => void open(targetUrl), refresh: () => void open(`${target.pathname}${target.search}`, { push: false }) }); startForumLive(); }
       if (focusSearch) {
         const input = catalogue.querySelector('.catalogue-search input[name="q"]');
@@ -129,7 +130,7 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
       const { main, title } = pageFromResponse(await response.text()); const next = main.querySelector('.catalogue-results');
       if (!next) throw new Error('Kat·a·log results could not be displayed.');
       if (request !== controller) return;
-      current.replaceWith(document.importNode(next, true)); document.title = title || libraryTitle;
+      current.replaceWith(document.importNode(next, true)); bindCatalogueTitleTooltips(catalogue); document.title = title || libraryTitle;
       window.history.replaceState({ appView: 'catalogue' }, '', `${target.pathname}${target.search}`);
     } catch (error) {
       if (error.name === 'AbortError' || request !== controller) return;

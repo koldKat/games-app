@@ -37,6 +37,44 @@ export function bindCatalogueAddForm(root = document, { onAdded = () => {}, onOp
   });
 }
 
+let titleResizeTimer = null;
+let titleResizeBound = false;
+function updateCatalogueTitleTooltips(root = document) {
+  root.querySelectorAll('[data-catalogue-title]').forEach(title => {
+    const text = title.firstElementChild;
+    title.dataset.truncated = String(Boolean(text && text.scrollWidth > text.clientWidth));
+  });
+}
+export function bindCatalogueTitleTooltips(root = document) {
+  requestAnimationFrame(() => updateCatalogueTitleTooltips(root));
+  if (titleResizeBound) return;
+  titleResizeBound = true;
+  window.addEventListener('resize', () => {
+    clearTimeout(titleResizeTimer);
+    titleResizeTimer = setTimeout(() => updateCatalogueTitleTooltips(), 120);
+  }, { passive: true });
+}
+
+async function loadPublicBackgroundCovers() {
+  if (!document.body.classList.contains('catalogue-document')) return;
+  const slots = [...document.querySelectorAll('.app-cover-field i')];
+  if (!slots.length) return;
+  try {
+    const response = await fetch('/api/showcase/covers', { cache: 'no-store' });
+    const covers = response.ok ? (await response.json()).covers || [] : [];
+    for (let index = 0; index < slots.length && covers.length; index++) {
+      const url = String(covers[index % covers.length] || '');
+      if (!url) continue;
+      await new Promise(resolve => {
+        const image = new Image();
+        image.onload = () => { slots[index].style.backgroundImage = `url(${JSON.stringify(url)})`; slots[index].classList.add('has-art'); resolve(); };
+        image.onerror = () => resolve();
+        image.src = url;
+      });
+    }
+  } catch {}
+}
+
 export function bindCatalogueGameDialog(root = document, { onClose = null } = {}) {
   const dialog = root.querySelector('[data-catalogue-game-dialog]');
   if (!dialog || dialog.dataset.catalogueGameBound === 'true') return;
@@ -125,10 +163,12 @@ async function navigateCatalogue(url) {
     const parsed = new DOMParser().parseFromString(await response.text(), 'text/html'); const next = parsed.querySelector('.catalogue-results');
     const current = document.querySelector('.catalogue-results'); if (!next || !current) throw new Error('Search failed.');
     if (sequence !== catalogueSearchSequence) return;
-    current.replaceWith(next); history.replaceState({ catalogue: true }, '', url);
+    current.replaceWith(next); bindCatalogueTitleTooltips(); history.replaceState({ catalogue: true }, '', url);
   } catch { window.location.assign(url); }
 }
 
 bindCatalogueAddForm();
 bindCatalogueSearch();
 bindCatalogueGameDialog();
+bindCatalogueTitleTooltips();
+void loadPublicBackgroundCovers();

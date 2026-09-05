@@ -7,7 +7,7 @@ const { createCatalogueStore } = require('../server/catalogue-store');
 
 test('public Kat·a·log pages default to ten desktop rows', () => {
   const { database, store } = fixture();
-  try { assert.equal(store.listPublic().pageSize, 60); }
+  try { assert.equal(store.listPublic().pageSize, 100); }
   finally { database.close(); }
 });
 
