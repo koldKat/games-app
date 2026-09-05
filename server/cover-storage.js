@@ -68,7 +68,7 @@ async function storeUpload(source) {
   return persistCover(source, 'Uploaded cover must be a valid JPEG, PNG, or WebP image.');
 }
 
-async function storeRemote(remoteUrl) {
+async function fetchRemoteImage(remoteUrl) {
   if (!allowedRemoteUrl(remoteUrl)) throw new Error('That cover is not hosted by a supported artwork provider.');
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS); let currentUrl = String(remoteUrl); let response;
   for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
@@ -83,6 +83,17 @@ async function storeRemote(remoteUrl) {
   }
   if (!response.ok) throw new Error(`Cover download returned HTTP ${response.status}.`);
   const source = await responseBuffer(response);
+  const extension = imageExtension(source);
+  if (!extension) throw new Error('Cover provider did not return a supported JPEG, PNG, or WebP image.');
+  return { source, extension };
+}
+
+async function previewRemote(remoteUrl) {
+  return fetchRemoteImage(remoteUrl);
+}
+
+async function storeRemote(remoteUrl) {
+  const { source } = await fetchRemoteImage(remoteUrl);
   return persistCover(source, 'Cover provider did not return a supported JPEG, PNG, or WebP image.');
 }
 
@@ -137,4 +148,4 @@ async function localizeExistingCovers(data, { onStored = () => {}, onError = () 
 }
 
 module.exports = { ALLOWED_HOSTS, ALLOWED_HOST_SUFFIXES, COVER_DIR, IMAGE_MAX_BYTES, MAX_REDIRECTS, MAX_SOURCE_IMAGE_BYTES, allowedRemoteUrl, imageExtension,
-  localFilename, localizeExistingCovers, normalizeExistingCovers, removeLocal, storeRemote, storeUpload };
+  localFilename, localizeExistingCovers, normalizeExistingCovers, previewRemote, removeLocal, storeRemote, storeUpload };

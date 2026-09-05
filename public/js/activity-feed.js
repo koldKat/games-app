@@ -43,7 +43,7 @@ function dayLabel(value) {
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
-const CONTRIBUTION_COLLAPSE_THRESHOLD = 5;
+const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
 function contributionGroup(entry, entries, id) {
   const count = entries.length;
   const username = escapeHtml(entry.username);

@@ -8,6 +8,7 @@ const result = (title, id = 1) => ({ id, title, url: `https://howlongtobeat.com/
 test('HLTB batch matching only accepts one exact normalized title', () => {
   assert.equal(normalize('Pokémon™: Deluxe!'), 'pokemon deluxe');
   assert.equal(bestExactHltb('Pokémon Pokopia', [result('Pokemon Pokopia')]).id, 1);
+  assert.equal(bestExactHltb('LEGO 2K Drive', [result('LEGO 2K Drive', 125974)]).id, 125974);
   assert.equal(bestExactHltb('Game', [result('Game', 1), result('Game', 2)]), null);
   assert.equal(bestExactHltb('Game', [result('Game Deluxe')]), null);
   assert.equal(needsHltb({ hltbId: null }), true);

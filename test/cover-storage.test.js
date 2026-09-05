@@ -48,6 +48,16 @@ test('storage rejects arbitrary hosts and non-image responses', async () => {
   finally { global.fetch = originalFetch; }
 });
 
+test('provider previews stream a signature-checked image without persisting a cover', async () => {
+  const originalFetch = global.fetch;
+  const source = await sharp({ create: { width: 80, height: 120, channels: 3, background: '#1d8066' } }).webp().toBuffer();
+  global.fetch = async () => new Response(source, { status: 200, headers: { 'Content-Type': 'image/webp' } });
+  try {
+    const preview = await storage.previewRemote('https://cdn.thegamesdb.net/images/original/boxart/front/example.webp');
+    assert.equal(preview.extension, 'webp'); assert.deepEqual(preview.source, source);
+  } finally { global.fetch = originalFetch; }
+});
+
 test('storage validates a redirect target before requesting it', async () => {
   const originalFetch = global.fetch; const calls = [];
   global.fetch = async url => {

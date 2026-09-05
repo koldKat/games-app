@@ -143,6 +143,13 @@ function sendJson(response, status, value, headers = {}) {
   response.end(body);
 }
 
+function sendCoverPreview(response, preview) {
+  const contentType = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[preview.extension];
+  if (!contentType) return sendJson(response, 415, { error: 'Cover provider did not return a supported image.' });
+  response.writeHead(200, { 'Content-Type': contentType, 'Content-Length': preview.source.length, 'Cache-Control': 'private, max-age=900', 'X-Content-Type-Options': 'nosniff' });
+  response.end(preview.source);
+}
+
 function readRaw(request, maxBytes) {
   return new Promise((resolve, reject) => {
     const chunks = []; let size = 0; let rejected = false;
@@ -386,9 +393,14 @@ async function handleApi(request, response, url) {
       if (credentials) searches.push(definition.client.searchCovers(credentials, title, platform));
     }
     searches.push(hltb.searchCovers(title));
-    const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+    const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+      .map(result => result.source === 'thegamesdb' ? { ...result, thumbnailUrl: `/api/covers/preview?url=${encodeURIComponent(result.url)}` } : result);
     if (results.length || settled.some(result => result.status === 'fulfilled')) return sendJson(response, 200, results.slice(0, 30));
     return sendJson(response, 502, { error: settled.find(result => result.status === 'rejected')?.reason?.message || 'Cover providers are unavailable.' });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/covers/preview') {
+    try { return sendCoverPreview(response, await coverStorage.previewRemote(url.searchParams.get('url'))); }
+    catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
   if (request.method === 'GET' && url.pathname === '/api/titles/autocomplete') {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;

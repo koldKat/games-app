@@ -79,7 +79,7 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
   assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
-  assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 5/);
+  assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 6/);
   assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex\)/);
   assert.match(read('public/js/activity-feed.js'), /activity-group-chevron/);
   assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
@@ -561,6 +561,8 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
   assert.match(application, /TheGamesDB art ↗/);
   assert.match(server, /db\.coverProviderCredentials\(userId, provider\)/);
   assert.match(server, /\(thegamesdb\)/);
+  assert.match(server, /thumbnailUrl: `\/api\/covers\/preview\?url=\$\{encodeURIComponent\(result\.url\)\}`/);
+  assert.match(server, /url\.pathname === '\/api\/covers\/preview'/);
 });
 
 test('durable public covers stream from disk instead of buffering whole images', () => {

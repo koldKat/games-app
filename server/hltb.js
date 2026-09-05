@@ -111,7 +111,12 @@ async function search(title) {
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.results;
   const run = queue.catch(() => {}).then(() => fetchSearch(clean));
   queue = run.then(() => undefined, () => undefined);
-  const results = await run; cache.set(key, { at: Date.now(), results }); return results;
+  const results = await run;
+  // An empty HLTB response is often transient (indexing or provider search
+  // hiccups). Do not turn that into a 30-minute false negative: a manual
+  // retry or the next bulk pass must be able to ask the provider again.
+  if (results.length) cache.set(key, { at: Date.now(), results });
+  return results;
 }
 
 async function searchCovers(title) {
