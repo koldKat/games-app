@@ -19,6 +19,7 @@ test.after(() => {
 });
 
 test('admin access requires a loopback socket and loopback proxy identity', () => {
+  assert.equal(admin.UPTIME_DOWNTIME_GRACE_SECONDS, 15);
   const request = (remoteAddress, headers = {}) => ({ socket: { remoteAddress }, headers });
   assert.equal(admin.isLocalRequest(request('127.0.0.1')), true);
   assert.equal(admin.isLocalRequest(request('::ffff:127.0.0.1', { 'x-forwarded-for': '::1' })), true);

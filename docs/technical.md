@@ -424,7 +424,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET, POST | `/api/admin/backups` | List or trigger the current hour's compressed SQLite backup |
 | DELETE | `/api/admin/backups/:name` | Delete one validated backup filename |
 
-The Dashboard mirrors the Gamebooks refresh cadence: collection and catalogue totals refresh every 60 seconds, while the lightweight live cards (heap, RSS/CPU, application age, and session uptime) refresh every second. Application age starts with the earliest user or game record in the database. Uptime is persisted across restarts: every restart has a five-second allowance. Gaps within it are continuous; for longer gaps, only the excess is recorded as downtime, and the new session begins with the same five seconds already included.
+The Dashboard mirrors the Gamebooks refresh cadence: collection and catalogue totals refresh every 60 seconds, while the lightweight live cards (heap, RSS/CPU, application age, and session uptime) refresh every second. Application age starts with the earliest user or game record in the database. Uptime is persisted across restarts: every restart has a fifteen-second allowance. Gaps within it are continuous; for longer gaps, only the excess is recorded as downtime, and the new session begins with the same fifteen seconds already included.
 
 Admin static files and API responses use restrictive security headers. Backup names are server-generated and deletion accepts only that exact filename shape. Backups are stored in `backups/`, which is excluded from Git.
 

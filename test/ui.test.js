@@ -204,10 +204,11 @@ test('login and registration keep a stable desktop rail without filler content',
   assert.match(application, /showAuthForm\(\); setAuthMode\(mode\);\s*setTimeout\(\(\) => \$\('#auth-username'\)\.focus\(\), UI_TIMING\.focusDelayMs\)/);
   assert.match(css, /\.auth-center\{width:100%;height:510px;display:flex;flex-direction:column;gap:10px\}/);
   assert.match(css, /@media \(max-width:580px\)[\s\S]*\.auth-center\{width:100%;height:auto\}/);
-  assert.match(css, /\.auth-public-nav\{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:30px\}/);
+  assert.match(css, /\.auth-public-nav\{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:30px;--auth-public-pulse-spread:0px;--auth-public-pulse-opacity:0;animation:auth-public-pulse 4s ease-in-out infinite\}/);
   assert.match(css, /\.auth-public-link\{[\s\S]*text-decoration:none/);
-  assert.match(css, /\.auth-public-link:after\{[\s\S]*animation:auth-public-pulse 4s ease-in-out infinite/);
-  assert.match(css, /@keyframes auth-public-pulse\{[\s\S]*50%\{box-shadow:0 0 0 3px rgb\(88 225 198 \/ 26%\)/);
+  assert.match(css, /\.auth-public-nav\{[\s\S]*animation:auth-public-pulse 4s ease-in-out infinite/);
+  assert.match(css, /\.auth-public-link\{[\s\S]*box-shadow:0 0 0 var\(--auth-public-pulse-spread\) rgb\(88 225 198 \/ var\(--auth-public-pulse-opacity\)\)/);
+  assert.match(css, /@property --auth-public-pulse-spread\{syntax:'<length>';inherits:true;initial-value:0px\}/);
 });
 
 test('landing promo descriptions remain readable', () => {

@@ -18,7 +18,7 @@ const ADMIN_DIR = path.join(ROOT, 'admin');
 const JSON_BODY_MAX_LENGTH = 64 * 1024;
 const CATALOGUE_QUERY_MAX_LENGTH = 120;
 const CATALOGUE_RESULT_LIMIT = 250;
-const UPTIME_DOWNTIME_GRACE_SECONDS = 5;
+const UPTIME_DOWNTIME_GRACE_SECONDS = 15;
 const startedAt = Math.floor(Date.now() / 1000);
 let lastCpuAt = Date.now();
 let lastCpuUsage = process.cpuUsage();
@@ -114,8 +114,8 @@ function initializeUptimeTracking() {
   const lastHeartbeat = Number(setting('server_last_heartbeat')) || 0;
   const reference = stoppedAt || lastHeartbeat;
   const gap = reference > 0 ? Math.max(0, startedAt - reference) : 0;
-  // The first five seconds of every restart are continuous uptime. Only the
-  // excess is downtime, and a new session starts five seconds before boot so
+  // The first fifteen seconds of every restart are continuous uptime. Only the
+  // excess is downtime, and a new session starts fifteen seconds before boot so
   // the live duration displays that same allowance.
   if (gap > UPTIME_DOWNTIME_GRACE_SECONDS) {
     saveSetting('server_total_downtime_s', (Number(setting('server_total_downtime_s')) || 0) + gap - UPTIME_DOWNTIME_GRACE_SECONDS);
@@ -390,4 +390,4 @@ async function handle(request, response, url) {
   sendJson(response, 404, { error: 'Not found.' }); return true;
 }
 
-module.exports = { handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listCatalogue, deleteAccount };
+module.exports = { UPTIME_DOWNTIME_GRACE_SECONDS, handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listCatalogue, deleteAccount };
