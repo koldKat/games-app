@@ -1,6 +1,6 @@
 'use strict';
 
-const { evaluateCatalogueGame, normalizeCatalogueText } = require('./catalogue-policy');
+const { evaluateKatalogGame, normalizeKatalogText } = require('./katalog-policy');
 
 const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
 // The wide Kat·a·log grid has eight columns: keep ten complete desktop rows visible per page.
@@ -56,7 +56,7 @@ function publicEntry(entry) {
 function groupedPublicEntries(entries) {
   const groups = new Map();
   for (const entry of entries) {
-    const key = entry.titleKey || normalizeCatalogueText(entry.title);
+    const key = entry.titleKey || normalizeKatalogText(entry.title);
     const group = groups.get(key) || []; group.push(entry); groups.set(key, group);
   }
   return [...groups.values()].map(releases => {
@@ -66,7 +66,7 @@ function groupedPublicEntries(entries) {
 }
 
 function slugBase(title, platform) {
-  const value = `${normalizeCatalogueText(title)} ${normalizeCatalogueText(platform)}`
+  const value = `${normalizeKatalogText(title)} ${normalizeKatalogText(platform)}`
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 100);
   return value || 'game';
 }
@@ -79,11 +79,11 @@ function adminList(value) {
 function optionalNumber(value, { min = 0, max = Number.MAX_SAFE_INTEGER, integer = false } = {}) {
   if (value === '' || value == null) return null;
   const number = Number(value);
-  if (!Number.isFinite(number) || number < min || number > max || (integer && !Number.isInteger(number))) throw new Error('Invalid catalogue value.');
+  if (!Number.isFinite(number) || number < min || number > max || (integer && !Number.isInteger(number))) throw new Error('Invalid Kat·a·log value.');
   return integer ? number : Math.round(number * 100) / 100;
 }
 
-function createCatalogueStore(database) {
+function createKatalogStore(database) {
   database.exec(`
     CREATE TABLE IF NOT EXISTS catalogue_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -244,8 +244,8 @@ function createCatalogueStore(database) {
   }
 
   function listPublic({ q = '', platform = '', page = 1, limit = PAGE_SIZE_DEFAULT } = {}) {
-    const cleanQuery = normalizeCatalogueText(String(q).slice(0, SEARCH_MAX_LENGTH));
-    const cleanPlatform = normalizeCatalogueText(String(platform).slice(0, SEARCH_MAX_LENGTH));
+    const cleanQuery = normalizeKatalogText(String(q).slice(0, SEARCH_MAX_LENGTH));
+    const cleanPlatform = normalizeKatalogText(String(platform).slice(0, SEARCH_MAX_LENGTH));
     const pageSize = Math.max(1, Math.min(PAGE_SIZE_MAX, Number(limit) || PAGE_SIZE_DEFAULT));
     const currentPage = Math.max(1, Number.parseInt(page, 10) || 1);
     const params = {
@@ -282,7 +282,7 @@ function createCatalogueStore(database) {
   }
 
   function setStatus(id, status) {
-    if (!ENTRY_STATUSES.includes(status)) throw new Error('Invalid catalogue status.');
+    if (!ENTRY_STATUSES.includes(status)) throw new Error('Invalid Kat·a·log status.');
     const result = database.prepare(`UPDATE catalogue_entries SET status=?,
       published_at=CASE WHEN ?='public' THEN COALESCE(published_at,CURRENT_TIMESTAMP) ELSE published_at END,
       updated_at=CURRENT_TIMESTAMP WHERE id=?`).run(status, status, Number(id));
@@ -295,9 +295,9 @@ function createCatalogueStore(database) {
     const title = adminText(input.title, 220); const platform = adminText(input.platform, 220);
     if (!title) throw new Error('Title is required.');
     if (!platform) throw new Error('Platform is required.');
-    const titleKey = normalizeCatalogueText(title); const platformKey = normalizeCatalogueText(platform);
+    const titleKey = normalizeKatalogText(title); const platformKey = normalizeKatalogText(platform);
     const duplicate = findByIdentity(titleKey, platformKey);
-    if (duplicate && duplicate.id !== existing.id) throw new Error('Another catalogue entry already uses this title and platform.');
+    if (duplicate && duplicate.id !== existing.id) throw new Error('Another Kat·a·log entry already uses this title and platform.');
     const pegi = input.pegi === '' || input.pegi == null ? null : optionalNumber(input.pegi, { integer: true });
     if (pegi != null && !PEGI_RATINGS.has(pegi)) throw new Error('PEGI must be 3, 7, 12, 16, 18, or blank.');
     const releaseYear = optionalNumber(input.releaseYear, { min: RELEASE_YEAR_MIN, max: RELEASE_YEAR_MAX, integer: true });
@@ -311,7 +311,7 @@ function createCatalogueStore(database) {
       hltbMainExtra: hltbHours(input.hltbMainExtra), hltbCompletionist: hltbHours(input.hltbCompletionist),
       hltbAllStyles: hltbHours(input.hltbAllStyles), coverUrl: existing.coverUrl, coverMatchTitle: adminText(input.coverMatchTitle, 300),
     };
-    const evaluation = evaluateCatalogueGame(factualInput);
+    const evaluation = evaluateKatalogGame(factualInput);
     database.prepare(`UPDATE catalogue_entries SET title=@title, title_key=@titleKey, platform=@platform, platform_key=@platformKey,
       pegi=@pegi, publisher=@publisher, release_year=@releaseYear, pegi_url=@pegiUrl,
       pegi_descriptors=@pegiDescriptors, pegi_releases=@pegiReleases, pegi_advice=@pegiAdvice,
@@ -372,4 +372,4 @@ function createCatalogueStore(database) {
   };
 }
 
-module.exports = { ENTRY_STATUSES, createCatalogueStore, hydrateEntry, publicEntry, slugBase };
+module.exports = { ENTRY_STATUSES, createKatalogStore, hydrateEntry, publicEntry, slugBase };

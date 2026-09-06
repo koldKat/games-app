@@ -22,6 +22,28 @@ function cardTimes(game, escapeHtml) {
   return `<dl class="card-hltb${game.hltbId ? '' : ' is-empty'}" aria-label="${game.hltbId ? 'HowLongToBeat estimates' : 'No HowLongToBeat estimates'}">${items.map(([label, value]) => `<div><dt>${label}</dt><dd>${escapeHtml(hoursLabel(value))}</dd></div>`).join('')}</dl>`;
 }
 
+function choiceTimes(item) {
+  return [
+    item.mainStory && `Main ${hoursLabel(item.mainStory)}`,
+    item.mainExtra && `Main+ ${hoursLabel(item.mainExtra)}`,
+    item.completionist && `100% ${hoursLabel(item.completionist)}`,
+    item.allStyles && `All ${hoursLabel(item.allStyles)}`,
+  ].filter(Boolean).join(' · ') || 'No submitted times';
+}
+
+function choiceMarkup(item, index, escapeHtml) {
+  const similarity = Math.round(Number(item.similarity || 0) * 100);
+  return `<button type="button" class="hltb-result" data-hltb-index="${index}">
+    <span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(choiceTimes(item))}</small></span>
+    <b>${similarity}%</b>
+  </button>`;
+}
+
+function choicesMarkup(choices, escapeHtml) {
+  if (!choices.length) return '<p class="pegi-message">No HLTB matches found. You can keep the game without timing data.</p>';
+  return choices.map((item, index) => choiceMarkup(item, index, escapeHtml)).join('');
+}
+
 function createHltbLookup({ $, api, escapeHtml, toast }) {
   const form = $('#game-form'); const results = $('#hltb-results');
   const searchButton = $('#hltb-search-button'); const titleInput = $('#game-title');
@@ -54,7 +76,7 @@ function createHltbLookup({ $, api, escapeHtml, toast }) {
       const choices = await api(`/api/hltb/search?q=${encodeURIComponent(title)}`);
       if (sequence !== searchSequence || titleInput.value.trim() !== title) return;
       results._choices = choices;
-      results.innerHTML = choices.length ? choices.map((item, index) => `<button type="button" class="hltb-result" data-hltb-index="${index}"><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml([item.mainStory && `Main ${hoursLabel(item.mainStory)}`, item.mainExtra && `Main+ ${hoursLabel(item.mainExtra)}`, item.completionist && `100% ${hoursLabel(item.completionist)}`, item.allStyles && `All ${hoursLabel(item.allStyles)}`].filter(Boolean).join(' · ') || 'No submitted times')}</small></span><b>${Math.round(Number(item.similarity || 0) * 100)}%</b></button>`).join('') : '<p class="pegi-message">No HLTB matches found. You can keep the game without timing data.</p>';
+      results.innerHTML = choicesMarkup(choices, escapeHtml);
     } catch (error) {
       if (sequence === searchSequence && titleInput.value.trim() === title) results.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)} <a href="https://howlongtobeat.com/" target="_blank" rel="noopener">Open HLTB ↗</a></p>`;
     } finally {

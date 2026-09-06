@@ -1,6 +1,6 @@
 User-agent: *
-# Searchable public surface: Signal, forum, catalogue pages, canonical release URLs,
-# and the catalogue-owned cover images.
+# Searchable public surface: Signal, forum, Kat·a·log pages, canonical release URLs,
+# and the katalog-owned cover images.
 Allow: /
 Allow: /katalog
 Allow: /signal

@@ -1,7 +1,7 @@
 'use strict';
 
 const patch = require('./patch-data');
-const { readJson, securityHeaders } = require('./catalogue-routes');
+const { readJson, securityHeaders } = require('./katalog-routes');
 const mailer = require('./mailer');
 
 const MAX_BODY = 4_000;

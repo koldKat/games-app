@@ -7,7 +7,7 @@ const { readVersion, writeVersion } = require('./version');
 const backup = require('./backup');
 const coverStorage = require('./cover-storage');
 const mailer = require('./mailer');
-const catalogue = require('./catalogue-runtime');
+const catalogue = require('./katalog-runtime');
 const activity = require('./activity');
 const events = require('./events');
 const forum = require('./forum-data');
@@ -16,8 +16,8 @@ const patch = require('./patch-data');
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
 const JSON_BODY_MAX_LENGTH = 64 * 1024;
-const CATALOGUE_QUERY_MAX_LENGTH = 120;
-const CATALOGUE_RESULT_LIMIT = 250;
+const KATALOG_QUERY_MAX_LENGTH = 120;
+const KATALOG_RESULT_LIMIT = 250;
 const UPTIME_DOWNTIME_GRACE_SECONDS = 15;
 const startedAt = Math.floor(Date.now() / 1000);
 let lastCpuAt = Date.now();
@@ -33,8 +33,8 @@ const adminFiles = new Map([
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
-  ['/admin/js/catalogue.js', ['js/catalogue.js', 'application/javascript; charset=utf-8']],
-  ['/admin/js/public-catalogue.js', ['js/public-catalogue.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/katalog.js', ['js/katalog.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/public-katalog.js', ['js/public-katalog.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/tools.js', ['js/tools.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/mail.js', ['js/mail.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/progression.js', ['js/progression.js', 'application/javascript; charset=utf-8']],
@@ -208,13 +208,13 @@ function deleteAccount(id) {
   return result.changes ? account : null;
 }
 
-function listCatalogue(query = '') {
-  const q = String(query).trim().slice(0, CATALOGUE_QUERY_MAX_LENGTH);
+function listKatalog(query = '') {
+  const q = String(query).trim().slice(0, KATALOG_QUERY_MAX_LENGTH);
   return db.prepare(`SELECT g.id, g.title, g.platform, g.pegi, g.ownership, g.play_status AS playStatus,
     CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END hasCover, u.username
     FROM games g LEFT JOIN users u ON u.id=g.user_id
     WHERE (@q='' OR g.title LIKE @like OR g.platform LIKE @like OR u.username LIKE @like)
-    ORDER BY g.title COLLATE NOCASE LIMIT ${CATALOGUE_RESULT_LIMIT}`).all({ q, like: `%${q}%` });
+    ORDER BY g.title COLLATE NOCASE LIMIT ${KATALOG_RESULT_LIMIT}`).all({ q, like: `%${q}%` });
 }
 
 async function handleApi(request, response, url) {
@@ -318,7 +318,7 @@ async function handleApi(request, response, url) {
       return account ? sendJson(response, 200, { account }) : sendJson(response, 404, { error: 'Account not found.' });
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
-  if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listCatalogue(url.searchParams.get('q')));
+  if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listKatalog(url.searchParams.get('q')));
   if (request.method === 'GET' && pathname === '/api/admin/catalogue') {
     return sendJson(response, 200, { entries: catalogue.listAdmin({ q: url.searchParams.get('q'), status: url.searchParams.get('status') }), counts: catalogue.counts() });
   }
@@ -329,18 +329,18 @@ async function handleApi(request, response, url) {
       const entry = Object.hasOwn(body, 'status')
         ? catalogue.setStatus(Number(match[1]), String(body.status || ''))
         : catalogue.updateAdmin(Number(match[1]), body);
-      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Katalog entry not found.' });
     } catch (error) { return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'PUT' && match) {
     try {
       const entry = await catalogue.replaceCover(Number(match[1]), String((await readJson(request)).url || ''));
-      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+      return entry ? sendJson(response, 200, { entry }) : sendJson(response, 404, { error: 'Katalog entry not found.' });
     } catch (error) { return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'DELETE' && match) {
     const entry = catalogue.removeEntry(Number(match[1]));
-    return entry ? sendJson(response, 200, { deleted: entry }) : sendJson(response, 404, { error: 'Catalogue entry not found.' });
+    return entry ? sendJson(response, 200, { deleted: entry }) : sendJson(response, 404, { error: 'Katalog entry not found.' });
   }
   match = pathname.match(/^\/api\/admin\/games\/(\d+)$/);
   if (request.method === 'DELETE' && match) {
@@ -390,4 +390,4 @@ async function handle(request, response, url) {
   sendJson(response, 404, { error: 'Not found.' }); return true;
 }
 
-module.exports = { UPTIME_DOWNTIME_GRACE_SECONDS, handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listCatalogue, deleteAccount };
+module.exports = { UPTIME_DOWNTIME_GRACE_SECONDS, handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listKatalog, deleteAccount };

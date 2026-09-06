@@ -21,8 +21,8 @@ const activity = require('./server/activity');
 const auth = require('./server/auth');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
-const catalogue = require('./server/catalogue-runtime');
-const { createCatalogueRoutes } = require('./server/catalogue-routes');
+const katalog = require('./server/katalog-runtime');
+const { createKatalogRoutes } = require('./server/katalog-routes');
 const { createForumRoutes } = require('./server/forum-routes');
 const { createPatchRoutes } = require('./server/patch-routes');
 const { isAppViewPath, wantsAuthenticatedShell } = require('./server/app-shell');
@@ -57,16 +57,16 @@ const externalCoverProviders = Object.freeze({
   },
 });
 const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
-function isCatalogueContribution(userId, game, result) {
+function isKatalogContribution(userId, game, result) {
   const entry = result?.entry;
   return entry?.status === 'public' && Number(entry.submittedByUserId) === Number(userId) && Number(entry.sourceGameId) === Number(game?.id);
 }
-function syncCatalogueAndRecordProgress(userId, game, options) {
-  const catalogueResult = catalogue.syncGameSafely(userId, game);
-  return recordGameProgress(userId, game, { ...options, catalogueContribution: isCatalogueContribution(userId, game, catalogueResult) });
+function syncKatalogAndRecordProgress(userId, game, options) {
+  const katalogResult = katalog.syncGameSafely(userId, game);
+  return recordGameProgress(userId, game, { ...options, katalogContribution: isKatalogContribution(userId, game, katalogResult) });
 }
 function publishAppEvent(userId, event, payload) {
-  if (event === 'game-updated' && payload?.game) syncCatalogueAndRecordProgress(userId, payload.game);
+  if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game);
   events.publish(userId, event, payload);
 }
 function publishProgression(userId, result) {
@@ -96,8 +96,8 @@ const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProvide
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
-const catalogueRoutes = createCatalogueRoutes({ catalogue, auth, events, progression, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
-const forumRoutes = createForumRoutes({ catalogue, auth, events, progression, onProgression: publishProgression });
+const katalogRoutes = createKatalogRoutes({ katalog, auth, events, progression, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
+const forumRoutes = createForumRoutes({ katalog, auth, events, progression, onProgression: publishProgression });
 const patchRoutes = createPatchRoutes({ auth, events });
 
 async function runCoverJob(userId, key) {
@@ -404,7 +404,7 @@ async function handleApi(request, response, url) {
       return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform')), suggestions: [] });
     }
     const existing = db.searchGameTitles(user.id, query);
-    const publicEntries = query.length >= TITLE_AUTOCOMPLETE_MIN_LENGTH ? catalogue.searchPublic(query) : [];
+    const publicEntries = query.length >= TITLE_AUTOCOMPLETE_MIN_LENGTH ? katalog.searchPublic(query) : [];
     if (!key || query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') {
       return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: [] });
     }
@@ -469,7 +469,7 @@ async function handleApi(request, response, url) {
     try {
       prepared = await prepareGameCover(await readJson(request));
       const game = db.createGame(user.id, prepared.input);
-      const progressionResult = syncCatalogueAndRecordProgress(user.id, game, { created: true });
+      const progressionResult = syncKatalogAndRecordProgress(user.id, game, { created: true });
       return sendJson(response, 201, { ...game, progression: progressionResult });
     }
     catch (error) {
@@ -491,7 +491,7 @@ async function handleApi(request, response, url) {
       const game = db.updateGame(user.id, Number(match[1]), prepared.input);
       if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
       finishGameCoverChange(existing, game);
-      const progressionResult = syncCatalogueAndRecordProgress(user.id, game, { previous: existing });
+          const progressionResult = syncKatalogAndRecordProgress(user.id, game, { previous: existing });
       return sendJson(response, 200, { ...game, progression: progressionResult });
     } catch (error) {
       if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
@@ -514,7 +514,7 @@ const server = http.createServer(async (request, response) => {
       const shellUser = auth.authenticate(request, { touch: false });
       if (wantsAuthenticatedShell(request, url, shellUser)) return serveStatic(request, '/', response);
     }
-    if (await catalogueRoutes.handle(request, response, url)) return;
+    if (await katalogRoutes.handle(request, response, url)) return;
     if (await forumRoutes.handle(request, response, url)) return;
     if (await patchRoutes.handle(request, response, url)) return;
   } catch (error) { return sendJson(response, 500, { error: error.message || 'Request failed.' }); }
@@ -529,7 +529,7 @@ auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
   console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
   backup.start();
-  // Startup must stay cheap. A complete image normalization and catalogue replay
+  // Startup must stay cheap. A complete image normalization and Kat·a·log replay
   // touches every game and can monopolize Node for a long time on a real library.
   // New and edited games are synchronized immediately in their request paths;
   // one-off cover maintenance remains available through the explicit scripts.

@@ -1,7 +1,7 @@
 import { loadDashboard, loadLive } from './dashboard.js';
 import { loadAccounts } from './accounts.js';
-import { loadCatalogue } from './catalogue.js';
-import { loadPublicCatalogue } from './public-catalogue.js';
+import { loadKatalog } from './katalog.js';
+import { loadPublicKatalog } from './public-katalog.js';
 import { loadVersion, loadBackups } from './tools.js';
 import { loadMailSettings } from './mail.js';
 import { loadProgression } from './progression.js';
@@ -12,8 +12,8 @@ import { loadPatch } from './patch.js';
 const loaders = {
   dashboard: loadDashboard,
   accounts: loadAccounts,
-  catalogue: loadCatalogue,
-  'public-catalogue': loadPublicCatalogue,
+  katalog: loadKatalog,
+  'public-katalog': loadPublicKatalog,
   progression: loadProgression,
   announcements: loadAnnouncements,
   forum: loadForum,

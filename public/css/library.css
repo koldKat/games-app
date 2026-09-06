@@ -669,21 +669,21 @@ body {
   letter-spacing: 0.06em;
 }
 .title-suggestions .existing span small,
-.title-suggestions .catalogue span small {
+.title-suggestions .katalog span small {
   display: block;
   margin-top: 2px;
   text-transform: none;
   letter-spacing: 0;
 }
 .title-suggestions .existing b,
-.title-suggestions .catalogue b {
+.title-suggestions .katalog b {
   flex: none;
   color: #55dfbf;
   font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.title-suggestions .catalogue { border-left-color: #2c6c5e; }
+.title-suggestions .katalog { border-left-color: #2c6c5e; }
 .duplicate-warning {
   display: flex;
   align-items: center;

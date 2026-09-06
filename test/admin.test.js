@@ -59,8 +59,8 @@ test('admin summaries span accounts while preserving owner identity', async () =
 
   const accounts = admin.listAccounts();
   assert.deepEqual(accounts.map(account => account.games), [1, 1]);
-  assert.equal(admin.listCatalogue('FPGA')[0].username, 'beta_admin_test');
-  assert.equal(admin.listCatalogue('alpha_admin_test')[0].title, 'Alpha Game');
+  assert.equal(admin.listKatalog('FPGA')[0].username, 'beta_admin_test');
+  assert.equal(admin.listKatalog('alpha_admin_test')[0].title, 'Alpha Game');
 
   const deleted = admin.deleteAccount(beta.id);
   assert.equal(deleted.username, 'beta_admin_test');

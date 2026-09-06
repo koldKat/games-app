@@ -1,17 +1,17 @@
-import { bindCatalogueAddForm, bindCatalogueGameDialog, bindCatalogueSearch, bindCatalogueTitleTooltips, openCatalogueGameDialog } from './catalogue-public.js';
+import { bindKatalogAddForm, bindKatalogGameDialog, bindKatalogSearch, bindKatalogTitleTooltips, openKatalogGameDialog } from './katalog-public.js';
 import { bindForum } from './forum-page.js';
 import { dismissActivityPreview } from './activity-feed.js';
 
-const CATALOGUE_PATH = /^\/(?:katalog|signal|forum(?:\/|$)|game\/)/;
+const KATALOG_PATH = /^\/(?:katalog|signal|forum(?:\/|$)|game\/)/;
 
 function isPrimaryNavigation(event) {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 }
 
-function loadCatalogueStyles(forum = false) {
-  if (!document.querySelector('link[data-catalogue-styles]')) {
+function loadKatalogStyles(forum = false) {
+  if (!document.querySelector('link[data-katalog-styles]')) {
     const stylesheet = document.createElement('link');
-    stylesheet.rel = 'stylesheet'; stylesheet.href = '/css/catalogue.css'; stylesheet.dataset.catalogueStyles = 'true';
+    stylesheet.rel = 'stylesheet'; stylesheet.href = '/css/katalog.css'; stylesheet.dataset.katalogStyles = 'true';
     document.head.append(stylesheet);
   }
   if (forum && !document.querySelector('link[data-forum-styles]')) { const forumStylesheet = document.createElement('link'); forumStylesheet.rel = 'stylesheet'; forumStylesheet.href = '/css/forum.css'; forumStylesheet.dataset.forumStyles = 'true'; document.head.append(forumStylesheet); }
@@ -19,20 +19,20 @@ function loadCatalogueStyles(forum = false) {
 
 function pageFromResponse(html) {
   const parsed = new DOMParser().parseFromString(html, 'text/html');
-  const main = parsed.querySelector('main.catalogue-main,main.forum-main');
+  const main = parsed.querySelector('main.katalog-main,main.forum-main');
   if (!main) throw new Error('The Kat·a·log response could not be displayed.');
   return { main, title: parsed.title };
 }
 
-export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameAdded = () => {}, onSignalVisible = () => {} } = {}) {
+export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdded = () => {}, onSignalVisible = () => {} } = {}) {
   const library = document.querySelector('#library-view');
-  const catalogue = document.querySelector('#catalogue-view');
+  const katalog = document.querySelector('#katalog-view');
   const libraryButton = document.querySelector('.library-button');
-  const catalogueButton = document.querySelector('.catalogue-button');
+  const katalogButton = document.querySelector('.katalog-button');
   const signal = document.querySelector('.signal-button');
   const forumButton = document.querySelector('.forum-button');
   const brand = document.querySelector('.brand');
-  if (!library || !catalogue || !libraryButton || !catalogueButton || !brand) return { open: () => {}, restoreCurrent: () => {}, showLibrary: () => {}, isOpen: () => false };
+  if (!library || !katalog || !libraryButton || !katalogButton || !brand) return { open: () => {}, restoreCurrent: () => {}, showLibrary: () => {}, isOpen: () => false };
 
   let view = 'library';
   let request = null;
@@ -52,11 +52,11 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
 
   function setHeader(nextView) {
     const libraryOpen = nextView === 'library';
-    const catalogueOpen = nextView === 'catalogue';
+    const katalogOpen = nextView === 'katalog';
     libraryButton.classList.toggle('active', libraryOpen);
-    catalogueButton.classList.toggle('active', catalogueOpen);
+    katalogButton.classList.toggle('active', katalogOpen);
     libraryButton.setAttribute('aria-current', libraryOpen ? 'page' : 'false');
-    catalogueButton.setAttribute('aria-current', catalogueOpen ? 'page' : 'false');
+    katalogButton.setAttribute('aria-current', katalogOpen ? 'page' : 'false');
     signal?.classList.toggle('active', nextView === 'signal');
     signal?.setAttribute('aria-current', nextView === 'signal' ? 'page' : 'false');
     forumButton?.classList.toggle('active', nextView === 'forum');
@@ -68,11 +68,11 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
   function showLibrary({ push = true } = {}) {
     request?.abort(); request = null;
     stopForumLive();
-    catalogue.querySelectorAll('[data-catalogue-game-dialog][open]').forEach(dialog => {
+    katalog.querySelectorAll('[data-katalog-game-dialog][open]').forEach(dialog => {
       dialog.dataset.skipCloseNavigation = 'true';
       dialog.close();
     });
-    view = 'library'; library.hidden = false; catalogue.hidden = true;
+    view = 'library'; library.hidden = false; katalog.hidden = true;
     setHeader(view); document.title = libraryTitle;
     if (push && window.location.pathname !== '/') window.history.pushState({ appView: 'library' }, '', '/');
     onLibraryVisible();
@@ -80,34 +80,34 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
 
   async function open(url = '/katalog', { push = true, focusSearch = false } = {}) {
     const target = new URL(url, window.location.origin);
-    if (!CATALOGUE_PATH.test(target.pathname)) return showLibrary({ push });
+    if (!KATALOG_PATH.test(target.pathname)) return showLibrary({ push });
     request?.abort(); const controller = new AbortController(); request = controller;
     try {
       const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', headers: { 'X-GameKat-Partial': '1' }, signal: controller.signal });
       if (!response.ok) throw new Error(`Kat·a·log request failed (${response.status}).`);
       const { main, title } = pageFromResponse(await response.text());
       if (request !== controller) return;
-      const nextView = target.pathname === '/signal' ? 'signal' : target.pathname.startsWith('/forum') ? 'forum' : 'catalogue';
+      const nextView = target.pathname === '/signal' ? 'signal' : target.pathname.startsWith('/forum') ? 'forum' : 'katalog';
       if (nextView !== 'forum') stopForumLive();
-      view = nextView; library.hidden = true; catalogue.hidden = false;
-      setHeader(view); loadCatalogueStyles(view === 'forum');
-      catalogue.replaceChildren(document.importNode(main, true));
+      view = nextView; library.hidden = true; katalog.hidden = false;
+      setHeader(view); loadKatalogStyles(view === 'forum');
+      katalog.replaceChildren(document.importNode(main, true));
       document.title = title || libraryTitle;
       if (view === 'signal') onSignalVisible();
       const destination = `${target.pathname}${target.search}${target.hash}`;
       if (push && `${window.location.pathname}${window.location.search}${window.location.hash}` !== destination) {
-        window.history.pushState({ appView: 'catalogue' }, '', destination);
+        window.history.pushState({ appView: 'katalog' }, '', destination);
       }
-      bindCatalogueAddForm(catalogue, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
-      bindCatalogueGameDialog(catalogue, { onClose: () => {
-        if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'catalogue' }, '', '/katalog');
+      bindKatalogAddForm(katalog, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
+      bindKatalogGameDialog(katalog, { onClose: () => {
+        if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'katalog' }, '', '/katalog');
         document.title = 'Public Kat·a·log // Game Kat·a·log';
       } });
-      bindCatalogueSearch(catalogue, { navigate: targetUrl => void refreshResults(targetUrl) });
-      bindCatalogueTitleTooltips(catalogue);
-      if (view === 'forum') { bindForum(catalogue, { navigate: targetUrl => void open(targetUrl), refresh: () => void open(`${target.pathname}${target.search}`, { push: false }) }); startForumLive(); }
+      bindKatalogSearch(katalog, { navigate: targetUrl => void refreshResults(targetUrl) });
+      bindKatalogTitleTooltips(katalog);
+      if (view === 'forum') { bindForum(katalog, { navigate: targetUrl => void open(targetUrl), refresh: () => void open(`${target.pathname}${target.search}`, { push: false }) }); startForumLive(); }
       if (focusSearch) {
-        const input = catalogue.querySelector('.catalogue-search input[name="q"]');
+        const input = katalog.querySelector('.katalog-search input[name="q"]');
         input?.focus(); input?.setSelectionRange(input.value.length, input.value.length);
       }
     } catch (error) {
@@ -120,18 +120,18 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
 
   async function refreshResults(url) {
     const target = new URL(url, window.location.origin);
-    if (target.pathname !== '/katalog' || view !== 'catalogue') return open(url);
-    const current = catalogue.querySelector('.catalogue-results');
+    if (target.pathname !== '/katalog' || view !== 'katalog') return open(url);
+    const current = katalog.querySelector('.katalog-results');
     if (!current) return open(url);
     request?.abort(); const controller = new AbortController(); request = controller;
     try {
       const response = await fetch(`${target.pathname}${target.search}`, { credentials: 'same-origin', headers: { 'X-GameKat-Partial': '1' }, signal: controller.signal });
       if (!response.ok) throw new Error(`Kat·a·log request failed (${response.status}).`);
-      const { main, title } = pageFromResponse(await response.text()); const next = main.querySelector('.catalogue-results');
+      const { main, title } = pageFromResponse(await response.text()); const next = main.querySelector('.katalog-results');
       if (!next) throw new Error('Kat·a·log results could not be displayed.');
       if (request !== controller) return;
-      current.replaceWith(document.importNode(next, true)); bindCatalogueTitleTooltips(catalogue); document.title = title || libraryTitle;
-      window.history.replaceState({ appView: 'catalogue' }, '', `${target.pathname}${target.search}`);
+      current.replaceWith(document.importNode(next, true)); bindKatalogTitleTooltips(katalog); document.title = title || libraryTitle;
+      window.history.replaceState({ appView: 'katalog' }, '', `${target.pathname}${target.search}`);
     } catch (error) {
       if (error.name === 'AbortError' || request !== controller) return;
       void open(url);
@@ -140,11 +140,11 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     }
   }
 
-  catalogueButton.addEventListener('click', event => {
+  katalogButton.addEventListener('click', event => {
     if (!isPrimaryNavigation(event)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (view !== 'catalogue') void open('/katalog');
+    if (view !== 'katalog') void open('/katalog');
   }, { capture: true });
   libraryButton.addEventListener('click', event => {
     if (!isPrimaryNavigation(event)) return;
@@ -166,31 +166,31 @@ export function createCatalogueNavigation({ onLibraryVisible = () => {}, onGameA
     if (view === 'library' || !isPrimaryNavigation(event)) return;
     event.preventDefault(); showLibrary();
   });
-  catalogue.addEventListener('click', event => {
+  katalog.addEventListener('click', event => {
     const link = event.target.closest('a[href]');
     if (!link || !isPrimaryNavigation(event) || link.target || link.hasAttribute('download')) return;
     const target = new URL(link.href, window.location.origin);
-    if (target.origin === window.location.origin && link.dataset.catalogueDestination === 'library') {
+    if (target.origin === window.location.origin && link.dataset.katalogDestination === 'library') {
       event.preventDefault(); showLibrary(); return;
     }
-    if (target.origin !== window.location.origin || !CATALOGUE_PATH.test(target.pathname)) return;
+    if (target.origin !== window.location.origin || !KATALOG_PATH.test(target.pathname)) return;
     event.preventDefault();
     if (target.pathname.startsWith('/game/')) {
       dismissActivityPreview(link);
-      return void openCatalogueGameDialog(catalogue, `${target.pathname}${target.search}`);
+      return void openKatalogGameDialog(katalog, `${target.pathname}${target.search}`);
     }
-    if (target.pathname === '/katalog' && view === 'catalogue') void refreshResults(`${target.pathname}${target.search}`);
+    if (target.pathname === '/katalog' && view === 'katalog') void refreshResults(`${target.pathname}${target.search}`);
     else void open(`${target.pathname}${target.search}${target.hash}`);
   });
   window.addEventListener('popstate', () => {
-    if (CATALOGUE_PATH.test(window.location.pathname)) void open(`${window.location.pathname}${window.location.search}`, { push: false });
+    if (KATALOG_PATH.test(window.location.pathname)) void open(`${window.location.pathname}${window.location.search}`, { push: false });
     else showLibrary({ push: false });
   });
 
   function restoreCurrent() {
-    if (!CATALOGUE_PATH.test(window.location.pathname)) return Promise.resolve();
+    if (!KATALOG_PATH.test(window.location.pathname)) return Promise.resolve();
     return open(`${window.location.pathname}${window.location.search}${window.location.hash}`, { push: false });
   }
 
-  return { open, restoreCurrent, showLibrary, isOpen: () => view === 'catalogue' };
+  return { open, restoreCurrent, showLibrary, isOpen: () => view === 'katalog' };
 }

@@ -3,7 +3,7 @@ import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
 import { createCoverProviderSettings } from './js/cover-provider-settings.js';
-import { createCatalogueNavigation } from './js/catalogue-navigation.js';
+import { createKatalogNavigation } from './js/katalog-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
@@ -213,7 +213,7 @@ async function enterApp(user, savedPreferences, progress = null) {
   endSessionResume();
   if (progress) progressionUi.hydrate(progress);
   connectEventStream();
-  void catalogueNavigation.restoreCurrent();
+  void katalogNavigation.restoreCurrent();
   void patchUi.refreshUnread();
   if (!progress) void progressionUi.load();
   await dataReady;
@@ -633,20 +633,61 @@ function safeDetailLink(url, label) {
     return parsed.protocol === 'https:' ? `<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)} ↗</a>` : '';
   } catch { return ''; }
 }
-function detailSection(title, content) { return content ? `<section class="game-detail-section"><h3>${escapeHtml(title)}</h3>${content}</section>` : ''; }
+function detailSection(title, content) {
+  return content ? `<section class="game-detail-section"><h3>${escapeHtml(title)}</h3>${content}</section>` : '';
+}
+function detailRows(rows) {
+  return rows
+    .filter(([, value]) => value !== '' && value != null)
+    .map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`)
+    .join('');
+}
+function detailTimes(game) {
+  return [['Main story', game.hltbMainStory], ['Main + sides', game.hltbMainExtra], ['Completionist', game.hltbCompletionist], ['All styles', game.hltbAllStyles]]
+    .map(([label, value]) => `<div><span>${label}</span><strong>${value == null ? '//' : `${escapeHtml(String(value))}h`}</strong></div>`)
+    .join('');
+}
+function detailPegiText(game) {
+  return [['Advice for consumers', game.pegiAdvice], ['Brief outline', game.pegiOutline], ['Content-specific issues', game.pegiContentIssues], ['Other issues', game.pegiOtherIssues]]
+    .filter(([, value]) => value)
+    .map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`)
+    .join('');
+}
+function detailReleases(game) {
+  if (!(game.pegiReleases || []).length) return '';
+  return `<ul>${game.pegiReleases.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>`;
+}
+function detailCover(game) {
+  return game.coverUrl
+    ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">`
+    : '<div class="game-detail-no-cover">No cover</div>';
+}
+function detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases }) {
+  const chips = `${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favorite') : ''}`;
+  const description = game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : '';
+  const descriptionSource = game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : '';
+  const hltb = `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`;
+  const pegi = `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`;
+  const notes = game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>';
+  return `<div class="game-detail-hero">
+  ${detailCover(game)}
+  <div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${chips}</div>${description}${descriptionSource}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div>
+</div>
+<div class="game-detail-facts">${facts}</div>
+${detailSection('HowLongToBeat', hltb)}
+${detailSection('PEGI details', pegi)}
+${detailSection('Notes', notes)}`;
+}
 function openDetails(game) {
   detailGame = game;
   $('#game-details-title').textContent = game.title;
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
-  const times = [['Main story', game.hltbMainStory], ['Main + sides', game.hltbMainExtra], ['Completionist', game.hltbCompletionist], ['All styles', game.hltbAllStyles]]
-    .map(([label, value]) => `<div><span>${label}</span><strong>${value == null ? '//' : escapeHtml(String(value)) + 'h'}</strong></div>`).join('');
-  const facts = [['Platform', game.platform], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]
-    .filter(([, value]) => value !== '' && value != null).map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
-  const pegiText = [['Advice for consumers', game.pegiAdvice], ['Brief outline', game.pegiOutline], ['Content-specific issues', game.pegiContentIssues], ['Other issues', game.pegiOtherIssues]]
-    .filter(([, value]) => value).map(([label, value]) => `<div><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`).join('');
-  const releases = (game.pegiReleases || []).length ? `<ul>${game.pegiReleases.map(value => `<li>${escapeHtml(value)}</li>`).join('')}</ul>` : '';
-  $('#game-details-content').innerHTML = `<div class="game-detail-hero">${game.coverUrl ? `<img src="${escapeHtml(game.coverUrl)}" alt="${escapeHtml(`${game.title} cover`)}" referrerpolicy="no-referrer">` : '<div class="game-detail-no-cover">No cover</div>'}<div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', game.pegi ? `pegi pegi-${game.pegi}` : '')}${rating}${game.favorite ? badge('Favorite') : ''}</div>${game.description ? `<p class="game-detail-description">${escapeHtml(game.description)}</p>` : ''}${game.descriptionSource ? `<small>DESCRIPTION // ${escapeHtml(game.descriptionSource)}</small>` : ''}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div></div><div class="game-detail-facts">${facts}</div>${detailSection('HowLongToBeat', `<div class="game-detail-times">${times}</div>${safeDetailLink(game.hltbUrl, 'View source on HowLongToBeat')}`)}${detailSection('PEGI details', `${descriptors ? `<div class="game-detail-chips">${descriptors}</div>` : ''}${releases}${pegiText}${safeDetailLink(game.pegiUrl, 'View source on PEGI')}`)}${detailSection('Notes', game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>')}`;
+  const times = detailTimes(game);
+  const facts = detailRows([['Platform', game.platform], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
+  const pegiText = detailPegiText(game);
+  const releases = detailReleases(game);
+  $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });
   detailsDialog.showModal();
   setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -796,7 +837,7 @@ async function openExistingGame(id) {
   try { const game = await api(`/api/games/${id}`); openForm(game); }
   catch {}
 }
-const catalogueNavigation = createCatalogueNavigation({
+const katalogNavigation = createKatalogNavigation({
   onGameAdded: () => { void loadGames(); void loadStatsAndMeta(); },
   onSignalVisible: () => { void activityFeed.load(); },
 });
@@ -804,7 +845,7 @@ const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
   api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
-  openCatalogue: slug => catalogueNavigation.open(`/game/${encodeURIComponent(slug)}`),
+  openKatalog: slug => katalogNavigation.open(`/game/${encodeURIComponent(slug)}`),
 });
 const hltbLookup = createHltbLookup({ $, api, escapeHtml, toast });
 function payload() {
@@ -836,6 +877,35 @@ $('#delete-game').addEventListener('click', async () => {
   try { await api(`/api/games/${id}`, { method: 'DELETE' }); closeForm(); toast('Game deleted.'); await Promise.all([loadGames(), loadStatsAndMeta()]); }
   catch (error) { toast(error.message); }
 });
+function changedCardGame(game, action, event) {
+  const changed = { ...game };
+  if (action === 'favorite') changed.favorite = !changed.favorite;
+  if (action === 'own') changed.ownership = 'owned';
+  if (action === 'rate') {
+    const star = event.target.closest('[data-rating-star]');
+    const position = Number(star?.dataset.ratingStar);
+    if (!position) return null;
+    const bounds = star.getBoundingClientRect();
+    const next = event.detail === 0 ? position : position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
+    changed.rating = Number(game.rating) === next ? null : next;
+  }
+  return changed;
+}
+function cardActionToast(action, changed) {
+  if (action === 'own') return 'Moved to owned.';
+  if (action === 'rate') return changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.`;
+  return changed.favorite ? 'Added to favorites.' : 'Removed from favorites.';
+}
+async function saveCardAction(game, action, event) {
+  const changed = changedCardGame(game, action, event);
+  if (!changed) return;
+  try {
+    const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) });
+    applySaveProgress(result);
+    await Promise.all([loadGames(), loadStatsAndMeta()]);
+    toast(cardActionToast(action, changed));
+  } catch (error) { toast(error.message); }
+}
 $('#games').addEventListener('click', async event => {
   const card = event.target.closest('.game-card'); const action = event.target.closest('[data-action]')?.dataset.action;
   if (!card) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
@@ -847,18 +917,7 @@ $('#games').addEventListener('click', async event => {
   if (!action) return openDetails(game);
   if (action === 'view') return openDetails(game);
   if (action === 'edit') return openForm(game);
-  const changed = { ...game };
-  if (action === 'favorite') changed.favorite = !changed.favorite;
-  if (action === 'own') changed.ownership = 'owned';
-  if (action === 'rate') {
-    const star = event.target.closest('[data-rating-star]'); const position = Number(star?.dataset.ratingStar);
-    if (!position) return;
-    const bounds = star.getBoundingClientRect();
-    const next = event.detail === 0 ? position : position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
-    changed.rating = Number(game.rating) === next ? null : next;
-  }
-  try { const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) }); applySaveProgress(result); await Promise.all([loadGames(), loadStatsAndMeta()]); toast(action === 'own' ? 'Moved to owned.' : action === 'rate' ? changed.rating == null ? 'Rating cleared.' : `Rated ${changed.rating.toFixed(1)} / 5.` : changed.favorite ? 'Added to favorites.' : 'Removed from favorites.'); }
-  catch (error) { toast(error.message); }
+  await saveCardAction(game, action, event);
 });
 $('#games').addEventListener('pointermove', event => {
   const rating = cardRatingAtPointer(event); const picker = event.target.closest('.card-rating-picker');
@@ -870,16 +929,40 @@ $('#games').addEventListener('pointerout', event => {
   paintCardRating(picker, picker.dataset.cardRating, false);
 });
 
-$('#pegi-search-button').addEventListener('click', async () => {
-  const title = $('#game-title').value.trim(); const box = $('#pegi-results'); box.hidden = false;
-  if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
-  box.innerHTML = '<p class="pegi-message">Searching PEGI’s catalogue…</p>';
+function pegiSearchResultsMarkup(results, title) {
+  if (!results.length) {
+    return `<p class="pegi-message">No PEGI match found. You can keep entering it manually or <a href="https://pegi.info/search-pegi?q=${encodeURIComponent(title)}" target="_blank" rel="noopener">search PEGI directly</a>.</p>`;
+  }
+  const count = `${results.length.toLocaleString()} PEGI result${results.length === 1 ? '' : 's'}`;
+  const matches = results.map((result, index) => {
+    const releaseText = [result.publisher, ...result.releases.slice(0, PEGI_RELEASE_PREVIEW_LIMIT)].filter(Boolean).join(' · ');
+    return `<button type="button" class="pegi-result" data-pegi-index="${index}">
+      <span class="pegi-box pegi-box-${result.pegi || 'none'}">${result.pegi || '?'}</span>
+      <span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(releaseText)}</small></span>
+    </button>`;
+  }).join('');
+  return `<p class="pegi-message pegi-result-count">${count}</p>${matches}`;
+}
+
+async function searchPegi() {
+  const title = $('#game-title').value.trim();
+  const box = $('#pegi-results');
+  box.hidden = false;
+  if (title.length < LOOKUP_MIN_TITLE_LENGTH) {
+    box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>';
+    return;
+  }
+  box.innerHTML = '<p class="pegi-message">Searching PEGI’s Kat·a·log…</p>';
   try {
     const results = await api(`/api/pegi/search?q=${encodeURIComponent(title)}`);
-    box.innerHTML = results.length ? `<p class="pegi-message pegi-result-count">${results.length.toLocaleString()} PEGI result${results.length === 1 ? '' : 's'}</p>${results.map((result, index) => `<button type="button" class="pegi-result" data-pegi-index="${index}"><span class="pegi-box pegi-box-${result.pegi || 'none'}">${result.pegi || '?'}</span><span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml([result.publisher, ...result.releases.slice(0, PEGI_RELEASE_PREVIEW_LIMIT)].filter(Boolean).join(' · '))}</small></span></button>`).join('')}` : `<p class="pegi-message">No PEGI match found. You can keep entering it manually or <a href="https://pegi.info/search-pegi?q=${encodeURIComponent(title)}" target="_blank" rel="noopener">search PEGI directly</a>.</p>`;
+    box.innerHTML = pegiSearchResultsMarkup(results, title);
     box._results = results;
-  } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)} You can still enter the game manually.</p>`; }
-});
+  } catch (error) {
+    box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)} You can still enter the game manually.</p>`;
+  }
+}
+
+$('#pegi-search-button').addEventListener('click', () => void searchPegi());
 $('#pegi-results').addEventListener('click', event => {
   const button = event.target.closest('[data-pegi-index]'); if (!button) return;
   const result = $('#pegi-results')._results?.[Number(button.dataset.pegiIndex)]; if (!result) return;
@@ -925,6 +1008,24 @@ function clearCoverUpload() {
   if (preview.startsWith('blob:')) URL.revokeObjectURL(preview);
   delete $('#game-form').dataset.coverUpload; delete $('#game-form').dataset.coverPreview;
 }
+function readCoverBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({ dataUrl: String(reader.result || ''), previewUrl: URL.createObjectURL(blob) });
+    reader.onerror = () => reject(new Error('Could not read that cover.'));
+    reader.readAsDataURL(blob);
+  });
+}
+function compressedCoverBlob(canvas, quality) {
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+async function compressCover(canvas, quality = .9) {
+  const blob = await compressedCoverBlob(canvas, quality);
+  if (!blob) throw new Error('Could not process that cover.');
+  if (blob.size <= 512 * 1024) return readCoverBlob(blob);
+  if (quality <= .2) throw new Error('Could not compress cover enough to upload.');
+  return compressCover(canvas, quality - .1);
+}
 function coverDataUrl(file) {
   return new Promise((resolve, reject) => {
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return reject(new Error('Choose a JPEG, PNG, or WebP cover.'));
@@ -933,17 +1034,11 @@ function coverDataUrl(file) {
     image.onload = () => {
       URL.revokeObjectURL(objectUrl);
       const scale = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight));
-      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
       canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
-      const encode = quality => canvas.toBlob(blob => {
-        if (!blob) return reject(new Error('Could not process that cover.'));
-        if (blob.size <= 512 * 1024) {
-          const reader = new FileReader(); reader.onload = () => resolve({ dataUrl: String(reader.result || ''), previewUrl: URL.createObjectURL(blob) }); reader.onerror = () => reject(new Error('Could not read that cover.')); reader.readAsDataURL(blob); return;
-        }
-        if (quality <= .2) return reject(new Error('Could not compress cover enough to upload.'));
-        encode(quality - .1);
-      }, 'image/jpeg', quality);
-      encode(.9);
+      compressCover(canvas).then(resolve, reject);
     };
     image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read that cover.')); };
     image.src = objectUrl;
@@ -961,14 +1056,26 @@ $('#cover-file').addEventListener('change', async event => {
   } catch (error) { toast(error.message); }
   finally { button.disabled = false; button.textContent = 'Upload cover'; }
 });
+function coverResultMarkup(result, index) {
+  const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
+  const dimensions = result.width && result.height ? `${result.width}×${result.height}` : '';
+  const details = [providerLabels[result.source] || result.source, dimensions, result.style].filter(Boolean).join(' · ');
+  return `<button type="button" class="cover-result" data-cover-index="${index}">
+    <img src="${escapeHtml(result.thumbnailUrl)}" data-cover-image-index="${index}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml(details)}</small></span>
+  </button>`;
+}
+function coverResultsMarkup(results) {
+  if (!results.length) return '<p class="pegi-message">No portrait covers found. Try a shorter or more exact title.</p>';
+  return results.map(coverResultMarkup).join('');
+}
 $('#cover-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#cover-results'); box.hidden = false;
   if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
   box.innerHTML = '<p class="pegi-message">Querying cover sources…</p>';
   try {
     const results = await api(`/api/covers/search?q=${encodeURIComponent(title)}&platform=${encodeURIComponent(selectedPlatform())}`); box._results = results;
-    const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
-    box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="cover-result" data-cover-index="${index}"><img src="${escapeHtml(result.thumbnailUrl)}" data-cover-image-index="${index}" alt="" loading="lazy" referrerpolicy="no-referrer"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml([providerLabels[result.source] || result.source, result.width && result.height ? `${result.width}×${result.height}` : '', result.style].filter(Boolean).join(' · '))}</small></span></button>`).join('') : '<p class="pegi-message">No portrait covers found. Try a shorter or more exact title.</p>';
+    box.innerHTML = coverResultsMarkup(results);
     bindCoverResultFallbacks(box, results);
   } catch (error) { box.innerHTML = `<p class="pegi-message">${escapeHtml(error.message)}</p>`; }
 });

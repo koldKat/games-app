@@ -6,8 +6,8 @@ const path = require('node:path');
 const dbPath = path.join('/tmp', `games-activity-test-${process.pid}.db`);
 process.env.DB_PATH = dbPath;
 const data = require('../server/db');
-const { createCatalogueStore } = require('../server/catalogue-store');
-createCatalogueStore(data.db);
+const { createKatalogStore } = require('../server/katalog-store');
+createKatalogStore(data.db);
 const activity = require('../server/activity');
 const auth = require('../server/auth');
 

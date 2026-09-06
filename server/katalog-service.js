@@ -1,8 +1,8 @@
 'use strict';
 
-const { evaluateCatalogueGame } = require('./catalogue-policy');
+const { evaluateKatalogGame } = require('./katalog-policy');
 
-function catalogueGameInput(entry, personal = {}) {
+function katalogGameInput(entry, personal = {}) {
   return {
     title: entry.title,
     platform: entry.platform,
@@ -37,24 +37,24 @@ function catalogueGameInput(entry, personal = {}) {
   };
 }
 
-function createCatalogueService({ data, store, covers, logger = console }) {
+function createKatalogService({ data, store, covers, logger = console }) {
   function syncGame(userId, game) {
-    const evaluation = evaluateCatalogueGame(game);
+    const evaluation = evaluateKatalogGame(game);
     if (!evaluation.eligible) return { state: 'ineligible', evaluation };
     const existing = store.findByIdentity(evaluation.identity.titleKey, evaluation.identity.platformKey);
     if (existing?.status === 'public') {
       store.link(existing.id, game.id, userId);
       return { state: 'linked', entry: store.addDescriptionIfMissing?.(existing.id, game) || existing, evaluation };
     }
-    let catalogueCoverUrl = '';
+    let katalogCoverUrl = '';
     try {
-      catalogueCoverUrl = covers.copy(game.coverUrl);
-      const result = store.upsertFromGame(userId, game, evaluation, catalogueCoverUrl);
-      if (!result.usedCover) covers.remove(catalogueCoverUrl);
+      katalogCoverUrl = covers.copy(game.coverUrl);
+      const result = store.upsertFromGame(userId, game, evaluation, katalogCoverUrl);
+      if (!result.usedCover) covers.remove(katalogCoverUrl);
       if (result.previousCoverUrl && result.previousCoverUrl !== result.entry.coverUrl) covers.remove(result.previousCoverUrl);
       return { state: result.entry.status, entry: result.entry, evaluation };
     } catch (error) {
-      if (catalogueCoverUrl) covers.remove(catalogueCoverUrl);
+      if (katalogCoverUrl) covers.remove(katalogCoverUrl);
       throw error;
     }
   }
@@ -62,7 +62,7 @@ function createCatalogueService({ data, store, covers, logger = console }) {
   function syncGameSafely(userId, game) {
     try { return syncGame(userId, game); }
     catch (error) {
-      logger.error?.(`[catalogue] could not synchronize game ${game?.id || '?'}: ${error.message}`);
+      logger.error?.(`[katalog] could not synchronize game ${game?.id || '?'}: ${error.message}`);
       return { state: 'error', error };
     }
   }
@@ -77,16 +77,16 @@ function createCatalogueService({ data, store, covers, logger = console }) {
     return summary;
   }
 
-  function addToLibrary(userId, catalogueId, personal = {}) {
-    const entry = store.getPublicById(catalogueId);
-    if (!entry) throw Object.assign(new Error('Catalogue game not found.'), { status: 404 });
+  function addToLibrary(userId, katalogId, personal = {}) {
+    const entry = store.getPublicById(katalogId);
+    if (!entry) throw Object.assign(new Error('Katalog game not found.'), { status: 404 });
     const duplicates = data.findDuplicateGames(userId, entry.title, entry.platform);
     if (duplicates.length) throw Object.assign(new Error('This release is already in your library.'), { status: 409, existing: duplicates[0] });
     let libraryCoverUrl = '';
     let game = null;
     try {
       libraryCoverUrl = covers.copy(entry.coverUrl);
-      game = data.createGame(userId, { ...catalogueGameInput(entry, personal), coverUrl: libraryCoverUrl });
+      game = data.createGame(userId, { ...katalogGameInput(entry, personal), coverUrl: libraryCoverUrl });
       store.link(entry.id, game.id, userId);
       return game;
     } catch (error) {
@@ -96,8 +96,8 @@ function createCatalogueService({ data, store, covers, logger = console }) {
     }
   }
 
-  function libraryCopy(userId, catalogueId) {
-    const entry = store.getPublicById(catalogueId);
+  function libraryCopy(userId, katalogId) {
+    const entry = store.getPublicById(katalogId);
     if (!entry) return null;
     return data.findDuplicateGames(userId, entry.title, entry.platform)[0] || null;
   }
@@ -141,4 +141,4 @@ function createCatalogueService({ data, store, covers, logger = console }) {
   };
 }
 
-module.exports = { catalogueGameInput, createCatalogueService };
+module.exports = { katalogGameInput, createKatalogService };

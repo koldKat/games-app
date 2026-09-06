@@ -1,4 +1,5 @@
 import { formatAnnouncementBody } from './announcement-format.js';
+import { controllerLoaderMarkup } from './controller-loader.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 function age(value) {
@@ -34,7 +35,10 @@ function card(entry) {
   return `<article class="activity-entry activity-entry--${escapeHtml(entry.type)}"><p>${phrase(entry)}</p><time datetime="${escapeHtml(entry.createdAt)}">${age(entry.createdAt)}</time></article>`;
 }
 function pinnedCard(entry) {
-  return `<section class="activity-pinned-card"><header><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg><strong>${escapeHtml(entry.title)}</strong></header><div>${formatAnnouncementBody(entry.body)}</div></section>`;
+  const pinIcon = `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+  </svg>`;
+  return `<section class="activity-pinned-card"><header>${pinIcon}<strong>${escapeHtml(entry.title)}</strong></header><div>${formatAnnouncementBody(entry.body)}</div></section>`;
 }
 function timestamp(value) { return new Date(String(value || '').replace(' ', 'T') + 'Z'); }
 function dayLabel(value) {
@@ -47,7 +51,12 @@ const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
 function contributionGroup(entry, entries, id) {
   const count = entries.length;
   const username = escapeHtml(entry.username);
-  return `<section class="activity-contribution-group"><button type="button" class="activity-group-toggle" data-activity-group-toggle="${id}" aria-controls="${id}" aria-expanded="false" aria-label="Show ${username}'s ${count} contributed games"><span class="activity-group-chevron" aria-hidden="true">▶</span>${userLabel(entry)}<span class="activity-group-count">contributed ${count} game${count === 1 ? '' : 's'}</span></button><div class="activity-group-items" id="${id}" hidden>${entries.map(card).join('')}</div></section>`;
+  return `<section class="activity-contribution-group">
+    <button type="button" class="activity-group-toggle" data-activity-group-toggle="${id}" aria-controls="${id}" aria-expanded="false" aria-label="Show ${username}'s ${count} contributed games">
+      <span class="activity-group-chevron" aria-hidden="true">▶</span>${userLabel(entry)}<span class="activity-group-count">contributed ${count} game${count === 1 ? '' : 's'}</span>
+    </button>
+    <div class="activity-group-items" id="${id}" hidden>${entries.map(card).join('')}</div>
+  </section>`;
 }
 function collapseContributions(entries, dayIndex) {
   const byUser = new Map();
@@ -76,9 +85,16 @@ function groupedCards(entries) {
 }
 export function createActivityFeed() {
   const hosts = () => [...document.querySelectorAll('[data-activity-feed]')]; let refreshTimer = null; let source = null;
+  function showSignalLoaders(targets) {
+    for (const host of targets) {
+      if (!host.classList.contains('signal-feed') || host.dataset.activityLoaded === 'true') continue;
+      host.innerHTML = `<div class="library-loader signal-feed-loader" role="status">${controllerLoaderMarkup('Tuning the signal…')}</div>`;
+    }
+  }
   async function load() {
     const targets = hosts();
     if (!targets.length) return;
+    showSignalLoaders(targets);
     try {
       const response = await fetch('/api/activity', { cache: 'no-store' }); const body = await response.json();
       const entries = body.entries || []; const pinned = body.pinned || null;
@@ -88,6 +104,7 @@ export function createActivityFeed() {
         const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
         const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
         host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
+        host.dataset.activityLoaded = 'true';
         if (host.dataset.activityGroupsBound !== 'true') {
           host.dataset.activityGroupsBound = 'true';
           host.addEventListener('click', event => {
@@ -99,7 +116,7 @@ export function createActivityFeed() {
           });
         }
       }
-    } catch { for (const host of targets) host.innerHTML = '<p class="activity-feed-empty">Signal temporarily unavailable.</p>'; }
+    } catch { for (const host of targets) { host.innerHTML = '<p class="activity-feed-empty">Signal temporarily unavailable.</p>'; host.dataset.activityLoaded = 'true'; } }
   }
   function start() {
     void load(); source?.close(); source = new EventSource('/api/activity/stream');

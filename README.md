@@ -50,7 +50,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/Kat·a·log summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
@@ -58,7 +58,7 @@ The panel is loopback-only. Requests forwarded by nginx with a non-loopback clie
 
 ## Public landing and SEO
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the catalogue. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the Kat·a·log. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## Public Kat·a·log
 
@@ -68,7 +68,7 @@ Only factual release data is copied. Account identity, ownership, media format, 
 
 ## PEGI lookup
 
-PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public catalogue and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
+PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public Kat·a·log and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
 
 ## HowLongToBeat estimates
 

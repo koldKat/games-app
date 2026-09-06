@@ -3,7 +3,7 @@
 const PUBLIC_STATUS = 'public';
 const CANDIDATE_STATUS = 'candidate';
 
-function normalizeCatalogueText(value) {
+function normalizeKatalogText(value) {
   return String(value || '')
     .replace(/[™®©]/g, '')
     .normalize('NFKD')
@@ -40,11 +40,11 @@ function hasDurableCover(game = {}) {
 }
 
 function exactMatch(left, right) {
-  const normalizedLeft = normalizeCatalogueText(left);
-  return Boolean(normalizedLeft) && normalizedLeft === normalizeCatalogueText(right);
+  const normalizedLeft = normalizeKatalogText(left);
+  return Boolean(normalizedLeft) && normalizedLeft === normalizeKatalogText(right);
 }
 
-function evaluateCatalogueGame(game = {}) {
+function evaluateKatalogGame(game = {}) {
   const title = String(game.title || '').trim();
   const platform = String(game.platform || '').trim();
   const cover = hasDurableCover(game);
@@ -72,8 +72,8 @@ function evaluateCatalogueGame(game = {}) {
     confidence,
     reasons,
     identity: {
-      titleKey: normalizeCatalogueText(title),
-      platformKey: normalizeCatalogueText(platform),
+      titleKey: normalizeKatalogText(title),
+      platformKey: normalizeKatalogText(platform),
     },
   };
 }
@@ -81,10 +81,10 @@ function evaluateCatalogueGame(game = {}) {
 module.exports = {
   CANDIDATE_STATUS,
   PUBLIC_STATUS,
-  evaluateCatalogueGame,
+  evaluateKatalogGame,
   exactMatch,
   hasDurableCover,
   hasHltbMetadata,
   hasPegiMetadata,
-  normalizeCatalogueText,
+  normalizeKatalogText,
 };

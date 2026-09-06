@@ -1,19 +1,127 @@
 'use strict';
 
 const APP_URL = 'https://gamekat.net';
-const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
-const lines = value => escapeHtml(value).replace(/\r?\n/g, '<br>');
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character]);
+}
+
+function lines(value) {
+  return escapeHtml(value).replace(/\r?\n/g, '<br>');
+}
+
+function actionButton(cta) {
+  if (!cta) return '';
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px auto 0">
+      <tr><td style="border-radius:5px;background:#16745f">
+        <a href="${escapeHtml(cta.href)}" style="display:inline-block;padding:10px 16px;color:#f0fffa;font-size:12px;font-weight:700;letter-spacing:.04em;text-decoration:none">${escapeHtml(cta.label)}</a>
+      </td></tr>
+    </table>`;
+}
 
 function layout({ eyebrow, heading, detail = '', body = '', cta = null, footer, preview = '' }) {
-  const button = cta ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px auto 0"><tr><td style="border-radius:5px;background:#16745f"><a href="${escapeHtml(cta.href)}" style="display:inline-block;padding:10px 16px;color:#f0fffa;font-size:12px;font-weight:700;letter-spacing:.04em;text-decoration:none">${escapeHtml(cta.label)}</a></td></tr></table>` : '';
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;background:#06100e;color:#d6e6e0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(preview)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 12px;background:#06100e"><tr><td align="center"><table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;background:#0b1514;border:1px solid #2b5d50;border-radius:8px;overflow:hidden"><tr><td style="padding:18px 24px;background:#0d2621;border-bottom:1px solid #2b5d50"><div style="margin:0;color:#67e7c5;font-size:16px;font-weight:700;letter-spacing:.08em">GAME KAT·A·LOG</div><div style="margin-top:5px;color:#8eaaa1;font-size:10px;letter-spacing:.14em">${escapeHtml(eyebrow)}</div></td></tr><tr><td style="padding:24px"><h1 style="margin:0 0 8px;color:#e1f0ea;font-size:18px;line-height:1.3">${escapeHtml(heading)}</h1>${detail ? `<p style="margin:0 0 16px;color:#9db6ad;font-size:12px;line-height:1.55">${lines(detail)}</p>` : ''}${body ? `<div style="padding:14px 16px;border-left:3px solid #54d9b7;background:#0a1d19;color:#d3e4dd;font-size:13px;line-height:1.6">${lines(body)}</div>` : ''}${button}</td></tr><tr><td style="padding:13px 24px;border-top:1px solid #203f36;color:#749188;font-size:10px;text-align:center">${escapeHtml(footer)}</td></tr></table></td></tr></table></body></html>`;
-}
-function plain({ heading, detail = '', body = '', cta = null, footer }) { return `${heading}${detail ? `\n\n${detail}` : ''}${body ? `\n\n${body}` : ''}${cta ? `\n\n${cta.label}:\n${cta.href}` : ''}\n\n${footer}`; }
-function notice(input) { return { html: layout(input), text: plain(input) }; }
-function operatorPatch({ username, email, kind, body }) { return notice({ eyebrow: 'PATCH // OPERATOR NOTICE', heading: 'New Patch received', detail: `From ${username}${email ? ` <${email}>` : ''}\nType: ${kind}`, body, cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL }, footer: 'Operator notification // Game Kat·a·log', preview: `New Patch from ${username}` }); }
-function operatorPingReply({ username, threadId, body }) { return notice({ eyebrow: 'PING // OPERATOR NOTICE', heading: 'New Ping reply received', detail: `${username} replied to Patch #${threadId}.`, body, cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL }, footer: 'Operator notification // Game Kat·a·log', preview: `New Ping reply from ${username}` }); }
-function patchReply({ body }) { return notice({ eyebrow: 'PATCH // PING', heading: 'New reply in Ping', detail: 'An operator replied to your Patch conversation.', body, cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL }, footer: 'You received this because you started a Patch conversation.', preview: 'An operator replied to your Patch' }); }
-function passwordReset({ username, link }) { return notice({ eyebrow: 'ACCOUNT // SECURITY', heading: 'Reset your password', detail: `Hello ${username}, use this one-time link to choose a new password. It expires in one hour.`, cta: { label: 'RESET PASSWORD', href: link }, footer: 'If you did not request this reset, you can safely ignore this email.', preview: 'Your Game Kat·a·log password reset link' }); }
-function smtpTest() { return notice({ eyebrow: 'SYSTEM // SMTP', heading: 'SMTP delivery works', detail: 'Game Kat·a·log can send transactional email from this server.', cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL }, footer: 'SMTP test // Game Kat·a·log', preview: 'SMTP delivery is configured correctly' }); }
+  const detailBlock = detail
+    ? `<p style="margin:0 0 16px;color:#9db6ad;font-size:12px;line-height:1.55">${lines(detail)}</p>`
+    : '';
+  const bodyBlock = body
+    ? `<div style="padding:14px 16px;border-left:3px solid #54d9b7;background:#0a1d19;color:#d3e4dd;font-size:13px;line-height:1.6">${lines(body)}</div>`
+    : '';
 
-module.exports = { APP_URL, escapeHtml, layout, notice, operatorPatch, operatorPingReply, patchReply, passwordReset, smtpTest };
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#06100e;color:#d6e6e0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(preview)}</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 12px;background:#06100e">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;background:#0b1514;border:1px solid #2b5d50;border-radius:8px;overflow:hidden">
+        <tr><td style="padding:18px 24px;background:#0d2621;border-bottom:1px solid #2b5d50">
+          <div style="margin:0;color:#67e7c5;font-size:16px;font-weight:700;letter-spacing:.08em">GAME KAT·A·LOG</div>
+          <div style="margin-top:5px;color:#8eaaa1;font-size:10px;letter-spacing:.14em">${escapeHtml(eyebrow)}</div>
+        </td></tr>
+        <tr><td style="padding:24px">
+          <h1 style="margin:0 0 8px;color:#e1f0ea;font-size:18px;line-height:1.3">${escapeHtml(heading)}</h1>
+          ${detailBlock}
+          ${bodyBlock}
+          ${actionButton(cta)}
+        </td></tr>
+        <tr><td style="padding:13px 24px;border-top:1px solid #203f36;color:#749188;font-size:10px;text-align:center">${escapeHtml(footer)}</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function plain({ heading, detail = '', body = '', cta = null, footer }) {
+  return [heading, detail, body, cta && `${cta.label}:\n${cta.href}`, footer]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function notice(input) {
+  return { html: layout(input), text: plain(input) };
+}
+
+function operatorPatch({ username, email, kind, body }) {
+  return notice({
+    eyebrow: 'PATCH // OPERATOR NOTICE', heading: 'New Patch received',
+    detail: `From ${username}${email ? ` <${email}>` : ''}\nType: ${kind}`,
+    body, cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
+    footer: 'Operator notification // Game Kat·a·log', preview: `New Patch from ${username}`,
+  });
+}
+
+function operatorPingReply({ username, threadId, body }) {
+  return notice({
+    eyebrow: 'PING // OPERATOR NOTICE', heading: 'New Ping reply received',
+    detail: `${username} replied to Patch #${threadId}.`, body,
+    cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
+    footer: 'Operator notification // Game Kat·a·log', preview: `New Ping reply from ${username}`,
+  });
+}
+
+function patchReply({ body }) {
+  return notice({
+    eyebrow: 'PATCH // PING', heading: 'New reply in Ping',
+    detail: 'An operator replied to your Patch conversation.', body,
+    cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
+    footer: 'You received this because you started a Patch conversation.', preview: 'An operator replied to your Patch',
+  });
+}
+
+function passwordReset({ username, link }) {
+  return notice({
+    eyebrow: 'ACCOUNT // SECURITY', heading: 'Reset your password',
+    detail: `Hello ${username}, use this one-time link to choose a new password. It expires in one hour.`,
+    cta: { label: 'RESET PASSWORD', href: link },
+    footer: 'If you did not request this reset, you can safely ignore this email.', preview: 'Your Game Kat·a·log password reset link',
+  });
+}
+
+function smtpTest() {
+  return notice({
+    eyebrow: 'SYSTEM // SMTP', heading: 'SMTP delivery works',
+    detail: 'Game Kat·a·log can send transactional email from this server.',
+    cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
+    footer: 'SMTP test // Game Kat·a·log', preview: 'SMTP delivery is configured correctly',
+  });
+}
+
+module.exports = {
+  APP_URL,
+  escapeHtml,
+  layout,
+  notice,
+  operatorPatch,
+  operatorPingReply,
+  patchReply,
+  passwordReset,
+  smtpTest,
+};

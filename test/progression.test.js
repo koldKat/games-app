@@ -49,10 +49,10 @@ test('public Kat·a·log contributions award once and safely backfill', async ()
   const user = await auth.register('xp_contributor', 'password-five');
   const game = data.createGame(user.id, { title: 'Public Record', platform: 'PC' });
   const service = createProgressionService({ store: data.progression, data });
-  assert.deepEqual(service.recordGame(user.id, game, { catalogueContribution: true }).awards.filter(item => item.event === 'catalogue_contribution').map(item => item.amount), [30]);
-  assert.equal(service.recordGame(user.id, game, { catalogueContribution: true }).awards.some(item => item.event === 'catalogue_contribution'), false);
+  assert.deepEqual(service.recordGame(user.id, game, { katalogContribution: true }).awards.filter(item => item.event === 'catalogue_contribution').map(item => item.amount), [30]);
+  assert.equal(service.recordGame(user.id, game, { katalogContribution: true }).awards.some(item => item.event === 'catalogue_contribution'), false);
   const next = data.createGame(user.id, { title: 'Another Public Record', platform: 'PC' });
-  const backfill = service.backfillCatalogueContributions([{ userId: user.id, gameId: game.id }, { userId: user.id, gameId: next.id }]);
+  const backfill = service.backfillKatalogContributions([{ userId: user.id, gameId: game.id }, { userId: user.id, gameId: next.id }]);
   assert.deepEqual(backfill.awards.map(item => item.event), ['catalogue_contribution']);
 });
 

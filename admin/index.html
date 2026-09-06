@@ -19,8 +19,8 @@
   <nav class="tabs" aria-label="Admin sections">
     <button class="active" data-tab="dashboard">01 / DASHBOARD</button>
     <button data-tab="accounts">02 / ACCOUNTS</button>
-    <button data-tab="catalogue">03 / LIBRARY INDEX</button>
-    <button data-tab="public-catalogue">04 / KAT·A·LOG</button>
+    <button data-tab="katalog">03 / LIBRARY INDEX</button>
+    <button data-tab="public-katalog">04 / KAT·A·LOG</button>
     <button data-tab="progression">05 / PROGRESSION</button>
     <button data-tab="announcements">06 / SIGNAL</button>
     <button data-tab="forum">07 / FORUM</button>
@@ -37,7 +37,7 @@
           <article><span>ACCOUNTS</span><strong id="metric-users">//</strong></article>
           <article><span>SESSIONS</span><strong id="metric-sessions">//</strong></article>
         </div>
-        <div class="metric-stack" aria-label="Community catalogue">
+        <div class="metric-stack" aria-label="Community Kat·a·log">
           <article><span>PUBLIC</span><strong id="metric-public">//</strong><small id="metric-public-sub"></small></article>
           <article><span>FAVORITES</span><strong id="metric-favorites">//</strong></article>
           <article><span>RATINGS</span><strong id="metric-ratings">//</strong><small id="metric-ratings-sub"></small></article>
@@ -74,17 +74,17 @@
       <div class="table-shell"><table><thead><tr><th>ID</th><th>USERNAME</th><th>EMAIL</th><th>ACCESS</th><th>GAMES</th><th>COVERS</th><th>SESSIONS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="accounts-body"></tbody></table></div>
     </section>
 
-    <section id="panel-catalogue" class="panel">
-      <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Library index</h1></div><span id="catalogue-count" class="quiet"></span></header>
-      <form id="catalogue-search" class="search-row"><input id="catalogue-query" type="search" placeholder="Search title, platform, or account" autocomplete="off"><button class="button primary">Search</button></form>
-      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th>ACTIONS</th></tr></thead><tbody id="catalogue-body"></tbody></table></div>
+    <section id="panel-katalog" class="panel">
+      <header class="section-head"><div><span>CROSS-ACCOUNT INDEX</span><h1>Library index</h1></div><span id="katalog-count" class="quiet"></span></header>
+      <form id="katalog-search" class="search-row"><input id="katalog-query" type="search" placeholder="Search title, platform, or account" autocomplete="off"><button class="button primary">Search</button></form>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>PEGI</th><th>STATE</th><th>OWNER</th><th>COVER</th><th>ACTIONS</th></tr></thead><tbody id="katalog-body"></tbody></table></div>
     </section>
 
-    <section id="panel-public-catalogue" class="panel">
-      <header class="section-head"><div><span>SHARED FACTUAL INDEX</span><h1>Public Kat·a·log</h1></div><span id="public-catalogue-count" class="quiet"></span></header>
-      <form id="public-catalogue-search" class="search-row"><input id="public-catalogue-query" type="search" placeholder="Search title or platform" autocomplete="off"><select id="public-catalogue-status" aria-label="Publication status"><option value="">All states</option><option value="candidate">Candidates</option><option value="public">Public</option><option value="rejected">Rejected</option></select><button class="button primary">Search</button></form>
+    <section id="panel-public-katalog" class="panel">
+      <header class="section-head"><div><span>SHARED FACTUAL INDEX</span><h1>Public Kat·a·log</h1></div><span id="public-katalog-count" class="quiet"></span></header>
+      <form id="public-katalog-search" class="search-row"><input id="public-katalog-query" type="search" placeholder="Search title or platform" autocomplete="off"><select id="public-katalog-status" aria-label="Publication status"><option value="">All states</option><option value="candidate">Candidates</option><option value="public">Public</option><option value="rejected">Rejected</option></select><button class="button primary">Search</button></form>
       <p class="panel-note">Exact cover and HLTB title matches publish automatically. Ambiguous but complete records wait here for review. Personal tracking fields never enter this index.</p>
-      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>STATE</th><th>SCORE</th><th>CHECKS</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody id="public-catalogue-body"></tbody></table></div>
+      <div class="table-shell"><table><thead><tr><th>ID</th><th>TITLE</th><th>PLATFORM</th><th>STATE</th><th>SCORE</th><th>CHECKS</th><th>UPDATED</th><th>ACTIONS</th></tr></thead><tbody id="public-katalog-body"></tbody></table></div>
     </section>
 
     <section id="panel-progression" class="panel">
@@ -113,7 +113,12 @@
     <section id="panel-forum" class="panel">
       <header class="section-head"><div><span>PUBLIC DISCUSSION</span><h1>Forum moderation</h1></div><button id="refresh-forum" class="button">Refresh</button></header>
       <p class="panel-note">Forum reading is public. Accounts can edit or remove only their own posts; this local panel can pin, lock, or remove any thread and maintain channels.</p>
-      <form id="forum-category-form" class="edit-grid"><input type="hidden" id="forum-category-id"><label><span>Channel name</span><input id="forum-category-name" maxlength="56" required></label><label><span>Slug</span><input id="forum-category-slug" maxlength="56" required></label><label><span>Order</span><input id="forum-category-order" type="number" min="0" max="9999" value="10"></label><label class="wide"><span>Description</span><input id="forum-category-description" maxlength="240"></label><footer class="wide"><button id="forum-category-cancel" class="button" type="button" hidden>Cancel edit</button><button class="button primary" type="submit">Save channel</button></footer></form>
+      <form id="forum-category-form" class="edit-grid">
+        <input type="hidden" id="forum-category-id"><label><span>Channel name</span><input id="forum-category-name" maxlength="56" required></label>
+        <label><span>Slug</span><input id="forum-category-slug" maxlength="56" required></label><label><span>Order</span><input id="forum-category-order" type="number" min="0" max="9999" value="10"></label>
+        <label class="wide"><span>Description</span><input id="forum-category-description" maxlength="240"></label>
+        <footer class="wide"><button id="forum-category-cancel" class="button" type="button" hidden>Cancel edit</button><button class="button primary" type="submit">Save channel</button></footer>
+      </form>
       <div class="table-shell"><table><thead><tr><th>CHANNEL</th><th>SLUG</th><th>THREADS</th><th>ACTIONS</th></tr></thead><tbody id="forum-categories-body"></tbody></table></div>
       <div class="table-shell"><table><thead><tr><th>THREAD</th><th>CHANNEL</th><th>AUTHOR</th><th>REPLIES</th><th>STATE</th><th>ACTIONS</th></tr></thead><tbody id="forum-threads-body"></tbody></table></div>
     </section>
@@ -146,7 +151,13 @@
         <article class="block tool-block wide">
           <header><span>EMAIL DELIVERY</span><b>SMTP + PASSWORD RESET</b></header>
           <p>Stored locally for password-reset emails. Leave password blank when updating other settings to keep the saved value.</p>
-          <form id="mail-settings-form" class="edit-grid"><label><span>SMTP host</span><input name="host" required placeholder="mail.example.com"></label><label><span>Port</span><input name="port" type="number" min="1" max="65535" required value="587"></label><label><span>Security</span><select name="security"><option value="starttls">STARTTLS</option><option value="tls">TLS (implicit)</option><option value="none">None</option></select></label><label><span>Username</span><input name="username" autocomplete="username"></label><label><span>SMTP password</span><input name="password" type="password" autocomplete="new-password" placeholder="Saved password remains if blank"></label><label><span>Sender address</span><input name="sender" type="email" required placeholder="games@example.com"></label><footer class="wide"><button id="mail-test" class="button" type="button">Send test email</button><button class="button primary" type="submit">Save mail settings</button></footer></form>
+          <form id="mail-settings-form" class="edit-grid">
+            <label><span>SMTP host</span><input name="host" required placeholder="mail.example.com"></label><label><span>Port</span><input name="port" type="number" min="1" max="65535" required value="587"></label>
+            <label><span>Security</span><select name="security"><option value="starttls">STARTTLS</option><option value="tls">TLS (implicit)</option><option value="none">None</option></select></label>
+            <label><span>Username</span><input name="username" autocomplete="username"></label><label><span>SMTP password</span><input name="password" type="password" autocomplete="new-password" placeholder="Saved password remains if blank"></label>
+            <label><span>Sender address</span><input name="sender" type="email" required placeholder="games@example.com"></label>
+            <footer class="wide"><button id="mail-test" class="button" type="button">Send test email</button><button class="button primary" type="submit">Save mail settings</button></footer>
+          </form>
         </article>
       </div>
     </section>
@@ -160,9 +171,9 @@
       <footer><button id="confirm-cancel" class="button" type="button">Cancel</button><button id="confirm-accept" class="button danger" type="button">Confirm</button></footer>
     </section>
   </dialog>
-  <dialog id="catalogue-edit-dialog" class="catalogue-edit-dialog">
-    <form id="catalogue-edit-form" class="catalogue-edit-card" method="dialog">
-      <header><div><span>PUBLIC FACTS // EDIT</span><h2 id="catalogue-edit-heading">Edit release</h2></div><button id="catalogue-edit-close" type="button" aria-label="Close">×</button></header>
+  <dialog id="katalog-edit-dialog" class="katalog-edit-dialog">
+    <form id="katalog-edit-form" class="katalog-edit-card" method="dialog">
+      <header><div><span>PUBLIC FACTS // EDIT</span><h2 id="katalog-edit-heading">Edit release</h2></div><button id="katalog-edit-close" type="button" aria-label="Close">×</button></header>
       <div class="edit-grid">
         <label><span>Title</span><input name="title" required maxlength="220"></label><label><span>Platform</span><input name="platform" required maxlength="220"></label>
         <label><span>Publisher</span><input name="publisher" maxlength="160"></label><label><span>Release year</span><input name="releaseYear" type="number" min="1970" max="2100"></label>
@@ -179,8 +190,8 @@
         <label class="wide"><span>PEGI content issues</span><textarea name="pegiContentIssues" maxlength="8000"></textarea></label>
         <label class="wide"><span>PEGI other issues</span><textarea name="pegiOtherIssues" maxlength="8000"></textarea></label>
       </div>
-      <section class="cover-replace"><span>Replace cover from SteamGridDB or TheGamesDB URL</span><div><input name="coverRemoteUrl" type="url" placeholder="https://…"><button id="catalogue-cover-replace" class="button" type="button">Replace cover</button></div><small id="catalogue-cover-status"></small></section>
-      <footer><button id="catalogue-edit-cancel" class="button" type="button">Cancel</button><button class="button primary" type="submit">Save factual changes</button></footer>
+      <section class="cover-replace"><span>Replace cover from SteamGridDB or TheGamesDB URL</span><div><input name="coverRemoteUrl" type="url" placeholder="https://…"><button id="katalog-cover-replace" class="button" type="button">Replace cover</button></div><small id="katalog-cover-status"></small></section>
+      <footer><button id="katalog-edit-cancel" class="button" type="button">Cancel</button><button class="button primary" type="submit">Save factual changes</button></footer>
     </form>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

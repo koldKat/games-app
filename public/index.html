@@ -105,7 +105,7 @@
       <div class="auth-center">
         <nav class="auth-public-nav" aria-label="Explore Game Kat·a·log">
           <a class="button auth-public-link auth-public-link--signal" href="/signal">Signal</a>
-          <a class="button auth-public-link auth-public-link--catalogue" href="/katalog">Kat·a·log</a>
+          <a class="button auth-public-link auth-public-link--katalog" href="/katalog">Kat·a·log</a>
         </nav>
         <section class="auth-card">
           <div class="auth-terminal"><span class="brand-mark" aria-hidden="true"></span><span>GAME KAT·A·LOG // AUTH</span><em>● SECURE</em></div>
@@ -171,7 +171,21 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span><strong>Game Kat·a·log <em id="app-version" data-app-version>…</em></strong><small>Your collection, one place</small></span>
       </a>
-      <div class="top-actions"><div class="header-community-actions"><a class="button signal-button" href="/signal"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 5a5 5 0 0 1 0 7M5.5 5.5a9.2 9.2 0 0 0 0 13M18.5 5.5a9.2 9.2 0 0 1 0 13"/></svg><span class="header-nav-label">Signal</span></a><a class="button forum-button" href="/forum"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4V5Z"/><path d="M8 10h8M8 13h5"/></svg><span class="header-nav-label">Forum</span></a><button class="button patch-button" type="button" data-patch-open>Patch</button><button class="button ping-button" type="button" data-ping-open>Ping <b class="ping-badge" data-ping-badge hidden></b></button></div><section id="header-progression" class="header-progression" hidden aria-live="polite"><div><span data-header-progress-level>LV 0</span><b data-header-progress-title>Uncatalogued</b><small data-header-progress-xp>0 XP</small></div><progress class="header-progression-meter" data-header-progress-meter max="100" value="0" aria-label="Progress to next level"></progress><small data-header-progress-next>1,000 XP to LV 1</small></section><div class="header-library-actions"><a class="button catalogue-button" href="/katalog"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h4M9 12h6M9 16h6"/></svg><span class="header-nav-label">Kat·a·log</span></a><a class="button library-button" href="/"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20H5v-8.5Z"/><path d="M10 20v-5h4v5"/></svg><span class="header-nav-label">My Kat·a·log</span></a><button class="button primary desktop-add" data-add-game><span class="button-icon">+</span><span class="button-label">Game</span></button><button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button></div></div>
+      <div class="top-actions">
+        <div class="header-community-actions">
+          <a class="button signal-button" href="/signal"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 5a5 5 0 0 1 0 7M5.5 5.5a9.2 9.2 0 0 0 0 13M18.5 5.5a9.2 9.2 0 0 1 0 13"/></svg><span class="header-nav-label">Signal</span></a>
+          <a class="button forum-button" href="/forum"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H10l-5 4v-4H4V5Z"/><path d="M8 10h8M8 13h5"/></svg><span class="header-nav-label">Forum</span></a>
+          <button class="button patch-button" type="button" data-patch-open>Patch</button>
+          <button class="button ping-button" type="button" data-ping-open>Ping <b class="ping-badge" data-ping-badge hidden></b></button>
+        </div>
+        <section id="header-progression" class="header-progression" hidden aria-live="polite"><div><span data-header-progress-level>LV 0</span><b data-header-progress-title>Uncatalogued</b><small data-header-progress-xp>0 XP</small></div><progress class="header-progression-meter" data-header-progress-meter max="100" value="0" aria-label="Progress to next level"></progress><small data-header-progress-next>1,000 XP to LV 1</small></section>
+        <div class="header-library-actions">
+          <a class="button katalog-button" href="/katalog"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h4M9 12h6M9 16h6"/></svg><span class="header-nav-label">Kat·a·log</span></a>
+          <a class="button library-button" href="/"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20H5v-8.5Z"/><path d="M10 20v-5h4v5"/></svg><span class="header-nav-label">My Kat·a·log</span></a>
+          <button class="button primary desktop-add" data-add-game><span class="button-icon">+</span><span class="button-label">Game</span></button>
+          <button class="button account-button" id="account-button"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button>
+        </div>
+      </div>
     </header>
 
     <main id="app-main">
@@ -216,7 +230,14 @@
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option></select></label>
             <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
-            <label><span>Sort by</span><select id="sort-filter"><option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option><option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option><option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favorites first</option><option value="newest">Recently added</option><option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option><option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option><option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option></select></label>
+            <label><span>Sort by</span><select id="sort-filter">
+              <option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option>
+              <option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option>
+              <option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favorites first</option><option value="newest">Recently added</option>
+              <option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option>
+              <option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option>
+              <option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option>
+            </select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
         </div>
@@ -243,7 +264,7 @@
         </nav>
       </section>
       </div>
-      <section id="catalogue-view" class="catalogue-view" hidden aria-live="polite"></section>
+      <section id="katalog-view" class="katalog-view" hidden aria-live="polite"></section>
     </main>
     <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span data-copyright-year>© 2026</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
   </div>
@@ -256,7 +277,7 @@
       <header class="modal-head"><div><p class="kicker" id="form-kicker">Grow the shelf</p><h2 id="form-title">Add a game</h2></div><button type="button" class="close-button" data-close aria-label="Close">×</button></header>
       <input type="hidden" id="game-id">
       <div class="pegi-assist">
-        <div><strong>PEGI-assisted entry</strong><small>Search PEGI's public catalogue and pick a match to fill the basics.</small></div>
+        <div><strong>PEGI-assisted entry</strong><small>Search PEGI's public Kat·a·log and pick a match to fill the basics.</small></div>
         <button type="button" class="button secondary" id="pegi-search-button">Look up title</button>
       </div>
       <div id="pegi-results" class="pegi-results" hidden></div>
@@ -278,7 +299,12 @@
       </div>
       <div id="description-results" class="pegi-results" hidden></div>
       <div class="form-grid">
-        <div class="span-2 title-autocomplete"><label for="game-title"><span>Title *</span></label><input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="title-suggestions"><div id="title-suggestions" class="title-suggestions" role="listbox" hidden></div><div id="duplicate-warning" class="duplicate-warning" hidden><span><strong>Already in your library</strong><small id="duplicate-summary"></small></span><button type="button" id="open-duplicate" class="button ghost">Open existing</button></div></div>
+        <div class="span-2 title-autocomplete">
+          <label for="game-title"><span>Title *</span></label>
+          <input id="game-title" required maxlength="220" autocomplete="off" placeholder="e.g. Metroid Prime 4" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="title-suggestions">
+          <div id="title-suggestions" class="title-suggestions" role="listbox" hidden></div>
+          <div id="duplicate-warning" class="duplicate-warning" hidden><span><strong>Already in your library</strong><small id="duplicate-summary"></small></span><button type="button" id="open-duplicate" class="button ghost">Open existing</button></div>
+        </div>
         <label><span>Platform *</span><select id="game-platform" required></select></label>
         <label id="game-platform-custom-label" hidden><span>Custom platform *</span><input id="game-platform-custom" maxlength="80" autocomplete="off" placeholder="Enter platform name"></label>
         <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>
@@ -288,7 +314,14 @@
         <label><span>Cartridge no.</span><input id="game-cartridge" type="number" min="0" step="1" placeholder="Evercade #"></label>
         <label><span>Publisher</span><input id="game-publisher" maxlength="160" placeholder="Optional"></label>
         <label><span>Release year</span><input id="game-year" type="number" min="1970" max="2100" placeholder="2026"></label>
-        <div class="rating-field"><span>Your rating</span><input id="game-rating" type="hidden"><div id="game-rating-picker" class="rating-picker" role="group" tabindex="0" aria-label="Your rating: Not rated"><button type="button" class="rating-star" data-rating-star="1" aria-label="Rate 1 star">★</button><button type="button" class="rating-star" data-rating-star="2" aria-label="Rate 2 stars">★</button><button type="button" class="rating-star" data-rating-star="3" aria-label="Rate 3 stars">★</button><button type="button" class="rating-star" data-rating-star="4" aria-label="Rate 4 stars">★</button><button type="button" class="rating-star" data-rating-star="5" aria-label="Rate 5 stars">★</button><button type="button" class="rating-clear" data-rating-clear>Clear</button><output id="game-rating-label" for="game-rating">Not rated</output></div></div>
+        <div class="rating-field"><span>Your rating</span><input id="game-rating" type="hidden">
+          <div id="game-rating-picker" class="rating-picker" role="group" tabindex="0" aria-label="Your rating: Not rated">
+            <button type="button" class="rating-star" data-rating-star="1" aria-label="Rate 1 star">★</button><button type="button" class="rating-star" data-rating-star="2" aria-label="Rate 2 stars">★</button>
+            <button type="button" class="rating-star" data-rating-star="3" aria-label="Rate 3 stars">★</button><button type="button" class="rating-star" data-rating-star="4" aria-label="Rate 4 stars">★</button>
+            <button type="button" class="rating-star" data-rating-star="5" aria-label="Rate 5 stars">★</button><button type="button" class="rating-clear" data-rating-clear>Clear</button>
+            <output id="game-rating-label" for="game-rating">Not rated</output>
+          </div>
+        </div>
         <label class="span-2"><span>Description</span><textarea id="game-description" rows="5" maxlength="8000" placeholder="A short overview of the game…"></textarea></label>
         <label class="span-2"><span>Notes</span><textarea id="game-notes" rows="3" maxlength="2000" placeholder="Edition, condition, where to find it…"></textarea></label>
         <label class="check-label span-2"><input id="game-favorite" type="checkbox"><span>Mark as a favorite</span></label>
@@ -315,7 +348,11 @@
     </form>
   </dialog>
   <dialog id="game-details-dialog" class="game-details-dialog">
-    <section class="modal-card game-details-card"><header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close">×</button></header><div id="game-details-content"></div><footer class="modal-actions"><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer></section>
+    <section class="modal-card game-details-card">
+      <header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close">×</button></header>
+      <div id="game-details-content"></div>
+      <footer class="modal-actions"><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
+    </section>
   </dialog>
   <dialog id="account-dialog">
     <form id="account-form" class="modal-card account-modal">

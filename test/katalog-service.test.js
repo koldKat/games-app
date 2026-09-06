@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { createCatalogueService } = require('../server/catalogue-service');
+const { createKatalogService } = require('../server/katalog-service');
 
 function publicEntry(overrides = {}) {
   return {
@@ -16,7 +16,7 @@ function publicEntry(overrides = {}) {
 
 test('adding from the catalogue creates a private row with an independent cover', () => {
   const calls = { removed: [] }; const entry = publicEntry();
-  const service = createCatalogueService({
+  const service = createKatalogService({
     data: {
       findDuplicateGames: () => [],
       createGame: (userId, input) => ({ id: 9, userId, ...input }),
@@ -24,7 +24,7 @@ test('adding from the catalogue creates a private row with an independent cover'
     },
     store: {
       getPublicById: () => entry,
-      link: (catalogueId, gameId, userId) => { calls.link = [catalogueId, gameId, userId]; },
+      link: (katalogId, gameId, userId) => { calls.link = [katalogId, gameId, userId]; },
       counts: () => ({}), getById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {},
       remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {},
     },
@@ -40,7 +40,7 @@ test('adding from the catalogue creates a private row with an independent cover'
 
 test('duplicate catalogue release is rejected without copying a cover', () => {
   let copied = false;
-  const service = createCatalogueService({
+  const service = createKatalogService({
     data: { findDuplicateGames: () => [{ id: 3, title: 'Portal 2', platform: 'Steam' }] },
     store: { getPublicById: () => publicEntry(), counts() {}, getById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
     covers: { copy: () => { copied = true; }, remove() {} },
@@ -51,7 +51,7 @@ test('duplicate catalogue release is rejected without copying a cover', () => {
 
 test('library-copy lookup exposes an existing private duplicate for public-page rendering', () => {
   const existing = { id: 3, title: 'Portal 2', platform: 'Steam' };
-  const service = createCatalogueService({
+  const service = createKatalogService({
     data: { findDuplicateGames: () => [existing] },
     store: { getPublicById: () => publicEntry(), counts() {}, getById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
     covers: { copy() {}, remove() {} },
@@ -61,7 +61,7 @@ test('library-copy lookup exposes an existing private duplicate for public-page 
 
 test('safe synchronization never breaks the calling private-library operation', () => {
   const messages = [];
-  const service = createCatalogueService({
+  const service = createKatalogService({
     data: {},
     store: { findByIdentity: () => null, counts() {}, getById() {}, getPublicById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
     covers: { copy: () => { throw new Error('disk full'); }, remove() {} },

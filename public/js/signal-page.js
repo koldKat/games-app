@@ -1,5 +1,5 @@
 import { createActivityFeed, dismissActivityPreview } from './activity-feed.js';
-import { openCatalogueGameDialog } from './catalogue-public.js';
+import { openKatalogGameDialog } from './katalog-public.js';
 
 const activityFeed = createActivityFeed();
 activityFeed.start();
@@ -10,5 +10,5 @@ document.addEventListener('click', event => {
   if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   event.preventDefault();
   dismissActivityPreview(link);
-  void openCatalogueGameDialog(document, link.href, { returnUrl: '/signal' });
+  void openKatalogGameDialog(document, link.href, { returnUrl: '/signal' });
 });

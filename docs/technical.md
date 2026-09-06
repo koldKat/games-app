@@ -10,7 +10,7 @@ Game Kat·a·log follows the same lightweight family architecture as the other l
 games-app/
   server.js                 HTTP entrypoint, static serving, route dispatch
   server/
-    constants.js            shared catalogue domains, provider identity and batch policy
+    constants.js            shared Kat·a·log domains, provider identity and batch policy
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
     backup.js               hourly compressed SQLite snapshots and retention
@@ -30,19 +30,19 @@ games-app/
     covers.js               SteamGridDB client, throttling, matching, artwork selection
     cover-storage.js        validated local image storage and cover migration
     image-policy.js         256 KiB JPEG processing for covers and avatars
-    showcase-covers.js      atomic public decorative-cover catalogue writer
+    showcase-covers.js      atomic public decorative-cover Kat·a·log writer
     thegamesdb.js           TheGamesDB boxart search, CDN URL parsing and credential checks
     steam-store.js          Steam Store description lookup
     description-bulk.js     Steam-first, quota-safe missing-description scan
     cover-provider-utils.js shared title/platform normalization for artwork providers
     cover-provider-bulk.js  reusable account-scoped external-cover batch engine
-    catalogue-policy.js     conservative publication eligibility and identity policy
-    catalogue-store.js      shared-index schema, queries, links and moderation state
-    catalogue-cover-store.js independent durable cover copies for shared/private rows
-    catalogue-service.js    fail-closed promotion and add-to-library orchestration
-    catalogue-runtime.js    single wired catalogue service instance
-    catalogue-pages.js      server-rendered browse/detail/Signal pages and dynamic sitemap
-    catalogue-routes.js     isolated public page and catalogue API dispatcher
+    katalog-policy.js     conservative publication eligibility and identity policy
+    katalog-store.js      shared-index schema, queries, links and moderation state
+    katalog-cover-store.js independent durable cover copies for shared/private rows
+    katalog-service.js    fail-closed promotion and add-to-library orchestration
+    katalog-runtime.js    single wired Kat·a·log service instance
+    katalog-pages.js      server-rendered browse/detail/Signal pages and dynamic sitemap
+    katalog-routes.js     isolated public page and Kat·a·log API dispatcher
     version.js              validated atomic reads/writes of the VERSION file
   admin/
     index.html              localhost control-panel markup
@@ -59,15 +59,15 @@ games-app/
     js/events.js            cookie-authenticated SSE stream parser and reconnect
     js/game-sorting.js      client ordering for live incremental card updates
     js/game-groups.js       title-first private card grouping with platform-filter expansion
-    js/platforms.js         grouped platform catalogue and release-name matching
+    js/platforms.js         grouped platform Kat·a·log and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/announcement-format.js safe shared rich-text formatter for Signal notices
     js/forum-page.js        forum composer, owner actions, themed confirmation, and SSE refresh binding
     js/patch.js             admin Patch queue rendering and reply controls
     js/patch-ui.js          reusable Patch composer and Ping conversation UI
     js/patch-page.js        public server-rendered page adapter for Patch and Ping
-    js/catalogue-public.js  release-detail dialog and one-click private-library add bindings
-    js/catalogue-navigation.js persistent authenticated-shell catalogue navigation
+    js/katalog-public.js    release-detail dialog and one-click private-library add bindings
+    js/katalog-navigation.js persistent authenticated-shell Kat·a·log navigation
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
     js/cover-provider-settings.js TheGamesDB connection and scan controls
     js/cover-result-images.js failed-thumbnail fallback to provider originals
@@ -80,7 +80,7 @@ games-app/
       landing.css          authentication landing page and promotional modules
       features.css         later feature-specific components and viewport rules
       patch.css            private Patch and Ping dialogs, unread alert state
-      catalogue.css        standalone public catalogue and detail-page theme
+      katalog.css          standalone public Kat·a·log and detail-page theme
       forum.css            public forum surfaces and responsive composer theme
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
@@ -114,7 +114,7 @@ games-app/
     covers.test.js          conservative cover-title normalization
     seo.test.js             canonical metadata, crawler policy, image dimensions
     admin.test.js           localhost gate and cross-account admin summaries
-    catalogue-*.test.js     promotion policy, persistence, privacy, pages and workflow
+    katalog-*.test.js     promotion policy, persistence, privacy, pages and workflow
     version.test.js         arbitrary release-string persistence and validation
     constants.test.js       shared domain, provider identity and browser-policy contracts
   VERSION                   release string displayed in the application header
@@ -128,8 +128,8 @@ Values shared by multiple server features live in `server/constants.js`; provide
 ```text
 Browser
   -> static file request ----------------------> server.js -> public/
-  -> GET /katalog or /game/:slug -------------> catalogue-routes.js -> catalogue-pages.js
-  -> public catalogue JSON/add request --------> catalogue-service.js -> catalogue-store.js
+  -> GET /katalog or /game/:slug -------------> katalog-routes.js -> katalog-pages.js
+  -> public Kat·a·log JSON/add request --------> katalog-service.js -> katalog-store.js
   -> localhost /admin/* -----------------------> admin.js -> admin/ + SQLite/VERSION
   -> POST /api/login or /api/register --------> server.js -> auth.js -> SQLite
   -> authenticated /api/* + HttpOnly cookie --> auth.js -> user identity
@@ -148,13 +148,13 @@ All authenticated routes resolve the session before dispatching feature logic. T
 
 Progression is split into three focused server modules. `progression-policy.js` is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (`1000 × level × (level + 1) / 2`), and collector titles. `progression-store.js` owns the SQLite tables, configurable amounts, and atomic idempotency key `(user_id, event, ref)`. `progression-service.js` maps a complete game record to eligible one-time awards and evaluates account milestones.
 
-`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. Regular authenticated boot reads the already-stored progression summary and never triggers a historical backfill. Game create/update, enrichment SSE paths, catalogue additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes. `public/js/progression-ui.js` hydrates its animation baseline from the authenticated summary before connecting SSE, so either the live event or the save response animates from the XP already on screen and the duplicate is ignored. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
+`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. Regular authenticated boot reads the already-stored progression summary and never triggers a historical backfill. Game create/update, enrichment SSE paths, Kat·a·log additions, and a first avatar set all feed the same service. It emits a `progression-updated` SSE event only when XP changes. `public/js/progression-ui.js` hydrates its animation baseline from the authenticated summary before connecting SSE, so either the live event or the save response animates from the XP already on screen and the duplicate is ignored. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
 
 The authenticated SPA and crawlable server-rendered pages share the same header progress component. Its dynamic fill uses a fully themed semantic `progress` value rather than an inline CSS declaration, because the public page Content Security Policy intentionally rejects inline styles. Refreshing Signal, Forum, or the public Kat·a·log therefore preserves the same fill shown in My Kat·a·log without introducing an SVG layout surface into the header.
 
-Patch and Ping use `patch_threads` and `patch_messages`. A Patch can be submitted anonymously or under the authenticated account; ordinary accounts see only their own Ping threads while the protected operator account maps the same view to every Patch using the distinct admin unread state. Rows maintain separate sender and admin unread state plus independent soft-delete flags. New Patches and user replies target the operator through `ping-updated`; operator replies target the owning account. The normal authenticated SSE stream updates the persistent Ping badge, attention state, and disabled availability without exposing message content. When SMTP is configured, the SMTP username (falling back to the sender address) receives a best-effort notice for new Patches and user replies; an operator reply likewise attempts a notice to any supplied user email. `server/email-templates.js` owns the responsive, self-contained dark templates for Patch, Ping, password-reset, and SMTP-test mail. Every template safely escapes user text, includes preview text and a plain-text fallback, and has an explicit action link. `server/mailer.js` owns delivery only, so route handlers choose a named transactional mail rather than construct HTML. Mail delivery never affects whether the saved message succeeds. Neither support thread content nor metadata is eligible for Signal, catalogue, sitemap, or forum output.
+Patch and Ping use `patch_threads` and `patch_messages`. A Patch can be submitted anonymously or under the authenticated account; ordinary accounts see only their own Ping threads while the protected operator account maps the same view to every Patch using the distinct admin unread state. Rows maintain separate sender and admin unread state plus independent soft-delete flags. New Patches and user replies target the operator through `ping-updated`; operator replies target the owning account. The normal authenticated SSE stream updates the persistent Ping badge, attention state, and disabled availability without exposing message content. When SMTP is configured, the SMTP username (falling back to the sender address) receives a best-effort notice for new Patches and user replies; an operator reply likewise attempts a notice to any supplied user email. `server/email-templates.js` owns the responsive, self-contained dark templates for Patch, Ping, password-reset, and SMTP-test mail. Every template safely escapes user text, includes preview text and a plain-text fallback, and has an explicit action link. `server/mailer.js` owns delivery only, so route handlers choose a named transactional mail rather than construct HTML. Mail delivery never affects whether the saved message succeeds. Neither support thread content nor metadata is eligible for Signal, Kat·a·log, sitemap, or forum output.
 
-Catalogue dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call `syncGameSafely`; catalogue failures are logged and contained, so they cannot turn a successful account-scoped save into an error.
+Kat·a·log dispatch runs before the generic authenticated API gate because browse, detail, and search are intentionally public. Only the add-to-library endpoint authenticates. Private create/edit and enrichment flows call `syncGameSafely`; Kat·a·log failures are logged and contained, so they cannot turn a successful account-scoped save into an error.
 
 ---
 
@@ -215,7 +215,7 @@ An inline pre-render marker adds the `resuming-session` document class before th
 | `user_id` | Primary key and cascading foreign key to the owning account |
 | `library_view` | `grid` or `list` |
 | `search_query` | Current library search text |
-| `platform_filter`, `ownership_filter`, `pegi_filter` | Current catalogue filters |
+| `platform_filter`, `ownership_filter`, `pegi_filter` | Current Kat·a·log filters |
 | `status_filter`, `missing_filter`, `favorite_filter` | Current workflow and data-gap filters |
 | `sort_order` | One of the server and client supported sort identifiers |
 | `updated_at` | SQLite timestamp of the latest persisted preference change |
@@ -253,13 +253,13 @@ Indexes cover owner, platform, ownership, PEGI, and case-insensitive title.
 
 ### `catalogue_entries`
 
-This table stores one shared factual release per normalized `(title, platform)` identity. It includes a stable unique slug, PEGI and HLTB facts, publisher/year, a catalogue-owned cover URL, source provenance, confidence reasons, and a `candidate`, `public`, or `rejected` moderation state. Public browse results group public releases by normalized title before pagination when no platform filter is active; a platform filter intentionally returns individual release rows. Detail URLs retain the stable per-release slug, and the dialog exposes sibling platform releases. The grouped primary release supplies the card cover and sitemap URL, while every underlying release remains an independently moderated factual record.
+This table stores one shared factual release per normalized `(title, platform)` identity. It includes a stable unique slug, PEGI and HLTB facts, publisher/year, a katalog-owned cover URL, source provenance, confidence reasons, and a `candidate`, `public`, or `rejected` moderation state. Public browse results group public releases by normalized title before pagination when no platform filter is active; a platform filter intentionally returns individual release rows. Detail URLs retain the stable per-release slug, and the dialog exposes sibling platform releases. The grouped primary release supplies the card cover and sitemap URL, while every underlying release remains an independently moderated factual record.
 
 Public projections explicitly remove contributor account ID, source private-game ID, confidence reasons, moderation state, and internal creation data. Personal fields do not exist in this table at all.
 
 ### `catalogue_game_links`
 
-This join table records which private game rows are represented by a shared release. A private game can link to only one catalogue entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those aggregate fields appear from the first rating, while individual scores and account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
+This join table records which private game rows are represented by a shared release. A private game can link to only one Kat·a·log entry, while `(catalogue_id, user_id)` prevents duplicate links for one account. Public reads calculate an anonymous rating average and rating count by joining these links to non-null private `games.rating` values; those aggregate fields appear from the first rating, while individual scores and account identities are never exposed. All foreign keys cascade. Deleting an account or private row removes only its link; the independently owned public release and cover remain intact.
 
 Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 
@@ -365,14 +365,14 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
 | DELETE | `/api/covers/config` | Remove the account-specific provider key |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
-| GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public catalogue releases, and up to ten SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
+| GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and up to ten SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
 | GET | `/api/cover-providers/:provider/status` | TheGamesDB connection state, missing count, and job progress |
 | PUT | `/api/cover-providers/:provider/config` | Validate and store an account's provider credentials |
 | DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
 | POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
 
-Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. In `public/js/activity-feed.js`, five or more catalogue contributions from the same account within one day become a single themed summary with an accessible inline expander; smaller runs, joins, level-ups, and announcements remain individual entries.
+Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. In `public/js/activity-feed.js`, five or more Kat·a·log contributions from the same account within one day become a single themed summary with an accessible inline expander; smaller runs, joins, level-ups, and announcements remain individual entries.
 
 List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. Missing-PEGI filtering and automatic PEGI enrichment include Evercade like every other platform. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
 
@@ -380,7 +380,7 @@ Sort values cover ascending/descending title, platform, publisher, release year,
 
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. The browser center-crops and compresses before upload; the server independently decodes and reprocesses the image through the shared policy before accepting it, guaranteeing a 512×512 JPEG no larger than 256 KiB. Avatars are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
-### Public catalogue
+### Public Kat·a·log
 
 | Method | Route | Purpose |
 |---|---|---|
@@ -416,7 +416,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET | `/api/admin/catalogue?q=...&status=...` | List shared entries and moderation counts |
 | PATCH | `/api/admin/catalogue/:id` | Edit shared factual metadata, or set `candidate`, `public`, or `rejected` state |
 | PUT | `/api/admin/catalogue/:id` | Replace the shared cover from a supported artwork-provider URL |
-| DELETE | `/api/admin/catalogue/:id` | Delete a shared entry and its catalogue-owned cover |
+| DELETE | `/api/admin/catalogue/:id` | Delete a shared entry and its katalog-owned cover |
 | GET, PUT | `/api/admin/version` | Read or atomically replace the release string |
 | POST | `/api/admin/database/checkpoint` | Truncate-checkpoint the SQLite WAL |
 | POST | `/api/admin/database/optimize` | Run SQLite planner optimization |
@@ -424,7 +424,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET, POST | `/api/admin/backups` | List or trigger the current hour's compressed SQLite backup |
 | DELETE | `/api/admin/backups/:name` | Delete one validated backup filename |
 
-The Dashboard mirrors the Gamebooks refresh cadence: collection and catalogue totals refresh every 60 seconds, while the lightweight live cards (heap, RSS/CPU, application age, and session uptime) refresh every second. Application age starts with the earliest user or game record in the database. Uptime is persisted across restarts: every restart has a fifteen-second allowance. Gaps within it are continuous; for longer gaps, only the excess is recorded as downtime, and the new session begins with the same fifteen seconds already included.
+The Dashboard mirrors the Gamebooks refresh cadence: collection and Kat·a·log totals refresh every 60 seconds, while the lightweight live cards (heap, RSS/CPU, application age, and session uptime) refresh every second. Application age starts with the earliest user or game record in the database. Uptime is persisted across restarts: every restart has a fifteen-second allowance. Gaps within it are continuous; for longer gaps, only the excess is recorded as downtime, and the new session begins with the same fifteen seconds already included.
 
 Admin static files and API responses use restrictive security headers. Backup names are server-generated and deletion accepts only that exact filename shape. Backups are stored in `backups/`, which is excluded from Git.
 
@@ -438,7 +438,7 @@ Admin static files and API responses use restrictive security headers. Backup na
 
 ## PEGI integration
 
-PEGI exposes a public catalogue search but no documented public developer API. `server/pegi.js` therefore performs opt-in HTTPS requests after the user selects either **Look up title** or the account-level **Fill PEGI details** batch action.
+PEGI exposes a public Kat·a·log search but no documented public developer API. `server/pegi.js` therefore performs opt-in HTTPS requests after the user selects either **Look up title** or the account-level **Fill PEGI details** batch action.
 
 The parser extracts displayed title, publisher, rating, descriptors, exact platform releases, year, consumer advice, brief outline, content-specific issues, and other issues. A lookup reads PEGI's reported result count and requests subsequent zero-based result pages, up to a hard limit of 10 pages. Later pages are fetched concurrently, individual later-page failures do not discard successful results, and duplicate records are removed using title, publisher, rating, and release data. Descriptor and release arrays are stored as validated JSON; long PEGI text is length-limited before persistence. Merged results are cached in process memory for one hour per normalized query. Each request has a 12-second timeout and a 4 MB response limit. Transient rate-limit and 5xx responses are retried twice with short backoff; exhausted failures return a calm availability message instead of exposing the provider's raw HTTP status.
 
@@ -476,9 +476,9 @@ An exact case-insensitive, whitespace-normalized title-and-platform pair is trea
 
 Manual lookup sends the title and selected platform to the configured sources. SteamGridDB searches up to four title candidates for portrait static grids. TheGamesDB requests front boxart with platform filtering and constructs image URLs only from the API's returned CDN bases. Results are cached in memory for 30 minutes. Provider failures are isolated, so one healthy source can still populate the chooser. TheGamesDB result tiles use its original image URL directly because its generated preview derivatives are intermittently absent; other provider thumbnails retain the generic original-art fallback, including detection of a cached failure before the error listener mounts.
 
-Selected, automatically matched, and manually uploaded covers are not hotlinked permanently. `server/cover-storage.js` accepts HTTPS downloads only from the supported providers' CDN domains, validates every redirect before following it, caps source responses at 12 MB, and verifies JPEG/PNG/WebP file signatures. The game editor also accepts a JPEG, PNG, or WebP upload as compact client-processed image data; no file is stored until the game save succeeds. The shared server-side `server/image-policy.js` then applies EXIF rotation, limits the longest edge to 900 pixels without enlargement, converts to JPEG, and iteratively compresses until the result is no larger than 256 KiB. Only the processed image is written through a collision-safe temporary filename and atomically published under `public/covers/`. SQLite stores the resulting `/covers/...` path while retaining provider and matched-title provenance. These static files are unauthenticated and therefore publicly reachable through `https://gamekat.net/covers/...`; they stream from disk with exact content lengths and immutable one-year cache headers because filenames never change in place. Replacement, game deletion, account deletion, and admin catalogue deletion remove the corresponding local file.
+Selected, automatically matched, and manually uploaded covers are not hotlinked permanently. `server/cover-storage.js` accepts HTTPS downloads only from the supported providers' CDN domains, validates every redirect before following it, caps source responses at 12 MB, and verifies JPEG/PNG/WebP file signatures. The game editor also accepts a JPEG, PNG, or WebP upload as compact client-processed image data; no file is stored until the game save succeeds. The shared server-side `server/image-policy.js` then applies EXIF rotation, limits the longest edge to 900 pixels without enlargement, converts to JPEG, and iteratively compresses until the result is no larger than 256 KiB. Only the processed image is written through a collision-safe temporary filename and atomically published under `public/covers/`. SQLite stores the resulting `/covers/...` path while retaining provider and matched-title provenance. These static files are unauthenticated and therefore publicly reachable through `https://gamekat.net/covers/...`; they stream from disk with exact content lengths and immutable one-year cache headers because filenames never change in place. Replacement, game deletion, account deletion, and admin Kat·a·log deletion remove the corresponding local file.
 
-Normal startup never scans the whole library. Replaying catalogue eligibility or opening every cover with Sharp can monopolize the single Node process on a large collection, so cover maintenance is deliberately explicit: `npm run covers:normalize` performs the local 900-pixel/256-KiB JPEG normalization, while the established cover-storage functions can localize legacy HTTPS URLs when deliberately invoked. New and edited games are synchronized immediately through their normal request paths. Cover conversion atomically writes a replacement before changing the database URL and removes the old file only when no database record still references it.
+Normal startup never scans the whole library. Replaying Kat·a·log eligibility or opening every cover with Sharp can monopolize the single Node process on a large collection, so cover maintenance is deliberately explicit: `npm run covers:normalize` performs the local 900-pixel/256-KiB JPEG normalization, while the established cover-storage functions can localize legacy HTTPS URLs when deliberately invoked. New and edited games are synchronized immediately through their normal request paths. Cover conversion atomically writes a replacement before changing the database URL and removes the old file only when no database record still references it.
 
 Each source has an independent missing-cover scan. Jobs consider only games without a cover and reload each queued record before making a request. Games deleted or manually covered after queuing are skipped; the database update also requires the cover to remain empty. TheGamesDB additionally requires a platform match and exactly one normalized title record; several regional images belonging to one record are not treated as ambiguous. Five consecutive provider errors pause that job. Progress and individual card updates use SSE, jobs remain in memory, and saved results remain in SQLite across restarts.
 
@@ -486,17 +486,17 @@ Description lookup queries Steam Store first and accepts only a single normalize
 
 Cards use a centered, full-card image with a dark left-to-right gradient, mirroring Gamebooks' cover-background treatment. Images use native lazy loading so only the visible portion of a large collection is requested.
 
-On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. `public/js/artwork-url.js` admits both legacy HTTPS artwork and validated `/covers/...` paths, while `randomShowcaseCovers()` applies the same two-form policy to the public cover-only endpoint. The logged-out loader also falls back to the generated, Git-ignored `public/cover-showcase.json` catalogue if an older running server process returns no covers; the file exposes only the same already-public randomized paths and is regenerated after normalization. Durable storage therefore feeds the login background, promo modules, authenticated header and app background consistently. After the returned games render, it shuffles their unique cover URLs and fills the five header covers first, followed by the fixed 32-slot decorative field. HTML declares each cover group once with `data-cover-slots`; the browser generates its non-semantic positioning nodes, element type, base class, and numbered modifier classes. The single loose promo cover uses the same declarative mounting pass through `data-cover-decoration`. Repeated empty cover tags are therefore absent from maintained markup. The controller mark, separator rules, status dots, progress fill, and modal spacing use CSS or meaningful elements rather than empty helper tags. Empty live regions remain only where runtime content is intentionally inserted. Decorative images preload in a genuine one-at-a-time queue, so artwork never competes with the application shell or floods the browser connection pool. Each image may take up to six seconds; failed candidates are skipped in favor of the next shuffled URL. The successful set is committed to the decorative field in one synchronous batch rather than mutating the page after every image. A focused dropdown defers that commit until it loses focus, preventing background artwork from dismissing native filter menus in Chromium browsers. Logged-out artwork work is canceled as soon as authentication succeeds. If fewer unique images succeed than there are slots, successful covers repeat instead of leaving permanent holes. Stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
+On authenticated entry, the browser starts the core library requests and reveals the workspace immediately, without awaiting their responses. `public/js/artwork-url.js` admits both legacy HTTPS artwork and validated `/covers/...` paths, while `randomShowcaseCovers()` applies the same two-form policy to the public cover-only endpoint. The logged-out loader also falls back to the generated, Git-ignored `public/cover-showcase.json` Kat·a·log if an older running server process returns no covers; the file exposes only the same already-public randomized paths and is regenerated after normalization. Durable storage therefore feeds the login background, promo modules, authenticated header and app background consistently. After the returned games render, it shuffles their unique cover URLs and fills the five header covers first, followed by the fixed 32-slot decorative field. HTML declares each cover group once with `data-cover-slots`; the browser generates its non-semantic positioning nodes, element type, base class, and numbered modifier classes. The single loose promo cover uses the same declarative mounting pass through `data-cover-decoration`. Repeated empty cover tags are therefore absent from maintained markup. The controller mark, separator rules, status dots, progress fill, and modal spacing use CSS or meaningful elements rather than empty helper tags. Empty live regions remain only where runtime content is intentionally inserted. Decorative images preload in a genuine one-at-a-time queue, so artwork never competes with the application shell or floods the browser connection pool. Each image may take up to six seconds; failed candidates are skipped in favor of the next shuffled URL. The successful set is committed to the decorative field in one synchronous batch rather than mutating the page after every image. A focused dropdown defers that commit until it loses focus, preventing background artwork from dismissing native filter menus in Chromium browsers. Logged-out artwork work is canceled as soon as authentication succeeds. If fewer unique images succeed than there are slots, successful covers repeat instead of leaving permanent holes. Stale work is discarded if the account changes while images are loading. The field reuses the login artwork geometry and opacity, has no pointer interaction, and is reduced to four slots on narrow screens. It does not make another provider request or expose another account's cover selection.
 
 ---
 
 ## Browser application
 
-`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. `public/js/game-groups.js` groups private cards by normalized title only when no platform filter is active, retaining each original game row as a selectable platform version; live game updates rerender the current grouped page so its membership cannot become stale. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions, including local public-catalogue hits, live in `public/js/title-autocomplete.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`; `public/js/catalogue-navigation.js` fetches and swaps only the public-catalogue content view while retaining the mounted app header, account control, add-game action, library DOM, and browser history; and `public/js/catalogue-public.js` binds native release-detail dialogs and their one-click add action in either the standalone public document or that mounted view. Returning to the private library closes an open release dialog before hiding the public content region, removes its modal top layer and invisible backdrop, and suppresses the dialog's normal return-to-public history update. `server/app-shell.js` distinguishes full authenticated document loads from partial view requests: a signed-in hard refresh on Signal, Forum, Kat·a·log, or a release URL receives the real SPA shell at the unchanged URL, then restores that content view below the mounted header. Guests retain crawlable server-rendered HTML, and partial fetches identify themselves with `X-GameKat-Partial`. Consequently the persistent `+Game` control opens the existing dialog from every authenticated view rather than linking back to the library. Server-rendered release pages check the signed-in account for the same normalized title/platform private copy; a match renders an already-added state instead of an add form. The POST endpoint retains duplicate validation for races, and the browser turns its duplicate response into that same already-added action instead of showing an error.
+`public/app.js` is a zero-dependency ES-module browser orchestration entry point. Its state contains the authenticated user, games, account statistics, platform list, result render limit, selected view, and loading state. Static platform taxonomy and release-text matching live in `public/js/platforms.js`; this includes PC storefronts and launchers such as Steam, GOG, and Epic Games Store as first-class filterable platforms. Generic PEGI PC releases do not overwrite a selected storefront, while server-side PEGI matching normalizes those storefronts to PC for edition matching. `public/js/game-groups.js` groups private cards by normalized title only when no platform filter is active, retaining each original game row as a selectable platform version; live game updates rerender the current grouped page so its membership cannot become stale. Authenticated event streaming lives in `public/js/events.js`; incremental card ordering lives in `public/js/game-sorting.js`; title suggestions, including local public-Kat·a·log hits, live in `public/js/title-autocomplete.js`; HLTB form and card presentation lives in `public/js/hltb-ui.js`; `public/js/katalog-navigation.js` fetches and swaps only the public-Kat·a·log content view while retaining the mounted app header, account control, add-game action, library DOM, and browser history; and `public/js/katalog-public.js` binds native release-detail dialogs and their one-click add action in either the standalone public document or that mounted view. Returning to the private library closes an open release dialog before hiding the public content region, removes its modal top layer and invisible backdrop, and suppresses the dialog's normal return-to-public history update. `server/app-shell.js` distinguishes full authenticated document loads from partial view requests: a signed-in hard refresh on Signal, Forum, Kat·a·log, or a release URL receives the real SPA shell at the unchanged URL, then restores that content view below the mounted header. Guests retain crawlable server-rendered HTML, and partial fetches identify themselves with `X-GameKat-Partial`. Consequently the persistent `+Game` control opens the existing dialog from every authenticated view rather than linking back to the library. Server-rendered release pages check the signed-in account for the same normalized title/platform private copy; a match renders an already-added state instead of an add form. The POST endpoint retains duplicate validation for races, and the browser turns its duplicate response into that same already-added action instead of showing an error.
 
 The authenticated library footer mirrors the family branding used by Gamebooks: **koldKat productions** followed by a copyright year. `COPYRIGHT_START_YEAR` lives in `public/js/ui-policy.js`; the browser displays that year initially and automatically expands it to a range in later years.
 
-Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Standalone public catalogue pages also load the landing and feature layers for the same low-opacity cover spread used by the authenticated shell; their server-rendered slots use only validated local public-cover paths. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
+Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Standalone public Kat·a·log pages also load the landing and feature layers for the same low-opacity cover spread used by the authenticated shell; their server-rendered slots use only validated local public-cover paths. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
 The event client reads SSE through `fetch()` and a `ReadableStream` so reconnects can send `Last-Event-ID` for replay while using the same-origin session cookie. It reconnects after interruption and stops immediately on logout or page exit; standalone Signal and public-shell Ping streams have the same explicit page-exit cleanup. The server disables nginx buffering, revalidates the session without extending it or writing SQLite on each 20-second heartbeat, and rotates long-lived connections after ten minutes. Logout, password changes, admin revocation, expiry, or account deletion therefore close an existing stream as well as blocking its reconnect. Every account has a bounded 2,048-event replay window; the client returns its last event ID after a disconnect so card and progress changes from the gap are replayed in order. If an unusually long interruption exceeds that window, a reset event triggers a correctness resync.
 
@@ -557,7 +557,7 @@ Generated documentation is available at:
 
 The public landing page uses `https://gamekat.net/` as its canonical URL. Its focused title and description, Open Graph and Twitter large-image fields, install manifest, and `WebApplication` JSON-LD consistently describe multi-platform collection tracking, public release discovery, wishlists and backlogs, deep filtering, PEGI/HLTB assistance, cover art, and cross-device account preferences. Structured data also links the public guide and GitHub repository. The domain inspires the **Game Kat·a·log** wordmark, whose separators are true middle dots. The social image is authored as `public/social-preview.svg` and rendered to the crawler-compatible `public/social-preview.png` at 1200×630.
 
-`robots.txt` permits the landing page, `/signal`, `/forum`, `/katalog`, release pages, and public guide while excluding `/api/`, `/admin/`, and account avatars. Runtime `/sitemap.xml` is generated as a plain standard URL-set with Signal, Forum, stable public release slugs, public forum threads, and their update dates; candidates and rejected catalogue entries never appear. The maintained static file remains a landing/Signal/Forum/Kat·a·log/guide fallback. Signal uses `CollectionPage` JSON-LD and receives public, filtered activity through `/api/activity/stream`; the forum uses the same public shell and its own `/api/forum/stream`; browse pages use `CollectionPage` JSON-LD, and release pages use `VideoGame` JSON-LD with eligible aggregate ratings. A canonical release URL renders the public Kat·a·log with that release detail dialog already open, so search visitors get the same detail surface as people browsing the catalogue. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
+`robots.txt` permits the landing page, `/signal`, `/forum`, `/katalog`, release pages, and public guide while excluding `/api/`, `/admin/`, and account avatars. Runtime `/sitemap.xml` is generated as a plain standard URL-set with Signal, Forum, stable public release slugs, public forum threads, and their update dates; candidates and rejected Kat·a·log entries never appear. The maintained static file remains a landing/Signal/Forum/Kat·a·log/guide fallback. Signal uses `CollectionPage` JSON-LD and receives public, filtered activity through `/api/activity/stream`; the forum uses the same public shell and its own `/api/forum/stream`; browse pages use `CollectionPage` JSON-LD, and release pages use `VideoGame` JSON-LD with eligible aggregate ratings. A canonical release URL renders the public Kat·a·log with that release detail dialog already open, so search visitors get the same detail surface as people browsing the Kat·a·log. The manifest includes 192×192 and 512×512 PNG icons in addition to the scalable favicon.
 
 The authentication landing markup contains six visible, descriptive feature cards covering platform breadth, querying, PEGI/HLTB metadata, cover workflows, cross-device preference persistence, and public discovery with private tracking. This gives non-JavaScript crawlers useful product content without exposing any private collection data. Backups and local administration remain documented operational features rather than headline public marketing claims.
 
@@ -592,10 +592,10 @@ npm run docs:check   # fail if generated HTML is stale
 | `test/covers.test.js` | Conservative cover-title normalization |
 | `test/seo.test.js` | Canonical/social metadata, crawler policy, and asset dimensions |
 | `test/admin.test.js` | Loopback/proxy boundary and whole-database admin summaries |
-| `test/catalogue-policy.test.js` | Complete/exact automatic publication and candidate boundaries |
-| `test/catalogue-store.test.js` | Identity deduplication, public projection privacy, search, and sticky rejection |
-| `test/catalogue-service.test.js` | Independent covers, private-copy defaults, duplicate rejection, and fail-closed sync |
-| `test/catalogue-pages.test.js` | SSR metadata, escaping, safe links, and dynamic sitemap output |
+| `test/katalog-policy.test.js` | Complete/exact automatic publication and candidate boundaries |
+| `test/katalog-store.test.js` | Identity deduplication, public projection privacy, search, and sticky rejection |
+| `test/katalog-service.test.js` | Independent covers, private-copy defaults, duplicate rejection, and fail-closed sync |
+| `test/katalog-pages.test.js` | SSR metadata, escaping, safe links, and dynamic sitemap output |
 | `test/backup.test.js` | Hourly ZIP creation, deduplication, cleanup, and scheduler timing |
 | `test/version.test.js` | Version-file persistence and input validation |
 
@@ -630,4 +630,4 @@ The database and generated cover files are excluded from Git. Source code, gener
 - HLTB lookup depends on an undocumented private search route that can change and may require maintenance. Running batch jobs are not resumed after a process restart.
 - Cover lookup depends on whichever of SteamGridDB or TheGamesDB the account or server has configured; external quotas and availability apply, and unfinished bulk jobs must be restarted after a process restart.
 - Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
-- The public client retains one orchestration entry point, with stable data catalogues split into focused modules. The admin client is divided by panel plus shared utilities.
+- The public client retains one orchestration entry point, with stable data registries split into focused modules. The admin client is divided by panel plus shared utilities.

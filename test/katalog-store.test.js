@@ -2,8 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Database = require('better-sqlite3');
 
-const { evaluateCatalogueGame } = require('../server/catalogue-policy');
-const { createCatalogueStore } = require('../server/catalogue-store');
+const { evaluateKatalogGame } = require('../server/katalog-policy');
+const { createKatalogStore } = require('../server/katalog-store');
 
 test('public Kat·a·log pages default to ten desktop rows', () => {
   const { database, store } = fixture();
@@ -20,7 +20,7 @@ function fixture() {
     INSERT INTO users (id) VALUES (1),(2);
     INSERT INTO games (id,user_id,rating) VALUES (11,1,4.5),(22,2,3.5);
   `);
-  return { database, store: createCatalogueStore(database) };
+  return { database, store: createKatalogStore(database) };
 }
 
 function game(overrides = {}) {
@@ -40,9 +40,9 @@ function game(overrides = {}) {
 test('store deduplicates title/platform identities and links separate users', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game();
-  const created = store.upsertFromGame(1, first, evaluateCatalogueGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const created = store.upsertFromGame(1, first, evaluateKatalogGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   const second = game({ id: 22 });
-  const reused = store.upsertFromGame(2, second, evaluateCatalogueGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const reused = store.upsertFromGame(2, second, evaluateKatalogGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   assert.equal(created.created, true);
   assert.equal(reused.created, false);
   assert.equal(reused.usedCover, false);
@@ -54,7 +54,7 @@ test('store deduplicates title/platform identities and links separate users', t 
 test('public projections never expose contributing account or private row identifiers', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game();
-  const result = store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const result = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   const visible = store.getPublicBySlug(result.entry.slug);
   assert.equal(visible.title, source.title);
   assert.equal('submittedByUserId' in visible, false);
@@ -67,9 +67,9 @@ test('public projections never expose contributing account or private row identi
 test('public entries expose only an anonymous aggregate from linked private ratings', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game();
-  const entry = store.upsertFromGame(1, first, evaluateCatalogueGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  const entry = store.upsertFromGame(1, first, evaluateKatalogGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
   const second = game({ id: 22 });
-  store.upsertFromGame(2, second, evaluateCatalogueGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  store.upsertFromGame(2, second, evaluateKatalogGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [4, 2]);
   database.prepare('UPDATE games SET rating=5 WHERE id=22').run();
   assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [4.75, 2]);
@@ -80,7 +80,7 @@ test('public entries expose only an anonymous aggregate from linked private rati
 test('public search filters by title, publisher, and platform', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game();
-  store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   assert.equal(store.listPublic({ q: 'metroid' }).total, 1);
   assert.equal(store.listPublic({ q: 'nintendo' }).total, 1);
   assert.equal(store.listPublic({ platform: 'Nintendo Switch' }).total, 1);
@@ -91,8 +91,8 @@ test('public Kat·a·log groups title variants, but a platform filter returns in
   const { database, store } = fixture(); t.after(() => database.close());
   const switchRelease = game();
   const steamRelease = game({ id: 22, platform: 'Steam', coverMatchTitle: 'Metroid Dread', hltbTitle: 'Metroid Dread' });
-  store.upsertFromGame(1, switchRelease, evaluateCatalogueGame(switchRelease), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
-  store.upsertFromGame(2, steamRelease, evaluateCatalogueGame(steamRelease), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  store.upsertFromGame(1, switchRelease, evaluateKatalogGame(switchRelease), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(2, steamRelease, evaluateKatalogGame(steamRelease), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   const grouped = store.listPublic();
   assert.equal(grouped.total, 1);
   assert.equal(grouped.entries[0].releases.length, 2);
@@ -105,7 +105,7 @@ test('public Kat·a·log groups title variants, but a platform filter returns in
 test('candidate records remain absent from public pages until reviewed', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game({ coverMatchTitle: 'Metroid Collection' });
-  const result = store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const result = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   assert.equal(result.entry.status, 'candidate');
   assert.equal(store.listPublic().total, 0);
   assert.equal(store.setStatus(result.entry.id, 'public').status, 'public');
@@ -115,7 +115,7 @@ test('candidate records remain absent from public pages until reviewed', t => {
 test('administrator updates shared facts without changing a release slug or moderation state', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game();
-  const original = store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  const original = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
   const updated = store.updateAdmin(original.id, {
     ...original, title: 'Metroid Dread: Deluxe', publisher: 'Nintendo EPD', releaseYear: 2022,
     pegi: 16, pegiDescriptors: 'Violence, Fear', hltbId: 701, hltbTitle: 'Metroid Dread: Deluxe',
@@ -131,7 +131,7 @@ test('administrator updates shared facts without changing a release slug or mode
 
 test('sitemap entries use the release update time rather than its original publication time', t => {
   const { database, store } = fixture(); t.after(() => database.close());
-  const created = store.upsertFromGame(1, game(), evaluateCatalogueGame(game()), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  const created = store.upsertFromGame(1, game(), evaluateKatalogGame(game()), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
   database.prepare("UPDATE catalogue_entries SET published_at='2026-01-01 00:00:00', updated_at='2026-08-29 12:00:00' WHERE id=?").run(created.id);
   const [entry] = store.sitemapEntries();
   assert.equal(entry.updatedAt, '2026-08-29 12:00:00');
@@ -141,17 +141,17 @@ test('sitemap entries use the release update time rather than its original publi
 test('administrator cannot merge two catalogue identities through an edit', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game(); const second = game({ id: 22, title: 'Metroid Prime', hltbTitle: 'Metroid Prime', coverMatchTitle: 'Metroid Prime' });
-  const firstEntry = store.upsertFromGame(1, first, evaluateCatalogueGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
-  store.upsertFromGame(2, second, evaluateCatalogueGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const firstEntry = store.upsertFromGame(1, first, evaluateKatalogGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  store.upsertFromGame(2, second, evaluateKatalogGame(second), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   assert.throws(() => store.updateAdmin(firstEntry.id, { ...firstEntry, title: second.title, platform: second.platform }), /already uses/);
 });
 
 test('an administrator rejection is sticky across later account synchronization', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game({ coverMatchTitle: 'Metroid Collection' });
-  const result = store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const result = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   store.setStatus(result.entry.id, 'rejected');
-  const next = store.upsertFromGame(1, source, evaluateCatalogueGame(source), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const next = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   assert.equal(next.entry.status, 'rejected');
   assert.equal(next.usedCover, false);
   assert.equal(store.listPublic().total, 0);
@@ -160,9 +160,9 @@ test('an administrator rejection is sticky across later account synchronization'
 test('editing a linked private row to a different release moves its catalogue link', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game();
-  const original = store.upsertFromGame(1, first, evaluateCatalogueGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const original = store.upsertFromGame(1, first, evaluateKatalogGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   const changed = game({ title: 'Metroid Prime Remastered', hltbTitle: 'Metroid Prime Remastered', coverMatchTitle: 'Metroid Prime Remastered' });
-  const replacement = store.upsertFromGame(1, changed, evaluateCatalogueGame(changed), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const replacement = store.upsertFromGame(1, changed, evaluateKatalogGame(changed), '/covers/cccccccccccccccccccccccccccccccc.jpg');
   const link = database.prepare('SELECT catalogue_id AS catalogueId FROM catalogue_game_links WHERE game_id=11').get();
   assert.notEqual(original.entry.id, replacement.entry.id);
   assert.equal(link.catalogueId, replacement.entry.id);

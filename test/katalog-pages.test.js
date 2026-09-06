@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { renderCatalogue, renderGame, renderSignal, safeExternalUrl, sitemapXml } = require('../server/catalogue-pages');
+const { renderKatalog, renderGame, renderSignal, safeExternalUrl, sitemapXml } = require('../server/katalog-pages');
 
 const entry = {
   id: 3, slug: 'portal-2-steam', title: 'Portal 2', platform: 'Steam', pegi: 12,
@@ -13,15 +13,15 @@ const entry = {
 };
 
 test('catalogue page is crawlable server-rendered HTML', () => {
-  const html = renderCatalogue({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [{ platform: 'Steam', count: 1 }] });
+  const html = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [{ platform: 'Steam', count: 1 }] });
   assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/katalog">/);
   assert.match(html, /Portal 2/);
   assert.match(html, /application\/ld\+json/);
-  assert.match(html, /class="catalogue-results"/);
-  assert.match(html, /class="catalogue-title" data-catalogue-title data-full-title="Portal 2"/);
-  assert.match(html, /class="hero catalogue-hero"/);
-  assert.match(html, /class="hero-art catalogue-hero-art"/);
-  assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
+  assert.match(html, /class="katalog-results"/);
+  assert.match(html, /class="katalog-title" data-katalog-title data-full-title="Portal 2"/);
+  assert.match(html, /class="hero katalog-hero"/);
+  assert.match(html, /class="hero-art katalog-hero-art"/);
+  assert.match(html, /class="hero-cover katalog-hero-cover hero-cover-3 has-art"/);
   assert.match(html, /class="auth-cover-field app-cover-field"/);
   assert.match(html, /<i class="has-art"><img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async"><\/i>/);
   assert.doesNotMatch(html, /style="background-image:/);
@@ -37,7 +37,7 @@ test('catalogue page is crawlable server-rendered HTML', () => {
 
 test('catalogue cards summarize platform variants and release dialogs expose each edition', () => {
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
-  const catalogue = renderCatalogue({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
+  const catalogue = renderKatalog({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
   assert.match(catalogue, /Steam · PlayStation 5/);
   assert.match(catalogue, /2 platforms/);
   const detail = renderGame({ entry: { ...entry, releases, releaseCount: 2 } });
@@ -46,7 +46,7 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
 });
 
 test('an authenticated catalogue page uses the same account-aware header vocabulary as the app', () => {
-  const html = renderCatalogue({
+  const html = renderKatalog({
     result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [],
     user: { username: 'koldKat', avatarUrl: '/avatars/koldkat.jpg' },
   });
@@ -62,7 +62,7 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
   assert.match(html, /avatars\/koldkat\.jpg/);
   assert.match(html, /My Kat·a·log/);
   assert.match(html, /class="button library-button" href="\/">[\s\S]*header-nav-label">My Kat·a·log/);
-  assert.match(html, /class="button catalogue-button(?: active)?" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
+  assert.match(html, /class="button katalog-button(?: active)?" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(html, /button-label">Game/);
   assert.match(html, /class="button signal-button" href="\/signal">[\s\S]*header-nav-label">Signal/);
 });
@@ -80,23 +80,23 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
   assert.match(html, /<progress class="header-progression-meter" data-header-progress-meter max="100" value="4"/);
   assert.doesNotMatch(html, /data-header-progress-meter style=/);
   assert.match(html, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
-  assert.match(html, /class="hero-art catalogue-hero-art"/);
-  assert.match(html, /class="hero-cover catalogue-hero-cover hero-cover-3 has-art"/);
+  assert.match(html, /class="hero-art katalog-hero-art"/);
+  assert.match(html, /class="hero-cover katalog-hero-cover hero-cover-3 has-art"/);
 });
 
 test('guest public navigation marks the current Signal or Kat·a·log section inactive', () => {
-  const catalogue = renderCatalogue({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
+  const catalogue = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
   const signal = renderSignal();
-  assert.match(catalogue, /class="button catalogue-button active" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
+  assert.match(catalogue, /class="button katalog-button active" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(signal, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
 });
 
 test('public release pages show a community aggregate but never offer a public voting control', () => {
   const html = renderGame({ entry, user: { username: 'koldKat' } });
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
-  assert.match(html, /<dialog class="catalogue-game-dialog" data-catalogue-game-dialog open/);
-  assert.match(html, /class="close-button" data-catalogue-game-close/);
-  assert.match(html, /<section class="hero catalogue-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
+  assert.match(html, /<dialog class="katalog-game-dialog" data-katalog-game-dialog open/);
+  assert.match(html, /class="close-button" data-katalog-game-close/);
+  assert.match(html, /<section class="hero katalog-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
   assert.match(html, /property="og:type" content="video\.game"/);
   assert.match(html, /property="og:image:alt" content="Portal 2 cover"/);
   assert.match(html, /"@type":"AggregateRating"/);
@@ -108,8 +108,8 @@ test('a signed-in user with the release already in their library cannot add it a
   const html = renderGame({ entry, user: { username: 'koldKat' }, libraryGame: { id: 9, title: entry.title, platform: entry.platform } });
   assert.match(html, /Already in your Kat·a·log/);
   assert.match(html, /Open my Kat·a·log/);
-  assert.match(html, /data-catalogue-destination="library"/);
-  assert.doesNotMatch(html, /data-catalogue-add/);
+  assert.match(html, /data-katalog-destination="library"/);
+  assert.doesNotMatch(html, /data-katalog-add/);
 });
 
 test('game page escapes text and refuses unsafe source links', () => {

@@ -410,7 +410,7 @@ function listGames(userId, filters = {}) {
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
-function allGamesForCatalogue() {
+function allGamesForKatalog() {
   return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL ORDER BY id`).all().map(hydrateGame);
 }
 function searchGameTitles(userId, query, limit = TITLE_SEARCH_LIMIT) {
@@ -556,7 +556,7 @@ function stats(userId) {
   return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
 }
 
-module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForCatalogue, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };

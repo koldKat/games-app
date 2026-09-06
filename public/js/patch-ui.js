@@ -4,7 +4,34 @@ const kindLabel = { bug: 'Bug', idea: 'Idea', game_data: 'Game data', other: 'Ot
 const formatDate = value => value ? new Date(`${value.replace(' ', 'T')}Z`).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '//';
 
 function dialogMarkup() {
-  return `<dialog id="patch-dialog" class="patch-dialog"><form class="modal-card patch-card" id="patch-form" novalidate><header class="modal-head"><div><p class="kicker">OPERATOR LINK</p><h2>Send a Patch</h2></div><button class="close-button" type="button" data-patch-close aria-label="Close">×</button></header><p class="patch-copy">Report a bug, correct game facts, or send an idea directly to the Kat·a·log operator.</p><div id="patch-identity" class="form-grid"><label><span>Name</span><input id="patch-name" maxlength="64" autocomplete="name"></label><label><span>Email (optional)</span><input id="patch-email" type="email" maxlength="254" autocomplete="email"></label></div><div class="form-grid"><label><span>Type</span><select id="patch-kind"><option value="bug">Bug</option><option value="game_data">Game data correction</option><option value="idea">Idea</option><option value="other">Other</option></select></label><label class="span-2"><span>Message</span><textarea id="patch-body" maxlength="4000" required placeholder="What should be fixed, added, or corrected?"></textarea></label></div><p id="patch-error" class="form-error" hidden></p><footer class="modal-actions"><button class="button ghost" type="button" data-patch-close>Cancel</button><button class="button primary" type="submit">Send Patch</button></footer></form></dialog><dialog id="ping-dialog" class="patch-dialog ping-dialog"><section class="modal-card patch-card"><header class="modal-head"><div><p class="kicker">PRIVATE // SUPPORT</p><h2>Ping</h2></div><button class="close-button" type="button" data-ping-close aria-label="Close">×</button></header><div id="ping-list-view"><p class="patch-copy">Replies to your Patch conversations appear here.</p><div id="ping-list" class="ping-list"></div></div><div id="ping-thread-view" hidden><button class="text-button patch-back" type="button" data-ping-back>← All Ping threads</button><div id="ping-messages" class="ping-messages"></div><form id="ping-reply-form" class="ping-reply" novalidate><textarea id="ping-reply-body" rows="6" maxlength="4000" required placeholder="Reply to this thread"></textarea><p id="ping-error" class="form-error" hidden></p><footer class="modal-actions"><button id="ping-delete" class="button danger-text" type="button">Delete</button><button class="button primary" type="submit">Send reply</button></footer></form></div></section></dialog>`;
+  return `${patchDialogMarkup()}${pingDialogMarkup()}`;
+}
+function patchDialogMarkup() {
+  return `<dialog id="patch-dialog" class="patch-dialog">
+  <form class="modal-card patch-card" id="patch-form" novalidate>
+    <header class="modal-head"><div><p class="kicker">OPERATOR LINK</p><h2>Send a Patch</h2></div><button class="close-button" type="button" data-patch-close aria-label="Close">×</button></header>
+    <p class="patch-copy">Report a bug, correct game facts, or send an idea directly to the Kat·a·log operator.</p>
+    <div id="patch-identity" class="form-grid"><label><span>Name</span><input id="patch-name" maxlength="64" autocomplete="name"></label><label><span>Email (optional)</span><input id="patch-email" type="email" maxlength="254" autocomplete="email"></label></div>
+    <div class="form-grid"><label><span>Type</span><select id="patch-kind"><option value="bug">Bug</option><option value="game_data">Game data correction</option><option value="idea">Idea</option><option value="other">Other</option></select></label><label class="span-2"><span>Message</span><textarea id="patch-body" maxlength="4000" required placeholder="What should be fixed, added, or corrected?"></textarea></label></div>
+    <p id="patch-error" class="form-error" hidden></p>
+    <footer class="modal-actions"><button class="button ghost" type="button" data-patch-close>Cancel</button><button class="button primary" type="submit">Send Patch</button></footer>
+  </form>
+</dialog>`;
+}
+function pingDialogMarkup() {
+  return `<dialog id="ping-dialog" class="patch-dialog ping-dialog">
+  <section class="modal-card patch-card">
+    <header class="modal-head"><div><p class="kicker">PRIVATE // SUPPORT</p><h2>Ping</h2></div><button class="close-button" type="button" data-ping-close aria-label="Close">×</button></header>
+    <div id="ping-list-view"><p class="patch-copy">Replies to your Patch conversations appear here.</p><div id="ping-list" class="ping-list"></div></div>
+    <div id="ping-thread-view" hidden>
+      <button class="text-button patch-back" type="button" data-ping-back>← All Ping threads</button><div id="ping-messages" class="ping-messages"></div>
+      <form id="ping-reply-form" class="ping-reply" novalidate>
+        <textarea id="ping-reply-body" rows="6" maxlength="4000" required placeholder="Reply to this thread"></textarea><p id="ping-error" class="form-error" hidden></p>
+        <footer class="modal-actions"><button id="ping-delete" class="button danger-text" type="button">Delete</button><button class="button primary" type="submit">Send reply</button></footer>
+      </form>
+    </div>
+  </section>
+</dialog>`;
 }
 function navIcon(kind) {
   const path = kind === 'patch'

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { createCatalogueRoutes } = require('../server/catalogue-routes');
+const { createKatalogRoutes } = require('../server/katalog-routes');
 
 function response() {
   return {
@@ -18,7 +18,7 @@ function fixture({ user = null, libraryGame = null, eventHandlers = {} } = {}) {
     publisher: 'Valve', releaseYear: 2011, coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg',
     pegiDescriptors: [], hltbMainStory: 8,
   };
-  return createCatalogueRoutes({
+  return createKatalogRoutes({
     catalogue: {
       listPublic: () => ({ entries: [entry], total: 1, page: 1, pages: 1 }), publicPlatforms: () => [],
       getPublicBySlug: slug => slug === entry.slug ? entry : null,
@@ -69,10 +69,10 @@ test('a signed-in release page hides the add form for an existing library copy',
   });
   const output = response();
   await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/game/portal-2-steam'));
-  assert.match(output.body, /data-catalogue-game-dialog open/);
+  assert.match(output.body, /data-katalog-game-dialog open/);
   assert.match(output.body, /The public Kat·a·log/);
   assert.match(output.body, /Already in your Kat·a·log/);
-  assert.doesNotMatch(output.body, /data-catalogue-add/);
+  assert.doesNotMatch(output.body, /data-katalog-add/);
 });
 
 test('public search is quiet for short input and returns factual matches otherwise', async () => {
