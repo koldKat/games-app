@@ -65,3 +65,20 @@ test('a Ping reply is delivered through the authenticated SSE channel', async ()
   assert.match(pair.res.chunks.join(''), /event: ping-updated\ndata: {"unread":2}/);
   pair.req.emit('close');
 });
+
+test('new Patches and member replies email the operator without delaying delivery', async () => {
+  const member = { id: 2, username: 'member', email: 'member@example.test' };
+  const delivered = [];
+  const routes = createPatchRoutes({
+    auth: { authenticate: req => req.user, refreshSessionCookie: () => '', isProtectedUsername: username => String(username).toLowerCase() === 'koldkat', operatorUserId: () => 1 },
+    events: { publish() {} },
+    mail: { sendOperator: message => { delivered.push(message); return Promise.resolve(); }, send: () => Promise.resolve() },
+  });
+  const created = await call(routes, member, 'POST', '/api/patch', { kind: 'idea', body: 'Try this.' });
+  const replied = await call(routes, member, 'POST', `/api/ping/${created.body.thread.id}/reply`, { body: 'One more detail.' });
+  assert.equal(replied.status, 201);
+  assert.equal(delivered.length, 2);
+  assert.match(delivered[0].subject, /New Patch from member/);
+  assert.match(delivered[0].text, /Type: idea/);
+  assert.match(delivered[1].subject, /Ping reply from member/);
+});

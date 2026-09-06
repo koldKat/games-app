@@ -246,9 +246,9 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
   assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);
 });
 
-test('public Kat·a·log prioritizes covers with a ten-column desktop grid', () => {
+test('public Kat·a·log prioritizes covers with an eight-column desktop grid', () => {
   const css = read('public/css/catalogue.css');
-  assert.match(css, /\.catalogue-grid \{ display: grid; grid-template-columns: repeat\(10,minmax\(0,1fr\)\); gap: 9px; \}/);
+  assert.match(css, /\.catalogue-grid \{ display: grid; grid-template-columns: repeat\(8,minmax\(0,1fr\)\); gap: 9px; \}/);
   assert.match(css, /max-width: 680px\)[\s\S]*\.catalogue-grid \{ grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
 });
 
@@ -634,6 +634,14 @@ test('rich PEGI metadata is shown with themed progressive disclosure', () => {
   assert.match(application, /Purchase warning|purchase-warning/);
   assert.match(css, /summary::-webkit-details-marker\{display:none\}/);
   assert.match(application, /const source = game \|\| \{\}/);
+});
+
+test('PEGI search results use the rating color rather than a generic green box', () => {
+  const application = read('public/app.js'); const css = read('public/css/theme.css');
+  assert.match(application, /class="pegi-box pegi-box-\$\{result\.pegi \|\| 'none'\}"/);
+  assert.match(css, /\.pegi-result \.pegi-box-12 \{ background:#292311; color:#e3b64e; \}/);
+  assert.match(css, /\.pegi-result \.pegi-box-16 \{ background:#2e1e14; color:#f09a62; \}/);
+  assert.match(css, /\.pegi-result \.pegi-box-18 \{ background:#2e1718; color:#f08076; \}/);
 });
 
 test('dialogs stay inside the viewport and scrollbars are themed', () => {

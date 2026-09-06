@@ -80,7 +80,7 @@
 .catalogue-main button:disabled { opacity: .55; cursor: wait; }
 .catalogue-result-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 1px 9px; color: var(--muted); font-size: 11px; }
 .catalogue-result-head strong { color: #b9c7cd; }
-.catalogue-grid { display: grid; grid-template-columns: repeat(10,minmax(0,1fr)); gap: 9px; }
+.catalogue-grid { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 9px; }
 .catalogue-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: linear-gradient(160deg,rgba(53,214,178,.035),transparent 38%),var(--panel); transition: border-color .15s,transform .15s; }
 .catalogue-card:hover { transform: translateY(-2px); border-color: #36505a; }
 .catalogue-cover { position: relative; display: block; aspect-ratio: 2/3; overflow: hidden; background: #06090d; }

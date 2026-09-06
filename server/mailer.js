@@ -86,4 +86,9 @@ async function send({ to, subject, text, html = '' }) {
   } finally { socket.destroy(); }
 }
 
-module.exports = { publicSettings, saveSettings, send, message };
+function sendOperator({ subject, text, html = '' }) {
+  const config = settings();
+  return send({ to: config?.username || config?.sender || '', subject, text, html });
+}
+
+module.exports = { publicSettings, saveSettings, send, sendOperator, message };

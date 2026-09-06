@@ -569,6 +569,12 @@ dialog::backdrop {
   background: #10271f;
   color: #57d8ad;
 }
+.pegi-result .pegi-box-3 { background:#10271f; color:#59dbae; }
+.pegi-result .pegi-box-7 { background:#1e2d14; color:#9bd45d; }
+.pegi-result .pegi-box-12 { background:#292311; color:#e3b64e; }
+.pegi-result .pegi-box-16 { background:#2e1e14; color:#f09a62; }
+.pegi-result .pegi-box-18 { background:#2e1718; color:#f08076; }
+.pegi-result .pegi-box-none { background:#17212a; color:#9aaab4; }
 .pegi-result strong {
   font-size: 9px;
 }

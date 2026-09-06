@@ -50,7 +50,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/catalogue summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
