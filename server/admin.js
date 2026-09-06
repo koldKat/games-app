@@ -233,7 +233,7 @@ async function handleApi(request, response, url) {
       if (request.method === 'POST' && patchMatch[2] === 'reply') {
         const body = String((await readJson(request)).body || '').trim().slice(0, 4000); if (!body) return sendJson(response, 400, { error: 'Write a reply before sending.' });
         patch.addMessage(id, 'admin', body); if (item.userId) events.publish(item.userId, 'ping-updated', { unread: patch.unreadForUser(item.userId) });
-        if (item.email) mailer.send({ to: item.email, subject: 'Reply to your Patch // Game Kat·a·log', text: `A reply was posted to your Patch:\n\n${body}\n\nSign in to Game Kat·a·log to continue the conversation in Ping.` }).catch(() => {});
+        if (item.email) mailer.sendPatchNotice({ to: item.email, subject: 'Reply to your Patch // Game Kat·a·log', heading: 'New reply in Ping', detail: 'An operator replied to your Patch conversation.', body, footer: 'You received this because you started a Patch conversation.' }).catch(() => {});
         return sendJson(response, 201, { thread: patch.thread(id) });
       }
       if (request.method === 'DELETE' && !patchMatch[2]) { const removed = patch.removeForAdmin(id); const operatorId = auth.operatorUserId(); if (removed && operatorId) events.publish(operatorId, 'ping-updated', { unread: patch.adminUnread() }); return sendJson(response, removed ? 200 : 404, { ok: true }); }

@@ -1078,5 +1078,7 @@ dialog::backdrop {
   .top-actions .account-button { width: 38px; min-width: 38px; max-width: 38px; padding: 0; }
   .account-button #account-name { display: none; }
   .account-button .nav-avatar { left: 50%; transform: translate(-50%, -50%); }
+  #account-dialog { height: 100dvh; max-height: 100dvh; }
+  #account-dialog .account-modal { height: 100%; max-height: 100%; border-radius: 0; }
   .top-actions .catalogue-button.active,.top-actions .library-button.active,.top-actions .signal-button.active,.top-actions .forum-button.active { border-color:#287b6c; background:#173f3a; color:#72efd1; }
 }

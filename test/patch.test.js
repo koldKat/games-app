@@ -15,7 +15,7 @@ test('Patch and Ping remain private, modular, and locally triaged', () => {
   assert.match(routes, /url\.pathname === '\/api\/patch'/); assert.match(routes, /url\.pathname === '\/api\/ping'/);
   assert.match(routes, /events\.publish\(item\.userId, 'ping-updated'/);
   assert.match(routes, /notifyOperator\(\)/); assert.match(routes, /auth\.operatorUserId/);
-  assert.match(routes, /emailOperator/); assert.match(read('server/mailer.js'), /function sendOperator/);
+  assert.match(routes, /emailOperator/); assert.match(read('server/mailer.js'), /function sendOperatorNotice/); assert.match(read('server/mailer.js'), /OPEN GAME KAT·A·LOG/);
   assert.match(read('server/admin.js'), /\/api\/admin\/patch/);
   assert.match(read('admin/index.html'), /data-tab="patch"/);
   assert.match(read('admin/index.html'), /id="panel-patch"/);

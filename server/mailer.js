@@ -8,7 +8,9 @@ const { db } = require('./db');
 
 const SECURITY_VALUES = new Set(['starttls', 'tls', 'none']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const APP_URL = 'https://gamekat.net';
 const clean = (value, limit = 500) => String(value || '').trim().slice(0, limit);
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
 function settings() { return db.prepare('SELECT host, port, security, username, password, sender FROM mail_settings WHERE id=1').get() || null; }
 function publicSettings() {
@@ -86,9 +88,19 @@ async function send({ to, subject, text, html = '' }) {
   } finally { socket.destroy(); }
 }
 
-function sendOperator({ subject, text, html = '' }) {
+function patchNoticeHtml({ heading, detail = '', body, footer = 'Game Kat·a·log notification' }) {
+  const lineBreaks = value => escapeHtml(value).replace(/\r?\n/g, '<br>');
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;background:#06100e;color:#d6e6e0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:30px 12px;background:#06100e"><tr><td align="center"><table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;background:#0b1514;border:1px solid #2b5d50;border-radius:8px;overflow:hidden"><tr><td style="padding:18px 24px;background:#0d2621;border-bottom:1px solid #2b5d50"><div style="margin:0;color:#67e7c5;font-size:16px;font-weight:700;letter-spacing:.08em">GAME KAT·A·LOG</div><div style="margin-top:5px;color:#8eaaa1;font-size:10px;letter-spacing:.14em">PATCH // PING</div></td></tr><tr><td style="padding:24px"><h1 style="margin:0 0 8px;color:#e1f0ea;font-size:18px;line-height:1.3">${escapeHtml(heading)}</h1>${detail ? `<p style="margin:0 0 16px;color:#9db6ad;font-size:12px;line-height:1.55">${lineBreaks(detail)}</p>` : ''}<div style="padding:14px 16px;border-left:3px solid #54d9b7;background:#0a1d19;color:#d3e4dd;font-size:13px;line-height:1.6;white-space:normal">${lineBreaks(body)}</div><table role="presentation" cellspacing="0" cellpadding="0" style="margin:22px auto 0"><tr><td style="border-radius:5px;background:#16745f"><a href="${APP_URL}/" style="display:inline-block;padding:10px 16px;color:#f0fffa;font-size:12px;font-weight:700;letter-spacing:.04em;text-decoration:none">OPEN GAME KAT·A·LOG</a></td></tr></table></td></tr><tr><td style="padding:13px 24px;border-top:1px solid #203f36;color:#749188;font-size:10px;text-align:center">${escapeHtml(footer)}</td></tr></table></td></tr></table></body></html>`;
+}
+function patchNoticeText({ heading, detail = '', body, footer = 'Game Kat·a·log notification' }) {
+  return `${heading}${detail ? `\n\n${detail}` : ''}\n\n${body}\n\nOpen Game Kat·a·log:\n${APP_URL}/\n\n${footer}`;
+}
+function sendPatchNotice({ to, subject, heading, detail = '', body, footer }) {
+  return send({ to, subject, text: patchNoticeText({ heading, detail, body, footer }), html: patchNoticeHtml({ heading, detail, body, footer }) });
+}
+function sendOperatorNotice({ subject, heading, detail = '', body, footer = 'Operator notification // Game Kat·a·log' }) {
   const config = settings();
-  return send({ to: config?.username || config?.sender || '', subject, text, html });
+  return sendPatchNotice({ to: config?.username || config?.sender || '', subject, heading, detail, body, footer });
 }
 
-module.exports = { publicSettings, saveSettings, send, sendOperator, message };
+module.exports = { publicSettings, saveSettings, send, sendPatchNotice, sendOperatorNotice, patchNoticeHtml, patchNoticeText, message };
