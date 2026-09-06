@@ -42,6 +42,18 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const PUBLIC_URL = String(process.env.PUBLIC_URL || 'https://gamekat.net').replace(/\/$/, '');
 const AVATARS_DIR = path.join(PUBLIC_DIR, 'avatars');
 fs.mkdirSync(AVATARS_DIR, { recursive: true });
+const PUBLIC_CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://cdn.thegamesdb.net https://cdn.steamgriddb.com https://cdn2.steamgriddb.com https://howlongtobeat.com",
+  "connect-src 'self'",
+  "font-src 'self'",
+  "frame-ancestors 'self'",
+  "form-action 'self'",
+].join('; ');
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'application/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
@@ -132,8 +144,19 @@ async function runCoverJob(userId, key) {
   events.publish(userId, 'cover-job', { job });
 }
 
+function setPublicSecurityHeaders(response) {
+  response.setHeader('Content-Security-Policy', PUBLIC_CONTENT_SECURITY_POLICY);
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+}
+
 function sendJson(response, status, value, headers = {}) {
   const body = JSON.stringify(value);
+  setPublicSecurityHeaders(response);
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-store', ...headers });
   response.end(body);
 }
@@ -141,6 +164,7 @@ function sendJson(response, status, value, headers = {}) {
 function sendCoverPreview(response, preview) {
   const contentType = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[preview.extension];
   if (!contentType) return sendJson(response, 415, { error: 'Cover provider did not return a supported image.' });
+  setPublicSecurityHeaders(response);
   response.writeHead(200, { 'Content-Type': contentType, 'Content-Length': preview.source.length, 'Cache-Control': 'private, max-age=900', 'X-Content-Type-Options': 'nosniff' });
   response.end(preview.source);
 }
@@ -208,6 +232,7 @@ function serveStatic(request, requestPath, response) {
   if (durableCover) {
     return fs.stat(filePath, (error, stats) => {
       if (error || !stats.isFile()) return sendJson(response, error?.code === 'ENOENT' ? 404 : 500, { error: error?.code === 'ENOENT' ? 'Not found.' : 'Could not read file.' });
+      setPublicSecurityHeaders(response);
       response.writeHead(200, { 'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream', 'Content-Length': stats.size,
         'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' });
       const stream = fs.createReadStream(filePath); stream.on('error', () => response.destroy()); stream.pipe(response);
@@ -219,6 +244,7 @@ function serveStatic(request, requestPath, response) {
       return sendJson(response, 500, { error: 'Could not read file.' });
     }
     const etag = `"${content.length}-${crypto.createHash('md5').update(content).digest('hex').slice(0, 8)}"`;
+    setPublicSecurityHeaders(response);
     const headers = {
       'Content-Type': MIME[path.extname(filePath)] || 'application/octet-stream',
       'Cache-Control': 'no-cache',
@@ -507,6 +533,7 @@ async function handleApi(request, response, url) {
 }
 
 const server = http.createServer(async (request, response) => {
+  setPublicSecurityHeaders(response);
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   try {
     if (await admin.handle(request, response, url)) return;
