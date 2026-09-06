@@ -82,6 +82,19 @@ function decorativeCoverField(coverUrls = []) {
   return `<div class="auth-cover-field app-cover-field" aria-hidden="true">${slots}</div>`;
 }
 
+function footerMarkup(copyright) {
+  return `<footer class="app-footer" aria-label="Site footer">
+    <span class="footer-studio">
+      <span class="app-footer-brand" tabindex="0" aria-describedby="footer-studio-links">koldKat productions</span> <span>${copyright}</span>
+      <span id="footer-studio-links" class="footer-studio-links" role="tooltip">
+        <a href="https://pathmap.net" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V5l14 4-14 4"/><path d="M9 13v6"/></svg><span><b>Pathmap.net // Gamebook Tracker</b><small>Map every branch of your gamebook playthroughs.</small></span><i aria-hidden="true">↗</i></a>
+        <a href="https://biseri.net" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m12 3 1.3 5.7L19 10l-5.7 1.3L12 17l-1.3-5.7L5 10l5.7-1.3Z"/></svg><span><b>Бисери</b><small>Семейни бисери, смешни моменти и забавни детски истории.</small></span><i aria-hidden="true">↗</i></a>
+      </span>
+    </span>
+    <span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a>
+  </footer>`;
+}
+
 function pageShell({ title, description, canonical, content, structuredData, user = null, progress = null, coverUrls = [], socialImage = `${SITE_URL}/social-preview.png`, socialImageAlt = 'Game Kat·a·log', socialType = 'website', currentView = '', extraStyles = '', extraScripts = '' }) {
   const currentYear = new Date().getFullYear();
   const copyright = currentYear > 2026 ? `© 2026-${currentYear}` : '© 2026';
@@ -128,7 +141,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
       ${headerActions(user, progress, currentView || (canonical === `${SITE_URL}/signal` ? 'signal' : canonical === `${SITE_URL}/katalog` || canonical.includes('/game/') ? 'catalogue' : 'library'))}
     </header>
     ${content}
-    <footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions</span> <span>${copyright}</span></span><span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a></footer>
+    ${footerMarkup(copyright)}
   </div>
   <script type="module" src="/js/katalog-public.js"></script>
   <script type="module" src="/js/site-header.js"></script>

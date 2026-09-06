@@ -230,7 +230,9 @@ test('authenticated library carries the family copyright notice with a rolling y
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
   assert.match(css, /\.app-footer-brand\{color:#f5a623;font-weight:600\}/);
   assert.match(css, /\.app-footer\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/);
-  assert.match(catalogue, /<footer class="app-footer" aria-label="Site footer"><span><span class="app-footer-brand">koldKat productions<\/span> <span>\$\{copyright\}<\/span><\/span><span>GAMEKAT\.NET \/\/ GAME KAT·A·LOG<\/span><a href="\/docs\/user-guide\.html">USER GUIDE<\/a><\/footer>/);
+  assert.match(html, /footer-studio-links[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net[\s\S]*target="_blank"/);
+  assert.match(css, /\.footer-studio:hover \.footer-studio-links,.footer-studio:focus-within \.footer-studio-links/);
+  assert.match(catalogue, /function footerMarkup\(copyright\)[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net/);
 });
 
 test('common filters never move the viewport', () => {
