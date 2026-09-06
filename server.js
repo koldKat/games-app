@@ -57,11 +57,6 @@ const externalCoverProviders = Object.freeze({
   },
 });
 const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
-const escapeEmailHtml = value => String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-function passwordResetEmail({ username, link }) {
-  const safeUsername = escapeEmailHtml(username); const safeLink = escapeEmailHtml(link);
-  return `<!doctype html><html lang="en"><body style="margin:0;padding:0;background:#071016;color:#dce6ee;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#071016;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #29404b;background:#0b141b"><tr><td style="padding:18px 22px;border-bottom:1px solid #29404b;background:#101d24;color:#64e8ca;font-size:12px;font-weight:bold;letter-spacing:1.5px">GAME KAT·A·LOG</td></tr><tr><td style="padding:26px 22px"><p style="margin:0 0 14px;color:#90a1af;font-size:12px;letter-spacing:1px;text-transform:uppercase">Account security</p><h1 style="margin:0 0 14px;color:#f2f7fa;font-size:24px;line-height:1.2">Reset your password</h1><p style="margin:0 0 20px;color:#bfccd5;font-size:15px;line-height:1.55">Hello ${safeUsername}, use the button below to choose a new password. This one-time link expires in one hour.</p><p style="margin:0 0 22px"><a href="${safeLink}" style="display:inline-block;padding:12px 17px;background:#1d8b76;border:1px solid #64e8ca;color:#06120f;font-size:14px;font-weight:bold;text-decoration:none">Reset password</a></p><p style="margin:0;color:#8798a6;font-size:12px;line-height:1.55">If the button does not open, copy this address into your browser:<br><a href="${safeLink}" style="color:#72e4c8;word-break:break-all">${safeLink}</a></p></td></tr><tr><td style="padding:14px 22px;border-top:1px solid #29404b;color:#71828f;font-size:12px;line-height:1.5">If you did not request this reset, you can safely ignore this email.</td></tr></table></td></tr></table></body></html>`;
-}
 function isCatalogueContribution(userId, game, result) {
   const entry = result?.entry;
   return entry?.status === 'public' && Number(entry.submittedByUserId) === Number(userId) && Number(entry.sourceGameId) === Number(game?.id);
@@ -282,7 +277,7 @@ async function handleApi(request, response, url) {
       if (reset) {
         try {
           const link = `${PUBLIC_URL}/?reset=${encodeURIComponent(reset.token)}`;
-          await mailer.send({ to: reset.email, subject: 'Reset your Game Kat·a·log password', text: `Hello ${reset.username},\n\nUse this one-time link to choose a new Game Kat·a·log password:\n${link}\n\nIt expires in one hour. If you did not request this, you can ignore this email.`, html: passwordResetEmail({ username: reset.username, link }) });
+          await mailer.sendPasswordReset({ to: reset.email, username: reset.username, link });
           auth.storePasswordReset(reset);
         } catch (error) { console.error(`[mail] password-reset delivery failed: ${error.message}`); }
       }

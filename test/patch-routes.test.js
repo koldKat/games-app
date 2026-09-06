@@ -72,13 +72,13 @@ test('new Patches and member replies email the operator without delaying deliver
   const routes = createPatchRoutes({
     auth: { authenticate: req => req.user, refreshSessionCookie: () => '', isProtectedUsername: username => String(username).toLowerCase() === 'koldkat', operatorUserId: () => 1 },
     events: { publish() {} },
-    mail: { sendOperatorNotice: message => { delivered.push(message); return Promise.resolve(); }, sendPatchNotice: () => Promise.resolve() },
+    mail: { sendOperatorPatch: message => { delivered.push(message); return Promise.resolve(); }, sendOperatorPingReply: message => { delivered.push(message); return Promise.resolve(); }, sendPatchReply: () => Promise.resolve() },
   });
   const created = await call(routes, member, 'POST', '/api/patch', { kind: 'idea', body: 'Try this.' });
   const replied = await call(routes, member, 'POST', `/api/ping/${created.body.thread.id}/reply`, { body: 'One more detail.' });
   assert.equal(replied.status, 201);
   assert.equal(delivered.length, 2);
-  assert.match(delivered[0].subject, /New Patch from member/);
-  assert.match(delivered[0].detail, /Type: idea/);
-  assert.match(delivered[1].subject, /Ping reply from member/);
+  assert.equal(delivered[0].username, 'member');
+  assert.equal(delivered[0].kind, 'idea');
+  assert.equal(delivered[1].username, 'member');
 });

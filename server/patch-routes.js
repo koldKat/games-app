@@ -27,7 +27,8 @@ function createPatchRoutes({ auth, events, mail = mailer }) {
   const operatorUnread = () => patch.adminUnread();
   function notifyOperator() { const id = operatorId(); if (id) events.publish(id, 'ping-updated', { unread: operatorUnread() }); }
   function notifyOwner(item) { if (item?.userId) events.publish(item.userId, 'ping-updated', { unread: patch.unreadForUser(item.userId) }); }
-  function emailOperator({ subject, heading, detail, body }) { mail.sendOperatorNotice({ subject, heading, detail, body }).catch(() => {}); }
+  function emailOperatorPatch(input) { mail.sendOperatorPatch(input).catch(() => {}); }
+  function emailOperatorPingReply(input) { mail.sendOperatorPingReply(input).catch(() => {}); }
   async function handle(request, response, url) {
     const user = auth.authenticate(request);
     if (request.method === 'POST' && url.pathname === '/api/patch') {
@@ -36,7 +37,7 @@ function createPatchRoutes({ auth, events, mail = mailer }) {
         const item = patch.create({ userId: user?.id || null, ...input });
         if (!user || !auth.isProtectedUsername(user.username)) {
           notifyOperator();
-          emailOperator({ subject: `New Patch from ${input.username || 'anonymous'} // Game Kat·a·log`, heading: 'New Patch received', detail: `From ${input.username || 'anonymous'}${input.email ? ` <${input.email}>` : ''}\nType: ${input.kind}`, body: input.body });
+          emailOperatorPatch(input);
         }
         send(response, 201, { thread: item }); return true;
       } catch (error) { send(response, 400, { error: error.message }); return true; }
@@ -55,8 +56,8 @@ function createPatchRoutes({ auth, events, mail = mailer }) {
       if (request.method === 'POST' && match[2] === 'reply') {
         const body = text((await readJson(request)).body); if (!body) throw new Error('Write a reply before sending.');
         patch.addMessage(id, isOperator ? 'admin' : 'user', body);
-        if (isOperator) { notifyOwner(item); if (item.email) mail.sendPatchNotice({ to: item.email, subject: 'Reply to your Patch // Game Kat·a·log', heading: 'New reply in Ping', detail: 'An operator replied to your Patch conversation.', body, footer: 'You received this because you started a Patch conversation.' }).catch(() => {}); }
-        else { notifyOperator(); emailOperator({ subject: `Ping reply from ${user.username} // Game Kat·a·log`, heading: 'New Ping reply received', detail: `${user.username} replied to Patch #${id}.`, body }); }
+        if (isOperator) { notifyOwner(item); if (item.email) mail.sendPatchReply({ to: item.email, body }).catch(() => {}); }
+        else { notifyOperator(); emailOperatorPingReply({ username: user.username, threadId: id, body }); }
         send(response, 201, { thread: patch.thread(id) }); return true;
       }
       if (request.method === 'DELETE' && !match[2]) { if (isOperator) patch.removeForAdmin(id); else patch.removeForUser(id, user.id); send(response, 200, { ok: true, unread: isOperator ? operatorUnread() : patch.unreadForUser(user.id) }); return true; }

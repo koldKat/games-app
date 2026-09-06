@@ -457,8 +457,9 @@ test('password reset has a token-based login flow and localhost SMTP administrat
   assert.match(mailer, /STARTTLS/);
   assert.match(mailer, /AUTH PLAIN/);
   assert.match(mailer, /multipart\/alternative/);
-  assert.match(read('server.js'), /GAME KAT·A·LOG/);
-  assert.match(read('server.js'), /Reset password<\/a>/);
+  assert.match(read('server.js'), /sendPasswordReset/);
+  assert.match(read('server/email-templates.js'), /GAME KAT·A·LOG/);
+  assert.match(read('server/email-templates.js'), /RESET PASSWORD/);
 });
 
 test('public release links retain crawlable URLs while opening in the Kat·a·log detail dialog', () => {
