@@ -45,6 +45,15 @@ test('notes and fulfilled wishlists award their one-time events', async () => {
   assert.equal(service.recordGame(user.id, updated, { previous: game }).awards.some(item => ['note_added', 'wishlist_fulfilled'].includes(item.event)), false);
 });
 
+test('a thread author receives one engagement award when another account replies', async () => {
+  const user = await auth.register('xp_forum_host', 'password-seven');
+  const service = createProgressionService({ store: data.progression, data });
+  const first = service.recordForumReplyReceived(user.id, 71);
+  const repeat = service.recordForumReplyReceived(user.id, 71);
+  assert.deepEqual(first.awards.map(item => item.event), ['forum_reply_received']);
+  assert.equal(repeat.awards.length, 0);
+});
+
 test('public Kat·a·log contributions award once and safely backfill', async () => {
   const user = await auth.register('xp_contributor', 'password-five');
   const game = data.createGame(user.id, { title: 'Public Record', platform: 'PC' });

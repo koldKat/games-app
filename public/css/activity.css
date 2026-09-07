@@ -22,7 +22,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 17px;
   gap: 6px;
-  align-items: start;
+  align-items: center;
   padding: 5px;
   border: 1px solid #234039;
   background: #07120fbb;
@@ -37,9 +37,14 @@
 .activity-preview-trigger { position: relative; }
 .activity-preview-trigger > img { position: absolute; z-index: 30; bottom: calc(100% + 9px); left: 0; display: block; width: 138px; max-height: 192px; opacity: 0; pointer-events: none; border: 1px solid #4b9788; background: #09120f; box-shadow: 0 12px 28px #000d; object-fit: cover; transform: translateY(4px); transition: opacity .12s ease, transform .12s ease; visibility: hidden; }
 .activity-preview-trigger--avatar > img { width: 112px; height: 112px; max-height: none; }
+.activity-preview-profile { position: absolute; z-index: 31; top: -6px; left: 56px; display: flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; width: max-content; min-width: 112px; padding: 2px 5px; border: 1px solid #3a7165; border-radius: 4px; background: #0a1916; box-shadow: 0 6px 18px #000b; color: #dbece6; font-size: 11px; line-height: 1; opacity: 0; pointer-events: none; transform: translate(-50%, 3px); transition: opacity .12s ease, transform .12s ease; visibility: hidden; white-space: nowrap; }
+.activity-preview-profile b { color: #72e5c9; font-size: 11px; }
+.activity-preview-profile small { color: #b9c9c4; font-size: 10px; }
 .activity-preview-trigger:not(.activity-preview-dismissed):hover > img,
 .activity-preview-trigger:not(.activity-preview-dismissed):focus-within > img { opacity: 1; transform: translateY(0); visibility: visible; }
-.activity-entry time { color: #66847c; font-size: 8px; text-align: right; }
+.activity-preview-trigger:not(.activity-preview-dismissed):hover > .activity-preview-profile,
+.activity-preview-trigger:not(.activity-preview-dismissed):focus-within > .activity-preview-profile { opacity: 1; transform: translate(-50%, 0); visibility: visible; }
+.activity-entry time { align-self: center; color: #66847c; font-size: 8px; line-height: 1; text-align: right; }
 .activity-feed-empty { margin: auto 0; color: #718a83; font-size: 9px; line-height: 1.45; }
 .activity-entry--announcement { position:relative; grid-template-columns:minmax(0,1fr) 17px; border-color:#356257; background:linear-gradient(110deg,#103129cc,#09130fdd); }
 .activity-entry--announcement p { display:grid; gap:4px; color:#b8d2ca; }

@@ -7,9 +7,9 @@ function age(value) {
   if (seconds < 60) return 'now'; if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`; return `${Math.floor(seconds / 86400)}d`;
 }
-function preview(content, url, kind, alt) {
-  if (!url) return content;
-  return `<span class="activity-preview-trigger activity-preview-trigger--${kind}">${content}<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}"></span>`;
+function preview(content, url, kind, alt, detail = '') {
+  if (!url && !detail) return content;
+  return `<span class="activity-preview-trigger activity-preview-trigger--${kind}">${content}${url ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">` : ''}${detail}</span>`;
 }
 export function dismissActivityPreview(link) {
   const trigger = link?.closest?.('.activity-preview-trigger');
@@ -18,7 +18,11 @@ export function dismissActivityPreview(link) {
   trigger.addEventListener('pointerenter', () => trigger.classList.remove('activity-preview-dismissed'), { once: true });
 }
 function userLabel(entry) {
-  return preview(`<b>${escapeHtml(entry.username)}</b>`, entry.avatarUrl, 'avatar', `${entry.username} avatar`);
+  const level = Number(entry.userLevel);
+  const profile = Number.isFinite(level)
+    ? `<span class="activity-preview-profile"><b>LV ${level}</b>${entry.userTitle ? `<small>${escapeHtml(entry.userTitle)}</small>` : ''}</span>`
+    : '';
+  return preview(`<b>${escapeHtml(entry.username)}</b>`, entry.avatarUrl, 'avatar', `${entry.username} avatar`, profile);
 }
 function phrase(entry) {
   if (entry.type === 'announcement') return `<strong>${escapeHtml(entry.title)}</strong><span class="activity-announcement-body">${formatAnnouncementBody(entry.body)}</span>`;
@@ -48,6 +52,8 @@ function dayLabel(value) {
   return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
 const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
+const SIGNAL_CACHE_MS = 15_000;
+const SIGNAL_LOADER_DELAY_MS = 220;
 function contributionGroup(entry, entries, id) {
   const count = entries.length;
   const username = escapeHtml(entry.username);
@@ -84,43 +90,58 @@ function groupedCards(entries) {
   return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index)}</div></section>`).join('');
 }
 export function createActivityFeed() {
-  const hosts = () => [...document.querySelectorAll('[data-activity-feed]')]; let refreshTimer = null; let source = null;
-  function showSignalLoaders(targets) {
+  const hosts = () => [...document.querySelectorAll('[data-activity-feed]')];
+  let refreshTimer = null; let source = null; let cachedPayload = null; let cachedAt = 0; let loading = null;
+  function bindGroups(host) {
+    if (host.dataset.activityGroupsBound === 'true') return;
+    host.dataset.activityGroupsBound = 'true';
+    host.addEventListener('click', event => {
+      const toggle = event.target.closest('[data-activity-group-toggle]'); if (!toggle) return;
+      const list = document.getElementById(toggle.dataset.activityGroupToggle); if (!list || !host.contains(list)) return;
+      list.hidden = !list.hidden; const expanded = !list.hidden;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} ${toggle.querySelector('b')?.textContent || 'account'}'s contributed games`);
+    });
+  }
+  function render(targets, body) {
+    const entries = body.entries || []; const pinned = body.pinned || null;
     for (const host of targets) {
-      if (!host.classList.contains('signal-feed') || host.dataset.activityLoaded === 'true') continue;
-      host.innerHTML = `<div class="library-loader signal-feed-loader" role="status">${controllerLoaderMarkup('Tuning the signal…')}</div>`;
+      const limit = host.dataset.activityLimit === 'all' ? entries.length : Math.max(1, Number(host.dataset.activityLimit) || 3);
+      const visible = entries.slice(0, limit);
+      const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
+      const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
+      host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
+      host.dataset.activityLoaded = 'true'; bindGroups(host);
     }
   }
-  async function load() {
+  function scheduleSignalLoaders(targets) {
+    return setTimeout(() => {
+      for (const host of targets) {
+        if (!host.classList.contains('signal-feed') || host.dataset.activityLoaded === 'true') continue;
+        host.innerHTML = `<div class="library-loader signal-feed-loader" role="status">${controllerLoaderMarkup('Tuning the signal…')}</div>`;
+      }
+    }, SIGNAL_LOADER_DELAY_MS);
+  }
+  async function load({ force = false } = {}) {
     const targets = hosts();
     if (!targets.length) return;
-    showSignalLoaders(targets);
-    try {
-      const response = await fetch('/api/activity', { cache: 'no-store' }); const body = await response.json();
-      const entries = body.entries || []; const pinned = body.pinned || null;
-      for (const host of targets) {
-        const limit = host.dataset.activityLimit === 'all' ? entries.length : Math.max(1, Number(host.dataset.activityLimit) || 3);
-        const visible = entries.slice(0, limit);
-        const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
-        const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
-        host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
-        host.dataset.activityLoaded = 'true';
-        if (host.dataset.activityGroupsBound !== 'true') {
-          host.dataset.activityGroupsBound = 'true';
-          host.addEventListener('click', event => {
-            const toggle = event.target.closest('[data-activity-group-toggle]'); if (!toggle) return;
-            const list = document.getElementById(toggle.dataset.activityGroupToggle); if (!list || !host.contains(list)) return;
-            list.hidden = !list.hidden; const expanded = !list.hidden;
-            toggle.setAttribute('aria-expanded', String(expanded));
-            toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} ${toggle.querySelector('b')?.textContent || 'account'}'s contributed games`);
-          });
-        }
-      }
-    } catch { for (const host of targets) { host.innerHTML = '<p class="activity-feed-empty">Signal temporarily unavailable.</p>'; host.dataset.activityLoaded = 'true'; } }
+    if (cachedPayload) render(targets, cachedPayload);
+    if (!force && cachedPayload && Date.now() - cachedAt < SIGNAL_CACHE_MS) return;
+    if (loading) return loading;
+    const loaderTimer = cachedPayload ? null : scheduleSignalLoaders(targets);
+    loading = (async () => {
+      try {
+        const response = await fetch('/api/activity', { cache: 'no-store' }); const body = await response.json();
+        cachedPayload = body; cachedAt = Date.now(); render(hosts(), body);
+      } catch {
+        if (!cachedPayload) for (const host of hosts()) { host.innerHTML = '<p class="activity-feed-empty">Signal temporarily unavailable.</p>'; host.dataset.activityLoaded = 'true'; }
+      } finally { if (loaderTimer) clearTimeout(loaderTimer); loading = null; }
+    })();
+    return loading;
   }
   function start() {
     void load(); source?.close(); source = new EventSource('/api/activity/stream');
-    source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load(), 120); });
+    source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load({ force: true }), 120); });
   }
   return { start, stop: () => { clearTimeout(refreshTimer); refreshTimer = null; source?.close(); source = null; }, load };
 }

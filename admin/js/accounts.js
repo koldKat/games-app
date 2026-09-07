@@ -28,7 +28,12 @@ export async function loadAccounts() {
         await busy(lock, async () => { await api('PATCH', `/api/admin/accounts/${account.id}/lock`, { locked: locking }); toast(locking ? 'Account locked and sessions revoked.' : 'Account unlocked.'); await loadAccounts(); });
       });
       lock.disabled = Boolean(account.protected);
-      if (account.protected) { lock.textContent = 'Protected'; lock.title = 'The koldKat account cannot be locked.'; }
+      if (account.protected) {
+        lock.textContent = 'Protected';
+        lock.classList.add('themed-tooltip');
+        lock.dataset.tooltip = 'This account cannot be locked.';
+        lock.removeAttribute('title');
+      }
       const remove = button('Delete account', 'danger', async () => {
         const confirmed = await confirmAction({
           title: `Delete ${account.username}?`,
@@ -44,7 +49,12 @@ export async function loadAccounts() {
         });
       });
       remove.disabled = Boolean(account.protected);
-      if (account.protected) { remove.textContent = 'Protected'; remove.title = 'The koldKat account cannot be deleted.'; }
+      if (account.protected) {
+        remove.textContent = 'Protected';
+        remove.classList.add('themed-tooltip');
+        remove.dataset.tooltip = 'This account cannot be deleted.';
+        remove.removeAttribute('title');
+      }
       actions.append(revoke, lock, remove);
     });
   } catch (error) { emptyRow(body, 9, error.message); toast(error.message, true); }

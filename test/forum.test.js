@@ -32,9 +32,12 @@ test('forum stays modular, public to read, account-gated to contribute, and loca
 });
 
 test('forum participation awards idempotent progression events', () => {
-  const policy = read('server/progression-policy.js'); const service = read('server/progression-service.js');
+  const policy = read('server/progression-policy.js'); const service = read('server/progression-service.js'); const routes = read('server/forum-routes.js');
   assert.match(policy, /forum_thread: \{ amount: 25/);
   assert.match(policy, /forum_reply: \{ amount: 5/);
+  assert.match(policy, /forum_reply_received: \{ amount: 15/);
   assert.match(service, /recordForumThread/);
   assert.match(service, /recordForumReply/);
+  assert.match(service, /recordForumReplyReceived/);
+  assert.match(routes, /threadOwnerId && threadOwnerId !== user\.id/);
 });

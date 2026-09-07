@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="resuming-session">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -31,7 +31,10 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <script>document.documentElement.classList.add('resuming-session')</script>
+  <style>
+    .resuming-session body > :not(#session-resume) { visibility: hidden; }
+    .resuming-session #session-resume { display: grid; visibility: visible; }
+  </style>
   <link rel="stylesheet" href="/css/foundation.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/library.css">
@@ -216,8 +219,8 @@
         <div class="library-head">
           <div><p class="kicker library-title">My Kat·a·log</p></div>
           <div class="view-buttons" aria-label="View style">
-            <button class="icon-button active" id="grid-view" title="Card view" aria-label="Card view">▦</button>
-            <button class="icon-button" id="list-view" title="Compact view" aria-label="Compact view">☷</button>
+            <button class="icon-button themed-tooltip active" id="grid-view" data-tooltip="Card view" aria-label="Card view">▦</button>
+            <button class="icon-button themed-tooltip" id="list-view" data-tooltip="Compact view" aria-label="Compact view">☷</button>
           </div>
         </div>
 

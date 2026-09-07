@@ -73,7 +73,13 @@ export function createPatchUi({ api, toast, getUser }) {
   }
   function updateAvailability(count = 0) {
     document.querySelectorAll('[data-ping-open]').forEach(button => {
-      const empty = Number(count) === 0; button.disabled = empty; button.setAttribute('aria-disabled', String(empty)); button.title = empty ? 'No Ping conversations yet.' : 'Open Ping';
+      const empty = Number(count) === 0;
+      button.disabled = empty;
+      button.setAttribute('aria-disabled', String(empty));
+      button.classList.toggle('themed-tooltip', empty);
+      if (empty) button.dataset.tooltip = 'No Ping conversations yet.';
+      else delete button.dataset.tooltip;
+      button.removeAttribute('title');
     });
   }
   updateAvailability(0);

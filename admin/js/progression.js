@@ -1,4 +1,5 @@
 import { api, busy, toast } from './core.js';
+import { mountThemedNumberSteppers } from '/js/number-steppers.js';
 
 let config = [];
 function render() {
@@ -8,6 +9,7 @@ function render() {
     const input = document.createElement('input'); input.type = 'number'; input.min = '0'; input.max = '100000'; input.step = '1'; input.value = String(item.amount); input.dataset.event = item.event; input.setAttribute('aria-label', `${item.label} XP amount`);
     label.append(name, input); target.append(label);
   });
+  mountThemedNumberSteppers(target);
 }
 export async function loadProgression() {
   try { config = (await api('GET', '/api/admin/progression')).config; render(); }

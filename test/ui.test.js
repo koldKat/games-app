@@ -71,7 +71,9 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/signal-page.js'), /const activityFeed = createActivityFeed\(\)/);
   assert.match(read('public/js/signal-page.js'), /activityFeed\.start\(\)/);
   assert.match(read('public/js/signal-page.js'), /pagehide'[\s\S]*activityFeed\.stop\(\)/);
-  assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt\)/);
+  assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt, detail = ''\)/);
+  assert.match(read('public/js/activity-feed.js'), /class="activity-preview-profile"/);
+  assert.match(activity, /userLevel: progression\.level, userTitle: progression\.title/);
   assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
   assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
   assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerenter'/);
@@ -137,12 +139,12 @@ test('authenticated app matches the login account-cover background visibility', 
 
 test('stored sessions use a resume screen instead of flashing authentication', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
-  assert.match(html, /document\.documentElement\.classList\.add\('resuming-session'\)/);
+  assert.match(html, /<html lang="en" class="resuming-session">/);
   assert.match(html, /id="session-resume"[^>]*role="status"/);
-  assert.match(css, /\.resuming-session #auth-screen\{visibility:hidden\}/);
+  assert.match(css, /\.resuming-session body>:not\(#session-resume\)\{visibility:hidden\}/);
   assert.match(css, /\.resuming-session \.session-resume-screen\{display:grid\}/);
   assert.match(application, /function endSessionResume\(\)/);
-  assert.match(application, /#app-shell'\)\.hidden = false;[\s\S]*endSessionResume\(\);/);
+  assert.match(application, /#app-shell'\)\.hidden = false;[\s\S]*const routeReady = katalogNavigation\.restoreCurrent\(\)\.catch\(\(\) => \{\}\);[\s\S]*await Promise\.all\(\[dataReady, routeReady\]\);[\s\S]*endSessionResume\(\);/);
   assert.doesNotMatch(html + application, /localStorage|sessionStorage/);
 });
 
@@ -176,10 +178,10 @@ test('account preferences use SQLite-backed API state instead of browser storage
   assert.doesNotMatch(application, /localStorage|sessionStorage/);
 });
 
-test('authenticated shell renders before library data and artwork finish', () => {
+test('authenticated shell remains behind the resume screen until its first route and data render finish', () => {
   const application = read('public/app.js');
-  assert.match(application, /const dataReady = Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\);[\s\S]*#app-shell'\)\.hidden = false;[\s\S]*endSessionResume\(\);[\s\S]*await dataReady;[\s\S]*stageAppDecorations/);
-  assert.doesNotMatch(application, /await Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\)[\s\S]*#app-shell'\)\.hidden = false/);
+  assert.match(application, /const dataReady = Promise\.all\(\[loadGames\(\), loadStatsAndMeta\(\)\]\);[\s\S]*#app-shell'\)\.hidden = false;[\s\S]*const routeReady = katalogNavigation\.restoreCurrent\(\)\.catch\(\(\) => \{\}\);[\s\S]*await Promise\.all\(\[dataReady, routeReady\]\);[\s\S]*endSessionResume\(\);[\s\S]*stageAppDecorations/);
+  assert.doesNotMatch(application, /#app-shell'\)\.hidden = false;[\s\S]{0,240}endSessionResume\(\);[\s\S]{0,240}await Promise\.all\(\[dataReady, routeReady\]\)/);
 });
 
 test('an empty library request uses the favicon controller as its loading state', () => {
@@ -550,6 +552,8 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
   assert.match(autocomplete, /kind: 'existing'/);
   assert.match(autocomplete, /kind: 'katalog'/);
   assert.match(autocomplete, /openKatalog\(choice\.entry\.slug\)/);
+  assert.match(autocomplete, /event\.key === 'Enter'\) \{ event\.preventDefault\(\); choose\(activeSuggestion >= 0 \? activeSuggestion : 0\); \}/);
+  assert.match(autocomplete, /suggestionBox\.addEventListener\('pointermove'[\s\S]*highlight\(Number\(option\.dataset\.titleSuggestion\)\)/);
   assert.match(autocomplete, /autocomplete\?exact=1/);
   assert.match(application, /title: 'Add another copy\?'/);
   assert.match(application, /confirmLabel: 'Add anyway'/);
@@ -559,11 +563,38 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
 });
 
 test('cover processing uses compact text with a themed detail tooltip', () => {
-  const application = read('public/app.js'); const css = readPublicCss();
+  const application = read('public/app.js'); const settings = read('public/js/cover-provider-settings.js'); const css = readPublicCss();
   assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
   assert.match(application, /element\.dataset\.tooltip = detail/);
-  assert.match(application, /element\.title = detail/);
+  assert.match(application, /element\.removeAttribute\('title'\)/);
+  assert.match(settings, /element\.removeAttribute\('title'\)/);
   assert.match(css, /\.bulk-status:after\{content:attr\(data-tooltip\)/);
+});
+
+test('mobile always uses the card view and browser-native tooltips are not used', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const patch = read('public/js/patch-ui.js'); const accounts = read('admin/js/accounts.js');
+  assert.match(read('public/css/library.css'), /@media \(max-width: 680px\) \{\s*\.view-buttons \{ display: none; \}/);
+  assert.match(application, /const compactViewMedia = window\.matchMedia\('\(max-width: 680px\)'\)/);
+  assert.match(application, /state\.view === 'list' && !compactViewMedia\.matches/);
+  assert.match(html, /id="grid-view" data-tooltip="Card view"/);
+  assert.match(html, /id="list-view" data-tooltip="Compact view"/);
+  assert.match(readPublicCss(), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
+  assert.match(read('admin/style.css'), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
+  assert.doesNotMatch(application, /element\.title\s*=/);
+  assert.doesNotMatch(patch, /button\.title\s*=/);
+  assert.doesNotMatch(accounts, /(?:lock|remove)\.title\s*=/);
+});
+
+test('number inputs use themed steppers instead of browser spin controls', () => {
+  const stepper = read('public/js/number-steppers.js'); const app = read('public/app.js'); const boot = read('admin/js/boot.js'); const progression = read('admin/js/progression.js');
+  assert.match(stepper, /export function mountThemedNumberSteppers/);
+  assert.match(stepper, /input\.stepDown\(\)/);
+  assert.match(stepper, /input\.stepUp\(\)/);
+  assert.match(app, /mountThemedNumberSteppers\(\)/);
+  assert.match(boot, /mountThemedNumberSteppers\(\)/);
+  assert.match(progression, /mountThemedNumberSteppers\(target\)/);
+  assert.match(readPublicCss(), /\.number-stepper input\[type="number"\]::-webkit-inner-spin-button/);
+  assert.match(read('admin/style.css'), /\.number-stepper input\[type=number\]::-webkit-inner-spin-button/);
 });
 
 test('SteamGridDB configuration uses a disabled connected field and explicit replacement mode', () => {

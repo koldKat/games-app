@@ -45,7 +45,12 @@ function createForumRoutes({ auth, progression, katalog, events, onProgression =
       const reply = url.pathname.match(/^\/api\/forum\/threads\/(\d+)\/posts$/);
       if (request.method === 'POST' && reply) {
         const data = forum.createPost(user.id, reply[1], (await readJson(request)).body); if (!data) { sendJson(response, 404, { error: 'Thread not found.' }); return true; }
-        const result = progression?.recordForumReply?.(user.id, reply[1], data.posts.at(-1)?.id) || null; if (result) onProgression(user.id, result); changed(); sendJson(response, 201, data); return true;
+        const result = progression?.recordForumReply?.(user.id, reply[1], data.posts.at(-1)?.id) || null;
+        if (result) onProgression(user.id, result);
+        const threadOwnerId = Number(data.thread?.userId);
+        const ownerResult = threadOwnerId && threadOwnerId !== user.id ? progression?.recordForumReplyReceived?.(threadOwnerId, data.thread.id) : null;
+        if (ownerResult) onProgression(threadOwnerId, ownerResult);
+        changed(); sendJson(response, 201, data); return true;
       }
       if (request.method === 'PUT' && apiThread) { const data = forum.editThread(user.id, apiThread[1], await readJson(request)); if (!data) { sendJson(response, 403, { error: 'Only the thread author can edit it.' }); return true; } changed(); sendJson(response, 200, data); return true; }
       if (request.method === 'DELETE' && apiThread) { const deleted = forum.deleteThread(user.id, apiThread[1]); if (!deleted) { sendJson(response, 403, { error: 'Only the thread author can delete it.' }); return true; } changed(); sendJson(response, 200, { ok: true }); return true; }

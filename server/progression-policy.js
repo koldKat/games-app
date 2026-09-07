@@ -19,6 +19,7 @@ const XP_EVENTS = Object.freeze({
   avatar_added: { amount: 25, label: 'Set a first avatar' },
   forum_thread: { amount: 25, label: 'Started a forum thread' },
   forum_reply: { amount: 5, label: 'Posted a forum reply' },
+  forum_reply_received: { amount: 15, label: 'Sparked a forum reply' },
   platform_first: { amount: 20, label: 'Opened a new platform shelf' },
   game_count_10: { amount: 100, label: '10-game shelf milestone' },
   game_count_25: { amount: 150, label: '25-game shelf milestone' },

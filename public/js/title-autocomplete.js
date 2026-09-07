@@ -105,13 +105,17 @@ export function createTitleAutocomplete({
     if (suggestionBox.hidden || !suggestions.length) return;
     if (event.key === 'ArrowDown') { event.preventDefault(); highlight(activeSuggestion + 1); }
     else if (event.key === 'ArrowUp') { event.preventDefault(); highlight(activeSuggestion < 0 ? suggestions.length - 1 : activeSuggestion - 1); }
-    else if (event.key === 'Enter' && activeSuggestion >= 0) { event.preventDefault(); choose(activeSuggestion); }
+    else if (event.key === 'Enter') { event.preventDefault(); choose(activeSuggestion >= 0 ? activeSuggestion : 0); }
     else if (event.key === 'Escape') { event.preventDefault(); close(); }
   });
   input.addEventListener('blur', () => setTimeout(() => {
     if (!suggestionBox.matches(':hover')) close();
   }, AUTOCOMPLETE_POLICY.blurDelayMs));
   suggestionBox.addEventListener('pointerdown', event => event.preventDefault());
+  suggestionBox.addEventListener('pointermove', event => {
+    const option = event.target.closest('[data-title-suggestion]');
+    if (option) highlight(Number(option.dataset.titleSuggestion));
+  });
   suggestionBox.addEventListener('click', event => {
     const option = event.target.closest('[data-title-suggestion]');
     if (option) choose(Number(option.dataset.titleSuggestion));

@@ -157,17 +157,22 @@ function feedAnnouncement(row) { return { ...announcementRow(row), type: 'announ
 function list(limit = null) {
   const take = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Math.floor(Number(limit)) : 0;
   const query = `SELECT a.id, a.type, a.game_id AS gameId, a.data_json AS dataJson, a.created_at AS createdAt,
-      u.username, u.avatar_path AS avatarPath, t.template, c.title AS gameTitle, c.slug AS gameSlug, c.cover_url AS coverUrl
+      u.username, u.avatar_path AS avatarPath, COALESCE(up.xp, 0) AS userXp,
+      t.template, c.title AS gameTitle, c.slug AS gameSlug, c.cover_url AS coverUrl
     FROM activity_events a
     LEFT JOIN users u ON u.id=a.user_id
+    LEFT JOIN user_progression up ON up.user_id=a.user_id
     LEFT JOIN activity_templates t ON t.id=a.template_id
     LEFT JOIN catalogue_entries c ON c.source_game_id=a.game_id AND c.status='public'
     WHERE a.created_at >= datetime('now', ?) AND COALESCE(u.hide_from_activity, 0)=0
       AND (a.type <> 'catalogue_contribution' OR c.id IS NOT NULL)
     ORDER BY a.created_at DESC, a.id DESC${take ? ' LIMIT ?' : ''}`;
   const rows = db.prepare(query).all(`-${FEED_DAYS} days`, ...(take ? [take] : []));
-  return rows.map(row => ({ id: row.id, type: row.type, username: row.username || 'Unknown curator', avatarUrl: row.avatarPath ? `/avatars/${row.avatarPath}` : null,
-    template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) }));
+  return rows.map(row => {
+    const progression = progressForXp(row.userXp);
+    return { id: row.id, type: row.type, username: row.username || 'Unknown curator', avatarUrl: row.avatarPath ? `/avatars/${row.avatarPath}` : null,
+      userLevel: progression.level, userTitle: progression.title, template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) };
+  });
 }
 
 function feed() {

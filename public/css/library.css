@@ -462,6 +462,9 @@ body {
     font-size: 14px;
   }
 }
+@media (max-width: 680px) {
+  .view-buttons { display: none; }
+}
 
 /* Cover-backed cards follow Gamebooks: centered art flowing across the card under a readability fade. */
 .game-card.has-cover {

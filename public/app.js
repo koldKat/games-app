@@ -11,6 +11,7 @@ import { groupGames } from './js/game-groups.js';
 import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
+import { mountThemedNumberSteppers } from './js/number-steppers.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
@@ -38,6 +39,7 @@ function mountDecorativeCoverSlots() {
   });
 }
 mountDecorativeCoverSlots();
+mountThemedNumberSteppers();
 const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
@@ -210,14 +212,14 @@ async function enterApp(user, savedPreferences, progress = null) {
   const dataReady = Promise.all([loadGames(), loadStatsAndMeta()]);
   $('#auth-screen').hidden = true;
   $('#app-shell').hidden = false;
-  endSessionResume();
   if (progress) progressionUi.hydrate(progress);
   connectEventStream();
-  void katalogNavigation.restoreCurrent();
+  const routeReady = katalogNavigation.restoreCurrent().catch(() => {});
   void patchUi.refreshUnread();
   if (!progress) void progressionUi.load();
-  await dataReady;
+  await Promise.all([dataReady, routeReady]);
   if (state.user?.id !== user.id) return;
+  endSessionResume();
   void stageAppDecorations(user.id).catch(() => {});
 }
 function setAvatar(element, user) {
@@ -455,7 +457,7 @@ function gameCard(game) {
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top"><span class="platform-tag">${versions.length > 1 ? `${versions.length} platforms` : escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
-    <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta" title="${escapeHtml(meta)}">${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
+    <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     ${versionStrip}
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
@@ -542,7 +544,7 @@ function mergeLiveJobStatus(status, job) {
 function renderGames() {
   const shown = pagedGames();
   $('#games').innerHTML = shown.map(gameCard).join('');
-  $('#games').classList.toggle('list-view', state.view === 'list');
+  $('#games').classList.toggle('list-view', state.view === 'list' && !compactViewMedia.matches);
   updateCollectionChrome();
   if (state.loading) $('#result-count').textContent = 'Loading collection…';
   $('#clear-filters').hidden = !Object.entries(filters).some(([key, el]) => key !== 'sort' && el.value);
@@ -617,11 +619,17 @@ $$('[data-stat-kind]').forEach(button => button.addEventListener('click', () => 
   loadGames();
 }));
 renderQuickFilter();
+const compactViewMedia = window.matchMedia('(max-width: 680px)');
+function syncViewControls() {
+  const compact = state.view === 'list' && !compactViewMedia.matches;
+  $('#grid-view').classList.toggle('active', !compact); $('#list-view').classList.toggle('active', compact);
+}
 function setView(view, persist = true) {
   state.view = view === 'list' ? 'list' : 'grid';
-  $('#grid-view').classList.toggle('active', view === 'grid'); $('#list-view').classList.toggle('active', view === 'list'); renderGames();
+  syncViewControls(); renderGames();
   if (persist) schedulePreferenceSave();
 }
+compactViewMedia.addEventListener('change', () => { syncViewControls(); renderGames(); });
 $('#grid-view').addEventListener('click', () => setView('grid')); $('#list-view').addEventListener('click', () => setView('list')); setView(state.view);
 
 const dialog = $('#game-dialog');
@@ -1106,7 +1114,7 @@ $('#account-button').addEventListener('click', () => {
   setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
-  element.textContent = shortStatus; element.dataset.tooltip = detail; element.title = detail; element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
+  element.textContent = shortStatus; element.dataset.tooltip = detail; element.removeAttribute('title'); element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
 }
 function setCoverKeyMode(configured, replacing = false) {
   const input = $('#cover-api-key'); const button = $('#cover-api-save');

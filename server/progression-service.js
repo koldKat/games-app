@@ -39,6 +39,7 @@ function createProgressionService({ store, data }) {
   function recordAvatar(userId) { const awards = []; const result = award(userId, 'avatar_added', 'first-avatar', awards); return { progress: result.progress, awards }; }
   function recordForumThread(userId, threadId) { const awards = []; const result = award(userId, 'forum_thread', `thread-${threadId}`, awards); return { progress: result.progress, awards }; }
   function recordForumReply(userId, threadId, postId) { const awards = []; const result = award(userId, 'forum_reply', `post-${postId || threadId}`, awards); return { progress: result.progress, awards }; }
+  function recordForumReplyReceived(userId, threadId) { const awards = []; const result = award(userId, 'forum_reply_received', `thread-${threadId}`, awards); return { progress: result.progress, awards }; }
   function backfillKatalogContributions(contributions = []) {
     const awards = [];
     for (const contribution of contributions) award(contribution.userId, 'catalogue_contribution', contribution.gameId, awards);
@@ -46,6 +47,6 @@ function createProgressionService({ store, data }) {
     return { progress, awards };
   }
   function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {})) { const next = recordGame(userId, game, { created: true }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
-  return { backfill, backfillKatalogContributions, info: store.info, recordAvatar, recordForumReply, recordForumThread, recordGame };
+  return { backfill, backfillKatalogContributions, info: store.info, recordAvatar, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame };
 }
 module.exports = { createProgressionService, isEnriched };

@@ -407,9 +407,7 @@
 .resuming-session .session-resume-screen {
   display: grid;
 }
-.resuming-session #auth-screen {
-  visibility: hidden;
-}
+.resuming-session body > :not(#session-resume) { visibility: hidden; }
 .action-dialog {
   width: min(430px, calc(100% - 16px));
 }
@@ -476,6 +474,34 @@
   overflow: visible;
   white-space: normal;
 }
+.themed-tooltip {
+  position: relative;
+}
+.themed-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 40;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 24px));
+  padding: 6px 8px;
+  border: 1px solid #3a7165;
+  border-radius: 4px;
+  background: #0a1916;
+  box-shadow: 0 7px 18px #000b;
+  color: #d9ebe5;
+  font-size: 10px;
+  line-height: 1.25;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px);
+  transition: opacity .12s ease, transform .12s ease;
+  visibility: hidden;
+  white-space: normal;
+}
+.themed-tooltip:hover::after,
+.themed-tooltip:focus-visible::after { opacity: 1; transform: translate(-50%, 0); visibility: visible; }
 .integration-bulk .bulk-status:after {
   content: attr(data-tooltip);
   position: absolute;

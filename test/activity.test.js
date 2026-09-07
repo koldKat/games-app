@@ -32,6 +32,15 @@ test('level-up messages retain a randomly selected template and newly gained tit
   assert.match(entry.template, /\{name\}.*\{level\}|\{level\}.*\{name\}/);
 });
 
+test('feed user previews include the account\'s current level and title', async () => {
+  const user = await auth.register('signal_profile', 'password-profile');
+  data.db.prepare('INSERT INTO user_progression(user_id, xp) VALUES (?, ?)').run(user.id, 15000);
+  activity.recordJoin(user.id);
+  const entry = activity.list().find(item => item.username === 'signal_profile');
+  assert.equal(entry.userLevel, 5);
+  assert.equal(entry.userTitle, 'Cartridge Keeper');
+});
+
 test('existing progression history backfills real level crossings with their original timestamp', async () => {
   const user = await auth.register('signal_history', 'password-four');
   data.db.prepare(`INSERT INTO progression_events(user_id,event,ref,amount,created_at)
