@@ -282,26 +282,39 @@
 }
 .katalog-search {
   display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(190px,260px) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  align-items: center;
   gap: 8px;
   margin-top: 8px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--panel);
 }
-.katalog-search label,.katalog-add label {
+.katalog-search label:not(.search-wrap),.katalog-add label {
   display: grid;
   gap: 3px;
 }
-.katalog-search label span,.katalog-add label span {
+.katalog-search .search-wrap input {
+  min-height: 0;
+  height: auto;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.katalog-search label:not(.search-wrap) span,.katalog-add label span {
   color: var(--muted);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
 }
-.katalog-main input,.katalog-main select,.katalog-main button {
+.katalog-search-filters {
+  grid-template-columns: minmax(190px,260px);
+  margin-top: 0;
+}
+.katalog-search-filters select {
+  height: 34px;
+}
+.katalog-main input:not(.katalog-search input),.katalog-main select:not(.katalog-search select),.katalog-main button:not(.katalog-search button) {
   min-height: 38px;
   border: 1px solid #2b3b47;
   border-radius: 6px;
@@ -309,11 +322,11 @@
   color: var(--text);
   font: inherit;
 }
-.katalog-main input,.katalog-main select {
+.katalog-main input:not(.katalog-search input),.katalog-main select:not(.katalog-search select) {
   width: 100%;
   padding: 7px 9px;
 }
-.katalog-main select {
+.katalog-main select:not(.katalog-search select) {
   appearance: none;
   padding-right: 28px;
   background-image: linear-gradient(45deg,transparent 50%,#6f847d 50%),linear-gradient(135deg,#6f847d 50%,transparent 50%);
@@ -325,7 +338,7 @@
   outline: 1px solid var(--green);
   outline-offset: 2px;
 }
-.katalog-main button {
+.katalog-main button:not(.katalog-search button) {
   align-self: end;
   padding: 7px 14px;
   border-color: rgba(53,214,178,.55);

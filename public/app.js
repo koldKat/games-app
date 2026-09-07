@@ -12,6 +12,7 @@ import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
 import { mountThemedNumberSteppers } from './js/number-steppers.js';
+import { mountThemedSearchClears } from './js/search-clears.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
@@ -40,6 +41,7 @@ function mountDecorativeCoverSlots() {
 }
 mountDecorativeCoverSlots();
 mountThemedNumberSteppers();
+mountThemedSearchClears();
 const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;

@@ -166,6 +166,43 @@ button,input {
 input[type=search]::-webkit-search-cancel-button {
   -webkit-appearance:none
 }
+.themed-search-field {
+  position:relative;
+  display:block;
+  flex:1 1 auto;
+  min-width:0
+}
+.themed-search-field input[type=search] {
+  width:100%!important;
+  padding-right:30px!important
+}
+.themed-search-clear {
+  position:absolute;
+  top:50%;
+  right:6px;
+  display:grid;
+  place-items:center;
+  width:18px;
+  height:18px;
+  margin:0;
+  padding:0;
+  border:1px solid #354653;
+  border-radius:3px;
+  background:#121d27;
+  color:#7ce4ca;
+  font:700 15px/14px ui-monospace,monospace;
+  cursor:pointer;
+  transform:translateY(-50%)
+}
+.themed-search-clear:hover,.themed-search-clear:focus-visible {
+  border-color:var(--green);
+  background:#17483e;
+  color:#e4fff8;
+  outline:0
+}
+.themed-search-clear[hidden] {
+  display:none
+}
 .edit-grid select,.search-row select {
   appearance:none;
   padding-right:28px;

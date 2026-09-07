@@ -15,7 +15,11 @@ export function dismissActivityPreview(link) {
   const trigger = link?.closest?.('.activity-preview-trigger');
   if (!trigger) return;
   trigger.classList.add('activity-preview-dismissed');
-  trigger.addEventListener('pointerenter', () => trigger.classList.remove('activity-preview-dismissed'), { once: true });
+  // Clicking a game leaves its anchor focused behind the modal. Blur it before
+  // returning the preview to normal hover behavior, otherwise :focus-within
+  // can pin that first cover above every subsequent Signal entry.
+  if (typeof link.blur === 'function') link.blur();
+  trigger.addEventListener('pointerleave', () => trigger.classList.remove('activity-preview-dismissed'), { once: true });
 }
 function userLabel(entry) {
   const level = Number(entry.userLevel);

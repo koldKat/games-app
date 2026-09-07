@@ -1,3 +1,5 @@
+import { mountThemedSearchClears } from './search-clears.js';
+
 export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpenLibrary = () => window.location.assign('/') } = {}) {
   const form = root.querySelector('[data-katalog-add]');
   if (!form || form.dataset.katalogBound === 'true') return;
@@ -171,4 +173,5 @@ bindKatalogAddForm();
 bindKatalogSearch();
 bindKatalogGameDialog();
 bindKatalogTitleTooltips();
+mountThemedSearchClears();
 void loadPublicBackgroundCovers();

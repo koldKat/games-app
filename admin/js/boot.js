@@ -9,6 +9,7 @@ import { loadAnnouncements } from './announcements.js';
 import { loadForum } from './forum.js';
 import { loadPatch } from './patch.js';
 import { mountThemedNumberSteppers } from '/js/number-steppers.js';
+import { mountThemedSearchClears } from '/js/search-clears.js';
 
 const loaders = {
   dashboard: loadDashboard,
@@ -32,6 +33,7 @@ document.querySelectorAll('[data-tab]').forEach(button => button.addEventListene
 loadDashboard();
 loadLive();
 mountThemedNumberSteppers();
+mountThemedSearchClears();
 document.getElementById('refresh-patch')?.addEventListener('click', loadPatch);
 setInterval(loadLive, 1_000);
 setInterval(loadDashboard, 60_000);

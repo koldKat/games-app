@@ -77,7 +77,8 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(activity, /userLevel: progression\.level, userTitle: progression\.title/);
   assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
   assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
-  assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerenter'/);
+  assert.match(read('public/js/activity-feed.js'), /typeof link\.blur === 'function'/);
+  assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerleave'/);
   assert.match(read('public/js/signal-page.js'), /dismissActivityPreview\(link\)/);
   assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
@@ -597,6 +598,30 @@ test('number inputs use themed steppers instead of browser spin controls', () =>
   assert.match(progression, /mountThemedNumberSteppers\(target\)/);
   assert.match(readPublicCss(), /\.number-stepper input\[type="number"\]::-webkit-inner-spin-button/);
   assert.match(readCss('admin/style.css'), /\.number-stepper input\[type=number\]::-webkit-inner-spin-button/);
+});
+
+test('search fields use a themed clear control instead of browser-native cancel UI', () => {
+  const clears = read('public/js/search-clears.js'); const app = read('public/app.js'); const katalog = read('public/js/katalog-public.js'); const admin = read('admin/js/boot.js');
+  assert.match(clears, /export function mountThemedSearchClears/);
+  assert.match(clears, /themed-search-clear/);
+  assert.match(clears, /input\.dispatchEvent\(new Event\('input'/);
+  assert.doesNotMatch(clears, /input\.closest\('\[hidden\]'\)/);
+  assert.match(app, /mountThemedSearchClears\(\)/);
+  assert.match(katalog, /mountThemedSearchClears\(\)/);
+  assert.match(admin, /mountThemedSearchClears\(\)/);
+  assert.match(readPublicCss(), /\.themed-search-clear\{[^}]*position:absolute/);
+  assert.match(readCss('admin/style.css'), /\.themed-search-clear\{[^}]*position:absolute/);
+});
+
+test('private and public Kat·a·log searches share the compact field scale', () => {
+  const privateCss = readCss('public/css/theme.css'); const publicCss = readCss('public/css/katalog.css');
+  assert.match(privateCss, /\.search-wrap\{height:34px/);
+  assert.match(privateCss, /\.search-wrap input\{font-size:11px/);
+  assert.match(read('server/katalog-pages.js'), /class="filter-panel katalog-search"/);
+  assert.match(read('server/katalog-pages.js'), /class="search-wrap"/);
+  assert.match(read('server/katalog-pages.js'), /class="filters katalog-search-filters"/);
+  assert.match(publicCss, /\.katalog-search-filters\{grid-template-columns:minmax\(190px,260px\)/);
+  assert.doesNotMatch(read('server/katalog-pages.js'), /<button type="submit">Search<\/button>/);
 });
 
 test('SteamGridDB configuration uses a disabled connected field and explicit replacement mode', () => {
