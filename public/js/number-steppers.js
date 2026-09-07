@@ -31,7 +31,9 @@ export function mountThemedNumberSteppers(root = document) {
   root.querySelectorAll('input[type="number"]:not([data-themed-stepper])').forEach(input => {
     if (input.hidden || input.closest('[hidden]')) return;
     input.dataset.themedStepper = 'true';
-    const wrapper = document.createElement('span'); wrapper.className = 'number-stepper';
+    // A real block wrapper is deliberate: form labels and legacy grid rules can
+    // otherwise turn inline spans into three stacked controls.
+    const wrapper = document.createElement('div'); wrapper.className = 'number-stepper';
     input.before(wrapper); wrapper.append(button(input, -1), input, button(input, 1));
   });
 }

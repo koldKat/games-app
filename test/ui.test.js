@@ -5,9 +5,10 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
-const publicStylesheets = ['foundation.css', 'theme.css', 'library.css', 'landing.css', 'features.css'];
-const readPublicCss = () => publicStylesheets.map(file => read(`public/css/${file}`)).join('')
+const readCss = relative => read(relative)
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}').replace(/\s+/g, ' ').trim();
+const publicStylesheets = ['foundation.css', 'theme.css', 'library.css', 'landing.css', 'features.css'];
+const readPublicCss = () => publicStylesheets.map(file => readCss(`public/css/${file}`)).join('');
 
 test('browser modules do not assign through an optional chain', () => {
   const modules = fs.readdirSync(path.join(root, 'public/js')).filter(file => file.endsWith('.js')).map(file => read(`public/js/${file}`)).join('\n');
@@ -253,9 +254,9 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
 });
 
 test('public Kat·a·log prioritizes covers with an eight-column desktop grid', () => {
-  const css = read('public/css/katalog.css');
-  assert.match(css, /\.katalog-grid \{ display: grid; grid-template-columns: repeat\(8,minmax\(0,1fr\)\); gap: 9px; \}/);
-  assert.match(css, /max-width: 680px\)[\s\S]*\.katalog-grid \{ grid-template-columns: repeat\(2,minmax\(0,1fr\)\); \}/);
+  const css = readCss('public/css/katalog.css');
+  assert.match(css, /\.katalog-grid\{display:grid;grid-template-columns:repeat\(8,minmax\(0,1fr\)\);gap:9px\}/);
+  assert.match(css, /max-width:680px\)[\s\S]*\.katalog-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
 });
 
 test('game saves animate awarded progression even if the event stream is late', () => {
@@ -305,17 +306,18 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(publicKatalog, /response\.status === 409 && body\.existing/);
   assert.match(publicKatalog, /if \(dialog\.dataset\.skipCloseNavigation === 'true'\) \{ delete dialog\.dataset\.skipCloseNavigation; return; \}/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
-  assert.match(read('public/css/theme.css'), /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
-  assert.match(read('public/css/theme.css'), /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
-  assert.match(read('public/css/theme.css'), /\.top-actions \.katalog-button,\.top-actions \.library-button,\.top-actions \.forum-button \{ width:auto; min-width:0;/);
-  assert.match(read('public/css/theme.css'), /\.button \{[\s\S]*text-decoration: none/);
-  assert.match(read('public/css/theme.css'), /@media \(max-width: 680px\) \{[\s\S]*\.auth-screen \{[\s\S]*\.brand strong \{ font-size: 13px; white-space: nowrap; \}/);
-  assert.match(read('public/css/theme.css'), /\.brand strong em \{ display: none; \}/);
-  assert.match(read('public/css/theme.css'), /\.header-progression\{display:none\}/);
-  assert.match(read('public/css/theme.css'), /\.top-actions \.account-button \{ width: 38px; min-width: 38px; max-width: 38px; padding: 0; \}/);
-  assert.match(read('public/css/theme.css'), /\.header-nav-icon \{ display:none; \}/);
-  assert.match(read('public/css/theme.css'), /\.header-nav-icon \{ display:block; width:18px; height:18px; stroke:currentColor;/);
-  assert.doesNotMatch(read('public/css/theme.css'), /content: "[⌁◌⌂⌕]"/);
+  const themeCss = readCss('public/css/theme.css');
+  assert.match(themeCss, /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
+  assert.match(themeCss, /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
+  assert.match(themeCss, /\.top-actions \.katalog-button,\.top-actions \.library-button,\.top-actions \.forum-button\{width:auto;min-width:0;/);
+  assert.match(themeCss, /\.button\{[\s\S]*text-decoration:none/);
+  assert.match(themeCss, /@media \(max-width:680px\)\{[\s\S]*\.brand strong\{font-size:13px;white-space:nowrap\}/);
+  assert.match(themeCss, /\.brand strong em\{display:none\}/);
+  assert.match(themeCss, /\.header-progression\{display:none\}/);
+  assert.match(themeCss, /\.top-actions \.account-button\{width:38px;min-width:38px;max-width:38px;padding:0(?:;|\})/);
+  assert.match(themeCss, /\.header-nav-icon\{display:none\}/);
+  assert.match(themeCss, /\.header-nav-icon\{display:block;width:18px;height:18px;stroke:currentColor;/);
+  assert.doesNotMatch(themeCss, /content:"[⌁◌⌂⌕]"/);
 });
 
 test('collection filtering separates owned physical and digital games', () => {
@@ -469,7 +471,7 @@ test('password reset has a token-based login flow and localhost SMTP administrat
 });
 
 test('public release links retain crawlable URLs while opening in the Kat·a·log detail dialog', () => {
-  const navigation = read('public/js/katalog-navigation.js'); const catalogue = read('public/js/katalog-public.js'); const css = read('public/css/katalog.css');
+  const navigation = read('public/js/katalog-navigation.js'); const catalogue = read('public/js/katalog-public.js'); const css = readCss('public/css/katalog.css');
   assert.match(navigation, /bindKatalogGameDialog/);
   assert.match(catalogue, /data-katalog-game-dialog/);
   assert.match(catalogue, /dialog\.showModal\(\)/);
@@ -478,14 +480,14 @@ test('public release links retain crawlable URLs while opening in the Kat·a·lo
 });
 
 test('public Kat·a·log cards overlay community ratings on their covers', () => {
-  const pages = read('server/katalog-pages.js'); const css = read('public/css/katalog.css');
+  const pages = read('server/katalog-pages.js'); const css = readCss('public/css/katalog.css');
   assert.match(pages, /class="katalog-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
-  assert.match(css, /\.katalog-cover \.community-rating\s*\{\s*position: absolute;\s*bottom: 6px;\s*left: 50%/);
-  assert.match(css, /transform: translateX\(-50%\); white-space: nowrap/);
+  assert.match(css, /\.katalog-cover \.community-rating\{position:absolute;bottom:6px;left:50%/);
+  assert.match(css, /transform:translateX\(-50%\);white-space:nowrap/);
 });
 
 test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
-  const css = read('public/css/katalog.css'); const catalogue = read('public/js/katalog-public.js');
+  const css = readCss('public/css/katalog.css'); const catalogue = read('public/js/katalog-public.js');
   assert.match(css, /\.katalog-title\[data-truncated="true"\]::after/);
   assert.match(css, /content:attr\(data-full-title\)/);
   assert.match(css, /\.katalog-title\[data-truncated="true"\]:hover::after/);
@@ -573,13 +575,13 @@ test('cover processing uses compact text with a themed detail tooltip', () => {
 
 test('mobile always uses the card view and browser-native tooltips are not used', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const patch = read('public/js/patch-ui.js'); const accounts = read('admin/js/accounts.js');
-  assert.match(read('public/css/library.css'), /@media \(max-width: 680px\) \{\s*\.view-buttons \{ display: none; \}/);
+  assert.match(readCss('public/css/library.css'), /@media \(max-width:680px\)[\s\S]*\.view-buttons\{display:none\}/);
   assert.match(application, /const compactViewMedia = window\.matchMedia\('\(max-width: 680px\)'\)/);
   assert.match(application, /state\.view === 'list' && !compactViewMedia\.matches/);
   assert.match(html, /id="grid-view" data-tooltip="Card view"/);
   assert.match(html, /id="list-view" data-tooltip="Compact view"/);
   assert.match(readPublicCss(), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
-  assert.match(read('admin/style.css'), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
+  assert.match(readCss('admin/style.css'), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
   assert.doesNotMatch(application, /element\.title\s*=/);
   assert.doesNotMatch(patch, /button\.title\s*=/);
   assert.doesNotMatch(accounts, /(?:lock|remove)\.title\s*=/);
@@ -594,7 +596,7 @@ test('number inputs use themed steppers instead of browser spin controls', () =>
   assert.match(boot, /mountThemedNumberSteppers\(\)/);
   assert.match(progression, /mountThemedNumberSteppers\(target\)/);
   assert.match(readPublicCss(), /\.number-stepper input\[type="number"\]::-webkit-inner-spin-button/);
-  assert.match(read('admin/style.css'), /\.number-stepper input\[type=number\]::-webkit-inner-spin-button/);
+  assert.match(readCss('admin/style.css'), /\.number-stepper input\[type=number\]::-webkit-inner-spin-button/);
 });
 
 test('SteamGridDB configuration uses a disabled connected field and explicit replacement mode', () => {
@@ -673,19 +675,19 @@ test('rich PEGI metadata is shown with themed progressive disclosure', () => {
 });
 
 test('PEGI search results use the rating color rather than a generic green box', () => {
-  const application = read('public/app.js'); const css = read('public/css/theme.css');
+  const application = read('public/app.js'); const css = readCss('public/css/theme.css');
   assert.match(application, /class="pegi-box pegi-box-\$\{result\.pegi \|\| 'none'\}"/);
-  assert.match(css, /\.pegi-result \.pegi-box-12 \{ background:#292311; color:#e3b64e; \}/);
-  assert.match(css, /\.pegi-result \.pegi-box-16 \{ background:#2e1e14; color:#f09a62; \}/);
-  assert.match(css, /\.pegi-result \.pegi-box-18 \{ background:#2e1718; color:#f08076; \}/);
+  assert.match(css, /\.pegi-result \.pegi-box-12\{background:#292311;color:#e3b64e\}/);
+  assert.match(css, /\.pegi-result \.pegi-box-16\{background:#2e1e14;color:#f09a62\}/);
+  assert.match(css, /\.pegi-result \.pegi-box-18\{background:#2e1718;color:#f08076\}/);
 });
 
 test('dialogs stay inside the viewport and scrollbars are themed', () => {
-  const publicCss = readPublicCss(); const catalogueCss = read('public/css/katalog.css'); const adminCss = read('admin/style.css');
+  const publicCss = readPublicCss(); const catalogueCss = readCss('public/css/katalog.css'); const adminCss = readCss('admin/style.css');
   assert.match(publicCss, /dialog\{max-height:80dvh;overflow:hidden;overscroll-behavior:contain\}/);
   assert.match(publicCss, /html:has\(dialog\[open\]\)\{overflow:hidden;scrollbar-gutter:stable\}/);
-  assert.match(catalogueCss, /\.katalog-game-dialog \{[^}]*overscroll-behavior: contain/);
-  assert.match(catalogueCss, /\.close-button \{ display: grid;[^}]*place-items: center;[^}]*min-height: 25px/);
+  assert.match(catalogueCss, /\.katalog-game-dialog\{[^}]*overscroll-behavior:contain/);
+  assert.match(catalogueCss, /\.close-button\{display:grid;[^}]*place-items:center;[^}]*min-height:25px/);
   assert.match(adminCss, /html:has\(dialog\[open\]\)\{overflow:hidden;scrollbar-gutter:stable\}/);
   assert.match(adminCss, /\.katalog-edit-dialog\{[^}]*overscroll-behavior:contain/);
   assert.match(publicCss, /\.modal-card\{max-height:80dvh;overflow:auto/);

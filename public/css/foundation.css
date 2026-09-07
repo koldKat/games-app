@@ -25,10 +25,7 @@ body {
   background: linear-gradient(180deg, #f7f5f0 0, #f1efe9 100%);
   overflow-x: hidden;
 }
-button,
-input,
-select,
-textarea {
+button, input, select, textarea {
   font: inherit;
   color: inherit;
 }
@@ -64,8 +61,7 @@ button {
   transform: rotate(-3deg);
   box-shadow: 0 6px 12px #151c2d33;
 }
-.brand-mark:before,
-.brand-mark:after {
+.brand-mark:before, .brand-mark:after {
   content: "";
   position: absolute;
 }
@@ -87,9 +83,7 @@ button {
   box-shadow: 5px 7px #efba4e;
 }
 .brand strong {
-  font:
-    800 20px/1 "Manrope",
-    sans-serif;
+  font: 800 20px/1 "Manrope", sans-serif;
   display: block;
 }
 .brand small {
@@ -157,9 +151,7 @@ button {
   border-radius: 50%;
   right: -80px;
   top: -255px;
-  box-shadow:
-    0 0 0 45px #ffffff06,
-    0 0 0 90px #ffffff04;
+  box-shadow: 0 0 0 45px #ffffff06, 0 0 0 90px #ffffff04;
 }
 .kicker {
   margin: 0 0 9px;
@@ -173,9 +165,7 @@ button {
   color: #f39177;
 }
 .hero h1 {
-  font:
-    800 clamp(31px, 4vw, 51px) / 1.08 "Manrope",
-    sans-serif;
+  font: 800 clamp(31px, 4vw, 51px) / 1.08 "Manrope", sans-serif;
   margin: 0;
   letter-spacing: -0.035em;
 }
@@ -196,14 +186,7 @@ button {
   width: 190px;
   height: 190px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    #1c263b 0 16%,
-    #697386 17% 18%,
-    #192235 19% 45%,
-    #8e98a8 46% 47%,
-    #202a3e 48%
-  );
+  background: radial-gradient( circle, #1c263b 0 16%, #697386 17% 18%, #192235 19% 45%, #8e98a8 46% 47%, #202a3e 48% );
   right: 9px;
   top: 24px;
   opacity: 0.8;
@@ -214,11 +197,7 @@ button {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  background: repeating-radial-gradient(
-    circle,
-    transparent 0 6px,
-    #ffffff06 7px 8px
-  );
+  background: repeating-radial-gradient( circle, transparent 0 6px, #ffffff06 7px 8px );
 }
 .cartridge {
   position: absolute;
@@ -376,8 +355,7 @@ button {
   gap: 11px;
   margin-top: 13px;
 }
-.filters label > span,
-.form-grid label > span {
+.filters label > span, .form-grid label > span {
   display: block;
   color: #777b86;
   font-size: 10px;
@@ -386,10 +364,7 @@ button {
   letter-spacing: 0.08em;
   margin: 0 0 6px 2px;
 }
-.filters select,
-.form-grid input,
-.form-grid select,
-.form-grid textarea {
+.filters select, .form-grid input, .form-grid select, .form-grid textarea {
   width: 100%;
   border: 1px solid #d8d5ce;
   border-radius: 10px;
@@ -398,10 +373,7 @@ button {
   outline: none;
   font-size: 13px;
 }
-.filters select:focus,
-.form-grid input:focus,
-.form-grid select:focus,
-.form-grid textarea:focus {
+.filters select:focus, .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
   border-color: #e47b61;
   box-shadow: 0 0 0 3px #e9664918;
 }
@@ -477,8 +449,7 @@ button {
   border-radius: 50%;
   background: var(--platform-color);
 }
-.favorite-button,
-.more-button {
+.favorite-button, .more-button {
   border: 0;
   background: transparent;
   color: #a7a49d;
@@ -527,8 +498,7 @@ button {
   background: #f6e6bd;
   color: #966a18;
 }
-.badge.pegi-16,
-.badge.pegi-18 {
+.badge.pegi-16, .badge.pegi-18 {
   background: #f6dcd6;
   color: #a64131;
 }
@@ -881,8 +851,7 @@ dialog::backdrop {
     grid-template-columns: 100px 1fr;
     gap: 8px;
   }
-  .game-grid.list-view .badges,
-  .game-grid.list-view .card-actions {
+  .game-grid.list-view .badges, .game-grid.list-view .card-actions {
     grid-column: 2;
   }
   .modal-card {

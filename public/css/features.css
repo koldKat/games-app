@@ -1,4 +1,4 @@
-/* Card identity: PEGI owns the rail; platform stays an in-card label. */
+/*Card identity: PEGI owns the rail; platform stays an in-card label. */
 .game-card:before {
   background: var(--rating-color, #526170);
 }
@@ -21,8 +21,7 @@
   background: #111923;
   color: #9eacba;
 }
-
-/* Major collection filters: dense on desktop, two rows on smaller screens. */
+/*Major collection filters: dense on desktop, two rows on smaller screens. */
 .stats {
   grid-template-columns: repeat(10, minmax(0, 1fr));
 }
@@ -154,8 +153,7 @@
     height: 27px;
   }
 }
-
-/* Public landing page: six equal feature modules plus crawlable public links. */
+/*Public landing page: six equal feature modules plus crawlable public links. */
 .auth-screen {
   overflow: auto;
 }
@@ -190,8 +188,7 @@
 .promo-query .promo-result {
   padding: 3px 1px;
 }
-.promo-metadata,
-.promo-private {
+.promo-metadata, .promo-private {
   background: #0a1218;
 }
 .promo-pegi {
@@ -210,8 +207,7 @@
   color: #67d6a1;
   font-size: 8px;
 }
-.promo-pegi b:nth-child(3),
-.promo-pegi b:nth-child(4) {
+.promo-pegi b:nth-child(3), .promo-pegi b:nth-child(4) {
   border-color: #665327;
   background: #28220f;
   color: #e2b84e;
@@ -313,8 +309,7 @@
   .auth-promo {
     min-height: 0;
   }
-  .promo-library,
-  .promo-covers {
+  .promo-library, .promo-covers {
     min-height: 155px;
   }
   .auth-footer {
@@ -337,17 +332,12 @@
   line-height: 1;
   transform: translateY(1px);
 }
-
-/* Directional physical depth instead of diffuse black halos. */
+/*Directional physical depth instead of diffuse black halos. */
 .auth-cover-field i {
-  box-shadow:
-    8px 14px 24px #0009,
-    1px 2px 0 #06100e;
+  box-shadow: 8px 14px 24px #0009, 1px 2px 0 #06100e;
 }
 .auth-card {
-  box-shadow:
-    0 16px 42px #000b,
-    0 0 0 1px #35d6b20b;
+  box-shadow: 0 16px 42px #000b, 0 0 0 1px #35d6b20b;
 }
 .auth-promo {
   box-shadow: 0 8px 22px #0006;
@@ -364,8 +354,7 @@
   inset: 0;
   opacity: 0.1;
 }
-#app-shell > .topbar,
-#app-shell > main {
+#app-shell > .topbar, #app-shell > main {
   position: relative;
   z-index: 1;
 }
@@ -377,12 +366,7 @@
   place-items: center;
   align-content: center;
   gap: 10px;
-  background: radial-gradient(
-    circle at 50% 42%,
-    #112a26 0,
-    #080d11 31%,
-    #05070a 72%
-  );
+  background: radial-gradient( circle at 50% 42%, #112a26 0, #080d11 31%, #05070a 72% );
   color: #dce5ef;
   text-align: center;
 }
@@ -391,8 +375,7 @@
   height: 32px;
   margin: auto;
 }
-.session-resume-screen strong,
-.session-resume-screen small {
+.session-resume-screen strong, .session-resume-screen small {
   display: block;
 }
 .session-resume-screen strong {
@@ -407,7 +390,9 @@
 .resuming-session .session-resume-screen {
   display: grid;
 }
-.resuming-session body > :not(#session-resume) { visibility: hidden; }
+.resuming-session body > :not(#session-resume) {
+  visibility: hidden;
+}
 .action-dialog {
   width: min(430px, calc(100% - 16px));
 }
@@ -435,8 +420,7 @@
 .action-dialog .modal-actions .button {
   min-width: 92px;
 }
-
-/* Promo copy is supporting text, not microscopic decoration. */
+/*Promo copy is supporting text, not microscopic decoration. */
 .auth-promo p {
   font-size: 12px;
   line-height: 1.5;
@@ -446,8 +430,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px;
 }
-.promo-system span,
-.promo-system span:last-child {
+.promo-system span, .promo-system span:last-child {
   grid-column: auto;
   padding: 5px 4px;
   white-space: nowrap;
@@ -456,11 +439,7 @@
   font-size: 6px;
 }
 @media (max-width: 580px) {
-  .promo-library,
-  .promo-covers,
-  .promo-metadata,
-  .promo-track,
-  .promo-private {
+  .promo-library, .promo-covers, .promo-metadata, .promo-track, .promo-private {
     min-height: 170px;
   }
   .auth-promo p {
@@ -500,8 +479,11 @@
   visibility: hidden;
   white-space: normal;
 }
-.themed-tooltip:hover::after,
-.themed-tooltip:focus-visible::after { opacity: 1; transform: translate(-50%, 0); visibility: visible; }
+.themed-tooltip:hover::after, .themed-tooltip:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
 .integration-bulk .bulk-status:after {
   content: attr(data-tooltip);
   position: absolute;
@@ -523,8 +505,7 @@
   transition: 0.12s;
   pointer-events: none;
 }
-.integration-bulk .bulk-status:hover:after,
-.integration-bulk .bulk-status:focus-visible:after {
+.integration-bulk .bulk-status:hover:after, .integration-bulk .bulk-status:focus-visible:after {
   opacity: 1;
   visibility: visible;
   transform: none;
@@ -532,7 +513,6 @@
 .integration-bulk .bulk-status:focus-visible {
   color: #61e3c5;
 }
-
 .library-title {
   font-size: 14px;
   margin: 0;
@@ -542,8 +522,7 @@
     font-size: 12px;
   }
 }
-
-/* Rich PEGI metadata stays compact on cards and expands only when requested. */
+/*Rich PEGI metadata stays compact on cards and expands only when requested. */
 .badge.descriptor {
   background: #121d25;
   color: #8ea4b5;
@@ -646,8 +625,7 @@
 .pegi-purchase-warning span {
   min-width: 0;
 }
-.pegi-purchase-warning strong,
-.pegi-purchase-warning small {
+.pegi-purchase-warning strong, .pegi-purchase-warning small {
   display: block;
 }
 .pegi-purchase-warning strong {
@@ -714,8 +692,7 @@
     margin-left: 0;
   }
 }
-
-/* Dialogs remain comfortably inside the viewport; every scroll surface uses the app theme. */
+/*Dialogs remain comfortably inside the viewport; every scroll surface uses the app theme. */
 * {
   scrollbar-width: thin;
   scrollbar-color: #376e61 #080d12;
@@ -743,7 +720,10 @@ dialog {
   overflow: hidden;
   overscroll-behavior: contain;
 }
-html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
+html:has(dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
 .modal-card {
   max-height: 80dvh;
   overflow: auto;
