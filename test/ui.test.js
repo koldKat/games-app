@@ -17,7 +17,7 @@ test('browser modules do not assign through an optional chain', () => {
 
 test('private Kat·a·log groups multi-platform titles unless a platform filter is active', () => {
   const application = read('public/app.js'); const groups = read('public/js/game-groups.js');
-  assert.match(application, /import \{ groupGames \} from '\.\/js\/game-groups\.js'/);
+  assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/js\/game-groups\.js'/);
   assert.match(application, /groupGames\(state\.games, \{ splitPlatforms: Boolean\(filters\.platform\.value\) \}\)/);
   assert.match(application, /data-action="version" data-game-id=/);
   assert.match(groups, /export function groupGames/);

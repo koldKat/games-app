@@ -124,6 +124,7 @@ export async function openKatalogGameDialog(root = document, url, { returnUrl = 
 
 let katalogSearchSequence = 0;
 export function bindKatalogSearch(root = document, { navigate } = {}) {
+  mountThemedSearchClears(root);
   const form = root.querySelector('.katalog-search');
   if (!form || form.dataset.katalogSearchBound === 'true') return;
   form.dataset.katalogSearchBound = 'true'; let timer;

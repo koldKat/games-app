@@ -19,3 +19,8 @@ export function groupGames(games, { splitPlatforms = false } = {}) {
     return { ...game, versions, versionCount: versions.length };
   });
 }
+
+export function selectedGroupCopy(group, selectedIds) {
+  const selected = group.versions.find(version => selectedIds.has(version.id));
+  return selected ? { ...group, ...selected, versions: group.versions, versionCount: group.versionCount } : group;
+}

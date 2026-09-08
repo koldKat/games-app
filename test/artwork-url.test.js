@@ -19,7 +19,7 @@ test('decorative artwork accepts durable local covers on every app surface', asy
   assert.deepEqual(uniqueArtworkUrls(['/covers/0123456789abcdef0123456789abcdef.png', '/covers/0123456789abcdef0123456789abcdef.png']),
     ['/covers/0123456789abcdef0123456789abcdef.png']);
   assert.match(application, /const candidates = uniqueArtworkUrls\(covers\)/);
-  assert.equal((application.match(/uniqueArtworkUrls\(state\.games\.map\(game => game\.coverUrl\)\)/g) || []).length, 2);
+  assert.equal((application.match(/uniqueArtworkUrls\(state\.games\.map\(game => game\.coverUrl\)\)/g) || []).length, 1);
   assert.doesNotMatch(application, /coverUrl\)\.filter\(url => \/\^https/);
   assert.match(application, /fetch\(`\/cover-showcase\.json\?v=\$\{Date\.now\(\)\}`/);
   assert.match(database, /cover_url LIKE 'https:\/\/%' OR cover_url LIKE '\/covers\/%'/);

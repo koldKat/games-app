@@ -7,18 +7,20 @@ import { createKatalogNavigation } from './js/katalog-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
-import { groupGames } from './js/game-groups.js';
+import { groupGames, selectedGroupCopy } from './js/game-groups.js';
+import { renderVersionPicker } from './js/version-picker.js';
 import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
 import { mountThemedNumberSteppers } from './js/number-steppers.js';
-import { mountThemedSearchClears } from './js/search-clears.js';
+import { mountThemedSearchClears, syncSearchClears } from './js/search-clears.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
 } from './js/ui-policy.js';
 
 const $ = selector => document.querySelector(selector);
+const selectedCopyIds = new Set();
 const $$ = selector => [...document.querySelectorAll(selector)];
 const copyrightYear = new Date().getFullYear();
 $$('[data-copyright-year]').forEach(element => {
@@ -151,6 +153,7 @@ async function loadConfig() {
   } catch { $('#app-version').textContent = 'dev'; }
 }
 function showAuth(message = '') {
+  selectedCopyIds.clear();
   decorationSequence += 1;
   state.stopEvents?.(); state.stopEvents = null;
   gameLoadSequence++; metaLoadSequence++; state.pendingGamePatches.clear(); state.loading = false;
@@ -451,14 +454,14 @@ function cardRatingAtPointer(event) {
 }
 function gameCard(game) {
   const versions = game.versions || [game];
-  const versionStrip = versions.length > 1 ? `<div class="game-versions" aria-label="${versions.length} platform versions">${versions.map(version => `<button type="button" data-action="version" data-game-id="${version.id}">${escapeHtml(version.platform)}</button>`).join('')}</div>` : '';
+  const versionStrip = versions.length > 1 ? `<div class="game-versions" aria-label="Choose the copy to rate or edit">${versions.map(version => `<button type="button" data-action="version" data-game-id="${version.id}" aria-pressed="${version.id === game.id}">${escapeHtml(version.platform)}${versions.filter(copy => copy.platform === version.platform).length > 1 ? ` · #${version.id}` : ''}</button>`).join('')}</div>` : '';
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
   const quick = game.ownership === 'wanted' ? '<button class="quick-button" data-action="own">Mark owned</button>' : '';
   const descriptorBadges = (game.pegiDescriptors || []).map(descriptor => badge(descriptor, /purchases|random items/i.test(descriptor) ? 'descriptor purchase' : 'descriptor')).join('');
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
-    <div class="card-top"><span class="platform-tag">${versions.length > 1 ? `${versions.length} platforms` : escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
+    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
     ${versionStrip}
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
@@ -489,7 +492,7 @@ function gameMatchesFilters(game) {
 function cardNode(game) {
   const template = document.createElement('template'); template.innerHTML = gameCard(game).trim(); return template.content.firstElementChild;
 }
-function displayedGames() { return groupGames(state.games, { splitPlatforms: Boolean(filters.platform.value) }); }
+function displayedGames() { return groupGames(state.games, { splitPlatforms: Boolean(filters.platform.value) }).map(group => selectedGroupCopy(group, selectedCopyIds)); }
 function pageCount() { return Math.max(1, Math.ceil(displayedGames().length / LIBRARY_PAGE_SIZE)); }
 function pagedGames() {
   state.page = Math.min(Math.max(1, state.page), pageCount());
@@ -554,7 +557,9 @@ function renderGames() {
 async function loadHeroCovers(isCurrent) {
   const slots = $$('.hero-cover');
   if (!slots.length || slots.some(slot => slot.classList.contains('has-art'))) return;
-  const covers = uniqueArtworkUrls(state.games.map(game => game.coverUrl));
+  const showcase = await api('/api/showcase/covers');
+  if (!isCurrent()) return;
+  const covers = uniqueArtworkUrls(showcase.covers || []);
   for (let index = covers.length - 1; index > 0; index--) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
@@ -603,6 +608,7 @@ $('#library-pagination').addEventListener('click', event => {
   renderGames();
 });
 function renderQuickFilter() {
+  syncSearchClears();
   $$('[data-stat-kind]').forEach(button => {
     const { statKind: kind, statValue: value = '' } = button.dataset;
     const active = kind === 'all'
@@ -688,6 +694,9 @@ ${detailSection('HowLongToBeat', hltb)}
 ${detailSection('PEGI details', pegi)}
 ${detailSection('Notes', notes)}`;
 }
+function mountVersionPicker(host, game, onSelect, anchor) {
+  renderVersionPicker(host, game, state.games, groupGames, onSelect, anchor);
+}
 function openDetails(game) {
   detailGame = game;
   $('#game-details-title').textContent = game.title;
@@ -698,7 +707,8 @@ function openDetails(game) {
   const pegiText = detailPegiText(game);
   const releases = detailReleases(game);
   $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });
-  detailsDialog.showModal();
+  mountVersionPicker(detailsDialog, game, openDetails, $('#game-details-title'));
+  if (!detailsDialog.open) detailsDialog.showModal();
   setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
 }
 function closeDetails() { detailsDialog.close(); detailGame = null; }
@@ -799,6 +809,7 @@ function openForm(game = null) {
   $('#game-form').dataset.descriptionInitial = game?.description || '';
   $('#game-form')._pegiMetadata = pegiMetadata(game);
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
+  mountVersionPicker($('#game-form'), game, openForm, $('#game-title').closest('label'));
   $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
@@ -870,6 +881,11 @@ $('#game-form').addEventListener('submit', async event => {
   event.preventDefault(); const id = $('#game-id').value; const save = $('#save-game');
   save.disabled = true; save.textContent = 'Checking…';
   const duplicate = await titleAutocomplete.duplicateBeforeSave();
+  const original = state.games.find(game => String(game.id) === id);
+  const changesIdentity = original && (original.platform !== selectedPlatform() || original.title !== $('#game-title').value);
+  if (changesIdentity && duplicate && !await confirmAction({ title: 'Another copy already exists', message: `You are changing ${original.platform} to ${selectedPlatform()}. Another copy already exists there. Change this copy anyway?`, confirmLabel: 'Change copy', kicker: 'Duplicate // game' })) {
+    save.disabled = false; save.textContent = 'Save game'; return;
+  }
   if (!id && duplicate && !await confirmAction({ title: 'Add another copy?', message: `“${duplicate.title}” is already in your ${duplicate.platform} library. Add another entry anyway?`, confirmLabel: 'Add anyway', kicker: 'Duplicate // game' })) {
     save.disabled = false; save.textContent = 'Save game'; return;
   }
@@ -921,7 +937,14 @@ $('#games').addEventListener('click', async event => {
   if (!card) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
   if (action === 'version') {
     const version = state.games.find(item => item.id === Number(event.target.closest('[data-game-id]')?.dataset.gameId));
-    if (version) openDetails(version);
+    const group = displayedGames().find(item => item.versions.some(copy => copy.id === version?.id));
+    if (group && version) {
+      group.versions.forEach(copy => selectedCopyIds.delete(copy.id));
+      selectedCopyIds.add(version.id);
+      const next = cardNode(selectedGroupCopy(group, selectedCopyIds));
+      card.replaceWith(next);
+      next.querySelector(`[data-game-id="${version.id}"]`)?.focus({ preventScroll: true });
+    }
     return;
   }
   if (!action) return openDetails(game);
