@@ -163,7 +163,6 @@
   display:flex;
   align-items:center;
   gap:5px;
-  width:100%;
   padding:2px 0;
   border:0;
   border-radius:0;
@@ -174,6 +173,17 @@
   line-height:1.35;
   cursor:pointer;
   text-align:left;
+}
+.activity-group-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #9ab3ac;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.activity-group-summary b {
+  color: #72e5c9;
 }
 .activity-group-toggle b {
   color:#72e5c9;

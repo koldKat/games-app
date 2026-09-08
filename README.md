@@ -16,7 +16,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching, plus opt-in HLTB cover choices inside Request cover.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
-- Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), and a per-account hide control.
+- Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), a per-account hide control, and opt-in collector profiles with aggregate stats.
 - Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, and moderation controls.
 - Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
@@ -29,7 +29,7 @@ Registration and login use scrypt-hashed passwords and random sessions delivered
 
 New accounts begin with isolated, empty libraries. Existing game ownership is stored by immutable numeric account ID, so renaming an account does not affect its collection.
 
-Library view, search text, filters, and sorting are stored per account in SQLite. Signing in from another desktop or phone therefore restores the same workspace settings.
+Library view, search text, filters, sorting, and profile privacy are stored per account in SQLite. Signing in from another desktop or phone therefore restores the same workspace settings. Collector profiles remain private by default; an account can explicitly publish its avatar, level, join month, aggregate collection counts, contributions, and leading platforms for visitors who select its name in Signal.
 
 The add/edit form includes a broad grouped platform list plus a custom-platform escape hatch. PEGI rating colors provide the card rail identity; the platform remains visible on each card.
 
@@ -50,7 +50,7 @@ PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
 
 ## Local admin
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/Kat·a·log summaries, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/Kat·a·log summaries, recent account country/city resolved through an offline GeoIP database, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
 
 The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
 
@@ -64,7 +64,7 @@ The authentication landing page doubles as a crawler-readable product page for `
 
 Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; Kat·a·log, My Kat·a·log, and +Game stay fixed, with the current view visibly inactive.
 
-Only factual release data is copied. Account identity, ownership, media format, play state, personal ratings, favorites, cartridge numbers, notes, and private row IDs are never exposed. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
+Only factual release data is copied into a public release. Account identity, ownership, media format, play state, personal ratings, favorites, cartridge numbers, notes, and private row IDs are never attached to that release. Separately, an account may opt into a public collector profile containing aggregate counts but no individual private game rows, email, location, notes, or settings. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
 
 ## PEGI lookup
 

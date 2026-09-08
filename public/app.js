@@ -1132,6 +1132,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-new-password').value = '';
   $('#account-confirm-password').value = '';
   $('#account-hide-from-activity').checked = Boolean(state.user?.hideFromActivity);
+  $('#account-public-profile').checked = Boolean(state.user?.publicProfile);
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
@@ -1341,6 +1342,7 @@ $('#account-form').addEventListener('submit', async event => {
   try {
     const result = await api('/api/account', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
       username: $('#account-username').value, email: $('#account-email').value, currentPassword: $('#account-current-password').value, newPassword,
+      publicProfile: $('#account-public-profile').checked,
       hideFromActivity: $('#account-hide-from-activity').checked,
     }) });
     accountDialog.close();

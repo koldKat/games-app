@@ -29,7 +29,8 @@ class AccountLockedError extends Error {
 }
 
 function publicUser(row) {
-  return { id: row.id, username: row.username, email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null, hideFromActivity: Boolean(row.hide_from_activity) };
+  return { id: row.id, username: row.username, email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null,
+    publicProfile: Boolean(row.public_profile), hideFromActivity: Boolean(row.hide_from_activity) };
 }
 
 async function hashPassword(password) {
@@ -65,7 +66,7 @@ async function register(username, password, email) {
   const { hash, salt } = await hashPassword(password);
   try {
     const result = db.prepare('INSERT INTO users (username, email, password_hash, salt) VALUES (?, ?, ?, ?)').run(clean, cleanEmail, hash, salt);
-    return { id: Number(result.lastInsertRowid), username: clean, email: cleanEmail, avatarUrl: null, hideFromActivity: false };
+    return { id: Number(result.lastInsertRowid), username: clean, email: cleanEmail || '', avatarUrl: null, publicProfile: false, hideFromActivity: false };
   } catch (error) {
     if (String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE')) throw new Error(cleanEmail ? 'Username or email already in use.' : 'Username already taken.');
     throw error;
@@ -111,7 +112,7 @@ async function resetPassword(token, password) {
 }
 
 async function login(username, password) {
-  const row = db.prepare('SELECT id, username, email, avatar_path, password_hash, salt, failed_login_count, locked_until, admin_locked FROM users WHERE username=? COLLATE NOCASE').get(String(username || '').trim());
+  const row = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, password_hash, salt, failed_login_count, locked_until, admin_locked FROM users WHERE username=? COLLATE NOCASE').get(String(username || '').trim());
   if (!row) return null;
   const now = Math.floor(Date.now() / 1000);
   if (row.admin_locked) throw new AccountLockedError('This account has been locked by an administrator.', { manual: true });
@@ -136,7 +137,7 @@ function operatorUserId() { return db.prepare('SELECT id FROM users WHERE userna
 function protectedAccountError() { return Object.assign(new Error('The protected koldKat account cannot be changed by admin controls.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
 
 function setAccountLocked(userId, locked) {
-  const account = db.prepare('SELECT id, username, email, avatar_path, admin_locked, locked_until FROM users WHERE id=?').get(Number(userId));
+  const account = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, admin_locked, locked_until FROM users WHERE id=?').get(Number(userId));
   if (!account) return null;
   if (isProtectedUsername(account.username)) throw protectedAccountError();
   const manuallyLocked = Boolean(locked);
@@ -184,7 +185,7 @@ function authenticate(request, { touch = true } = {}) {
   const token = tokenFromRequest(request);
   if (!token) return null;
   const now = Math.floor(Date.now() / 1000);
-  const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
+  const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path, u.public_profile, u.hide_from_activity FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
   if (!row) return null;
   if (touch) db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
   return publicUser(row);
@@ -204,19 +205,21 @@ async function updateAccount(userId, input) {
   let passwordHash = row.password_hash;
   let salt = row.salt;
   const hideFromActivity = input.hideFromActivity == null ? Boolean(row.hide_from_activity) : Boolean(input.hideFromActivity);
+  const publicProfile = input.publicProfile == null ? Boolean(row.public_profile) : Boolean(input.publicProfile);
   if (input.newPassword) {
     validateCredentials(username, input.newPassword);
     const next = await hashPassword(input.newPassword);
     passwordHash = next.hash; salt = next.salt;
   }
   try {
-    db.prepare('UPDATE users SET username=?, email=?, password_hash=?, salt=?, hide_from_activity=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(username, email, passwordHash, salt, hideFromActivity ? 1 : 0, userId);
+    db.prepare('UPDATE users SET username=?, email=?, password_hash=?, salt=?, public_profile=?, hide_from_activity=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+      .run(username, email, passwordHash, salt, publicProfile ? 1 : 0, hideFromActivity ? 1 : 0, userId);
   } catch (error) {
     if (String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE')) throw new Error('Username or email already in use.');
     throw error;
   }
   if (input.newPassword) db.prepare('DELETE FROM sessions WHERE user_id=?').run(userId);
-  return { ...publicUser({ id: userId, username, email, avatar_path: row.avatar_path, hide_from_activity: hideFromActivity }), sessionInvalidated: Boolean(input.newPassword) };
+  return { ...publicUser({ id: userId, username, email, avatar_path: row.avatar_path, public_profile: publicProfile, hide_from_activity: hideFromActivity }), sessionInvalidated: Boolean(input.newPassword) };
 }
 
 function avatarPath(userId) { return db.prepare('SELECT avatar_path FROM users WHERE id=?').get(userId)?.avatar_path || null; }

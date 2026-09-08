@@ -128,6 +128,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
   <link rel="stylesheet" href="/css/activity.css">
+  <link rel="stylesheet" href="/css/public-profile.css">
   <link rel="stylesheet" href="/css/patch.css">
   <link rel="stylesheet" href="/css/katalog.css">
   ${extraStyles}
@@ -315,7 +316,7 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
   const publisher = entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : '';
   return `<dialog class="katalog-game-dialog" data-katalog-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}">
     <article class="katalog-game-dialog-card">
-      <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details">×</button></header>
+      <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10"/></svg></button></header>
       <div class="game-detail"><article class="game-overview">
         <div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div>
         <div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1>

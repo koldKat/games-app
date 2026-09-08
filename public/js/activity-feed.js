@@ -1,5 +1,6 @@
 import { formatAnnouncementBody } from './announcement-format.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
+import { openPublicProfile } from './public-profile.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 function age(value) {
@@ -26,7 +27,11 @@ function userLabel(entry) {
   const profile = Number.isFinite(level)
     ? `<span class="activity-preview-profile"><b>LV ${level}</b>${entry.userTitle ? `<small>${escapeHtml(entry.userTitle)}</small>` : ''}</span>`
     : '';
-  return preview(`<b>${escapeHtml(entry.username)}</b>`, entry.avatarUrl, 'avatar', `${entry.username} avatar`, profile);
+  const username = escapeHtml(entry.username);
+  const name = entry.publicProfile
+    ? `<button type="button" class="activity-profile-button" data-public-profile="${username}" aria-label="Open ${username}'s public profile">${username}</button>`
+    : `<b>${username}</b>`;
+  return preview(name, entry.avatarUrl, 'avatar', `${entry.username} avatar`, profile);
 }
 function phrase(entry) {
   if (entry.type === 'announcement') return `<strong>${escapeHtml(entry.title)}</strong><span class="activity-announcement-body">${formatAnnouncementBody(entry.body)}</span>`;
@@ -58,17 +63,15 @@ function dayLabel(value) {
 const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
 const SIGNAL_CACHE_MS = 15_000;
 const SIGNAL_LOADER_DELAY_MS = 220;
-function contributionGroup(entry, entries, id) {
+function contributionGroup(entry, entries, id, groupKey) {
   const count = entries.length;
   const username = escapeHtml(entry.username);
   return `<section class="activity-contribution-group">
-    <button type="button" class="activity-group-toggle" data-activity-group-toggle="${id}" aria-controls="${id}" aria-expanded="false" aria-label="Show ${username}'s ${count} contributed games">
-      <span class="activity-group-chevron" aria-hidden="true">▶</span>${userLabel(entry)}<span class="activity-group-count">contributed ${count} game${count === 1 ? '' : 's'}</span>
-    </button>
+    <div class="activity-group-summary">${userLabel(entry)}<button type="button" class="activity-group-toggle" data-activity-group-toggle="${id}" data-activity-group-key="${escapeHtml(groupKey)}" aria-controls="${id}" aria-expanded="false" aria-label="Show ${username}'s ${count} contributed games"><span class="activity-group-chevron" aria-hidden="true">▶</span><span class="activity-group-count">contributed ${count} game${count === 1 ? '' : 's'}</span></button></div>
     <div class="activity-group-items" id="${id}" hidden>${entries.map(card).join('')}</div>
   </section>`;
 }
-function collapseContributions(entries, dayIndex) {
+function collapseContributions(entries, dayIndex, dayKey) {
   const byUser = new Map();
   for (const entry of entries) {
     if (entry.type !== 'catalogue_contribution') continue;
@@ -81,41 +84,55 @@ function collapseContributions(entries, dayIndex) {
     const group = byUser.get(entry.username);
     if (rendered.has(group)) return '';
     rendered.add(group);
-    return contributionGroup(entry, group, `activity-contributions-${dayIndex}-${groupIndex++}`);
+    return contributionGroup(entry, group, `activity-contributions-${dayIndex}-${groupIndex++}`, `${dayKey}:${entry.username}`);
   }).join('');
 }
 function groupedCards(entries) {
   const groups = new Map();
   for (const entry of entries) {
     const key = timestamp(entry.createdAt).toDateString();
-    const group = groups.get(key) || { label: dayLabel(entry.createdAt), entries: [] };
+    const group = groups.get(key) || { key, label: dayLabel(entry.createdAt), entries: [] };
     group.entries.push(entry); groups.set(key, group);
   }
-  return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index)}</div></section>`).join('');
+  return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index, group.key)}</div></section>`).join('');
 }
 export function createActivityFeed() {
   const hosts = () => [...document.querySelectorAll('[data-activity-feed]')];
   let refreshTimer = null; let source = null; let cachedPayload = null; let cachedAt = 0; let loading = null;
-  function bindGroups(host) {
+  function bindInteractions(host) {
     if (host.dataset.activityGroupsBound === 'true') return;
     host.dataset.activityGroupsBound = 'true';
     host.addEventListener('click', event => {
+      const profile = event.target.closest('[data-public-profile]');
+      if (profile) {
+        event.preventDefault(); event.stopPropagation(); dismissActivityPreview(profile);
+        void openPublicProfile(profile.dataset.publicProfile); return;
+      }
       const toggle = event.target.closest('[data-activity-group-toggle]'); if (!toggle) return;
-      const list = document.getElementById(toggle.dataset.activityGroupToggle); if (!list || !host.contains(list)) return;
+      const list = host.querySelector(`#${CSS.escape(toggle.dataset.activityGroupToggle)}`); if (!list) return;
       list.hidden = !list.hidden; const expanded = !list.hidden;
       toggle.setAttribute('aria-expanded', String(expanded));
-      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} ${toggle.querySelector('b')?.textContent || 'account'}'s contributed games`);
+      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} contributed games`);
     });
   }
   function render(targets, body) {
     const entries = body.entries || []; const pinned = body.pinned || null;
     for (const host of targets) {
+      const expandedKeys = new Set([...host.querySelectorAll('[data-activity-group-key][aria-expanded="true"]')].map(toggle => toggle.dataset.activityGroupKey));
       const limit = host.dataset.activityLimit === 'all' ? entries.length : Math.max(1, Number(host.dataset.activityLimit) || 3);
       const visible = entries.slice(0, limit);
       const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
       const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
       host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
-      host.dataset.activityLoaded = 'true'; bindGroups(host);
+      host.querySelectorAll('[data-activity-group-key]').forEach(toggle => {
+        if (!expandedKeys.has(toggle.dataset.activityGroupKey)) return;
+        const list = host.querySelector(`#${CSS.escape(toggle.dataset.activityGroupToggle)}`);
+        if (!list) return;
+        list.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', 'Hide contributed games');
+      });
+      host.dataset.activityLoaded = 'true'; bindInteractions(host);
     }
   }
   function scheduleSignalLoaders(targets) {

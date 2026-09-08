@@ -317,14 +317,14 @@
   letter-spacing: 0.09em;
   text-transform: uppercase;
   text-decoration: none;
-  box-shadow: 0 0 0 var(--auth-public-pulse-spread) rgb(88 225 198 / var(--auth-public-pulse-opacity));
+  box-shadow: 0 0 0 var(--auth-public-pulse-spread) rgb(88 225 198 / var(--auth-public-pulse-opacity)) !important;
   transition: box-shadow .15s ease;
 }
 .auth-public-link:hover, .auth-public-link:focus-visible {
   border-color: #68e8cd;
   background: #123029;
   color: #d7fff5;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 @keyframes auth-public-pulse {
   0%, 100% {

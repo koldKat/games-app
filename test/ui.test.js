@@ -40,6 +40,16 @@ test('destructive actions never invoke native browser dialogs', () => {
   for (const source of sources) assert.doesNotMatch(read(source), nativeDialog, source);
 });
 
+test('admin accounts use a fitted desktop table with aligned actions and location', () => {
+  const html = read('admin/index.html'); const css = readCss('admin/style.css'); const accounts = read('admin/js/accounts.js');
+  assert.match(html, /id="accounts-table"[\s\S]*<th>LOCATION<\/th>[\s\S]*<th>ACTIONS<\/th>/);
+  assert.match(css, /\.accounts-table-shell\{overflow-x:hidden}/);
+  assert.match(css, /#accounts-table th:nth-child\(10\)\{width:298px;text-align:right}/);
+  assert.match(accounts, /className = 'row-actions'/);
+  assert.match(css, /@media\(max-width:1280px\)[\s\S]*\.accounts-table-shell\{overflow-x:auto}/);
+  assert.match(accounts, /geoLocation\(account\.country, account\.city\)/);
+});
+
 test('public and admin interfaces include themed confirmation dialogs', () => {
   assert.match(read('public/index.html'), /id="action-dialog" class="action-dialog"/);
   assert.match(read('admin/index.html'), /id="confirm-dialog" class="confirm-dialog"/);
@@ -66,6 +76,15 @@ test('authentication landing keeps a dense real-cover background', () => {
 test('Kat·a·log Signal is a modular public feed with a global account privacy control', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const activity = read('server/activity.js');
   assert.match(html, /id="activity-feed"/); assert.match(html, /data-activity-feed data-activity-limit="3"/); assert.match(html, /href="\/signal">Open the public signal/); assert.match(html, /id="account-hide-from-activity"/);
+  assert.match(html, /id="account-public-profile"/);
+  assert.match(html, /href="\/css\/public-profile\.css"/);
+  assert.match(read('public/js/activity-feed.js'), /import \{ openPublicProfile \} from '\.\/public-profile\.js'/);
+  assert.match(read('public/js/activity-feed.js'), /data-public-profile/);
+  assert.match(read('public/js/public-profile.js'), /\/api\/public\/user\//);
+  assert.match(read('server/katalog-pages.js'), /href="\/css\/public-profile\.css"/);
+  assert.match(readCss('public/css/public-profile.css'), /\.katalog-main \.signal-feed \.activity-profile-button[\s\S]*min-height:0;[\s\S]*padding:0;[\s\S]*border:0;[\s\S]*background:none;/);
+  assert.match(readCss('public/css/public-profile.css'), /\.public-profile-dialog\{[^}]*border:1px solid #2c554b;[^}]*border-radius:6px;[^}]*background:#0a1117/);
+  assert.match(readCss('public/css/public-profile.css'), /\.public-profile-card\{[^}]*border:0;[^}]*border-radius:0/);
   assert.match(application, /createActivityFeed/); assert.match(activity, /activity_templates/); assert.match(activity, /activity_events/);
   assert.match(activity, /JOIN_TEMPLATES/); assert.match(activity, /LEVEL_TEMPLATES/);
   assert.match(read('public/js/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
@@ -84,8 +103,10 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
   assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
   assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 6/);
-  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex\)/);
+  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex, dayKey\)/);
   assert.match(read('public/js/activity-feed.js'), /activity-group-chevron/);
+  assert.match(read('public/js/activity-feed.js'), /data-activity-group-key/);
+  assert.match(read('public/js/activity-feed.js'), /const expandedKeys = new Set/);
   assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
   assert.match(read('public/js/activity-feed.js'), /const targets = hosts\(\)/);
   assert.match(read('public/js/activity-feed.js'), /controllerLoaderMarkup\('Tuning the signal…'\)/);
@@ -213,7 +234,7 @@ test('login and registration keep a stable desktop rail without filler content',
   assert.match(css, /\.auth-public-nav\{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-height:30px;--auth-public-pulse-spread:0px;--auth-public-pulse-opacity:0;animation:auth-public-pulse 4s ease-in-out infinite\}/);
   assert.match(css, /\.auth-public-link\{[\s\S]*text-decoration:none/);
   assert.match(css, /\.auth-public-nav\{[\s\S]*animation:auth-public-pulse 4s ease-in-out infinite/);
-  assert.match(css, /\.auth-public-link\{[\s\S]*box-shadow:0 0 0 var\(--auth-public-pulse-spread\) rgb\(88 225 198 \/ var\(--auth-public-pulse-opacity\)\)/);
+  assert.match(css, /\.auth-public-link\{[\s\S]*box-shadow:0 0 0 var\(--auth-public-pulse-spread\) rgb\(88 225 198 \/ var\(--auth-public-pulse-opacity\)\) !important/);
   assert.match(css, /@property --auth-public-pulse-spread\{syntax:'<length>';inherits:true;initial-value:0px\}/);
 });
 

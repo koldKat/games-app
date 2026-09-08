@@ -629,10 +629,12 @@
   font-weight: 700;
   letter-spacing: .14em;
 }
-.katalog-game-dialog-card>header .close-button {
+.katalog-main .katalog-game-dialog-card>header .close-button {
   display: grid;
   flex: 0 0 25px;
   place-items: center;
+  align-self: center;
+  box-sizing: border-box;
   width: 25px;
   min-width: 25px;
   min-height: 25px;
@@ -640,6 +642,16 @@
   margin-left: auto;
   padding: 0;
   line-height: 1;
+}
+.katalog-main .katalog-game-dialog-card>header .close-button svg {
+  display: block;
+  width: 10px;
+  height: 10px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
 }
 .katalog-game-dialog .game-detail {
   padding: 13px;

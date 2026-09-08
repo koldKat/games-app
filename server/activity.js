@@ -157,7 +157,9 @@ function feedAnnouncement(row) { return { ...announcementRow(row), type: 'announ
 function list(limit = null) {
   const take = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Math.floor(Number(limit)) : 0;
   const query = `SELECT a.id, a.type, a.game_id AS gameId, a.data_json AS dataJson, a.created_at AS createdAt,
-      u.username, u.avatar_path AS avatarPath, COALESCE(up.xp, 0) AS userXp,
+      u.username, u.avatar_path AS avatarPath,
+      CASE WHEN u.public_profile=1 AND u.admin_locked=0 THEN 1 ELSE 0 END AS publicProfile,
+      COALESCE(up.xp, 0) AS userXp,
       t.template, c.title AS gameTitle, c.slug AS gameSlug, c.cover_url AS coverUrl
     FROM activity_events a
     LEFT JOIN users u ON u.id=a.user_id
@@ -171,6 +173,7 @@ function list(limit = null) {
   return rows.map(row => {
     const progression = progressForXp(row.userXp);
     return { id: row.id, type: row.type, username: row.username || 'Unknown curator', avatarUrl: row.avatarPath ? `/avatars/${row.avatarPath}` : null,
+      publicProfile: Boolean(row.publicProfile),
       userLevel: progression.level, userTitle: progression.title, template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) };
   });
 }

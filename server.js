@@ -19,9 +19,11 @@ const showcaseCovers = require('./server/showcase-covers');
 const events = require('./server/events');
 const activity = require('./server/activity');
 const auth = require('./server/auth');
+const userLocation = require('./server/user-location');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const katalog = require('./server/katalog-runtime');
+const publicProfiles = require('./server/public-profiles');
 const { createKatalogRoutes } = require('./server/katalog-routes');
 const { createForumRoutes } = require('./server/forum-routes');
 const { createPatchRoutes } = require('./server/patch-routes');
@@ -276,7 +278,7 @@ async function handleApi(request, response, url) {
       const token = auth.createSession(user.id);
       if (activity.recordJoin(user.id)) events.publishPublicActivity();
       auth.clearFailures(ip);
-      return sendJson(response, 201, { user: { id: user.id, username: user.username, email: user.email || '', avatarUrl: user.avatarUrl, hideFromActivity: user.hideFromActivity }, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
+      return sendJson(response, 201, { user, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) { auth.recordFailure(ip); return sendJson(response, 400, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/login') {
@@ -287,6 +289,7 @@ async function handleApi(request, response, url) {
       const user = await auth.login(input.username, input.password);
       if (!user) { auth.recordFailure(ip); return sendJson(response, 401, { error: 'Invalid username or password.' }); }
       auth.clearFailures(ip);
+      userLocation.record(user.id, ip, { force: true });
       const token = auth.createSession(user.id);
       return sendJson(response, 200, { user, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) {
@@ -324,8 +327,17 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/activity') return sendJson(response, 200, activity.feed());
   if (request.method === 'GET' && url.pathname === '/api/activity/stream') return events.subscribePublicActivity(request, response);
+  const publicProfileMatch = request.method === 'GET' && url.pathname.match(/^\/api\/public\/user\/([^/]+)$/);
+  if (publicProfileMatch) {
+    let username;
+    try { username = decodeURIComponent(publicProfileMatch[1]); }
+    catch { return sendJson(response, 400, { error: 'Invalid profile name.' }); }
+    const profile = username.length <= 32 ? publicProfiles.get(username) : null;
+    return profile ? sendJson(response, 200, profile) : sendJson(response, 404, { error: 'Public profile not found.' });
+  }
   const user = auth.authenticate(request);
   if (!user) return sendJson(response, 401, { error: 'Unauthorized.' });
+  userLocation.record(user.id, auth.clientIp(request));
   const refreshedCookie = auth.refreshSessionCookie(request);
   if (refreshedCookie) response.setHeader('Set-Cookie', refreshedCookie);
   if (request.method === 'GET' && url.pathname === '/api/events') {
@@ -358,6 +370,7 @@ async function handleApi(request, response, url) {
       const avatarUrl = auth.updateAvatar(user.id, filename);
       removeAvatarFile(old);
       publishProgression(user.id, progression.recordAvatar(user.id));
+      events.publishPublicActivity();
       return sendJson(response, 200, { avatarUrl });
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
@@ -365,6 +378,7 @@ async function handleApi(request, response, url) {
     const old = auth.avatarPath(user.id);
     auth.updateAvatar(user.id, null);
     removeAvatarFile(old);
+    events.publishPublicActivity();
     return sendJson(response, 200, { avatarUrl: null });
   }
   if (request.method === 'GET' && url.pathname === '/api/covers/status') {

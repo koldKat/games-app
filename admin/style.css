@@ -479,6 +479,49 @@ tbody tr:last-child td {
   height:28px;
   font-size:10px
 }
+.accounts-table-shell {
+  overflow-x:hidden
+}
+#accounts-table {
+  table-layout:fixed
+}
+#accounts-table th:nth-child(1) { width:42px }
+#accounts-table th:nth-child(2) { width:110px }
+#accounts-table th:nth-child(3) { width:175px }
+#accounts-table th:nth-child(4) { width:90px }
+#accounts-table th:nth-child(5),
+#accounts-table th:nth-child(6),
+#accounts-table th:nth-child(7) { width:66px }
+#accounts-table th:nth-child(8) { width:125px }
+#accounts-table th:nth-child(9) { width:195px }
+#accounts-table th:nth-child(10) { width:298px; text-align:right }
+#accounts-table td:nth-child(10) { text-align:right }
+#accounts-table td:nth-child(2),
+#accounts-table td:nth-child(3),
+#accounts-table td:nth-child(8),
+#accounts-table td:nth-child(9) {
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.geo-location {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  color:#91a0ad
+}
+.geo-flag,
+.geo-location img {
+  display:block;
+  flex:0 0 auto;
+}
+.geo-location img {
+  border-radius:2px;
+  object-fit:cover
+}
+.accounts-actions .row-actions {
+  width:100%
+}
 .empty {
   text-align:center;
   color:#738190;
@@ -548,6 +591,14 @@ tbody tr:last-child td {
 .toast.error {
   border-color:#6b3736;
   color:#ff8e85
+}
+@media(max-width:1280px) {
+  .accounts-table-shell {
+    overflow-x:auto
+  }
+  #accounts-table {
+    min-width:1243px
+  }
 }
 @media(max-width:1100px) {
   .metric-grid {
@@ -823,7 +874,7 @@ html:has(dialog[open]) {
 }
 .progression-config label {
   display:grid;
-  grid-template-columns:minmax(0,1fr) 74px;
+  grid-template-columns:minmax(0,1fr) 112px;
   gap:8px;
   align-items:center;
   border:1px solid var(--line);
@@ -842,6 +893,15 @@ html:has(dialog[open]) {
   background:#070b10;
   padding:0 7px;
   outline:0
+}
+.progression-config .number-stepper-button {
+  flex-basis:26px;
+  width:26px!important;
+  min-width:26px;
+}
+.progression-config .number-stepper input[type=number] {
+  padding:0 3px!important;
+  font-size:12px;
 }
 .progression-config input:focus {
   border-color:var(--green);

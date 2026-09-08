@@ -13,8 +13,10 @@ games-app/
     constants.js            shared Kat·a·log domains, provider identity and batch policy
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
+    user-location.js        throttled offline country/city resolution for admin accounts
     backup.js               hourly compressed SQLite snapshots and retention
     activity.js             public-safe Signal ledger plus announcement draft/publish/pin projection
+    public-profiles.js      opt-in aggregate collector-profile projection
     patch-data.js           private Patch-thread storage and read/unread lifecycle
     patch-routes.js         authenticated Ping and public/private Patch HTTP boundary
     forum-data.js           forum categories, threads, posts, ownership, and moderation queries
@@ -62,6 +64,7 @@ games-app/
     js/platforms.js         grouped platform Kat·a·log and release-name matching
     js/title-autocomplete.js local/provider suggestions and duplicate warnings
     js/announcement-format.js safe shared rich-text formatter for Signal notices
+    js/public-profile.js    reusable Signal profile dialog and public-profile fetch
     js/forum-page.js        forum composer, owner actions, themed confirmation, and SSE refresh binding
     js/patch.js             admin Patch queue rendering and reply controls
     js/patch-ui.js          reusable Patch composer and Ping conversation UI
@@ -77,6 +80,7 @@ games-app/
       foundation.css       reset, structural layout, and baseline responsive rules
       theme.css            dense dark operator theme and primary components
       library.css          legible typography, header art, cards, and game tools
+      public-profile.css   opt-in collector profile controls and dialog
       landing.css          authentication landing page and promotional modules
       features.css         later feature-specific components and viewport rules
       patch.css            private Patch and Ping dialogs, unread alert state
@@ -134,6 +138,7 @@ Browser
   -> POST /api/login or /api/register --------> server.js -> auth.js -> SQLite
   -> authenticated /api/* + HttpOnly cookie --> auth.js -> user identity
                                                     |
+                                                    +-> user-location.js (offline country/city)
                                                     +-> db.js (user-scoped query)
                                                     +-> pegi.js + pegi-bulk.js (lookup/jobs)
                                                     +-> hltb.js + hltb-bulk.js (lookup/jobs)
@@ -148,7 +153,7 @@ All authenticated routes resolve the session before dispatching feature logic. T
 
 Progression is split into three focused server modules. `progression-policy.js` is the dependency-free definition of XP event defaults, the exact Gamebooks triangular level curve (`1000 × level × (level + 1) / 2`), and collector titles. `progression-store.js` owns the SQLite tables, configurable amounts, and atomic idempotency key `(user_id, event, ref)`. `progression-service.js` maps a complete game record to eligible one-time awards and evaluates account milestones.
 
-`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. Regular authenticated boot reads the already-stored progression summary and never triggers a historical backfill. Game create/update, enrichment SSE paths, Kat·a·log additions, forum posts, and a first avatar set all feed the same service. Forum replies award the author and, once per thread, award its owner when another account engages. It emits a `progression-updated` SSE event only when XP changes. `public/js/progression-ui.js` hydrates its animation baseline from the authenticated summary before connecting SSE, so either the live event or the save response animates from the XP already on screen and the duplicate is ignored. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
+`user_progression` stores the account XP total and one-time backfill marker. `progression_events` stores every granted award with its stable reference; uniqueness guarantees that toggling a field cannot farm XP. `progression_config` is localhost-admin-editable and changes future awards only. No interval, login, uptime, or idle path grants XP. Regular authenticated boot reads the already-stored progression summary and never triggers a historical backfill. Game create/update, enrichment SSE paths, Kat·a·log additions, forum posts, and a first avatar set all feed the same service. Forum replies award the author and, once per thread, award its owner when another account engages. It emits a `progression-updated` SSE event only when XP changes. `public/js/progression-ui.js` hydrates its animation baseline from the authenticated summary before connecting SSE, so either the live event or the save response animates from the XP already on screen and the duplicate is ignored. Signal independently derives any historical level crossings from that immutable XP ledger, preserving the original award timestamp and never duplicating an already recorded level.
 
 The authenticated SPA and crawlable server-rendered pages share the same header progress component. Its dynamic fill uses a fully themed semantic `progress` value rather than an inline CSS declaration, because the public page Content Security Policy intentionally rejects inline styles. Refreshing Signal, Forum, or the public Kat·a·log therefore preserves the same fill shown in My Kat·a·log without introducing an SVG layout surface into the header.
 
@@ -161,7 +166,7 @@ Kat·a·log dispatch runs before the generic authenticated API gate because brow
 ## Runtime and dependencies
 
 - Node.js 20 or newer
-- `better-sqlite3` as the only production package
+- `better-sqlite3` for SQLite, `sharp` for bounded image processing, and `geoip-lite` for offline country/city resolution
 - Port `3005` and host `0.0.0.0` by default
 
 Environment variables:
@@ -193,6 +198,9 @@ SQLite runs in WAL mode with foreign keys enabled.
 | `email` | Optional and case-insensitively unique |
 | `password_hash` | 64-byte scrypt result encoded as hex |
 | `salt` | Random 16-byte salt encoded as hex |
+| `public_profile` | Boolean opt-in for the aggregate public collector profile |
+| `last_country`, `last_city` | Approximate location from recent authenticated activity; nullable |
+| `location_updated_at` | Unix timestamp used to throttle offline GeoIP refreshes |
 | `created_at`, `updated_at` | SQLite timestamps |
 
 ### `sessions`
@@ -304,6 +312,10 @@ Each account also records consecutive incorrect passwords in SQLite. Five failed
 
 Password-reset tokens are random 256-bit values. SQLite stores only their SHA-256 hashes, limits them to one hour, and invalidates previous tokens for the account only after SMTP has accepted the new reset email for delivery. Reset messages use a branded multipart email: an HTML button and linked fallback URL for capable mail clients, plus a plain-text fallback. The public authentication screen swaps its sign-in form for dedicated request and new-password panels, and removes a received token from the visible URL before rendering it. Consuming a token updates the scrypt password hash transactionally, clears temporary login-lock state, and revokes every existing session. Requests always return the same message whether or not an account/email exists.
 
+### Approximate account location
+
+`server/user-location.js` mirrors Gamebooks' offline GeoIP approach. A successful login resolves the nginx-forwarded client address immediately; authenticated activity refreshes it no more than once every ten minutes. Input must first pass Node's strict IP parser, then `geoip-lite` returns an approximate two-letter country code and city. SQLite stores only those display values and the refresh timestamp, never the source IP. Resolution is best-effort, so a missing/corrupt GeoIP database cannot block login or authenticated API work. The localhost Accounts table shows the country flag, a themed full-country-name tooltip, and city. Its desktop-specific fixed column plan keeps Actions right-aligned and uses the available panel width without a stray scrollbar; narrower viewports deliberately regain horizontal table scrolling before any column can be clipped.
+
 ### Isolation invariant
 
 Every collection query includes `user_id = authenticatedUserId`. Updates and deletes use both game ID and user ID. A game belonging to another account therefore behaves as nonexistent and returns HTTP 404.
@@ -351,6 +363,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | DELETE | `/api/ping/:id` | Hide a thread for its owner or the operator queue |
 | GET | `/api/activity` | Public Kat·a·log Signal entries plus the optional pinned announcement |
 | GET | `/api/activity/stream` | Public SSE refresh signal for Kat·a·log Signal |
+| GET | `/api/public/user/:username` | Opt-in public collector identity, progression summary, aggregate stats, and top platforms |
 | GET | `/signal` | Crawlable public Kat·a·log Signal page; attaches to the public SSE stream |
 | GET | `/api/pegi/search?q=...` | Explicit server-side PEGI search |
 | GET | `/api/pegi/status` | Missing-metadata count and current account job state |
@@ -372,7 +385,9 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
 | POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
 
-Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. In `public/js/activity-feed.js`, five or more Kat·a·log contributions from the same account within one day become a single themed summary with an accessible inline expander; smaller runs, joins, level-ups, and announcements remain individual entries.
+Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. In `public/js/activity-feed.js`, six or more Kat·a·log contributions from the same account within one day become a single themed summary with an accessible inline expander; runs of up to five, joins, level-ups, and announcements remain individual entries. Before an SSE refresh replaces feed markup, the client snapshots expanded groups by local day and account, then restores the matching groups. New activity therefore does not collapse a contribution list the visitor is already reading.
+
+`users.public_profile` is a separate opt-in from `hide_from_activity`. Signal projects the boolean so `public/js/activity-feed.js` renders a real profile button only for opted-in, unlocked accounts. `server/public-profiles.js` rejects private, locked, and missing accounts through the same 404 response, then returns only avatar, join date, level/title, aggregate library counts, public contribution count, and five leading platforms. It never selects email, location, notes, per-game records, personal ratings, credentials, or settings. Avatar upload/removal and account privacy changes invalidate the public Signal projection through SSE. The reusable native dialog preserves the current Signal view, uses a start-and-release backdrop check so dragging text outside cannot close it, and aborts an unfinished request when closed or replaced.
 
 List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `missing` accepts `pegi`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. Missing-PEGI filtering and automatic PEGI enrichment include Evercade like every other platform. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
 
@@ -581,6 +596,7 @@ npm run docs:check   # fail if generated HTML is stale
 | Test file | Contract |
 |---|---|
 | `test/auth.test.js` | Account isolation, sessions, password invalidation |
+| `test/user-location.test.js` | Offline GeoIP normalization, throttling, and IP non-persistence |
 | `test/pegi.test.js` | PEGI HTML parsing |
 | `test/pegi-bulk.test.js` | Exact-title/platform selection, late-change skipping, and account job events |
 | `test/hltb.test.js` | HLTB response parsing, title similarity, and the current search route |

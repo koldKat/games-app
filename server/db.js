@@ -53,6 +53,10 @@ db.exec(`
     failed_login_count INTEGER NOT NULL DEFAULT 0,
     locked_until INTEGER,
     admin_locked INTEGER NOT NULL DEFAULT 0 CHECK (admin_locked IN (0, 1)),
+    public_profile INTEGER NOT NULL DEFAULT 0 CHECK (public_profile IN (0, 1)),
+    last_country TEXT,
+    last_city TEXT,
+    location_updated_at INTEGER,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -199,6 +203,10 @@ if (!userColumns.includes('failed_login_count')) db.exec('ALTER TABLE users ADD 
 if (!userColumns.includes('locked_until')) db.exec('ALTER TABLE users ADD COLUMN locked_until INTEGER');
 if (!userColumns.includes('admin_locked')) db.exec('ALTER TABLE users ADD COLUMN admin_locked INTEGER NOT NULL DEFAULT 0');
 if (!userColumns.includes('hide_from_activity')) db.exec('ALTER TABLE users ADD COLUMN hide_from_activity INTEGER NOT NULL DEFAULT 0');
+if (!userColumns.includes('public_profile')) db.exec('ALTER TABLE users ADD COLUMN public_profile INTEGER NOT NULL DEFAULT 0');
+if (!userColumns.includes('last_country')) db.exec('ALTER TABLE users ADD COLUMN last_country TEXT');
+if (!userColumns.includes('last_city')) db.exec('ALTER TABLE users ADD COLUMN last_city TEXT');
+if (!userColumns.includes('location_updated_at')) db.exec('ALTER TABLE users ADD COLUMN location_updated_at INTEGER');
 const gameColumns = db.pragma('table_info(games)').map(column => column.name);
 if (!gameColumns.includes('user_id')) db.exec('ALTER TABLE games ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
 if (!gameColumns.includes('cover_url')) db.exec("ALTER TABLE games ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''");

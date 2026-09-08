@@ -21,6 +21,20 @@ export function formatDuration(seconds) {
   return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 export function formatDate(value) { return value ? new Date(value).toLocaleString() : '//'; }
+const countryNames = new Intl.DisplayNames(['en-US'], { type: 'region' });
+export function countryName(code) { try { return countryNames.of(code) || code; } catch { return code; } }
+export function geoLocation(country, city) {
+  if (!country && !city) return document.createTextNode('//');
+  const location = document.createElement('span'); location.className = 'geo-location';
+  if (country) {
+    const flagHint = document.createElement('span'); flagHint.className = 'themed-tooltip geo-flag';
+    flagHint.dataset.tooltip = countryName(country);
+    const flag = document.createElement('img'); flag.src = `https://flagcdn.com/w20/${String(country).toLowerCase()}.png`;
+    flag.width = 20; flag.height = 15; flag.alt = ''; flagHint.append(flag); location.append(flagHint);
+  }
+  if (city) { const label = document.createElement('span'); label.textContent = city; location.append(label); }
+  return location;
+}
 export function button(label, className, handler) {
   const element = document.createElement('button'); element.className = `button ${className || ''}`; element.textContent = label; element.addEventListener('click', handler); return element;
 }

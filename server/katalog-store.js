@@ -134,6 +134,7 @@ function createKatalogStore(database) {
     );
     CREATE INDEX IF NOT EXISTS idx_catalogue_status_title ON catalogue_entries(status, title COLLATE NOCASE);
     CREATE INDEX IF NOT EXISTS idx_catalogue_platform ON catalogue_entries(platform COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_catalogue_submitter_status ON catalogue_entries(submitted_by_user_id, status);
     CREATE INDEX IF NOT EXISTS idx_catalogue_links_user ON catalogue_game_links(user_id);
   `);
   const catalogueColumns = database.pragma('table_info(catalogue_entries)').map(column => column.name);
