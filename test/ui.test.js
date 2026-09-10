@@ -42,12 +42,14 @@ test('destructive actions never invoke native browser dialogs', () => {
 
 test('admin accounts use a fitted desktop table with aligned actions and location', () => {
   const html = read('admin/index.html'); const css = readCss('admin/style.css'); const accounts = read('admin/js/accounts.js');
-  assert.match(html, /id="accounts-table"[\s\S]*<th>LOCATION<\/th>[\s\S]*<th>ACTIONS<\/th>/);
+  assert.match(html, /id="accounts-table"[\s\S]*<th>LOCATION<\/th><th>LAST ACTIVE<\/th><th>INACTIVE<\/th><th>CREATED<\/th><th>ACTIONS<\/th>/);
   assert.match(css, /\.accounts-table-shell\{overflow-x:hidden}/);
-  assert.match(css, /#accounts-table th:nth-child\(10\)\{width:298px;text-align:right}/);
+  assert.match(css, /#accounts-table th:nth-child\(12\)\{width:278px;text-align:right}/);
   assert.match(accounts, /className = 'row-actions'/);
   assert.match(css, /@media\(max-width:1280px\)[\s\S]*\.accounts-table-shell\{overflow-x:auto}/);
   assert.match(accounts, /geoLocation\(account\.country, account\.city\)/);
+  assert.match(accounts, /Show \$\{inactive\.length\} inactive user/);
+  assert.match(accounts, /STALE_AFTER_DAYS = 30/);
 });
 
 test('public and admin interfaces include themed confirmation dialogs', () => {

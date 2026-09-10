@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const util = require('node:util');
 const { db } = require('./db');
+const userActivity = require('./user-activity');
 
 const scrypt = util.promisify(crypto.scrypt);
 const SESSION_SECONDS = 14 * 24 * 60 * 60;
@@ -188,6 +189,7 @@ function authenticate(request, { touch = true } = {}) {
   const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path, u.public_profile, u.hide_from_activity FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
   if (!row) return null;
   if (touch) db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
+  userActivity.record(row.id, { now });
   return publicUser(row);
 }
 

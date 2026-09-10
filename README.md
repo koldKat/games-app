@@ -17,7 +17,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
 - Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), a per-account hide control, and opt-in collector profiles with aggregate stats.
-- Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, and moderation controls.
+- Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, account activity, and moderation controls.
 - Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
 - SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
 - Dense, responsive desktop and mobile interfaces with background enrichment progress and targeted live card updates.

@@ -186,13 +186,16 @@ function adminStats() {
 }
 
 function listAccounts() {
-  return db.prepare(`SELECT u.id, u.username, COALESCE(u.email,'') email, u.created_at AS createdAt,
+  const accounts = db.prepare(`SELECT u.id, u.username, COALESCE(u.email,'') email, u.created_at AS createdAt,
     u.last_country AS country, u.last_city AS city,
     u.admin_locked AS adminLocked, u.locked_until AS lockedUntil,
     CASE WHEN lower(u.username)='koldkat' THEN 1 ELSE 0 END protected,
     COUNT(DISTINCT g.id) games, COALESCE(SUM(CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END),0) covered,
+    COALESCE(u.last_active_at, MAX(CAST(strftime('%s',g.updated_at) AS INTEGER)), CAST(strftime('%s',u.created_at) AS INTEGER)) lastActiveAt,
     (SELECT COUNT(*) FROM sessions s WHERE s.user_id=u.id AND s.expires_at>strftime('%s','now')) activeSessions
-    FROM users u LEFT JOIN games g ON g.user_id=u.id GROUP BY u.id ORDER BY u.username COLLATE NOCASE`).all();
+    FROM users u LEFT JOIN games g ON g.user_id=u.id GROUP BY u.id ORDER BY lastActiveAt DESC, u.created_at DESC`).all();
+  const now = Math.floor(Date.now() / 1000);
+  return accounts.map(account => ({ ...account, daysInactive: Math.max(0, Math.floor((now - Number(account.lastActiveAt || now)) / 86400)) }));
 }
 
 function deleteAccount(id) {

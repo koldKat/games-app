@@ -57,6 +57,7 @@ db.exec(`
     last_country TEXT,
     last_city TEXT,
     location_updated_at INTEGER,
+    last_active_at INTEGER,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -207,6 +208,7 @@ if (!userColumns.includes('public_profile')) db.exec('ALTER TABLE users ADD COLU
 if (!userColumns.includes('last_country')) db.exec('ALTER TABLE users ADD COLUMN last_country TEXT');
 if (!userColumns.includes('last_city')) db.exec('ALTER TABLE users ADD COLUMN last_city TEXT');
 if (!userColumns.includes('location_updated_at')) db.exec('ALTER TABLE users ADD COLUMN location_updated_at INTEGER');
+if (!userColumns.includes('last_active_at')) db.exec('ALTER TABLE users ADD COLUMN last_active_at INTEGER');
 const gameColumns = db.pragma('table_info(games)').map(column => column.name);
 if (!gameColumns.includes('user_id')) db.exec('ALTER TABLE games ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
 if (!gameColumns.includes('cover_url')) db.exec("ALTER TABLE games ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''");

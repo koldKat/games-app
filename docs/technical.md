@@ -14,6 +14,7 @@ games-app/
     admin.js                loopback gate, admin API, backups and maintenance
     auth.js                 scrypt passwords, sessions, account changes, throttling
     user-location.js        throttled offline country/city resolution for admin accounts
+    user-activity.js        throttled last-active persistence for admin accounts
     backup.js               hourly compressed SQLite snapshots and retention
     activity.js             public-safe Signal ledger plus announcement draft/publish/pin projection
     public-profiles.js      opt-in aggregate collector-profile projection
@@ -201,6 +202,7 @@ SQLite runs in WAL mode with foreign keys enabled.
 | `public_profile` | Boolean opt-in for the aggregate public collector profile |
 | `last_country`, `last_city` | Approximate location from recent authenticated activity; nullable |
 | `location_updated_at` | Unix timestamp used to throttle offline GeoIP refreshes |
+| `last_active_at` | Unix timestamp of recent authenticated activity, throttled to one write per minute |
 | `created_at`, `updated_at` | SQLite timestamps |
 
 ### `sessions`
@@ -316,6 +318,10 @@ Password-reset tokens are random 256-bit values. SQLite stores only their SHA-25
 
 `server/user-location.js` mirrors Gamebooks' offline GeoIP approach. A successful login resolves the nginx-forwarded client address immediately; authenticated activity refreshes it no more than once every ten minutes. Input must first pass Node's strict IP parser, then `geoip-lite` returns an approximate two-letter country code and city. SQLite stores only those display values and the refresh timestamp, never the source IP. Resolution is best-effort, so a missing/corrupt GeoIP database cannot block login or authenticated API work. The localhost Accounts table shows the country flag, a themed full-country-name tooltip, and city. Its desktop-specific fixed column plan keeps Actions right-aligned and uses the available panel width without a stray scrollbar; narrower viewports deliberately regain horizontal table scrolling before any column can be clipped.
 
+### Account activity
+
+`server/user-activity.js` records authenticated use no more than once per minute, with immediate writes after registration and successful login. The value is operational admin metadata and is never included in public profiles or Signal. Existing accounts without a recorded value fall back to their most recent game update and then their join date. The localhost Accounts table orders accounts by most recent activity, shows both the timestamp and whole days inactive, and hides accounts at 31 days or more behind one compact, themed reveal row until requested.
+
 ### Isolation invariant
 
 Every collection query includes `user_id = authenticatedUserId`. Updates and deletes use both game ID and user ID. A game belonging to another account therefore behaves as nonexistent and returns HTTP 404.
@@ -416,7 +422,7 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 |---|---|---|
 | GET | `/api/admin/stats` | Runtime and whole-database counts |
 | GET | `/api/admin/live` | Lightweight one-second process resource and uptime snapshot |
-| GET | `/api/admin/accounts` | Account, collection, cover, and session counts |
+| GET | `/api/admin/accounts` | Account activity, location, collection, cover, and session counts |
 | GET, POST | `/api/admin/announcements` | List all notices or create a draft |
 | PATCH, DELETE | `/api/admin/announcements/:id` | Edit or permanently delete one notice |
 | POST | `/api/admin/announcements/:id/publish`, `/unpublish`, `/pin`, `/unpin` | Change publication or single-pin state and refresh Signal via SSE |

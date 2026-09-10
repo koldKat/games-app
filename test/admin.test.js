@@ -58,9 +58,14 @@ test('admin summaries span accounts while preserving owner identity', async () =
   assert.ok(live.appAgeSeconds >= 0);
 
   data.db.prepare("UPDATE users SET last_country='BG', last_city='Sofia' WHERE id=?").run(alpha.id);
+  data.db.prepare("UPDATE users SET last_active_at=strftime('%s','now')-(2*86400) WHERE id=?").run(alpha.id);
   const accounts = admin.listAccounts();
+  const alphaAccount = accounts.find(account => account.username === 'alpha_admin_test');
   assert.deepEqual(accounts.map(account => account.games), [1, 1]);
-  assert.deepEqual(accounts.map(account => [account.country, account.city]), [['BG', 'Sofia'], [null, null]]);
+  assert.deepEqual([alphaAccount.country, alphaAccount.city], ['BG', 'Sofia']);
+  assert.equal(alphaAccount.daysInactive, 2);
+  assert.ok(Number(alphaAccount.lastActiveAt) > 0);
+  assert.ok(Number(accounts[0].lastActiveAt) >= Number(accounts[1].lastActiveAt));
   assert.equal(admin.listKatalog('FPGA')[0].username, 'beta_admin_test');
   assert.equal(admin.listKatalog('alpha_admin_test')[0].title, 'Alpha Game');
 

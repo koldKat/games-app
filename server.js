@@ -20,6 +20,7 @@ const events = require('./server/events');
 const activity = require('./server/activity');
 const auth = require('./server/auth');
 const userLocation = require('./server/user-location');
+const userActivity = require('./server/user-activity');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const katalog = require('./server/katalog-runtime');
@@ -275,6 +276,7 @@ async function handleApi(request, response, url) {
       const input = await readJson(request);
       if (input.password !== input.passwordConfirm) return sendJson(response, 400, { error: 'Passwords do not match.' });
       const user = await auth.register(input.username, input.password, input.email);
+      userActivity.record(user.id, { force: true });
       const token = auth.createSession(user.id);
       if (activity.recordJoin(user.id)) events.publishPublicActivity();
       auth.clearFailures(ip);
@@ -290,6 +292,7 @@ async function handleApi(request, response, url) {
       if (!user) { auth.recordFailure(ip); return sendJson(response, 401, { error: 'Invalid username or password.' }); }
       auth.clearFailures(ip);
       userLocation.record(user.id, ip, { force: true });
+      userActivity.record(user.id, { force: true });
       const token = auth.createSession(user.id);
       return sendJson(response, 200, { user, preferences: preferences.get(user.id), progress: progression.info(user.id) }, { 'Set-Cookie': auth.sessionCookie(token, request) });
     } catch (error) {
