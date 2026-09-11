@@ -1,4 +1,5 @@
 export function renderVersionPicker(host, game, games, groupGames, onSelect, anchor) {
+  if (!host || !anchor) return;
   host.querySelector('[data-version-picker]')?.remove();
   if (!game) return;
   const group = groupGames(games).find(item => item.versions.some(version => version.id === game.id));

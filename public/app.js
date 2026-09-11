@@ -466,7 +466,7 @@ function gameCard(game) {
     ${versionStrip}
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
-    ${cardRatingControl(game)}<div class="card-actions"><button class="edit-button" data-action="edit">Edit details</button>${quick}</div>
+    ${cardRatingControl(game)}<div class="card-actions"><button type="button" class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
 }
 function gameMatchesFilters(game) {
@@ -809,7 +809,7 @@ function openForm(game = null) {
   $('#game-form').dataset.descriptionInitial = game?.description || '';
   $('#game-form')._pegiMetadata = pegiMetadata(game);
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
-  mountVersionPicker($('#game-form'), game, openForm, $('#game-title').closest('label'));
+  mountVersionPicker($('#game-form'), game, openForm, $('#game-title').closest('.title-autocomplete'));
   $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');

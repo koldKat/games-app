@@ -20,3 +20,9 @@ test('selected copy supplies the rating and action ID after regrouping and updat
   assert.equal(selectedGroupCopy(groupGames([games[0]])[0], selected).id, 1);
   assert.equal(games[0].rating, 2);
 });
+
+test('the edition picker safely ignores a missing insertion anchor', async () => {
+  const source = fs.readFileSync(require.resolve('../public/js/version-picker.js'), 'utf8');
+  const { renderVersionPicker } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  assert.doesNotThrow(() => renderVersionPicker({ querySelector() { throw new Error('must not inspect host'); } }, { id: 1 }, [], () => [], () => {}, null));
+});

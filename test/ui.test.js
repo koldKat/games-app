@@ -20,6 +20,8 @@ test('private Kat·a·log groups multi-platform titles unless a platform filter 
   assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/js\/game-groups\.js'/);
   assert.match(application, /groupGames\(state\.games, \{ splitPlatforms: Boolean\(filters\.platform\.value\) \}\)/);
   assert.match(application, /data-action="version" data-game-id=/);
+  assert.match(application, /mountVersionPicker\(\$\('#game-form'\), game, openForm, \$\('#game-title'\)\.closest\('\.title-autocomplete'\)\)/);
+  assert.doesNotMatch(application, /\$\('#game-title'\)\.closest\('label'\)/);
   assert.match(groups, /export function groupGames/);
 });
 
