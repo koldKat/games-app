@@ -12,7 +12,7 @@ function response() {
   };
 }
 
-function fixture({ user = null, libraryGame = null, eventHandlers = {} } = {}) {
+function fixture({ user = null, libraryGame = null, eventHandlers = {}, showcaseCovers = null } = {}) {
   const entry = {
     id: 2, slug: 'portal-2-steam', title: 'Portal 2', platform: 'Steam', pegi: 12,
     publisher: 'Valve', releaseYear: 2011, coverUrl: '/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg',
@@ -27,7 +27,7 @@ function fixture({ user = null, libraryGame = null, eventHandlers = {} } = {}) {
       searchPublic: () => [entry],
     },
     auth: { authenticate: () => user, refreshSessionCookie: () => null },
-    events: { publish() {}, subscribePublicSite() {}, ...eventHandlers },
+    events: { publish() {}, subscribePublicSite() {}, ...eventHandlers }, showcaseCovers,
   });
 }
 
@@ -57,6 +57,29 @@ test('the public Signal route is available without an account', async () => {
   assert.match(output.body, /signal-page\.js/);
 });
 
+test('each public page request receives a newly selected cover fan', async () => {
+  const first = '/covers/11111111111111111111111111111111.jpg';
+  const second = '/covers/22222222222222222222222222222222.jpg';
+  let requestCount = 0;
+  const routes = fixture({ showcaseCovers: () => [requestCount++ ? second : first] });
+  const firstPage = response(); const secondPage = response();
+  await routes.handle({ method: 'GET' }, firstPage, new URL('https://gamekat.net/katalog'));
+  await routes.handle({ method: 'GET' }, secondPage, new URL('https://gamekat.net/katalog'));
+  assert.match(firstPage.body, new RegExp(first));
+  assert.doesNotMatch(firstPage.body, new RegExp(second));
+  assert.match(secondPage.body, new RegExp(second));
+});
+
+test('signed-in public views add only that account to the shared cover pool', async () => {
+  const calls = [];
+  const routes = fixture({ user: { id: 17, username: 'collector' }, showcaseCovers: (limit, userId) => {
+    calls.push({ limit, userId }); return [];
+  } });
+  await routes.handle({ method: 'GET' }, response(), new URL('https://gamekat.net/katalog'));
+  await routes.handle({ method: 'GET' }, response(), new URL('https://gamekat.net/signal'));
+  assert.deepEqual(calls, [{ limit: 5, userId: 17 }, { limit: 5, userId: 17 }]);
+});
+
 test('the former catalogue path is not a public route', async () => {
   const routes = fixture(); const output = response();
   assert.equal(await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/catalogue')), false);
@@ -70,7 +93,7 @@ test('a signed-in release page hides the add form for an existing library copy',
   const output = response();
   await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/game/portal-2-steam'));
   assert.match(output.body, /data-katalog-game-dialog open/);
-  assert.match(output.body, /The public Kat·a·log/);
+  assert.match(output.body, /<h2>Public Kat·a·log<\/h2>/);
   assert.match(output.body, /Already in your Kat·a·log/);
   assert.doesNotMatch(output.body, /data-katalog-add/);
 });

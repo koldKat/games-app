@@ -5,9 +5,9 @@ const path = require('node:path');
 
 const SHOWCASE_PATH = path.join(__dirname, '..', 'public', 'cover-showcase.json');
 
-function writeShowcase(data, count = 38) {
+function writeShowcase(selectCovers, count = 38) {
   const temporary = `${SHOWCASE_PATH}.${process.pid}.tmp`;
-  const body = `${JSON.stringify({ covers: data.randomShowcaseCovers(count) })}\n`;
+  const body = `${JSON.stringify({ covers: selectCovers(count) })}\n`;
   try {
     fs.writeFileSync(temporary, body, { mode: 0o644 });
     fs.renameSync(temporary, SHOWCASE_PATH);

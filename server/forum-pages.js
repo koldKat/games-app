@@ -73,7 +73,7 @@ function toolbar({ title, copy, action = '' }) {
 function renderIndex({ categories, recent, user, progress, coverUrls = [] }) {
   const description = 'Join the public Game Kat·a·log forum for game recommendations, collecting, hardware, and Kat·a·log discussion.';
   const content = [
-    hero(coverUrls, 'The Game Kat·a·log forum', 'A small, public place to compare notes on games, hardware, shelves, and the systems around them.'),
+    hero(coverUrls, 'Kat·a·log Forum', 'A small, public place to compare notes on games, hardware, shelves, and the systems around them.'),
     toolbar({ title: 'Find your signal', copy: 'Choose a channel to start a thread; read freely or sign in to contribute.' }),
     `<section class="forum-categories"><header><p class="kicker">CHANNELS // OPEN</p><h2>Choose a channel</h2></header><div>${categories.map(categoryCard).join('')}</div></section>`,
     `<section class="forum-recent"><header><p class="kicker">RECENT // SIGNAL</p><h2>Latest threads</h2></header><div class="forum-thread-list">${recent.map(threadRow).join('') || '<p class="forum-empty">The forum is ready when the first conversation is.</p>'}</div></section>`,

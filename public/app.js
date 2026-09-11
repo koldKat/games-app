@@ -555,9 +555,15 @@ function renderGames() {
   $('#clear-filters').hidden = !Object.entries(filters).some(([key, el]) => key !== 'sort' && el.value);
 }
 async function loadHeroCovers(isCurrent) {
-  const slots = $$('.hero-cover');
-  if (!slots.length || slots.some(slot => slot.classList.contains('has-art'))) return;
-  const showcase = await api('/api/showcase/covers');
+  const slots = $$('#library-view .hero-cover');
+  const fan = $('#library-view .cover-fan');
+  const poolKey = `owned:${state.user?.id || ''}`;
+  if (fan?.dataset.coverPool !== poolKey) {
+    slots.forEach(slot => { slot.style.removeProperty('background-image'); slot.classList.remove('has-art'); });
+    if (fan) fan.dataset.coverPool = poolKey;
+  }
+  if (!slots.length || slots.every(slot => slot.classList.contains('has-art'))) return;
+  const showcase = await api('/api/showcase/covers?scope=owned');
   if (!isCurrent()) return;
   const covers = uniqueArtworkUrls(showcase.covers || []);
   for (let index = covers.length - 1; index > 0; index--) {
@@ -861,6 +867,10 @@ async function openExistingGame(id) {
 const katalogNavigation = createKatalogNavigation({
   onGameAdded: () => { void loadGames(); void loadStatsAndMeta(); },
   onSignalVisible: () => { void activityFeed.load(); },
+  onLibraryVisible: () => {
+    const userId = state.user?.id;
+    if (userId) void loadHeroCovers(() => state.user?.id === userId).catch(() => {});
+  },
 });
 const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),

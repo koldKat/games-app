@@ -7,6 +7,10 @@ const dbPath = path.join('/tmp', `games-auth-test-${process.pid}.db`);
 process.env.DB_PATH = dbPath;
 const data = require('../server/db');
 const auth = require('../server/auth');
+const { createKatalogStore } = require('../server/katalog-store');
+createKatalogStore(data.db);
+const { createShowcasePool } = require('../server/showcase-pool');
+const showcasePool = createShowcasePool(data.db);
 
 test.after(() => {
   data.db.close();
@@ -29,7 +33,7 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.coverProviderCredentials(owner.id, 'thegamesdb'), null);
   assert.equal(data.db.prepare('SELECT COUNT(*) count FROM games WHERE user_id IS NULL').get().count, 1);
 
-  data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
+  const ownerGame = data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
   assert.throws(() => data.createGame(owner.id, { title: 'Removed State', platform: 'PC', ownership: 'unavailable' }),
     /Collection must be Owned or Wishlisted/);
   assert.equal(data.stats(owner.id).total, 1);
@@ -82,10 +86,25 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   data.db.prepare("UPDATE games SET updated_at='2026-01-02 03:04:05' WHERE id=?").run(coverCandidate.id);
   assert.ok(data.replaceGameCoverUrl(other.id, coverCandidate.id, 'https://example.com/first.jpg', '/covers/0123456789abcdef0123456789abcdef.jpg'));
   assert.equal(data.getGame(other.id, coverCandidate.id).updatedAt, '2026-01-02 03:04:05');
-  assert.ok(data.randomShowcaseCovers(20).includes('/covers/0123456789abcdef0123456789abcdef.jpg'));
+  const privateCover = '/covers/0123456789abcdef0123456789abcdef.jpg';
+  const otherPrivateCover = '/covers/11111111111111111111111111111111.jpg';
+  const wantedCover = '/covers/22222222222222222222222222222222.jpg';
+  const publicCover = '/covers/33333333333333333333333333333333.jpg';
+  data.db.prepare('UPDATE games SET cover_url=? WHERE id=?').run(otherPrivateCover, ownerGame.id);
+  data.db.prepare(`INSERT INTO catalogue_entries
+    (slug,title,title_key,platform,platform_key,cover_url,status)
+    VALUES ('public-cover','Public Cover','public cover','Steam','steam',?,'public')`).run(publicCover);
+  assert.deepEqual(showcasePool.owned(20, other.id), [privateCover]);
+  assert.deepEqual(new Set(showcasePool.shared(20, other.id)), new Set([privateCover, publicCover]));
+  assert.deepEqual(showcasePool.public(20), [publicCover]);
+  assert.ok(!showcasePool.shared(20, other.id).includes(wantedCover));
+  assert.ok(!showcasePool.shared(20, other.id).includes(otherPrivateCover));
   assert.deepEqual(data.listGames(other.id, { missing: 'pegi' }).map(game => game.id), [coverCandidate.id]);
   assert.ok(data.listGames(other.id, { missing: 'cover' }).some(game => game.id === pending.id));
   assert.ok(!data.listGames(other.id, { missing: 'cover' }).some(game => game.id === coverCandidate.id));
+  data.db.prepare('UPDATE games SET cover_url=? WHERE id=?').run(wantedCover, pending.id);
+  assert.ok(!showcasePool.owned(20, other.id).includes(wantedCover));
+  assert.ok(!showcasePool.shared(20, other.id).includes(wantedCover));
   const unratedEvercade = data.createGame(other.id, { title: 'Evercade With No PEGI', platform: 'Evercade' });
   assert.ok(data.listGames(other.id, { missing: 'pegi' }).some(game => game.id === unratedEvercade.id));
   assert.ok(data.gamesMissingPegiMetadata(other.id).some(game => game.id === unratedEvercade.id));

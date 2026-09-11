@@ -2,7 +2,10 @@
 'use strict';
 
 const db = require('../server/db');
+const { createKatalogStore } = require('../server/katalog-store');
+const { createShowcasePool } = require('../server/showcase-pool');
 const { writeShowcase } = require('../server/showcase-covers');
 
-writeShowcase(db);
+createKatalogStore(db.db);
+writeShowcase(createShowcasePool(db.db).public);
 db.db.close();

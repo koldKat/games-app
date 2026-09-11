@@ -25,6 +25,32 @@ test('private Kat·a·log groups multi-platform titles unless a platform filter 
   assert.match(groups, /export function groupGames/);
 });
 
+test('top-level views share one hero geometry and branded section headings', () => {
+  const html = read('public/index.html'); const pages = read('server/katalog-pages.js');
+  const forum = read('server/forum-pages.js'); const theme = readCss('public/css/theme.css'); const katalog = readCss('public/css/katalog.css');
+  assert.match(html, /<p class="kicker">PRIVATE \/\/ LIBRARY<\/p>\s*<h1>My Kat·a·log<\/h1>/);
+  assert.match(pages, /'<h1>Public Kat·a·log<\/h1>'/);
+  assert.match(pages, /<p class="kicker">PUBLIC \/\/ SHARED<\/p>/);
+  assert.match(pages, /<h1>Kat·a·log Signal<\/h1>/);
+  assert.match(forum, /hero\(coverUrls, 'Kat·a·log Forum'/);
+  assert.doesNotMatch(`${html}\n${pages}\n${forum}`, /<h[12]>The\s/i);
+  assert.doesNotMatch(forum, /The Game Kat·a·log forum/);
+  assert.match(theme, /\.hero h1,\.hero h2\{font:700 clamp\(22px,3vw,33px\) \/ 1\.05 ui-monospace,monospace;margin:0;/);
+  assert.match(katalog, /\.katalog-main\{width:100%;margin:0;padding:0 0 10px}/);
+  assert.doesNotMatch(katalog, /\.katalog-hero\{(?:margin-top|min-height|padding):/);
+  assert.doesNotMatch(katalog, /\.signal-hero\{min-height:/);
+});
+
+test('view navigation keeps independent randomized cover fans and restores the private fan', () => {
+  const application = read('public/app.js'); const navigation = read('public/js/katalog-navigation.js'); const server = read('server.js');
+  assert.match(application, /const slots = \$\$\('#library-view \.hero-cover'\)/);
+  assert.match(application, /onLibraryVisible: \(\) =>[\s\S]*loadHeroCovers/);
+  assert.match(application, /api\('\/api\/showcase\/covers\?scope=owned'\)/);
+  assert.doesNotMatch(navigation, /previousDeck|cloneNode\(true\)/);
+  assert.match(server, /createKatalogRoutes\(\{[^\n]*showcaseCovers: showcasePool\.shared/);
+  assert.match(server, /createForumRoutes\(\{[^\n]*showcaseCovers: showcasePool\.shared/);
+});
+
 test('admin version changes update authenticated headers over SSE', () => {
   const application = read('public/app.js'); const admin = read('server/admin.js'); const events = read('server/events.js');
   assert.match(admin, /events\.publishAll\('version-updated', \{ version \}\)/);

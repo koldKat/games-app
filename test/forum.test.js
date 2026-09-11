@@ -16,6 +16,7 @@ test('forum stays modular, public to read, account-gated to contribute, and loca
   assert.match(routes, /events\.subscribePublicForum/);
   assert.match(routes, /events\.publishPublicForum/);
   assert.match(pages, /currentView: 'forum'/);
+  assert.match(pages, /hero\(coverUrls, 'Kat·a·log Forum'/);
   assert.match(pages, /data-forum-thread-form/);
   assert.match(client, /new EventSource\('\/api\/forum\/stream'\)/);
   assert.match(pages, /function threadComposer\(category\)/);

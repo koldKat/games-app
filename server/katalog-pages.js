@@ -170,8 +170,8 @@ function heroCoverDeck(coverUrls = []) {
   }).join('')}</div>`;
 }
 
-function renderKatalogMain({ result, platforms, query = '', platform = '', detail = '' }) {
-  const heroTitle = detail ? '<h2>The public Kat·a·log</h2>' : '<h1>The public Kat·a·log</h1>';
+function renderKatalogMain({ result, platforms, query = '', platform = '', detail = '', coverUrls = [] }) {
+  const heroTitle = detail ? '<h2>Public Kat·a·log</h2>' : '<h1>Public Kat·a·log</h1>';
   const cards = result.entries.map(entry => {
     const releases = entry.releases || [entry];
     const platformLabel = platform ? entry.platform : releases.map(release => release.platform).join(' · ');
@@ -188,18 +188,19 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
     <span>Page ${result.page} of ${result.pages}</span>
     ${result.page < result.pages ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page + 1 }))}">Next →</a>` : '<span></span>'}
   </nav>` : '';
-  return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">SHARED // GROWING</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(result.entries.map(entry => entry.coverUrl))}</section>
+  return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">PUBLIC // SHARED</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl))}</section>
       <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
       <div class="katalog-results"><div class="katalog-result-head"><strong>${result.total.toLocaleString()} public release${result.total === 1 ? '' : 's'}</strong>${query || platform ? `<a href="/katalog">Clear search</a>` : ''}</div>
       <section class="katalog-grid">${cards || '<div class="katalog-empty"><strong>No matching releases.</strong><span>The Kat·a·log grows as members enrich their private libraries.</span></div>'}</section>${pagination}</div>${detail}</main>`;
 }
 
-function renderKatalog({ result, platforms, query = '', platform = '', user = null, progress = null }) {
+function renderKatalog({ result, platforms, query = '', platform = '', user = null, progress = null, coverUrls = [] }) {
   const description = 'Browse the public Game Kat·a·log, inspect platform releases, PEGI ratings, cover art, and HowLongToBeat estimates.';
+  const displayCovers = coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl);
   return pageShell({
-    title: 'Public Kat·a·log // Game Kat·a·log', description, canonical: `${SITE_URL}/katalog`, user, progress, coverUrls: result.entries.map(entry => entry.coverUrl),
+    title: 'Public Kat·a·log // Game Kat·a·log', description, canonical: `${SITE_URL}/katalog`, user, progress, coverUrls: displayCovers,
     structuredData: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: 'Game Kat·a·log Public Kat·a·log', url: `${SITE_URL}/katalog`, numberOfItems: result.total },
-    content: renderKatalogMain({ result, platforms, query, platform }),
+    content: renderKatalogMain({ result, platforms, query, platform, coverUrls: displayCovers }),
   });
 }
 
@@ -328,12 +329,13 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
   </dialog>`;
 }
 
-function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1 }, platforms = [], user = null, progress = null, libraryGame = null }) {
+function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1 }, platforms = [], user = null, progress = null, libraryGame = null, coverUrls = [] }) {
   const ratingLabel = entry.pegi ? `PEGI ${entry.pegi}` : 'unrated';
   const description = entry.description || `${entry.title} for ${entry.platform}: ${ratingLabel} information, cover art, publisher details, and HowLongToBeat estimates.`;
   const canonical = `${SITE_URL}/game/${encodeURIComponent(entry.slug)}`;
+  const displayCovers = coverUrls.length ? coverUrls : [entry.coverUrl, ...result.entries.map(item => item.coverUrl)];
   return pageShell({
-    title: `${entry.title} (${entry.platform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: [entry.coverUrl, ...result.entries.map(item => item.coverUrl)],
+    title: `${entry.title} (${entry.platform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: displayCovers,
     socialImage: `${SITE_URL}${entry.coverUrl}`, socialImageAlt: `${entry.title} cover`, socialType: 'video.game',
     structuredData: { '@context': 'https://schema.org', '@type': 'VideoGame', name: entry.title, gamePlatform: entry.platform,
       contentRating: entry.pegi ? `PEGI ${entry.pegi}` : undefined, image: `${SITE_URL}${entry.coverUrl}`, url: canonical,
@@ -343,6 +345,7 @@ function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1
     content: renderKatalogMain({
       result,
       platforms,
+      coverUrls: displayCovers,
       detail: gameDetailDialog(entry, { ratingLabel, user, libraryGame }),
     }),
   });

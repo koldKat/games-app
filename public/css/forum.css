@@ -3,16 +3,6 @@
   --forum-line:#243640;
   --forum-green:#46d8b8;
 }
-.forum-hero h1 {
-  margin:0;
-  color:#edf7f3;
-  font:700 clamp(22px,3vw,33px)/1.05 ui-monospace,monospace;
-  letter-spacing:-.04em;
-}
-.forum-hero h1::before {
-  content:"> ";
-  color:var(--forum-green);
-}
 .forum-toolbar {
   display:flex;
   justify-content:space-between;

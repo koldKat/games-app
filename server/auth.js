@@ -188,8 +188,10 @@ function authenticate(request, { touch = true } = {}) {
   const now = Math.floor(Date.now() / 1000);
   const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path, u.public_profile, u.hide_from_activity FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
   if (!row) return null;
-  if (touch) db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
-  userActivity.record(row.id, { now });
+  if (touch) {
+    db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
+    userActivity.record(row.id, { now });
+  }
   return publicUser(row);
 }
 

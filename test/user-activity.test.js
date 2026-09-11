@@ -23,11 +23,15 @@ test('account activity is stored at most once per minute unless forced', async (
   assert.equal(data.db.prepare('SELECT last_active_at value FROM users WHERE id=?').get(user.id).value, 1061);
 });
 
-test('session authentication records activity without changing its public user shape', async () => {
+test('active session use records activity without heartbeat-only writes or public leakage', async () => {
   const user = await auth.register('session_active_user', 'activity-password');
   const token = auth.createSession(user.id);
   data.db.prepare('UPDATE users SET last_active_at=NULL WHERE id=?').run(user.id);
-  const authenticated = auth.authenticate({ headers: { authorization: `Bearer ${token}` }, socket: {} }, { touch: false });
+  const request = { headers: { authorization: `Bearer ${token}` }, socket: {} };
+  const heartbeatUser = auth.authenticate(request, { touch: false });
+  assert.equal(heartbeatUser.id, user.id);
+  assert.equal(data.db.prepare('SELECT last_active_at value FROM users WHERE id=?').get(user.id).value, null);
+  const authenticated = auth.authenticate(request);
   assert.equal(authenticated.id, user.id);
   assert.ok(data.db.prepare('SELECT last_active_at value FROM users WHERE id=?').get(user.id).value > 0);
   assert.equal(Object.hasOwn(authenticated, 'lastActiveAt'), false);

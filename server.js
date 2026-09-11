@@ -24,6 +24,7 @@ const userActivity = require('./server/user-activity');
 const preferences = require('./server/preferences');
 const admin = require('./server/admin');
 const katalog = require('./server/katalog-runtime');
+const { createShowcasePool } = require('./server/showcase-pool');
 const publicProfiles = require('./server/public-profiles');
 const { createKatalogRoutes } = require('./server/katalog-routes');
 const { createForumRoutes } = require('./server/forum-routes');
@@ -65,6 +66,7 @@ const MIME = {
 };
 const coverJobs = new Map();
 const progression = createProgressionService({ store: db.progression, data: db });
+const showcasePool = createShowcasePool(db.db);
 const externalCoverProviders = Object.freeze({
   thegamesdb: {
     label: 'TheGamesDB', client: thegamesdb,
@@ -111,8 +113,8 @@ const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProvide
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
-const katalogRoutes = createKatalogRoutes({ katalog, auth, events, progression, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
-const forumRoutes = createForumRoutes({ katalog, auth, events, progression, onProgression: publishProgression });
+const katalogRoutes = createKatalogRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
+const forumRoutes = createForumRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onProgression: publishProgression });
 const patchRoutes = createPatchRoutes({ auth, events });
 
 async function runCoverJob(userId, key) {
@@ -267,7 +269,12 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { version: readVersion() });
   }
   if (request.method === 'GET' && url.pathname === '/api/showcase/covers') {
-    return sendJson(response, 200, { covers: db.randomShowcaseCovers(SHOWCASE_COVER_COUNT) });
+    const user = auth.authenticate(request, { touch: false });
+    const ownedOnly = url.searchParams.get('scope') === 'owned';
+    if (ownedOnly && !user) return sendJson(response, 401, { error: 'Authentication required.' });
+    return sendJson(response, 200, {
+      covers: ownedOnly ? showcasePool.owned(SHOWCASE_COVER_COUNT, user.id) : showcasePool.shared(SHOWCASE_COVER_COUNT, user?.id),
+    });
   }
   if (request.method === 'POST' && url.pathname === '/api/register') {
     const ip = auth.clientIp(request);
@@ -577,7 +584,7 @@ server.listen(PORT, HOST, () => {
   // touches every game and can monopolize Node for a long time on a real library.
   // New and edited games are synchronized immediately in their request paths;
   // one-off cover maintenance remains available through the explicit scripts.
-  showcaseCovers.writeShowcase(db, SHOWCASE_COVER_COUNT);
+  showcaseCovers.writeShowcase(showcasePool.public, SHOWCASE_COVER_COUNT);
 });
 
 function shutdown() {

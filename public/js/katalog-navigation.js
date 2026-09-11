@@ -91,9 +91,6 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
       if (nextView !== 'forum') stopForumLive();
       view = nextView; library.hidden = true; katalog.hidden = false;
       setHeader(view); loadKatalogStyles(view === 'forum');
-      const previousDeck = katalog.querySelector('.katalog-hero-art');
-      const nextDeck = main.querySelector('.katalog-hero-art');
-      if (previousDeck && nextDeck) nextDeck.replaceWith(previousDeck.cloneNode(true));
       katalog.replaceChildren(document.importNode(main, true));
       document.title = title || libraryTitle;
       if (view === 'signal') onSignalVisible();

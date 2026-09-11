@@ -21,8 +21,6 @@ const HLTB_HOURS_MAX = 100_000;
 const DESCRIPTION_MAX_LENGTH = 12_000;
 const TITLE_SEARCH_LIMIT = 10;
 const TITLE_SEARCH_LIMIT_MAX = 20;
-const SHOWCASE_COVER_LIMIT = 14;
-const SHOWCASE_COVER_LIMIT_MAX = 48;
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -548,13 +546,6 @@ function updateGameHltb(userId, id, metadata = {}) {
   return result.changes ? getGame(userId, id) : null;
 }
 
-function randomShowcaseCovers(limit = SHOWCASE_COVER_LIMIT) {
-  const count = Math.max(1, Math.min(SHOWCASE_COVER_LIMIT_MAX, Number.parseInt(limit, 10) || SHOWCASE_COVER_LIMIT));
-  return db.prepare(`SELECT cover_url AS coverUrl FROM games
-    WHERE cover_url LIKE 'https://%' OR cover_url LIKE '/covers/%'
-    GROUP BY cover_url ORDER BY RANDOM() LIMIT ?`).all(count).map(row => row.coverUrl);
-}
-
 function stats(userId) {
   const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=?').get(userId).n;
   const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? GROUP BY ownership').all(userId);
@@ -569,4 +560,4 @@ function stats(userId) {
 module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
-  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, randomShowcaseCovers, stats };
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, stats };

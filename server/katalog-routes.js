@@ -43,8 +43,9 @@ function readJson(request, maxBytes = 32 * 1024) {
   });
 }
 
-function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null, auth, events, progression = null, onGameCreated = () => {} }) {
+function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null, auth, events, progression = null, showcaseCovers = null, onGameCreated = () => {} }) {
   katalog ||= legacyCatalogue;
+  const pageCovers = userId => showcaseCovers ? showcaseCovers(5, userId) : katalog.listPublic({ limit: 5 }).entries.map(entry => entry.coverUrl);
   async function handle(request, response, url) {
     if (request.method === 'GET' && url.pathname === '/api/site/stream') {
       events.subscribePublicSite(request, response);
@@ -55,7 +56,7 @@ function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null
       const progress = user ? progression?.info(user.id) || null : null;
       const refreshed = user && auth.refreshSessionCookie(request);
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
-      const coverUrls = katalog.listPublic({ limit: 5 }).entries.map(entry => entry.coverUrl);
+      const coverUrls = pageCovers(user?.id);
       send(response, 200, 'text/html; charset=utf-8', renderSignal({ user, progress, coverUrls }));
       return true;
     }
@@ -68,7 +69,7 @@ function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null
       const platform = String(url.searchParams.get('platform') || '').trim().slice(0, 120);
       const result = katalog.listPublic({ q: query, platform, page: url.searchParams.get('page') });
       send(response, 200, 'text/html; charset=utf-8', renderKatalog({
-        result, platforms: katalog.publicPlatforms(), query, platform, user, progress,
+        result, platforms: katalog.publicPlatforms(), query, platform, user, progress, coverUrls: pageCovers(user?.id),
       }));
       return true;
     }
@@ -81,7 +82,8 @@ function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null
       const entry = katalog.getPublicBySlug(gamePage[1]);
       const libraryGame = entry && user ? katalog.libraryCopy?.(user.id, entry.id) || null : null;
       send(response, entry ? 200 : 404, 'text/html; charset=utf-8', entry
-        ? renderGame({ entry, result: katalog.listPublic({}), platforms: katalog.publicPlatforms(), user, progress, libraryGame }) : renderNotFound());
+        ? renderGame({ entry, result: katalog.listPublic({}), platforms: katalog.publicPlatforms(), user, progress,
+          libraryGame, coverUrls: pageCovers(user?.id) }) : renderNotFound());
       return true;
     }
     if (request.method === 'GET' && url.pathname === '/sitemap.xml') {

@@ -20,6 +20,7 @@ test('catalogue page is crawlable server-rendered HTML', () => {
   assert.match(html, /class="katalog-results"/);
   assert.match(html, /class="katalog-title" data-katalog-title data-full-title="Portal 2"/);
   assert.match(html, /class="hero katalog-hero"/);
+  assert.match(html, /<h1>Public Kat·a·log<\/h1>/);
   assert.match(html, /class="hero-art katalog-hero-art"/);
   assert.match(html, /class="hero-cover katalog-hero-cover hero-cover-3 has-art"/);
   assert.match(html, /class="auth-cover-field app-cover-field"/);
@@ -70,7 +71,7 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
 test('Signal is a crawlable public page that attaches to the live feed client', () => {
   const html = renderSignal({ user: { username: 'signal_user' }, progress: { level: 17, title: 'Kat·a·log Architect', xp: 153995, progress: 4, nextLevelXp: 171000 }, coverUrls: [entry.coverUrl] });
   assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/signal">/);
-  assert.match(html, /Kat·a·log Signal/);
+  assert.match(html, /<h1>Kat·a·log Signal<\/h1>/);
   assert.match(html, /data-activity-feed data-activity-limit="all" data-activity-grouped="true"/);
   assert.match(html, /src="\/js\/signal-page\.js"/);
   assert.match(html, /Personal libraries, ratings, wishlists, edits, and play status stay private/);
@@ -96,7 +97,7 @@ test('public release pages show a community aggregate but never offer a public v
   assert.match(html, /class="community-rating"[\s\S]*4\.3[\s\S]*8 ratings/);
   assert.match(html, /<dialog class="katalog-game-dialog" data-katalog-game-dialog open/);
   assert.match(html, /class="close-button" data-katalog-game-close/);
-  assert.match(html, /<section class="hero katalog-hero">[\s\S]*<h2>The public Kat·a·log<\/h2>/);
+  assert.match(html, /<section class="hero katalog-hero">[\s\S]*<h2>Public Kat·a·log<\/h2>/);
   assert.match(html, /property="og:type" content="video\.game"/);
   assert.match(html, /property="og:image:alt" content="Portal 2 cover"/);
   assert.match(html, /"@type":"AggregateRating"/);

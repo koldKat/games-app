@@ -2,6 +2,8 @@
 
 Game Kat·a·log is a private, multi-account library for physical and digital video games. It is designed for fast desktop use, compact phone use, and large collections.
 
+The four main workspace headers use the same geometry and branded titles: **My Kat·a·log**, **Public Kat·a·log**, **Kat·a·log Signal**, and **Kat·a·log Forum**. None uses a leading “The.” Their smaller kicker and description provide context without changing the heading scale or shifting the cover fan. My Kat·a·log draws its fan only from covered games you own; wishlisted games are excluded. Every other view receives a newly randomized fan from public Kat·a·log covers plus your owned covers when signed in, or public covers alone as a guest.
+
 When a game has multiple copies, click its platform chip to select the copy displayed on the card. The highlighted chip and platform heading identify the selected copy: its stars, favorite, ownership, details, and edit action all belong to that copy. Rating it does not change another platform's rating. The selection stays during live updates in the current session. The details and edit dialogs also offer a copy selector showing platform, format, and record number, including when two copies share a platform. Changing the Platform field edits the current record; it does not select another copy. Changing a title or platform to an existing copy prompts for confirmation. Switching copies in the editor discards unsaved form changes.
 
 Search fields have a themed clear button that also reflects restored filters. Header cover art is decorative and stays independent of the current search.

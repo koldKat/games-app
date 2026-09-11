@@ -67,7 +67,10 @@
 .katalog-main {
   width: 100%;
   margin: 0;
-  padding: 8px 0 10px;
+  padding: 0 0 10px;
+}
+.katalog-main > :first-child:not(.hero) {
+  margin-top: 8px;
 }
 .signal-main {
   width: 100%;
@@ -182,9 +185,6 @@
   .signal-main {
     margin: 0;
   }
-  .signal-hero {
-    min-height: 150px;
-  }
   .signal-feed-panel {
     padding: 10px;
   }
@@ -199,19 +199,6 @@
   .signal-feed .activity-entry p {
     font-size: 10px;
   }
-}
-.katalog-hero {
-  margin-top: 0;
-}
-.katalog-hero h2 {
-  margin: 0;
-  color: #edf7f3;
-  font: 700 clamp(22px,3vw,33px)/1.05 ui-monospace,monospace;
-  letter-spacing: -.04em;
-}
-.katalog-hero h2::before {
-  content: "> ";
-  color: var(--green);
 }
 .katalog-hero-art {
   right: 3%;
@@ -898,13 +885,6 @@
 @media (max-width: 680px) {
   .katalog-shell {
     padding-bottom: 10px;
-  }
-  .katalog-main {
-    padding-top: 8px;
-  }
-  .katalog-hero {
-    min-height: 0;
-    padding: 15px;
   }
   .katalog-search {
     grid-template-columns: 1fr;

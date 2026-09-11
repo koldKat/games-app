@@ -8,24 +8,24 @@ function send(response, status, type, body) {
   securityHeaders(response); response.writeHead(status, { 'Content-Type': type, 'Content-Length': Buffer.byteLength(body), 'Cache-Control': 'no-cache' }); response.end(body);
 }
 function sendJson(response, status, body) { send(response, status, 'application/json; charset=utf-8', JSON.stringify(body)); }
-function pageContext(auth, request, progression, katalog) {
+function pageContext(auth, request, progression, katalog, showcaseCovers) {
   const user = auth.authenticate(request); const progress = user ? progression?.info(user.id) || null : null;
-  const coverUrls = katalog.listPublic({ limit: 5 }).entries.map(entry => entry.coverUrl);
+  const coverUrls = showcaseCovers ? showcaseCovers(5, user?.id) : katalog.listPublic({ limit: 5 }).entries.map(entry => entry.coverUrl);
   return { user, progress, coverUrls };
 }
-function createForumRoutes({ auth, progression, katalog, events, onProgression = () => {} }) {
+function createForumRoutes({ auth, progression, katalog, events, showcaseCovers = null, onProgression = () => {} }) {
   function changed() { events.publishPublicForum(); }
   async function handle(request, response, url) {
     const categoryMatch = url.pathname.match(/^\/forum\/c\/([a-z0-9-]+)$/);
     const threadMatch = url.pathname.match(/^\/forum\/thread\/(\d+)$/);
     if (request.method === 'GET' && url.pathname === '/forum') {
-      const context = pageContext(auth, request, progression, katalog); send(response, 200, 'text/html; charset=utf-8', renderIndex({ ...context, categories: forum.categories(), recent: forum.recentThreads() })); return true;
+      const context = pageContext(auth, request, progression, katalog, showcaseCovers); send(response, 200, 'text/html; charset=utf-8', renderIndex({ ...context, categories: forum.categories(), recent: forum.recentThreads() })); return true;
     }
     if (request.method === 'GET' && categoryMatch) {
-      const context = pageContext(auth, request, progression, katalog); const item = forum.category(categoryMatch[1]); send(response, item ? 200 : 404, 'text/html; charset=utf-8', renderCategory({ ...context, category: item, categories: forum.categories(), threads: item ? forum.threads(item.id) : [] })); return true;
+      const context = pageContext(auth, request, progression, katalog, showcaseCovers); const item = forum.category(categoryMatch[1]); send(response, item ? 200 : 404, 'text/html; charset=utf-8', renderCategory({ ...context, category: item, categories: forum.categories(), threads: item ? forum.threads(item.id) : [] })); return true;
     }
     if (request.method === 'GET' && threadMatch) {
-      const context = pageContext(auth, request, progression, katalog); const data = forum.thread(threadMatch[1]); send(response, data ? 200 : 404, 'text/html; charset=utf-8', renderThread({ ...context, data })); return true;
+      const context = pageContext(auth, request, progression, katalog, showcaseCovers); const data = forum.thread(threadMatch[1]); send(response, data ? 200 : 404, 'text/html; charset=utf-8', renderThread({ ...context, data })); return true;
     }
     if (request.method === 'GET' && url.pathname === '/api/forum/stream') { events.subscribePublicForum(request, response); return true; }
     if (request.method === 'GET' && url.pathname === '/api/forum/categories') { sendJson(response, 200, { categories: forum.categories() }); return true; }
