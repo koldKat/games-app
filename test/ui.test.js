@@ -279,7 +279,7 @@ test('landing footer links to the public repository without replacing the app', 
 });
 
 test('authenticated library carries the family copyright notice with a rolling year', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const catalogue = read('server/katalog-pages.js'); const css = readPublicCss();
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/site-config.js'); const catalogue = read('server/katalog-pages.js'); const css = readPublicCss();
   assert.match(html, /class="app-footer" aria-label="Site footer"[\s\S]*koldKat productions[\s\S]*data-copyright-year>© 2026[\s\S]*GAMEKAT\.NET \/\/ GAME KAT·A·LOG[\s\S]*USER GUIDE/);
   assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
@@ -486,8 +486,8 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(publicKatalog, /setTimeout\(\(\) => \{/);
   assert.match(read('public/js/katalog-navigation.js'), /async function refreshResults\(url\)/);
   assert.match(read('public/js/katalog-navigation.js'), /current\.replaceWith\(document\.importNode\(next, true\)\)/);
-  assert.match(adminKatalog, /setTimeout\(loadKatalog, 250\)/);
-  assert.match(adminPublicKatalog, /setTimeout\(loadPublicKatalog, 250\)/);
+  assert.match(adminKatalog, /setTimeout\(loadKatalog, ADMIN_TIMING\.searchDebounceMs\)/);
+  assert.match(adminPublicKatalog, /setTimeout\(loadPublicKatalog, ADMIN_TIMING\.searchDebounceMs\)/);
 });
 
 test('only public catalogue candidates offer the Publish action', () => {

@@ -45,8 +45,10 @@ Open `http://localhost:3005`. The server listens on all interfaces by default, s
 Optional environment variables:
 
 ```bash
-PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db npm start
+PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db PUBLIC_URL=https://gamekat.net OWNER_USERNAME=your_name npm start
 ```
+
+`PUBLIC_URL` controls absolute server-rendered links, canonical URLs, email actions, and the SMTP greeting host. `OWNER_USERNAME` is optional; when omitted, the oldest account is the owner. The owner is the protected operator account used by Patch/Ping and cannot be renamed, locked, or deleted through admin controls. No account name is embedded in application code.
 
 ## Local admin
 

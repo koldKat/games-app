@@ -4,14 +4,13 @@ const { db } = require('./db');
 const {
   MISSING_FILTER_VALUES, OWNERSHIP_FILTER_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, SORT_VALUES,
 } = require('./constants');
+const { GAME_LIMITS } = require('./validation-policy');
 
 const SORTS = new Set(SORT_VALUES);
 const OWNERSHIP = new Set(['', ...OWNERSHIP_FILTER_VALUES]);
 const PEGI = new Set(['', ...PEGI_RATINGS.map(String), 'none']);
 const STATUS = new Set(['', ...PLAY_STATUS_VALUES]);
 const MISSING = new Set(['', ...MISSING_FILTER_VALUES]);
-const SEARCH_QUERY_MAX_LENGTH = 220;
-const PLATFORM_MAX_LENGTH = 80;
 
 const defaults = () => ({ view: 'grid', filters: { q: '', platform: '', ownership: '', pegi: '', playStatus: '', missing: '', favorite: '', sort: 'title' } });
 const text = (value, limit) => String(value || '').trim().slice(0, limit);
@@ -22,7 +21,7 @@ function normalize(input = {}) {
   return {
     view: input.view === 'list' ? 'list' : 'grid',
     filters: {
-      q: text(filters.q, SEARCH_QUERY_MAX_LENGTH), platform: text(filters.platform, PLATFORM_MAX_LENGTH),
+      q: text(filters.q, GAME_LIMITS.titleMax), platform: text(filters.platform, GAME_LIMITS.platformMax),
       ownership: choice(filters.ownership, OWNERSHIP), pegi: choice(filters.pegi, PEGI),
       playStatus: choice(filters.playStatus, STATUS), missing: choice(filters.missing, MISSING),
       favorite: filters.favorite === '1' ? '1' : '', sort: choice(filters.sort, SORTS, 'title'),

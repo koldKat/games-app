@@ -1,4 +1,5 @@
 import { api, button, busy, cell, confirmAction, emptyRow, formatDate, toast } from './core.js';
+import { ADMIN_TIMING } from './admin-policy.js';
 
 const stateLabel = value => value === 'public' ? 'PUBLIC' : value === 'candidate' ? 'REVIEW' : 'REJECTED';
 const editDialog = document.getElementById('katalog-edit-dialog');
@@ -84,5 +85,5 @@ document.getElementById('public-katalog-search').addEventListener('submit', even
 document.getElementById('public-katalog-status').addEventListener('change', loadPublicKatalog);
 let publicKatalogSearchTimer;
 document.getElementById('public-katalog-query').addEventListener('input', () => {
-  clearTimeout(publicKatalogSearchTimer); publicKatalogSearchTimer = setTimeout(loadPublicKatalog, 250);
+  clearTimeout(publicKatalogSearchTimer); publicKatalogSearchTimer = setTimeout(loadPublicKatalog, ADMIN_TIMING.searchDebounceMs);
 });

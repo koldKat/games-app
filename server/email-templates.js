@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_URL = 'https://gamekat.net';
+const { APP_NAME, APP_NAME_UPPER, PUBLIC_URL: APP_URL } = require('./site-config');
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -42,7 +42,7 @@ function layout({ eyebrow, heading, detail = '', body = '', cta = null, footer, 
     <tr><td align="center">
       <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="width:100%;max-width:560px;background:#0b1514;border:1px solid #2b5d50;border-radius:8px;overflow:hidden">
         <tr><td style="padding:18px 24px;background:#0d2621;border-bottom:1px solid #2b5d50">
-          <div style="margin:0;color:#67e7c5;font-size:16px;font-weight:700;letter-spacing:.08em">GAME KAT·A·LOG</div>
+          <div style="margin:0;color:#67e7c5;font-size:16px;font-weight:700;letter-spacing:.08em">${APP_NAME_UPPER}</div>
           <div style="margin-top:5px;color:#8eaaa1;font-size:10px;letter-spacing:.14em">${escapeHtml(eyebrow)}</div>
         </td></tr>
         <tr><td style="padding:24px">
@@ -74,7 +74,7 @@ function operatorPatch({ username, email, kind, body }) {
     eyebrow: 'PATCH // OPERATOR NOTICE', heading: 'New Patch received',
     detail: `From ${username}${email ? ` <${email}>` : ''}\nType: ${kind}`,
     body, cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
-    footer: 'Operator notification // Game Kat·a·log', preview: `New Patch from ${username}`,
+    footer: `Operator notification // ${APP_NAME}`, preview: `New Patch from ${username}`,
   });
 }
 
@@ -83,7 +83,7 @@ function operatorPingReply({ username, threadId, body }) {
     eyebrow: 'PING // OPERATOR NOTICE', heading: 'New Ping reply received',
     detail: `${username} replied to Patch #${threadId}.`, body,
     cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
-    footer: 'Operator notification // Game Kat·a·log', preview: `New Ping reply from ${username}`,
+    footer: `Operator notification // ${APP_NAME}`, preview: `New Ping reply from ${username}`,
   });
 }
 
@@ -101,16 +101,16 @@ function passwordReset({ username, link }) {
     eyebrow: 'ACCOUNT // SECURITY', heading: 'Reset your password',
     detail: `Hello ${username}, use this one-time link to choose a new password. It expires in one hour.`,
     cta: { label: 'RESET PASSWORD', href: link },
-    footer: 'If you did not request this reset, you can safely ignore this email.', preview: 'Your Game Kat·a·log password reset link',
+    footer: 'If you did not request this reset, you can safely ignore this email.', preview: `Your ${APP_NAME} password reset link`,
   });
 }
 
 function smtpTest() {
   return notice({
     eyebrow: 'SYSTEM // SMTP', heading: 'SMTP delivery works',
-    detail: 'Game Kat·a·log can send transactional email from this server.',
+    detail: `${APP_NAME} can send transactional email from this server.`,
     cta: { label: 'OPEN GAME KAT·A·LOG', href: APP_URL },
-    footer: 'SMTP test // Game Kat·a·log', preview: 'SMTP delivery is configured correctly',
+    footer: `SMTP test // ${APP_NAME}`, preview: 'SMTP delivery is configured correctly',
   });
 }
 

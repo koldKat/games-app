@@ -1,4 +1,5 @@
-const TOAST_DURATION_MS = 2_600;
+import { ADMIN_TIMING } from './admin-policy.js';
+
 export const UI_LOCALE = 'en-US';
 
 export async function api(method, path, body) {
@@ -75,7 +76,7 @@ export function confirmAction({ title = 'Confirm action', message = '', confirmL
 }
 export function toast(message, error = false) {
   const element = document.getElementById('toast'); element.textContent = message; element.classList.toggle('error', error); element.classList.add('show');
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), TOAST_DURATION_MS);
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), ADMIN_TIMING.toastMs);
 }
 export async function busy(element, task) {
   const old = element.textContent; element.disabled = true; element.textContent = 'Working…';

@@ -2,8 +2,7 @@
 
 const { readVersion } = require('./version');
 const { UI_LOCALE } = require('./constants');
-
-const SITE_URL = 'https://gamekat.net';
+const { COPYRIGHT_START_YEAR, PUBLIC_URL: SITE_URL } = require('./site-config');
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -98,7 +97,7 @@ function footerMarkup(copyright) {
 
 function pageShell({ title, description, canonical, content, structuredData, user = null, progress = null, coverUrls = [], socialImage = `${SITE_URL}/social-preview.png`, socialImageAlt = 'Game Kat·a·log', socialType = 'website', currentView = '', extraStyles = '', extraScripts = '' }) {
   const currentYear = new Date().getFullYear();
-  const copyright = currentYear > 2026 ? `© 2026-${currentYear}` : '© 2026';
+  const copyright = currentYear > COPYRIGHT_START_YEAR ? `© ${COPYRIGHT_START_YEAR}-${currentYear}` : `© ${COPYRIGHT_START_YEAR}`;
   return `<!doctype html>
 <html lang="en">
 <head>

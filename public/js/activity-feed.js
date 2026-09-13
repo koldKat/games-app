@@ -1,7 +1,7 @@
 import { formatAnnouncementBody } from './announcement-format.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
 import { openPublicProfile } from './public-profile.js';
-import { UI_LOCALE } from './ui-policy.js';
+import { UI_LOCALE, UI_TIMING } from './ui-policy.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 function age(value) {
@@ -62,8 +62,6 @@ function dayLabel(value) {
   return new Intl.DateTimeFormat(UI_LOCALE, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
 const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
-const SIGNAL_CACHE_MS = 15_000;
-const SIGNAL_LOADER_DELAY_MS = 220;
 function contributionGroup(entry, entries, id, groupKey) {
   const count = entries.length;
   const username = escapeHtml(entry.username);
@@ -142,13 +140,13 @@ export function createActivityFeed() {
         if (!host.classList.contains('signal-feed') || host.dataset.activityLoaded === 'true') continue;
         host.innerHTML = `<div class="library-loader signal-feed-loader" role="status">${controllerLoaderMarkup('Tuning the signal…')}</div>`;
       }
-    }, SIGNAL_LOADER_DELAY_MS);
+    }, UI_TIMING.signalLoaderDelayMs);
   }
   async function load({ force = false } = {}) {
     const targets = hosts();
     if (!targets.length) return;
     if (cachedPayload) render(targets, cachedPayload);
-    if (!force && cachedPayload && Date.now() - cachedAt < SIGNAL_CACHE_MS) return;
+    if (!force && cachedPayload && Date.now() - cachedAt < UI_TIMING.signalCacheMs) return;
     if (loading) return loading;
     const loaderTimer = cachedPayload ? null : scheduleSignalLoaders(targets);
     loading = (async () => {
@@ -163,7 +161,7 @@ export function createActivityFeed() {
   }
   function start() {
     void load(); source?.close(); source = new EventSource('/api/activity/stream');
-    source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load({ force: true }), 120); });
+    source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load({ force: true }), UI_TIMING.signalRefreshDebounceMs); });
   }
   return { start, stop: () => { clearTimeout(refreshTimer); refreshTimer = null; source?.close(); source = null; }, load };
 }

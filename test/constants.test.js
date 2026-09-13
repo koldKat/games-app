@@ -5,6 +5,8 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const constants = require('../server/constants');
+const { ACCOUNT_LIMITS, GAME_LIMITS, KATALOG_LIMITS } = require('../server/validation-policy');
+const siteConfig = require('../server/site-config');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
 test('shared server constants define catalogue domains and batch policy', () => {
@@ -39,6 +41,20 @@ test('browser policies name pagination, lookup, and timing contracts', () => {
   assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
   assert.doesNotMatch(application, /state\.limit/);
   assert.match(policy, /UI_LOCALE = 'en-US'/);
+  assert.match(read('public/js/game-labels.js'), /wanted: 'Wishlisted'/);
+  assert.match(read('public/js/site-config.js'), /GITHUB_URL/);
+});
+
+test('site identity and input limits have explicit small policy modules', () => {
+  assert.equal(siteConfig.PUBLIC_URL, 'https://gamekat.net');
+  assert.equal(siteConfig.PUBLIC_HOSTNAME, 'gamekat.net');
+  assert.equal(ACCOUNT_LIMITS.usernameMax, 32);
+  assert.equal(GAME_LIMITS.platformMax, 80);
+  assert.equal(GAME_LIMITS.notesMax, 2_000);
+  assert.equal(GAME_LIMITS.descriptionMax, 12_000);
+  assert.equal(KATALOG_LIMITS.pageSize, 80);
+  const productionSources = [read('server/auth.js'), read('server/admin.js')].join('\n');
+  assert.doesNotMatch(productionSources, /['"]koldkat['"]/i);
 });
 
 test('user-facing dates and numbers never inherit a device locale', () => {

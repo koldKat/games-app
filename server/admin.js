@@ -12,12 +12,11 @@ const activity = require('./activity');
 const events = require('./events');
 const forum = require('./forum-data');
 const patch = require('./patch-data');
+const { KATALOG_LIMITS } = require('./validation-policy');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
 const JSON_BODY_MAX_LENGTH = 64 * 1024;
-const KATALOG_QUERY_MAX_LENGTH = 120;
-const KATALOG_RESULT_LIMIT = 250;
 const UPTIME_DOWNTIME_GRACE_SECONDS = 15;
 const startedAt = Math.floor(Date.now() / 1000);
 let lastCpuAt = Date.now();
@@ -31,6 +30,7 @@ const adminFiles = new Map([
   ['/admin/js/forum.js', ['js/forum.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/patch.js', ['js/patch.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/admin-policy.js', ['js/admin-policy.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/katalog.js', ['js/katalog.js', 'application/javascript; charset=utf-8']],
@@ -190,20 +190,19 @@ function listAccounts() {
   const accounts = db.prepare(`SELECT u.id, u.username, COALESCE(u.email,'') email, u.created_at AS createdAt,
     u.last_country AS country, u.last_city AS city,
     u.admin_locked AS adminLocked, u.locked_until AS lockedUntil,
-    CASE WHEN lower(u.username)='koldkat' THEN 1 ELSE 0 END protected,
     COUNT(DISTINCT g.id) games, COALESCE(SUM(CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END),0) covered,
     COALESCE(u.last_active_at, MAX(CAST(strftime('%s',g.updated_at) AS INTEGER)), CAST(strftime('%s',u.created_at) AS INTEGER)) lastActiveAt,
     (SELECT COUNT(*) FROM sessions s WHERE s.user_id=u.id AND s.expires_at>strftime('%s','now')) activeSessions
     FROM users u LEFT JOIN games g ON g.user_id=u.id GROUP BY u.id ORDER BY lastActiveAt DESC, u.created_at DESC`).all();
   const now = Math.floor(Date.now() / 1000);
-  return accounts.map(account => ({ ...account, daysInactive: Math.max(0, Math.floor((now - Number(account.lastActiveAt || now)) / 86400)) }));
+  return accounts.map(account => ({ ...account, protected: auth.isProtectedUsername(account.username), daysInactive: Math.max(0, Math.floor((now - Number(account.lastActiveAt || now)) / 86400)) }));
 }
 
 function deleteAccount(id) {
   const account = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, COUNT(g.id) games
     FROM users u LEFT JOIN games g ON g.user_id=u.id WHERE u.id=? GROUP BY u.id`).get(Number(id));
   if (!account) return null;
-  if (auth.isProtectedUsername(account.username)) throw Object.assign(new Error('The protected koldKat account cannot be deleted.'), { status: 403, code: 'PROTECTED_ACCOUNT' });
+  if (auth.isProtectedUsername(account.username)) throw Object.assign(new Error('The protected owner account cannot be deleted.'), { status: 403, code: 'PROTECTED_ACCOUNT' });
   const coverUrls = db.prepare("SELECT cover_url AS coverUrl FROM games WHERE user_id=? AND cover_url LIKE '/covers/%'").all(account.id);
   const result = db.prepare('DELETE FROM users WHERE id=?').run(account.id);
   if (result.changes && account.avatarPath && path.basename(account.avatarPath) === account.avatarPath) {
@@ -214,13 +213,13 @@ function deleteAccount(id) {
 }
 
 function listKatalog(query = '') {
-  const q = String(query).trim().slice(0, KATALOG_QUERY_MAX_LENGTH);
+  const q = String(query).trim().slice(0, KATALOG_LIMITS.searchMax);
   return db.prepare(`SELECT g.id, g.title, g.platform, g.pegi, g.ownership,
     CASE WHEN g.hidden=1 THEN 'hidden' ELSE g.play_status END AS playStatus,
     CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END hasCover, u.username
     FROM games g LEFT JOIN users u ON u.id=g.user_id
     WHERE (@q='' OR g.title LIKE @like OR g.platform LIKE @like OR u.username LIKE @like)
-    ORDER BY g.title COLLATE NOCASE LIMIT ${KATALOG_RESULT_LIMIT}`).all({ q, like: `%${q}%` });
+    ORDER BY g.title COLLATE NOCASE LIMIT ${KATALOG_LIMITS.adminResultsMax}`).all({ q, like: `%${q}%` });
 }
 
 async function handleApi(request, response, url) {

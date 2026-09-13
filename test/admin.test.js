@@ -7,6 +7,7 @@ const dbPath = path.join('/tmp', `games-admin-test-${process.pid}.db`);
 const versionPath = path.join('/tmp', `games-admin-version-test-${process.pid}`);
 process.env.DB_PATH = dbPath;
 process.env.VERSION_FILE = versionPath;
+process.env.OWNER_USERNAME = 'koldKat';
 const data = require('../server/db');
 const auth = require('../server/auth');
 const admin = require('../server/admin');

@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const dbPath = path.join('/tmp', `games-auth-test-${process.pid}.db`);
 process.env.DB_PATH = dbPath;
+process.env.OWNER_USERNAME = 'koldKat';
 const data = require('../server/db');
 const auth = require('../server/auth');
 const { createKatalogStore } = require('../server/katalog-store');
@@ -217,6 +218,13 @@ test('the koldKat account cannot be locked or renamed', async () => {
   const user = await auth.register('koldKat', 'protected-password');
   assert.throws(() => auth.setAccountLocked(user.id, true), error => error.code === 'PROTECTED_ACCOUNT' && error.status === 403);
   await assert.rejects(() => auth.updateAccount(user.id, { username: 'renamed_koldkat', currentPassword: 'protected-password' }), /cannot be renamed/);
+});
+
+test('game text limits are enforced on the server, not only by form attributes', async () => {
+  const user = await auth.register('validation_limits', 'long-password');
+  assert.throws(() => data.createGame(user.id, { title: 'T'.repeat(221), platform: 'PC' }), /Title cannot exceed 220 characters/);
+  assert.throws(() => data.createGame(user.id, { title: 'Valid title', platform: 'P'.repeat(81) }), /Platform cannot exceed 80 characters/);
+  assert.throws(() => data.createGame(user.id, { title: 'Valid title', platform: 'PC', notes: 'N'.repeat(2001) }), /Notes cannot exceed 2,000 characters/);
 });
 
 test('password reset tokens are one-time and revoke sessions', async () => {

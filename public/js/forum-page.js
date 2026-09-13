@@ -1,3 +1,5 @@
+import { UI_TIMING } from './ui-policy.js';
+
 async function api(url, options = {}) {
   const response = await fetch(url, { credentials: 'same-origin', ...options });
   const body = await response.json().catch(() => ({}));
@@ -64,7 +66,7 @@ function bindDelete(button, navigate, refresh) {
         if (!button.isConnected || !button.dataset.confirming) return;
         delete button.dataset.confirming;
         button.textContent = label;
-      }, 6000);
+      }, UI_TIMING.forumDeleteConfirmMs);
       return;
     }
     button.disabled = true;
@@ -103,6 +105,6 @@ export function bindForum(root = document, { navigate = url => { window.location
 if (document.querySelector('.forum-main')) {
   const controller = bindForum(document);
   const source = new EventSource('/api/forum/stream'); let timer;
-  source.addEventListener('forum-changed', () => { clearTimeout(timer); timer = setTimeout(() => controller.refresh(), 300); });
+  source.addEventListener('forum-changed', () => { clearTimeout(timer); timer = setTimeout(() => controller.refresh(), UI_TIMING.forumRefreshDebounceMs); });
   window.addEventListener('pagehide', () => source.close(), { once:true });
 }

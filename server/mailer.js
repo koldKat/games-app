@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const { once } = require('node:events');
 const { db } = require('./db');
 const templates = require('./email-templates');
+const { APP_NAME, APP_NAME_ASCII, PUBLIC_HOSTNAME } = require('./site-config');
 
 const SECURITY_VALUES = new Set(['starttls', 'tls', 'none']);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,7 +60,7 @@ async function openSocket(config) {
   return { socket, greeting: initialResponse };
 }
 function message({ config, to, subject, text, html = '' }) {
-  const headers = [`From: Game Kat-a-log <${config.sender}>`, `To: ${to}`, `Subject: ${subject.replace(/[\r\n]/g, '')}`, 'MIME-Version: 1.0'];
+  const headers = [`From: ${APP_NAME_ASCII} <${config.sender}>`, `To: ${to}`, `Subject: ${subject.replace(/[\r\n]/g, '')}`, 'MIME-Version: 1.0'];
   if (!html) return [...headers, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: 8bit', '', text].join('\r\n');
   const boundary = `=_gamekat_${crypto.randomBytes(12).toString('hex')}`;
   return [...headers, `Content-Type: multipart/alternative; boundary="${boundary}"`, '',
@@ -74,11 +75,11 @@ async function send({ to, subject, text, html = '' }) {
   const opened = await openSocket(config); let socket = opened.socket;
   try {
     if (opened.greeting.code !== 220) throw new Error(`SMTP server rejected the connection (${opened.greeting.code}).`);
-    const hello = await command(socket, 'EHLO gamekat.net', [250]);
+    const hello = await command(socket, `EHLO ${PUBLIC_HOSTNAME}`, [250]);
     if (config.security === 'starttls') {
       if (!/STARTTLS/i.test(hello.text)) throw new Error('SMTP server does not offer STARTTLS.');
       await command(socket, 'STARTTLS', [220]); socket = tls.connect({ socket, servername: config.host }); await once(socket, 'secureConnect');
-      await command(socket, 'EHLO gamekat.net', [250]);
+      await command(socket, `EHLO ${PUBLIC_HOSTNAME}`, [250]);
     }
     if (config.username) await command(socket, `AUTH PLAIN ${Buffer.from(`\u0000${config.username}\u0000${config.password}`).toString('base64')}`, [235]);
     await command(socket, `MAIL FROM:<${config.sender}>`, [250]); await command(socket, `RCPT TO:<${to}>`, [250, 251]); await command(socket, 'DATA', [354]);
@@ -92,10 +93,10 @@ function operatorRecipient() {
   const config = settings();
   return config?.username || config?.sender || '';
 }
-function sendOperatorPatch({ username, email, kind, body }) { return sendTemplate(operatorRecipient(), `New Patch from ${username} // Game Kat·a·log`, templates.operatorPatch({ username, email, kind, body })); }
-function sendOperatorPingReply({ username, threadId, body }) { return sendTemplate(operatorRecipient(), `Ping reply from ${username} // Game Kat·a·log`, templates.operatorPingReply({ username, threadId, body })); }
-function sendPatchReply({ to, body }) { return sendTemplate(to, 'Reply to your Patch // Game Kat·a·log', templates.patchReply({ body })); }
-function sendPasswordReset({ to, username, link }) { return sendTemplate(to, 'Reset your Game Kat·a·log password', templates.passwordReset({ username, link })); }
-function sendSmtpTest(to) { return sendTemplate(to, 'Game Kat·a·log SMTP test', templates.smtpTest()); }
+function sendOperatorPatch({ username, email, kind, body }) { return sendTemplate(operatorRecipient(), `New Patch from ${username} // ${APP_NAME}`, templates.operatorPatch({ username, email, kind, body })); }
+function sendOperatorPingReply({ username, threadId, body }) { return sendTemplate(operatorRecipient(), `Ping reply from ${username} // ${APP_NAME}`, templates.operatorPingReply({ username, threadId, body })); }
+function sendPatchReply({ to, body }) { return sendTemplate(to, `Reply to your Patch // ${APP_NAME}`, templates.patchReply({ body })); }
+function sendPasswordReset({ to, username, link }) { return sendTemplate(to, `Reset your ${APP_NAME} password`, templates.passwordReset({ username, link })); }
+function sendSmtpTest(to) { return sendTemplate(to, `${APP_NAME} SMTP test`, templates.smtpTest()); }
 
 module.exports = { publicSettings, saveSettings, send, sendOperatorPatch, sendOperatorPingReply, sendPatchReply, sendPasswordReset, sendSmtpTest, message };

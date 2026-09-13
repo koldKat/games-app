@@ -3,6 +3,8 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { APP_NAME, PUBLIC_URL } = require('./server/site-config');
+const RUNTIME_POLICY = require('./server/runtime-policy');
 const db = require('./server/db');
 const { searchPegi } = require('./server/pegi');
 const { createPegiBulkManager } = require('./server/pegi-bulk');
@@ -38,12 +40,7 @@ const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants'
 
 const PORT = Number(process.env.PORT || 3005);
 const HOST = process.env.HOST || '0.0.0.0';
-const JSON_BODY_MAX_LENGTH = 1_000_000;
-const AVATAR_MAX_BYTES = 256 * 1024;
-const SHOWCASE_COVER_COUNT = 38;
-const SHUTDOWN_GRACE_MS = 2_500;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const PUBLIC_URL = String(process.env.PUBLIC_URL || 'https://gamekat.net').replace(/\/$/, '');
 const AVATARS_DIR = path.join(PUBLIC_DIR, 'avatars');
 fs.mkdirSync(AVATARS_DIR, { recursive: true });
 const PUBLIC_CONTENT_SECURITY_POLICY = [
@@ -219,7 +216,7 @@ function readJson(request) {
     request.setEncoding('utf8');
     request.on('data', chunk => {
       body += chunk;
-      if (body.length > JSON_BODY_MAX_LENGTH) request.destroy(new Error('Request body is too large.'));
+      if (body.length > RUNTIME_POLICY.requestJsonMaxBytes) request.destroy(new Error('Request body is too large.'));
     });
     request.on('end', () => {
       try { resolve(body ? JSON.parse(body) : {}); }
@@ -273,7 +270,7 @@ async function handleApi(request, response, url) {
     const ownedOnly = url.searchParams.get('scope') === 'owned';
     if (ownedOnly && !user) return sendJson(response, 401, { error: 'Authentication required.' });
     return sendJson(response, 200, {
-      covers: ownedOnly ? showcasePool.owned(SHOWCASE_COVER_COUNT, user.id) : showcasePool.shared(SHOWCASE_COVER_COUNT, user?.id),
+      covers: ownedOnly ? showcasePool.owned(RUNTIME_POLICY.showcaseCoverCount, user.id) : showcasePool.shared(RUNTIME_POLICY.showcaseCoverCount, user?.id),
     });
   }
   if (request.method === 'POST' && url.pathname === '/api/register') {
@@ -370,7 +367,7 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'POST' && url.pathname === '/api/account/avatar') {
     try {
-      const source = await readRaw(request, AVATAR_MAX_BYTES);
+      const source = await readRaw(request, RUNTIME_POLICY.avatarUploadMaxBytes);
       let image;
       try { image = await imagePolicy.processAvatar(source); }
       catch { return sendJson(response, 415, { error: 'Avatar must be a valid image that can be processed.' }); }
@@ -578,19 +575,19 @@ const server = http.createServer(async (request, response) => {
 
 auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
-  console.log(`Game Kat·a·log is running at http://localhost:${PORT}`);
+  console.log(`${APP_NAME} is running at http://localhost:${PORT}`);
   backup.start();
   // Startup must stay cheap. A complete image normalization and Kat·a·log replay
   // touches every game and can monopolize Node for a long time on a real library.
   // New and edited games are synchronized immediately in their request paths;
   // one-off cover maintenance remains available through the explicit scripts.
-  showcaseCovers.writeShowcase(showcasePool.public, SHOWCASE_COVER_COUNT);
+  showcaseCovers.writeShowcase(showcasePool.public, RUNTIME_POLICY.showcaseCoverCount);
 });
 
 function shutdown() {
   admin.markServerStopped();
   server.close(() => { db.db.close(); process.exit(0); });
-  setTimeout(() => process.exit(1), SHUTDOWN_GRACE_MS).unref();
+  setTimeout(() => process.exit(1), RUNTIME_POLICY.shutdownGraceMs).unref();
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

@@ -1,16 +1,11 @@
 'use strict';
 
 const { evaluateKatalogGame, normalizeKatalogText } = require('./katalog-policy');
+const { GAME_LIMITS, KATALOG_LIMITS } = require('./validation-policy');
 
 const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
 // The wide Kat·a·log grid has eight columns: keep ten complete desktop rows visible per page.
-const PAGE_SIZE_DEFAULT = 80;
-const PAGE_SIZE_MAX = 80;
-const SEARCH_MAX_LENGTH = 120;
-const PEGI_RATINGS = new Set([3, 7, 12, 16, 18]);
-const RELEASE_YEAR_MIN = 1970;
-const RELEASE_YEAR_MAX = 2100;
-const HLTB_HOURS_MAX = 100000;
+const PEGI_RATINGS = new Set(require('./constants').PEGI_RATINGS);
 
 const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
   pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
@@ -67,14 +62,14 @@ function groupedPublicEntries(entries) {
 
 function slugBase(title, platform) {
   const value = `${normalizeKatalogText(title)} ${normalizeKatalogText(platform)}`
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 100);
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, KATALOG_LIMITS.slugMax);
   return value || 'game';
 }
 
-function adminText(value, limit = 8000) { return String(value || '').trim().slice(0, limit); }
+function adminText(value, limit = GAME_LIMITS.metadataTextMax) { return String(value || '').trim().slice(0, limit); }
 function adminList(value) {
   const values = Array.isArray(value) ? value : String(value || '').split(',');
-  return values.map(item => adminText(item, 180)).filter(Boolean).slice(0, 24);
+  return values.map(item => adminText(item, GAME_LIMITS.metadataItemMax)).filter(Boolean).slice(0, GAME_LIMITS.metadataItemsMax);
 }
 function optionalNumber(value, { min = 0, max = Number.MAX_SAFE_INTEGER, integer = false } = {}) {
   if (value === '' || value == null) return null;
@@ -244,13 +239,13 @@ function createKatalogStore(database) {
     return upsertTransaction(Number(userId), game, evaluation, coverUrl);
   }
 
-  function listPublic({ q = '', platform = '', page = 1, limit = PAGE_SIZE_DEFAULT } = {}) {
-    const cleanQuery = normalizeKatalogText(String(q).slice(0, SEARCH_MAX_LENGTH));
-    const cleanPlatform = normalizeKatalogText(String(platform).slice(0, SEARCH_MAX_LENGTH));
-    const pageSize = Math.max(1, Math.min(PAGE_SIZE_MAX, Number(limit) || PAGE_SIZE_DEFAULT));
+  function listPublic({ q = '', platform = '', page = 1, limit = KATALOG_LIMITS.pageSize } = {}) {
+    const cleanQuery = normalizeKatalogText(String(q).slice(0, KATALOG_LIMITS.searchMax));
+    const cleanPlatform = normalizeKatalogText(String(platform).slice(0, KATALOG_LIMITS.searchMax));
+    const pageSize = Math.max(1, Math.min(KATALOG_LIMITS.pageSizeMax, Number(limit) || KATALOG_LIMITS.pageSize));
     const currentPage = Math.max(1, Number.parseInt(page, 10) || 1);
     const params = {
-      q: `%${cleanQuery}%`, rawQ: `%${String(q).trim().slice(0, SEARCH_MAX_LENGTH)}%`, platform: cleanPlatform,
+      q: `%${cleanQuery}%`, rawQ: `%${String(q).trim().slice(0, KATALOG_LIMITS.searchMax)}%`, platform: cleanPlatform,
     };
     const where = `status='public' AND (@q='%%' OR title_key LIKE @q OR platform_key LIKE @q OR publisher LIKE @rawQ COLLATE NOCASE)
       AND (@platform='' OR platform_key=@platform)`;
@@ -275,7 +270,7 @@ function createKatalogStore(database) {
 
   function listAdmin({ q = '', status = '' } = {}) {
     const cleanStatus = ENTRY_STATUSES.includes(status) ? status : '';
-    const like = `%${String(q).trim().slice(0, SEARCH_MAX_LENGTH)}%`;
+    const like = `%${String(q).trim().slice(0, KATALOG_LIMITS.searchMax)}%`;
     return database.prepare(`SELECT ${storedFields} FROM catalogue_entries
       WHERE (@status='' OR status=@status) AND (@like='%%' OR title LIKE @like OR platform LIKE @like)
       ORDER BY CASE status WHEN 'candidate' THEN 0 WHEN 'public' THEN 1 ELSE 2 END, updated_at DESC LIMIT 250`)
@@ -293,7 +288,7 @@ function createKatalogStore(database) {
   function updateAdmin(id, input = {}) {
     const existing = getById(id);
     if (!existing) return null;
-    const title = adminText(input.title, 220); const platform = adminText(input.platform, 220);
+    const title = adminText(input.title, GAME_LIMITS.titleMax); const platform = adminText(input.platform, GAME_LIMITS.platformMax);
     if (!title) throw new Error('Title is required.');
     if (!platform) throw new Error('Platform is required.');
     const titleKey = normalizeKatalogText(title); const platformKey = normalizeKatalogText(platform);
@@ -301,16 +296,16 @@ function createKatalogStore(database) {
     if (duplicate && duplicate.id !== existing.id) throw new Error('Another Kat·a·log entry already uses this title and platform.');
     const pegi = input.pegi === '' || input.pegi == null ? null : optionalNumber(input.pegi, { integer: true });
     if (pegi != null && !PEGI_RATINGS.has(pegi)) throw new Error('PEGI must be 3, 7, 12, 16, 18, or blank.');
-    const releaseYear = optionalNumber(input.releaseYear, { min: RELEASE_YEAR_MIN, max: RELEASE_YEAR_MAX, integer: true });
+    const releaseYear = optionalNumber(input.releaseYear, { min: GAME_LIMITS.releaseYearMin, max: GAME_LIMITS.releaseYearMax, integer: true });
     const hltbId = optionalNumber(input.hltbId, { min: 1, integer: true });
-    const hltbHours = value => hltbId ? optionalNumber(value, { min: 0.01, max: HLTB_HOURS_MAX }) : null;
+    const hltbHours = value => hltbId ? optionalNumber(value, { min: 0.01, max: GAME_LIMITS.hltbHoursMax }) : null;
     const factualInput = {
-      title, platform, pegi, pegiUrl: adminText(input.pegiUrl, 2000), pegiDescriptors: adminList(input.pegiDescriptors),
+      title, platform, pegi, pegiUrl: adminText(input.pegiUrl, GAME_LIMITS.urlMax), pegiDescriptors: adminList(input.pegiDescriptors),
       pegiReleases: adminList(input.pegiReleases), pegiAdvice: adminText(input.pegiAdvice), pegiOutline: adminText(input.pegiOutline),
       pegiContentIssues: adminText(input.pegiContentIssues), pegiOtherIssues: adminText(input.pegiOtherIssues), hltbId,
-      hltbTitle: hltbId ? adminText(input.hltbTitle, 220) : '', hltbMainStory: hltbHours(input.hltbMainStory),
+      hltbTitle: hltbId ? adminText(input.hltbTitle, GAME_LIMITS.titleMax) : '', hltbMainStory: hltbHours(input.hltbMainStory),
       hltbMainExtra: hltbHours(input.hltbMainExtra), hltbCompletionist: hltbHours(input.hltbCompletionist),
-      hltbAllStyles: hltbHours(input.hltbAllStyles), coverUrl: existing.coverUrl, coverMatchTitle: adminText(input.coverMatchTitle, 300),
+      hltbAllStyles: hltbHours(input.hltbAllStyles), coverUrl: existing.coverUrl, coverMatchTitle: adminText(input.coverMatchTitle, GAME_LIMITS.coverMatchTitleMax),
     };
     const evaluation = evaluateKatalogGame(factualInput);
     database.prepare(`UPDATE catalogue_entries SET title=@title, title_key=@titleKey, platform=@platform, platform_key=@platformKey,
@@ -321,12 +316,12 @@ function createKatalogStore(database) {
       hltb_main_extra=@hltbMainExtra, hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
       cover_source=@coverSource, cover_match_title=@coverMatchTitle, confidence=@confidence, reasons=@reasons,
       updated_at=CURRENT_TIMESTAMP WHERE id=@id`).run({
-      id: existing.id, title, titleKey, platform, platformKey, pegi, publisher: adminText(input.publisher, 160), releaseYear,
-      pegiUrl: adminText(input.pegiUrl, 2000), pegiDescriptors: JSON.stringify(adminList(input.pegiDescriptors)), pegiReleases: JSON.stringify(adminList(input.pegiReleases)),
+      id: existing.id, title, titleKey, platform, platformKey, pegi, publisher: adminText(input.publisher, GAME_LIMITS.publisherMax), releaseYear,
+      pegiUrl: adminText(input.pegiUrl, GAME_LIMITS.urlMax), pegiDescriptors: JSON.stringify(adminList(input.pegiDescriptors)), pegiReleases: JSON.stringify(adminList(input.pegiReleases)),
       pegiAdvice: adminText(input.pegiAdvice), pegiOutline: adminText(input.pegiOutline), pegiContentIssues: adminText(input.pegiContentIssues), pegiOtherIssues: adminText(input.pegiOtherIssues),
-      hltbId, hltbTitle: hltbId ? adminText(input.hltbTitle, 220) : '', hltbUrl: hltbId ? adminText(input.hltbUrl, 2000) : '',
+      hltbId, hltbTitle: hltbId ? adminText(input.hltbTitle, GAME_LIMITS.titleMax) : '', hltbUrl: hltbId ? adminText(input.hltbUrl, GAME_LIMITS.urlMax) : '',
       hltbMainStory: hltbHours(input.hltbMainStory), hltbMainExtra: hltbHours(input.hltbMainExtra), hltbCompletionist: hltbHours(input.hltbCompletionist), hltbAllStyles: hltbHours(input.hltbAllStyles),
-      coverSource: adminText(input.coverSource, 80), coverMatchTitle: adminText(input.coverMatchTitle, 300),
+      coverSource: adminText(input.coverSource, GAME_LIMITS.coverSourceMax), coverMatchTitle: adminText(input.coverMatchTitle, GAME_LIMITS.coverMatchTitleMax),
       confidence: evaluation.confidence, reasons: JSON.stringify(evaluation.reasons),
     });
     return getById(existing.id);

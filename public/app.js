@@ -14,8 +14,10 @@ import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
 import { mountThemedNumberSteppers } from './js/number-steppers.js';
 import { mountThemedSearchClears, syncSearchClears } from './js/search-clears.js';
+import { GAME_LABELS } from './js/game-labels.js';
+import { APP_NAME, COPYRIGHT_START_YEAR, GITHUB_URL } from './js/site-config.js';
 import {
-  COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
+  DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
   SOURCE_IMAGE_MAX_BYTES, UI_LOCALE, UI_TIMING,
 } from './js/ui-policy.js';
 
@@ -23,6 +25,7 @@ const $ = selector => document.querySelector(selector);
 const selectedCopyIds = new Set();
 const $$ = selector => [...document.querySelectorAll(selector)];
 const copyrightYear = new Date().getFullYear();
+$$('[data-repo-link]').forEach(element => { element.href = GITHUB_URL; });
 $$('[data-copyright-year]').forEach(element => {
   element.textContent = copyrightYear > COPYRIGHT_START_YEAR ? `© ${COPYRIGHT_START_YEAR}-${copyrightYear}` : `© ${COPYRIGHT_START_YEAR}`;
 });
@@ -58,11 +61,7 @@ const filters = {
   pegi: $('#pegi-filter'), playStatus: $('#status-filter'), missing: $('#missing-filter'),
   favorite: $('#favorite-filter'), sort: $('#sort-filter'),
 };
-const labels = {
-  owned: 'Owned', wanted: 'Wishlisted', backlog: 'Backlog',
-  playing: 'Playing', completed: 'Completed', paused: 'Paused', abandoned: 'Abandoned', hidden: 'Hidden',
-  physical: 'Physical', digital: 'Digital', unknown: 'Unknown',
-};
+const labels = GAME_LABELS;
 const AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE = new Set(['/api/login', '/api/register', '/api/auth/me']);
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char])); }
@@ -329,7 +328,7 @@ function showPasswordResetComplete(token) {
   $$('[data-auth-mode]').forEach(button => button.classList.remove('active'));
   $('#forgot-password').classList.add('active');
   $('#auth-title').textContent = 'Choose a new password';
-  $('#auth-copy').textContent = 'Set a new password for your Game Kat·a·log account.';
+  $('#auth-copy').textContent = `Set a new password for your ${APP_NAME} account.`;
   $('#password-reset-complete-form').reset(); $('#password-reset-complete-error').hidden = true; $('#password-reset-complete-success').hidden = true;
   $('#password-reset-new').disabled = false; $('#password-reset-confirm').disabled = false;
   $('#password-reset-complete-submit').hidden = false;

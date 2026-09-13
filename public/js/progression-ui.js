@@ -1,7 +1,6 @@
-import { UI_LOCALE } from './ui-policy.js';
+import { UI_LOCALE, UI_TIMING } from './ui-policy.js';
 
 function formatXp(value) { return Number(value || 0).toLocaleString(UI_LOCALE); }
-const XP_ANIM_MS_PER_LEVEL = 100;
 function progressAt(xp, target) {
   const value = Math.max(0, Math.round(Number(xp) || 0));
   const level = Math.min(100, Math.floor((-1 + Math.sqrt(1 + (8 * value) / 1000)) / 2));
@@ -45,7 +44,7 @@ export function createProgressionUi({ api }) {
   function runQueue() {
     if (animating || !queue.length) return;
     animating = true; const target = queue.shift(); const from = displayedXp == null ? target.xp : displayedXp;
-    const duration = Math.max(0, Number(target.level) || 0) * XP_ANIM_MS_PER_LEVEL;
+    const duration = Math.max(0, Number(target.level) || 0) * UI_TIMING.progressionMsPerLevel;
     if (from === target.xp || !duration) { displayedXp = target.xp; render(target); animating = false; runQueue(); return; }
     const started = performance.now();
     const step = now => {
@@ -58,7 +57,7 @@ export function createProgressionUi({ api }) {
   }
   function scheduleRetry() {
     if (retryTimer) return;
-    retryTimer = setTimeout(() => { retryTimer = null; void load({ retry: false }); }, 750);
+    retryTimer = setTimeout(() => { retryTimer = null; void load({ retry: false }); }, UI_TIMING.progressionRetryMs);
   }
   function load({ retry = true } = {}) {
     if (loadPromise) return loadPromise;

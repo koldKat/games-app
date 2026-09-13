@@ -10,6 +10,7 @@ import { loadForum } from './forum.js';
 import { loadPatch } from './patch.js';
 import { mountThemedNumberSteppers } from '/js/number-steppers.js';
 import { mountThemedSearchClears } from '/js/search-clears.js';
+import { ADMIN_TIMING } from './admin-policy.js';
 
 const loaders = {
   dashboard: loadDashboard,
@@ -35,5 +36,5 @@ loadLive();
 mountThemedNumberSteppers();
 mountThemedSearchClears();
 document.getElementById('refresh-patch')?.addEventListener('click', loadPatch);
-setInterval(loadLive, 1_000);
-setInterval(loadDashboard, 60_000);
+setInterval(loadLive, ADMIN_TIMING.liveRefreshMs);
+setInterval(loadDashboard, ADMIN_TIMING.dashboardRefreshMs);

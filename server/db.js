@@ -5,23 +5,9 @@ const {
   MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES,
   STORED_PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
+const { GAME_LIMITS } = require('./validation-policy');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
-const RELEASE_YEAR_MIN = 1970;
-const RELEASE_YEAR_MAX = 2100;
-const METADATA_LIST_ITEM_MAX_LENGTH = 180;
-const METADATA_LIST_MAX_ITEMS = 24;
-const METADATA_TEXT_MAX_LENGTH = 8_000;
-const PUBLISHER_MAX_LENGTH = 160;
-const TITLE_MAX_LENGTH = 220;
-const URL_MAX_LENGTH = 2_000;
-const COVER_SOURCE_MAX_LENGTH = 80;
-const COVER_MATCH_TITLE_MAX_LENGTH = 300;
-const HLTB_TIMESTAMP_MAX_LENGTH = 40;
-const HLTB_HOURS_MAX = 100_000;
-const DESCRIPTION_MAX_LENGTH = 12_000;
-const TITLE_SEARCH_LIMIT = 10;
-const TITLE_SEARCH_LIMIT_MAX = 20;
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -29,14 +15,19 @@ const normalizeSearchText = value => String(value || '').normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 const searchPattern = value => `%${normalizeSearchText(value).replace(/[\\%_]/g, character => `\\${character}`)}%`;
 const safeList = value => (Array.isArray(value) ? value : [])
-  .map(item => String(item || '').trim().slice(0, METADATA_LIST_ITEM_MAX_LENGTH))
-  .filter(Boolean).slice(0, METADATA_LIST_MAX_ITEMS);
-const safeText = (value, limit = METADATA_TEXT_MAX_LENGTH) => String(value || '').trim().slice(0, limit);
-const validReleaseYear = value => Number.isInteger(Number(value)) && Number(value) >= RELEASE_YEAR_MIN && Number(value) <= RELEASE_YEAR_MAX;
+  .map(item => String(item || '').trim().slice(0, GAME_LIMITS.metadataItemMax))
+  .filter(Boolean).slice(0, GAME_LIMITS.metadataItemsMax);
+const safeText = (value, limit = GAME_LIMITS.metadataTextMax) => String(value || '').trim().slice(0, limit);
+const boundedText = (value, limit, label) => {
+  const clean = String(value || '').trim();
+  if (clean.length > limit) throw new Error(`${label} cannot exceed ${limit.toLocaleString('en-US')} characters.`);
+  return clean;
+};
+const validReleaseYear = value => Number.isInteger(Number(value)) && Number(value) >= GAME_LIMITS.releaseYearMin && Number(value) <= GAME_LIMITS.releaseYearMax;
 const hltbHours = value => {
   if (value === '' || value == null) return null;
   const number = Number(value);
-  return Number.isFinite(number) && number > 0 && number <= HLTB_HOURS_MAX ? Math.round(number * 100) / 100 : null;
+  return Number.isFinite(number) && number > 0 && number <= GAME_LIMITS.hltbHoursMax ? Math.round(number * 100) / 100 : null;
 };
 const sqlTextValues = values => values.map(value => `'${value.replaceAll("'", "''")}'`).join(', ');
 db.function('search_normalize', { deterministic: true }, normalizeSearchText);
@@ -309,8 +300,8 @@ const searchTitles = db.prepare(`
 const accountTitles = db.prepare('SELECT id, title, platform, ownership FROM games WHERE user_id=?');
 
 function normalizeGame(input = {}) {
-  const title = String(input.title || '').trim();
-  const platform = String(input.platform || '').trim();
+  const title = boundedText(input.title, GAME_LIMITS.titleMax, 'Title');
+  const platform = boundedText(input.platform, GAME_LIMITS.platformMax, 'Platform');
   if (!title) throw new Error('Title is required.');
   if (!platform) throw new Error('Platform is required.');
   const pegi = input.pegi === '' || input.pegi == null ? null : Number(input.pegi);
@@ -331,26 +322,26 @@ function normalizeGame(input = {}) {
   const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
   return {
     title, platform, pegi, ownership, playStatus, hidden, mediaFormat, cartridgeNumber,
-    publisher: String(input.publisher || '').trim(), releaseYear,
-    notes: String(input.notes || '').trim(), rating, favorite: input.favorite ? 1 : 0,
-    pegiUrl: String(input.pegiUrl || '').trim(),
+    publisher: boundedText(input.publisher, GAME_LIMITS.publisherMax, 'Publisher'), releaseYear,
+    notes: boundedText(input.notes, GAME_LIMITS.notesMax, 'Notes'), rating, favorite: input.favorite ? 1 : 0,
+    pegiUrl: boundedText(input.pegiUrl, GAME_LIMITS.urlMax, 'PEGI URL'),
     pegiDescriptorsJson: JSON.stringify(safeList(input.pegiDescriptors)),
     pegiReleasesJson: JSON.stringify(safeList(input.pegiReleases)),
     pegiAdvice: safeText(input.pegiAdvice), pegiOutline: safeText(input.pegiOutline),
     pegiContentIssues: safeText(input.pegiContentIssues), pegiOtherIssues: safeText(input.pegiOtherIssues),
-    hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, TITLE_MAX_LENGTH) : '',
-    hltbUrl: hltbId ? safeText(input.hltbUrl, URL_MAX_LENGTH) : '',
+    hltbId, hltbTitle: hltbId ? safeText(input.hltbTitle, GAME_LIMITS.titleMax) : '',
+    hltbUrl: hltbId ? safeText(input.hltbUrl, GAME_LIMITS.urlMax) : '',
     hltbMainStory: hltbId ? hltbHours(input.hltbMainStory) : null,
     hltbMainExtra: hltbId ? hltbHours(input.hltbMainExtra) : null,
     hltbCompletionist: hltbId ? hltbHours(input.hltbCompletionist) : null,
     hltbAllStyles: hltbId ? hltbHours(input.hltbAllStyles) : null,
-    hltbUpdatedAt: hltbId ? safeText(input.hltbUpdatedAt, HLTB_TIMESTAMP_MAX_LENGTH) || new Date().toISOString() : null,
-    coverUrl: String(input.coverUrl || '').trim().slice(0, URL_MAX_LENGTH),
-    coverSource: String(input.coverSource || '').trim().slice(0, COVER_SOURCE_MAX_LENGTH),
-    coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, COVER_MATCH_TITLE_MAX_LENGTH),
-    description: safeText(input.description, DESCRIPTION_MAX_LENGTH),
-    descriptionSource: safeText(input.description) ? String(input.descriptionSource || '').trim().slice(0, COVER_SOURCE_MAX_LENGTH) : '',
-    descriptionSourceUrl: safeText(input.description) ? String(input.descriptionSourceUrl || '').trim().slice(0, URL_MAX_LENGTH) : '',
+    hltbUpdatedAt: hltbId ? safeText(input.hltbUpdatedAt, GAME_LIMITS.hltbTimestampMax) || new Date().toISOString() : null,
+    coverUrl: String(input.coverUrl || '').trim().slice(0, GAME_LIMITS.urlMax),
+    coverSource: String(input.coverSource || '').trim().slice(0, GAME_LIMITS.coverSourceMax),
+    coverMatchTitle: String(input.coverMatchTitle || '').trim().slice(0, GAME_LIMITS.coverMatchTitleMax),
+    description: safeText(input.description, GAME_LIMITS.descriptionMax),
+    descriptionSource: safeText(input.description) ? String(input.descriptionSource || '').trim().slice(0, GAME_LIMITS.coverSourceMax) : '',
+    descriptionSourceUrl: safeText(input.description) ? String(input.descriptionSourceUrl || '').trim().slice(0, GAME_LIMITS.urlMax) : '',
   };
 }
 
@@ -432,10 +423,10 @@ function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFie
 function allGamesForKatalog() {
   return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL AND hidden=0 ORDER BY id`).all().map(hydrateGame);
 }
-function searchGameTitles(userId, query, limit = TITLE_SEARCH_LIMIT) {
-  const clean = String(query || '').trim().slice(0, TITLE_MAX_LENGTH);
+function searchGameTitles(userId, query, limit = GAME_LIMITS.titleSearchDefault) {
+  const clean = String(query || '').trim().slice(0, GAME_LIMITS.titleMax);
   if (clean.length < TITLE_LOOKUP_MIN_LENGTH) return [];
-  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(TITLE_SEARCH_LIMIT_MAX, Number(limit) || TITLE_SEARCH_LIMIT)));
+  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(GAME_LIMITS.titleSearchMax, Number(limit) || GAME_LIMITS.titleSearchDefault)));
 }
 const normalizeIdentity = normalizeSearchText;
 function findDuplicateGames(userId, title, platform) {
@@ -512,7 +503,7 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
     AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''`).run({
       id, userId, pegi, releaseYear,
-      publisher: safeText(metadata.publisher, PUBLISHER_MAX_LENGTH), pegiUrl: safeText(metadata.pegiUrl ?? metadata.url, URL_MAX_LENGTH),
+      publisher: safeText(metadata.publisher, GAME_LIMITS.publisherMax), pegiUrl: safeText(metadata.pegiUrl ?? metadata.url, GAME_LIMITS.urlMax),
       pegiDescriptorsJson: JSON.stringify(safeList(metadata.descriptors)),
       pegiReleasesJson: JSON.stringify(safeList(metadata.releases)),
       pegiAdvice: safeText(metadata.advice), pegiOutline: safeText(metadata.outline),
@@ -530,12 +521,12 @@ function gamesMissingDescriptions(userId) {
 }
 
 function updateGameDescription(userId, id, metadata = {}) {
-  const description = safeText(metadata.description, DESCRIPTION_MAX_LENGTH);
+  const description = safeText(metadata.description, GAME_LIMITS.descriptionMax);
   if (!description) return null;
   const result = db.prepare(`UPDATE games SET description=@description, description_source=@descriptionSource,
     description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0 AND description=''`).run({
-    id, userId, description, descriptionSource: safeText(metadata.source, COVER_SOURCE_MAX_LENGTH),
-    descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, URL_MAX_LENGTH),
+    id, userId, description, descriptionSource: safeText(metadata.source, GAME_LIMITS.coverSourceMax),
+    descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, GAME_LIMITS.urlMax),
   });
   return result.changes ? getGame(userId, id) : null;
 }

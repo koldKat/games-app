@@ -1,4 +1,6 @@
 import { mountThemedSearchClears } from './search-clears.js';
+import { UI_TIMING } from './ui-policy.js';
+import { APP_NAME } from './site-config.js';
 
 export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpenLibrary = () => window.location.assign('/') } = {}) {
   const form = root.querySelector('[data-katalog-add]');
@@ -53,7 +55,7 @@ export function bindKatalogTitleTooltips(root = document) {
   titleResizeBound = true;
   window.addEventListener('resize', () => {
     clearTimeout(titleResizeTimer);
-    titleResizeTimer = setTimeout(() => updateKatalogTitleTooltips(), 120);
+    titleResizeTimer = setTimeout(() => updateKatalogTitleTooltips(), UI_TIMING.katalogTitleResizeDebounceMs);
   }, { passive: true });
 }
 
@@ -90,7 +92,7 @@ export function bindKatalogGameDialog(root = document, { onClose = null } = {}) 
     if (onClose) onClose();
     else if (window.location.pathname.startsWith('/game/')) {
       window.history.replaceState({ katalog: true }, '', '/katalog');
-      document.title = 'Public Kat·a·log // Game Kat·a·log';
+      document.title = `Public Kat·a·log // ${APP_NAME}`;
     }
   });
   if (dialog.open) dialog.close();
@@ -114,7 +116,7 @@ export async function openKatalogGameDialog(root = document, url, { returnUrl = 
     window.history.pushState({ katalog: true }, '', `${target.pathname}${target.search}`);
     bindKatalogGameDialog(root, { onClose: () => {
       window.history.replaceState({ katalog: true }, '', returnUrl);
-      document.title = returnUrl === '/signal' ? 'Kat·a·log Signal // Game Kat·a·log' : 'Public Kat·a·log // Game Kat·a·log';
+      document.title = returnUrl === '/signal' ? `Kat·a·log Signal // ${APP_NAME}` : `Public Kat·a·log // ${APP_NAME}`;
     } });
     bindKatalogAddForm(root);
   } catch {
@@ -137,7 +139,7 @@ export function bindKatalogSearch(root = document, { navigate } = {}) {
     clearTimeout(timer); timer = setTimeout(() => {
       const target = urlForForm();
       if (navigate) navigate(target); else void navigateKatalog(target);
-    }, 250);
+    }, UI_TIMING.katalogSearchDebounceMs);
   };
   form.addEventListener('submit', event => {
     event.preventDefault(); clearTimeout(timer); const target = urlForForm();

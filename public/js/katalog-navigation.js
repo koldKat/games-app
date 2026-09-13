@@ -1,6 +1,8 @@
 import { bindKatalogAddForm, bindKatalogGameDialog, bindKatalogSearch, bindKatalogTitleTooltips, openKatalogGameDialog } from './katalog-public.js';
 import { bindForum } from './forum-page.js';
 import { dismissActivityPreview } from './activity-feed.js';
+import { UI_TIMING } from './ui-policy.js';
+import { APP_NAME } from './site-config.js';
 
 const KATALOG_PATH = /^\/(?:katalog|signal|forum(?:\/|$)|game\/)/;
 
@@ -46,7 +48,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
     forumSource = new EventSource('/api/forum/stream');
     forumSource.addEventListener('forum-changed', () => {
       clearTimeout(forumRefreshTimer);
-      forumRefreshTimer = setTimeout(() => { if (view === 'forum') void open(`${window.location.pathname}${window.location.search}`, { push: false }); }, 250);
+      forumRefreshTimer = setTimeout(() => { if (view === 'forum') void open(`${window.location.pathname}${window.location.search}`, { push: false }); }, UI_TIMING.forumNavigationRefreshMs);
     });
   }
 
@@ -101,7 +103,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
       bindKatalogAddForm(katalog, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
       bindKatalogGameDialog(katalog, { onClose: () => {
         if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'katalog' }, '', '/katalog');
-        document.title = 'Public Kat·a·log // Game Kat·a·log';
+        document.title = `Public Kat·a·log // ${APP_NAME}`;
       } });
       bindKatalogSearch(katalog, { navigate: targetUrl => void refreshResults(targetUrl) });
       bindKatalogTitleTooltips(katalog);

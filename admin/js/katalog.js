@@ -1,4 +1,5 @@
 import { api, button, cell, confirmAction, emptyRow, toast, busy } from './core.js';
+import { ADMIN_TIMING } from './admin-policy.js';
 
 export async function loadKatalog() {
   const body = document.getElementById('katalog-body'); body.replaceChildren();
@@ -24,5 +25,5 @@ export async function loadKatalog() {
 document.getElementById('katalog-search').addEventListener('submit', event => { event.preventDefault(); loadKatalog(); });
 let catalogueSearchTimer;
 document.getElementById('katalog-query').addEventListener('input', () => {
-  clearTimeout(catalogueSearchTimer); catalogueSearchTimer = setTimeout(loadKatalog, 250);
+  clearTimeout(catalogueSearchTimer); catalogueSearchTimer = setTimeout(loadKatalog, ADMIN_TIMING.searchDebounceMs);
 });

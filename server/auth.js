@@ -2,15 +2,12 @@ const crypto = require('node:crypto');
 const util = require('node:util');
 const { db } = require('./db');
 const userActivity = require('./user-activity');
+const { OWNER_USERNAME } = require('./site-config');
+const { ACCOUNT_LIMITS } = require('./validation-policy');
 
 const scrypt = util.promisify(crypto.scrypt);
 const SESSION_SECONDS = 14 * 24 * 60 * 60;
 const SESSION_COOKIE = 'games_session';
-const USERNAME_MIN_LENGTH = 3;
-const USERNAME_MAX_LENGTH = 32;
-const PASSWORD_MIN_LENGTH = 8;
-const PASSWORD_MAX_LENGTH = 200;
-const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_SALT_BYTES = 16;
 const PASSWORD_HASH_BYTES = 64;
 const SESSION_TOKEN_BYTES = 32;
@@ -18,7 +15,6 @@ const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILURES_PER_WINDOW = 8;
 const ACCOUNT_FAILURE_LIMIT = 5;
 const ACCOUNT_LOCK_SECONDS = 15 * 60;
-const PROTECTED_USERNAME = 'koldkat';
 const PASSWORD_RESET_SECONDS = 60 * 60;
 const PASSWORD_RESET_TOKEN_BYTES = 32;
 const failures = new Map();
@@ -48,16 +44,16 @@ async function verifyPassword(password, storedHash, salt) {
 
 function validateCredentials(username, password) {
   const clean = String(username || '').trim();
-  if (clean.length < USERNAME_MIN_LENGTH || clean.length > USERNAME_MAX_LENGTH) throw new Error('Username must be 3–32 characters.');
+  if (clean.length < ACCOUNT_LIMITS.usernameMin || clean.length > ACCOUNT_LIMITS.usernameMax) throw new Error(`Username must be ${ACCOUNT_LIMITS.usernameMin}–${ACCOUNT_LIMITS.usernameMax} characters.`);
   if (!/^[\p{L}\p{N}_.-]+$/u.test(clean)) throw new Error('Username may contain letters, numbers, dot, dash, and underscore.');
-  if (String(password || '').length < PASSWORD_MIN_LENGTH || String(password).length > PASSWORD_MAX_LENGTH) throw new Error('Password must be at least 8 characters.');
+  if (String(password || '').length < ACCOUNT_LIMITS.passwordMin || String(password).length > ACCOUNT_LIMITS.passwordMax) throw new Error(`Password must be at least ${ACCOUNT_LIMITS.passwordMin} characters.`);
   return clean;
 }
 
 function normalizeEmail(email) {
   const clean = String(email || '').trim().toLocaleLowerCase();
   if (!clean) return null;
-  if (clean.length > EMAIL_MAX_LENGTH || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Enter a valid email address or leave it blank.');
+  if (clean.length > ACCOUNT_LIMITS.emailMax || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) throw new Error('Enter a valid email address or leave it blank.');
   return clean;
 }
 
@@ -133,9 +129,18 @@ async function login(username, password) {
   return publicUser(row);
 }
 
-function isProtectedUsername(username) { return String(username || '').trim().toLocaleLowerCase() === PROTECTED_USERNAME; }
-function operatorUserId() { return db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE').get(PROTECTED_USERNAME)?.id || null; }
-function protectedAccountError() { return Object.assign(new Error('The protected koldKat account cannot be changed by admin controls.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
+function ownerUsername() {
+  return OWNER_USERNAME || db.prepare('SELECT username FROM users ORDER BY id LIMIT 1').get()?.username || '';
+}
+function isProtectedUsername(username) {
+  const owner = ownerUsername();
+  return Boolean(owner) && String(username || '').trim().toLocaleLowerCase() === owner.toLocaleLowerCase();
+}
+function operatorUserId() {
+  const owner = ownerUsername();
+  return owner ? db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE').get(owner)?.id || null : null;
+}
+function protectedAccountError() { return Object.assign(new Error('The protected owner account cannot be changed by admin controls.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
 
 function setAccountLocked(userId, locked) {
   const account = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, admin_locked, locked_until FROM users WHERE id=?').get(Number(userId));
@@ -204,7 +209,7 @@ async function updateAccount(userId, input) {
   const row = db.prepare('SELECT * FROM users WHERE id=?').get(userId);
   if (!row || !await verifyPassword(String(input.currentPassword || ''), row.password_hash, row.salt)) throw new Error('Current password is incorrect.');
   const username = input.username == null ? row.username : validateCredentials(input.username, input.newPassword || input.currentPassword);
-  if (isProtectedUsername(row.username) && username.toLocaleLowerCase() !== row.username.toLocaleLowerCase()) throw new Error('The protected koldKat account cannot be renamed.');
+  if (isProtectedUsername(row.username) && username.toLocaleLowerCase() !== row.username.toLocaleLowerCase()) throw new Error('The protected owner account cannot be renamed.');
   const email = input.email == null ? row.email : normalizeEmail(input.email);
   let passwordHash = row.password_hash;
   let salt = row.salt;
@@ -243,4 +248,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

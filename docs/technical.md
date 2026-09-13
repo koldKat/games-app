@@ -127,7 +127,7 @@ games-app/
   games.db                  runtime SQLite database
 ```
 
-Values shared by multiple server features live in `server/constants.js`; provider-specific limits stay beside their provider implementation. Browser pagination, lookup thresholds, upload limits, and interaction timings live in `public/js/ui-policy.js`. This keeps operational policy discoverable without creating a single catch-all configuration module or coupling browser modules to CommonJS server code.
+Values shared by multiple server features live in small policy modules rather than a catch-all file. `server/constants.js` owns stored game enums and batch behavior, `server/site-config.js` owns deployment identity, `server/validation-policy.js` owns input and Kat·a·log query limits, `server/runtime-policy.js` owns HTTP-process sizing and shutdown behavior, and provider-specific limits stay beside their provider implementation. Browser pagination, lookup thresholds, upload limits, and interaction timings live in `public/js/ui-policy.js`; visible game labels and browser-visible product identity live in `public/js/game-labels.js` and `public/js/site-config.js`. The localhost panel has its own polling and interaction intervals in `admin/js/admin-policy.js`. This keeps policy discoverable without coupling browser modules to CommonJS server code.
 
 ### Request flow
 
@@ -178,6 +178,8 @@ Environment variables:
 | `PORT` | `3005` | HTTP listen port |
 | `HOST` | `0.0.0.0` | Listen address |
 | `DB_PATH` | `./games.db` | SQLite database path |
+| `PUBLIC_URL` | `https://gamekat.net` | Absolute origin for canonical pages, sitemap entries, email actions, and SMTP greeting identity |
+| `OWNER_USERNAME` | oldest account | Optional protected operator account override used by Patch/Ping; matching is case-insensitive |
 | `VERSION_FILE` | `./VERSION` | Release-string file; primarily useful for isolated tests or custom deployments |
 | `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
 | `STEAMGRIDDB_API_KEY` | blank | Optional server-wide cover API key; per-account keys can instead be configured in the UI |
@@ -312,7 +314,7 @@ The authentication design is a reduced version of the gamebooks app's model.
 
 The process keeps recent failed login/registration attempts by client IP. Eight failures within 15 minutes produce HTTP 429. Successful authentication clears that IP's failure list. The throttle resets when the Node.js process restarts.
 
-Each account also records consecutive incorrect passwords in SQLite. Five failed passwords temporarily lock that account for 15 minutes; a correct login clears the count. Local administrators can apply an indefinite manual lock or unlock from Accounts. Locking revokes all active sessions immediately and blocks existing session authentication. The `koldKat` account is protected from admin deletion and locking, and it cannot be renamed into an unprotected identity.
+Each account also records consecutive incorrect passwords in SQLite. Five failed passwords temporarily lock that account for 15 minutes; a correct login clears the count. Local administrators can apply an indefinite manual lock or unlock from Accounts. Locking revokes all active sessions immediately and blocks existing session authentication. The oldest account is the owner unless `OWNER_USERNAME` overrides it. That owner account is protected from admin deletion and locking, and it cannot be renamed into an unprotected identity.
 
 Password-reset tokens are random 256-bit values. SQLite stores only their SHA-256 hashes, limits them to one hour, and invalidates previous tokens for the account only after SMTP has accepted the new reset email for delivery. Reset messages use a branded multipart email: an HTML button and linked fallback URL for capable mail clients, plus a plain-text fallback. The public authentication screen swaps its sign-in form for dedicated request and new-password panels, and removes a received token from the visible URL before rendering it. Consuming a token updates the scrypt password hash transactionally, clears temporary login-lock state, and revokes every existing session. Requests always return the same message whether or not an account/email exists.
 
@@ -519,7 +521,7 @@ On authenticated entry, the browser starts the core library requests and reveals
 
 All displayed dates, month and weekday names, and grouped numbers use an explicit `en-US` interface locale on both server-rendered and browser-rendered surfaces. They never inherit the browser, operating-system, or server locale. Locale-aware lowercase operations used only for matching do not affect visible language. The Bulgarian Biseri description in the shared studio directory is intentional editorial content.
 
-The authenticated library footer mirrors the family branding used by Gamebooks: **koldKat productions** followed by a copyright year. Hovering or keyboard-focusing the production mark opens a themed, accessible mini-directory for Pathmap and Biseri; both external destinations open in a separate tab. `COPYRIGHT_START_YEAR` lives in `public/js/ui-policy.js`; the browser displays that year initially and automatically expands it to a range in later years.
+The authenticated library footer mirrors the family branding used by Gamebooks: **koldKat productions** followed by a copyright year. Hovering or keyboard-focusing the production mark opens a themed, accessible mini-directory for Pathmap and Biseri; both external destinations open in a separate tab. `COPYRIGHT_START_YEAR` lives in `public/js/site-config.js`; the browser displays that year initially and automatically expands it to a range in later years.
 
 Public CSS is split by responsibility and loaded in deliberate cascade order: `foundation.css`, `theme.css`, `library.css`, `landing.css`, then `features.css`. Later modules refine shared primitives established earlier, so the order in `public/index.html` must be preserved. Standalone public Kat·a·log pages also load the landing and feature layers for the same low-opacity cover spread used by the authenticated shell; their server-rendered slots use only validated local public-cover paths. Every module is source-formatted rather than minified; production compression, if desired, belongs at the HTTP layer rather than in the maintained source.
 
