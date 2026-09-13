@@ -1,6 +1,7 @@
 'use strict';
 
 const { readVersion } = require('./version');
+const { UI_LOCALE } = require('./constants');
 
 const SITE_URL = 'https://gamekat.net';
 
@@ -31,11 +32,11 @@ function avatarMarkup(user) {
 function headerProgression(progress) {
   if (!progress) return '';
   const remaining = Math.max(0, Number(progress.nextLevelXp || 0) - Number(progress.xp || 0));
-  const next = Number(progress.level) >= 100 ? 'Maximum level reached' : `${remaining.toLocaleString()} XP to LV ${Number(progress.level) + 1}`;
+  const next = Number(progress.level) >= 100 ? 'Maximum level reached' : `${remaining.toLocaleString(UI_LOCALE)} XP to LV ${Number(progress.level) + 1}`;
   const percent = Math.max(0, Math.min(100, Number(progress.progress) || 0));
   const level = escapeHtml(progress.level);
   const title = escapeHtml(progress.title);
-  const xp = escapeHtml(Number(progress.xp || 0).toLocaleString());
+  const xp = escapeHtml(Number(progress.xp || 0).toLocaleString(UI_LOCALE));
   return `<section id="header-progression" class="header-progression" aria-live="polite">
     <div><span data-header-progress-level>LV ${level}</span><b data-header-progress-title>${title}</b><small data-header-progress-xp>${xp} XP</small></div>
     <progress class="header-progression-meter" data-header-progress-meter max="100" value="${percent}" aria-label="Progress to next level"></progress>
@@ -190,7 +191,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
   </nav>` : '';
   return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">PUBLIC // SHARED</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl))}</section>
       <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
-      <div class="katalog-results"><div class="katalog-result-head"><strong>${result.total.toLocaleString()} public release${result.total === 1 ? '' : 's'}</strong>${query || platform ? `<a href="/katalog">Clear search</a>` : ''}</div>
+      <div class="katalog-results"><div class="katalog-result-head"><strong>${result.total.toLocaleString(UI_LOCALE)} public release${result.total === 1 ? '' : 's'}</strong>${query || platform ? `<a href="/katalog">Clear search</a>` : ''}</div>
       <section class="katalog-grid">${cards || '<div class="katalog-empty"><strong>No matching releases.</strong><span>The Kat·a·log grows as members enrich their private libraries.</span></div>'}</section>${pagination}</div>${detail}</main>`;
 }
 

@@ -1,10 +1,11 @@
 'use strict';
 
 const { SITE_URL, escapeHtml, pageShell } = require('./katalog-pages');
+const { UI_LOCALE } = require('./constants');
 
 function formatBody(value) { return escapeHtml(value).replace(/\n/g, '<br>'); }
 function timestamp(value) { return String(value || '').replace(' ', 'T') + 'Z'; }
-function when(value) { return value ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp(value))) : ''; }
+function when(value) { return value ? new Intl.DateTimeFormat(UI_LOCALE, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp(value))) : ''; }
 function author(item) { return `<span class="forum-author">${escapeHtml(item.username)}</span>`; }
 function level(xp) { return Math.min(100, Math.floor((-1 + Math.sqrt(1 + (8 * Math.max(0, Number(xp) || 0)) / 1000)) / 2)); }
 function authorPanel(item) {

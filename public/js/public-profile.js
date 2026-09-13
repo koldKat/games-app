@@ -1,3 +1,5 @@
+import { UI_LOCALE } from './ui-policy.js';
+
 const STAT_LABELS = Object.freeze([
   ['total', 'Games'], ['owned', 'Owned'], ['physical', 'Physical'], ['digital', 'Digital'], ['wishlisted', 'Wishlisted'],
   ['completed', 'Completed'], ['playing', 'Playing'], ['favorites', 'Favorites'], ['platforms', 'Platforms'], ['contributions', 'Contributed'],
@@ -54,7 +56,7 @@ function avatar(profile) {
 
 function memberSince(value) {
   const date = new Date(`${String(value || '').replace(' ', 'T')}Z`);
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(UI_LOCALE, { month: 'long', year: 'numeric' }).format(date);
 }
 
 function render(profile) {
@@ -69,7 +71,7 @@ function render(profile) {
   const stats = element('section', 'public-profile-stats');
   for (const [key, label] of STAT_LABELS) {
     const stat = element('div', 'public-profile-stat');
-    stat.append(element('strong', '', Number(profile.stats?.[key] || 0).toLocaleString()), element('span', '', label));
+    stat.append(element('strong', '', Number(profile.stats?.[key] || 0).toLocaleString(UI_LOCALE)), element('span', '', label));
     stats.append(stat);
   }
 
@@ -78,7 +80,7 @@ function render(profile) {
   const list = element('div');
   for (const item of profile.topPlatforms || []) {
     const row = element('span');
-    row.append(element('b', '', item.platform), element('small', '', Number(item.count || 0).toLocaleString()));
+    row.append(element('b', '', item.platform), element('small', '', Number(item.count || 0).toLocaleString(UI_LOCALE)));
     list.append(row);
   }
   if (!list.childElementCount) list.append(element('p', '', 'No platforms cataloged yet.'));

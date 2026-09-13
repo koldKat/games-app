@@ -1,4 +1,4 @@
-import { api, button, confirmAction, toast } from './core.js';
+import { UI_LOCALE, api, button, confirmAction, toast } from './core.js';
 import { formatAnnouncementBody } from '/js/announcement-format.js';
 
 let editingId = null;
@@ -6,7 +6,7 @@ let editingDraft = false;
 
 const $ = selector => document.querySelector(selector);
 const cleanBody = value => String(value || '').split('\n').map(line => line.trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
-const date = value => value ? new Date(String(value).replace(' ', 'T') + 'Z').toLocaleString() : '//';
+const date = value => value ? new Date(String(value).replace(' ', 'T') + 'Z').toLocaleString(UI_LOCALE) : '//';
 
 function resetComposer() {
   editingId = null; editingDraft = false;

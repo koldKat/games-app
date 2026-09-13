@@ -53,7 +53,9 @@ function evaluateKatalogGame(game = {}) {
   const coverExact = cover && exactMatch(title, game.coverMatchTitle);
   const hltbExact = hltb && exactMatch(title, game.hltbTitle);
   const complete = Boolean(title && platform && cover && contentRating && hltb);
+  const eligible = complete && game.playStatus !== 'hidden';
   const reasons = [];
+  if (game.playStatus === 'hidden') reasons.push('hidden');
   if (!title) reasons.push('missing-title');
   if (!platform) reasons.push('missing-platform');
   if (!cover) reasons.push('missing-cover');
@@ -67,8 +69,8 @@ function evaluateKatalogGame(game = {}) {
     + (contentRating ? 25 : 0)
     + (hltb ? 15 : 0) + (hltbExact ? 15 : 0));
   return {
-    eligible: complete,
-    status: complete && coverExact && hltbExact ? PUBLIC_STATUS : complete ? CANDIDATE_STATUS : null,
+    eligible,
+    status: eligible ? coverExact && hltbExact ? PUBLIC_STATUS : CANDIDATE_STATUS : null,
     confidence,
     reasons,
     identity: {

@@ -41,6 +41,13 @@ test('missing enrichment remains private and ineligible', () => {
   assert.ok(result.reasons.includes('missing-hltb'));
 });
 
+test('hidden library records never enter the public catalogue', () => {
+  const result = evaluateKatalogGame(completeGame({ playStatus: 'hidden' }));
+  assert.equal(result.eligible, false);
+  assert.equal(result.status, null);
+  assert.ok(result.reasons.includes('hidden'));
+});
+
 test('catalogue normalization handles punctuation and accents without weakening exactness', () => {
   assert.equal(normalizeKatalogText('Pokémon™: Let’s Go!'), 'pokemon let s go');
   assert.equal(hasDurableCover(completeGame()), true);

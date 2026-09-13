@@ -12,7 +12,7 @@ function createDescriptionBulkManager({ data, lookups, pause = wait, notify = ()
     jobs.set(userId, job); notify(userId, 'description-job', { job }); let consecutiveErrors = 0;
     for (const queued of games) {
       const game = data.getGame(userId, queued.id);
-      if (!game || game.description) { job.skipped++; job.processed++; notify(userId, 'description-job', { job }); continue; }
+      if (!game || game.playStatus === 'hidden' || game.description) { job.skipped++; job.processed++; notify(userId, 'description-job', { job }); continue; }
       job.current = game.title;
       try {
         let match = null; let steamError = null;

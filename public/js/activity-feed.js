@@ -1,6 +1,7 @@
 import { formatAnnouncementBody } from './announcement-format.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
 import { openPublicProfile } from './public-profile.js';
+import { UI_LOCALE } from './ui-policy.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 function age(value) {
@@ -58,7 +59,7 @@ function dayLabel(value) {
   const date = timestamp(value); const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(UI_LOCALE, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
 const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
 const SIGNAL_CACHE_MS = 15_000;

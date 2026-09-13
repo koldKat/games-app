@@ -125,7 +125,7 @@ async function runCoverJob(userId, key) {
   let consecutiveErrors = 0;
   for (const game of games) {
     const current = db.getGame(userId, game.id);
-    if (!current || current.coverUrl) {
+    if (!current || current.playStatus === 'hidden' || current.coverUrl) {
       job.current = ''; job.skipped++; job.processed++; events.publish(userId, 'cover-job', { job }); continue;
     }
     job.current = current.title;
@@ -480,7 +480,7 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/stats') return sendJson(response, 200, db.stats(user.id));
   if (request.method === 'GET' && url.pathname === '/api/meta') {
-    return sendJson(response, 200, { platforms: db.stats(user.id).platforms.map(row => row.label), version: readVersion(), pegiLookup: true, user });
+    return sendJson(response, 200, { platforms: db.platformNames(user.id), version: readVersion(), pegiLookup: true, user });
   }
   if (request.method === 'GET' && url.pathname === '/api/pegi/search') {
     try { return sendJson(response, 200, await searchPegi(url.searchParams.get('q'))); }

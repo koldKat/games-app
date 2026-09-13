@@ -93,11 +93,13 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Platform** | Platforms currently present in the account |
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
-| **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
+| **Play status** | Backlog, Playing, Completed, Paused, Abandoned, or Hidden |
 | **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
 
 Select **Clear filters** to return to the complete library. Results are paginated in ten desktop rows.
+
+Set a game's play status to **Hidden** to remove it from the normal library, summary totals, decorative cover pool, public profile statistics, and automatic metadata scans. Hidden games have no dashboard card and appear only when **Hidden** is selected from the Play status filter. Choose any regular play status in the edit form to return a hidden game to the normal library.
 
 HLTB duration sorts always place games without that particular estimate after games with a known time. This keeps missing data from appearing as zero-hour games. Live batch updates use the same selected order as a full library reload.
 
@@ -175,7 +177,7 @@ Select any non-control area of a library card to open its read-only record of me
 | **PEGI rating** | 3, 7, 12, 16, 18, or blank |
 | **Your rating** | Optional private score from 0.5 to 5 stars; hover to preview the score, click a star’s left or right half for half-star increments, or use the keyboard arrows when the control is focused |
 | **Collection** | Owned or Wishlisted |
-| **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
+| **Play status** | Backlog, Playing, Completed, Paused, Abandoned, or Hidden |
 | **Format** | Physical, Digital, or Unknown |
 | **Cartridge no.** | Mainly used for Evercade cartridge numbering |
 | **Publisher** | Optional publisher or label |

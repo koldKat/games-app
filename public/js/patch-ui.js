@@ -1,7 +1,9 @@
+import { UI_LOCALE } from './ui-policy.js';
+
 // Patch opens a private operator-support thread; Ping is its account inbox.
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const kindLabel = { bug: 'Bug', idea: 'Idea', game_data: 'Game data', other: 'Other' };
-const formatDate = value => value ? new Date(`${value.replace(' ', 'T')}Z`).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '//';
+const formatDate = value => value ? new Date(`${value.replace(' ', 'T')}Z`).toLocaleString(UI_LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : '//';
 
 function dialogMarkup() {
   return `${patchDialogMarkup()}${pingDialogMarkup()}`;

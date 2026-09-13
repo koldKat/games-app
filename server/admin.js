@@ -179,7 +179,8 @@ function adminStats() {
     catalogue: catalogue.counts(),
     ownership: db.prepare('SELECT ownership label, COUNT(*) count FROM games GROUP BY ownership ORDER BY count DESC').all(),
     formats: db.prepare('SELECT media_format label, COUNT(*) count FROM games GROUP BY media_format ORDER BY count DESC, media_format').all(),
-    playStatus: db.prepare('SELECT play_status label, COUNT(*) count FROM games GROUP BY play_status ORDER BY count DESC, play_status').all(),
+    playStatus: db.prepare(`SELECT CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END label, COUNT(*) count
+      FROM games GROUP BY label ORDER BY count DESC, label`).all(),
     platforms: db.prepare('SELECT platform label, COUNT(*) count FROM games GROUP BY platform ORDER BY count DESC, platform LIMIT 12').all(),
     pegi: db.prepare("SELECT COALESCE(CAST(pegi AS TEXT),'Unrated') label, COUNT(*) count FROM games GROUP BY pegi ORDER BY pegi").all(),
   };
@@ -214,7 +215,8 @@ function deleteAccount(id) {
 
 function listKatalog(query = '') {
   const q = String(query).trim().slice(0, KATALOG_QUERY_MAX_LENGTH);
-  return db.prepare(`SELECT g.id, g.title, g.platform, g.pegi, g.ownership, g.play_status AS playStatus,
+  return db.prepare(`SELECT g.id, g.title, g.platform, g.pegi, g.ownership,
+    CASE WHEN g.hidden=1 THEN 'hidden' ELSE g.play_status END AS playStatus,
     CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END hasCover, u.username
     FROM games g LEFT JOIN users u ON u.id=g.user_id
     WHERE (@q='' OR g.title LIKE @like OR g.platform LIKE @like OR u.username LIKE @like)

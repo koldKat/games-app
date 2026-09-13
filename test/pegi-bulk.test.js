@@ -18,6 +18,7 @@ test('PEGI batch matching is exact-title and platform-aware', () => {
   assert.equal(bestExactPegi({ title: 'Minecraft', platform: 'Nintendo Switch' }, [result('Minecraft Deluxe', 'Nintendo Switch')]), null);
   assert.equal(needsPegiMetadata({ title: 'Game', platform: 'Nintendo Switch', pegiDescriptors: [], pegiReleases: [] }), true);
   assert.equal(needsPegiMetadata({ title: 'Game', platform: 'Evercade', pegiDescriptors: [], pegiReleases: [] }), true);
+  assert.equal(needsPegiMetadata({ title: 'Game', platform: 'Evercade', playStatus: 'hidden', pegiDescriptors: [], pegiReleases: [] }), false);
   assert.equal(needsPegiMetadata({ title: 'Game', platform: 'Nintendo Switch', pegiUrl: 'https://pegi.info/', pegiDescriptors: [], pegiReleases: [] }), false);
 });
 

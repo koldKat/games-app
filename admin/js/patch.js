@@ -1,8 +1,8 @@
-import { api, confirmAction, toast } from './core.js';
+import { UI_LOCALE, api, confirmAction, toast } from './core.js';
 
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const kinds = { bug: 'BUG', idea: 'IDEA', game_data: 'GAME DATA', other: 'OTHER' };
-const date = value => value ? new Date(`${value.replace(' ', 'T')}Z`).toLocaleString() : '//';
+const date = value => value ? new Date(`${value.replace(' ', 'T')}Z`).toLocaleString(UI_LOCALE) : '//';
 
 function messageMarkup(thread, message) {
   const sender = message.sender === 'admin' ? 'OPERATOR' : esc(thread.username || 'ANONYMOUS');

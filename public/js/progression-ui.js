@@ -1,4 +1,6 @@
-function formatXp(value) { return Number(value || 0).toLocaleString(); }
+import { UI_LOCALE } from './ui-policy.js';
+
+function formatXp(value) { return Number(value || 0).toLocaleString(UI_LOCALE); }
 const XP_ANIM_MS_PER_LEVEL = 100;
 function progressAt(xp, target) {
   const value = Math.max(0, Math.round(Number(xp) || 0));

@@ -43,6 +43,26 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'physical').count, 1);
   assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'digital').count, 1);
 
+  const hiddenGame = data.createGame(owner.id, { title: 'Hidden Game', platform: 'Obscure Console', playStatus: 'playing' });
+  const hiddenResult = data.updateGame(owner.id, hiddenGame.id, { ...hiddenGame, playStatus: 'hidden' });
+  assert.equal(hiddenResult.playStatus, 'hidden');
+  assert.deepEqual(data.db.prepare('SELECT play_status AS playStatus, hidden FROM games WHERE id=?').get(hiddenGame.id), { playStatus: 'playing', hidden: 1 });
+  assert.ok(!data.listGames(owner.id).some(game => game.id === hiddenGame.id));
+  assert.deepEqual(data.listGames(owner.id, { playStatus: 'hidden' }).map(game => game.id), [hiddenGame.id]);
+  assert.equal(data.stats(owner.id).total, 2);
+  assert.ok(!data.stats(owner.id).platforms.some(row => row.label === 'Obscure Console'));
+  assert.ok(data.platformNames(owner.id).includes('Obscure Console'));
+  assert.ok(!data.gamesMissingCovers(owner.id).some(game => game.id === hiddenGame.id));
+  assert.equal(data.updateGameCover(owner.id, hiddenGame.id, { url: 'https://example.com/hidden.jpg' }), null);
+  assert.equal(data.updateGamePegiMetadata(owner.id, hiddenGame.id, { pegi: 7, pegiUrl: 'https://pegi.info/hidden' }), null);
+  assert.equal(data.updateGameHltb(owner.id, hiddenGame.id, { id: 9876, title: 'Hidden Game', mainStory: 1 }), null);
+  assert.equal(data.updateGameDescription(owner.id, hiddenGame.id, { description: 'Should not be added automatically.' }), null);
+  assert.ok(!data.allGamesForKatalog().some(game => game.id === hiddenGame.id));
+  const restoredGame = data.updateGame(owner.id, hiddenGame.id, { ...hiddenResult, playStatus: 'playing' });
+  assert.equal(restoredGame.playStatus, 'playing');
+  assert.ok(data.listGames(owner.id).some(game => game.id === hiddenGame.id));
+  data.updateGame(owner.id, hiddenGame.id, { ...restoredGame, playStatus: 'hidden' });
+
   const created = data.createGame(other.id, {
     title: 'Private Game', platform: 'Evercade', pegiDescriptors: ['Fear', 'Paid random items'],
     pegiReleases: ['Evercade - 12/08/2026'], pegiAdvice: 'Suitable for older players.',

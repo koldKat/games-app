@@ -2,6 +2,7 @@
 
 const { db } = require('./db');
 const { progressForXp } = require('./progression-policy');
+const { UI_LOCALE } = require('./constants');
 
 const FEED_DAYS = 30;
 const ANNOUNCEMENT_TITLE_MAX_LENGTH = 120;
@@ -113,7 +114,7 @@ function parseData(value) { try { return JSON.parse(value || '{}'); } catch { re
 function cleanAnnouncementValue(value, limit, label) {
   const clean = String(value || '').trim();
   if (!clean) throw new Error(`${label} is required.`);
-  if (clean.length > limit) throw new Error(`${label} must be ${limit.toLocaleString()} characters or fewer.`);
+  if (clean.length > limit) throw new Error(`${label} must be ${limit.toLocaleString(UI_LOCALE)} characters or fewer.`);
   return clean;
 }
 function announcementRow(row) {

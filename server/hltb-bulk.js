@@ -11,7 +11,7 @@ function bestExactHltb(title, results) {
   return exact.length === 1 ? exact[0] : null;
 }
 
-function needsHltb(game) { return Boolean(game) && !game.hltbId; }
+function needsHltb(game) { return Boolean(game) && game.playStatus !== 'hidden' && !game.hltbId; }
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 function createHltbBulkManager({ data, lookup, pause = wait, notify = () => {} }) {

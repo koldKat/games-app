@@ -38,7 +38,7 @@ function bestExactPegi(game, results) {
 }
 
 function needsPegiMetadata(game) {
-  return Boolean(game) && !game.pegiUrl
+  return Boolean(game) && game.playStatus !== 'hidden' && !game.pegiUrl
     && !(game.pegiDescriptors || []).length && !(game.pegiReleases || []).length
     && !game.pegiAdvice && !game.pegiOutline && !game.pegiContentIssues && !game.pegiOtherIssues;
 }

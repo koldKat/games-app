@@ -16,10 +16,10 @@ const collectionStats = db.prepare(`SELECT COUNT(*) AS total,
     COALESCE(SUM(play_status='playing'), 0) AS playing,
     COALESCE(SUM(favorite=1), 0) AS favorites,
     COUNT(DISTINCT platform) AS platforms
-  FROM games WHERE user_id=?`);
+  FROM games WHERE user_id=? AND hidden=0`);
 const publicContributions = db.prepare(`SELECT COUNT(DISTINCT id) AS count FROM catalogue_entries
   WHERE submitted_by_user_id=? AND status='public'`);
-const topPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM games WHERE user_id=?
+const topPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM games WHERE user_id=? AND hidden=0
   GROUP BY platform ORDER BY count DESC, platform COLLATE NOCASE LIMIT 5`);
 
 function get(username) {

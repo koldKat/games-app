@@ -16,7 +16,7 @@ import { mountThemedNumberSteppers } from './js/number-steppers.js';
 import { mountThemedSearchClears, syncSearchClears } from './js/search-clears.js';
 import {
   COPYRIGHT_START_YEAR, DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
-  SOURCE_IMAGE_MAX_BYTES, UI_TIMING,
+  SOURCE_IMAGE_MAX_BYTES, UI_LOCALE, UI_TIMING,
 } from './js/ui-policy.js';
 
 const $ = selector => document.querySelector(selector);
@@ -60,7 +60,7 @@ const filters = {
 };
 const labels = {
   owned: 'Owned', wanted: 'Wishlisted', backlog: 'Backlog',
-  playing: 'Playing', completed: 'Completed', paused: 'Paused', abandoned: 'Abandoned',
+  playing: 'Playing', completed: 'Completed', paused: 'Paused', abandoned: 'Abandoned', hidden: 'Hidden',
   physical: 'Physical', digital: 'Digital', unknown: 'Unknown',
 };
 const AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE = new Set(['/api/login', '/api/register', '/api/auth/me']);
@@ -368,16 +368,16 @@ $('#password-reset-complete-form').addEventListener('submit', async event => {
 });
 function count(group, label) { return group?.find(row => row.label === label)?.count || 0; }
 function renderStats() {
-  $('#stat-total').textContent = state.stats?.total?.toLocaleString() || '0';
-  $('#stat-owned-physical').textContent = count(state.stats?.ownedFormats, 'physical').toLocaleString();
-  $('#stat-owned-digital').textContent = count(state.stats?.ownedFormats, 'digital').toLocaleString();
-  $('#stat-wanted').textContent = count(state.stats?.ownership, 'wanted').toLocaleString();
-  $('#stat-backlog').textContent = count(state.stats?.play, 'backlog').toLocaleString();
-  $('#stat-playing').textContent = count(state.stats?.play, 'playing').toLocaleString();
-  $('#stat-completed').textContent = count(state.stats?.play, 'completed').toLocaleString();
-  $('#stat-paused').textContent = count(state.stats?.play, 'paused').toLocaleString();
-  $('#stat-abandoned').textContent = count(state.stats?.play, 'abandoned').toLocaleString();
-  $('#stat-favorites').textContent = Number(state.stats?.favorites || 0).toLocaleString();
+  $('#stat-total').textContent = state.stats?.total?.toLocaleString(UI_LOCALE) || '0';
+  $('#stat-owned-physical').textContent = count(state.stats?.ownedFormats, 'physical').toLocaleString(UI_LOCALE);
+  $('#stat-owned-digital').textContent = count(state.stats?.ownedFormats, 'digital').toLocaleString(UI_LOCALE);
+  $('#stat-wanted').textContent = count(state.stats?.ownership, 'wanted').toLocaleString(UI_LOCALE);
+  $('#stat-backlog').textContent = count(state.stats?.play, 'backlog').toLocaleString(UI_LOCALE);
+  $('#stat-playing').textContent = count(state.stats?.play, 'playing').toLocaleString(UI_LOCALE);
+  $('#stat-completed').textContent = count(state.stats?.play, 'completed').toLocaleString(UI_LOCALE);
+  $('#stat-paused').textContent = count(state.stats?.play, 'paused').toLocaleString(UI_LOCALE);
+  $('#stat-abandoned').textContent = count(state.stats?.play, 'abandoned').toLocaleString(UI_LOCALE);
+  $('#stat-favorites').textContent = Number(state.stats?.favorites || 0).toLocaleString(UI_LOCALE);
 }
 function renderPlatforms() {
   const current = filters.platform.value;
@@ -476,6 +476,7 @@ function gameMatchesFilters(game) {
   if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
   if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
   if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && game.ownership !== filters.ownership.value) return false;
+  if (!filters.playStatus.value && game.playStatus === 'hidden') return false;
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
@@ -508,7 +509,7 @@ function updateCollectionChrome() {
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
   const count = displayedGames().length; const grouped = !filters.platform.value;
-  $('#result-count').textContent = `${count.toLocaleString()} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
+  $('#result-count').textContent = `${count.toLocaleString(UI_LOCALE)} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
 }
 function applyGamePatch(game) {
   if (!game?.id) return;
@@ -976,7 +977,7 @@ function pegiSearchResultsMarkup(results, title) {
   if (!results.length) {
     return `<p class="pegi-message">No PEGI match found. You can keep entering it manually or <a href="https://pegi.info/search-pegi?q=${encodeURIComponent(title)}" target="_blank" rel="noopener">search PEGI directly</a>.</p>`;
   }
-  const count = `${results.length.toLocaleString()} PEGI result${results.length === 1 ? '' : 's'}`;
+  const count = `${results.length.toLocaleString(UI_LOCALE)} PEGI result${results.length === 1 ? '' : 's'}`;
   const matches = results.map((result, index) => {
     const releaseText = [result.publisher, ...result.releases.slice(0, PEGI_RELEASE_PREVIEW_LIMIT)].filter(Boolean).join(' · ');
     return `<button type="button" class="pegi-result" data-pegi-index="${index}">
@@ -1169,16 +1170,16 @@ function setCoverKeyMode(configured, replacing = false) {
 function renderCoverStatus() {
   const status = state.coverStatus; if (!status) return;
   const replacing = $('#cover-api-key').dataset.replacing === 'true';
-  $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString()} games still need covers.` : 'Add a personal API key to enable cover lookup.';
+  $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString(UI_LOCALE)} games still need covers.` : 'Add a personal API key to enable cover lookup.';
   setCoverKeyMode(status.configured, status.configured && replacing);
   $('#cover-bulk-start').disabled = !status.configured || status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Exact-title matches only.'; let detail = 'Only exact normalized title matches receive covers automatically.';
   if (job?.state === 'running') {
-    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
-    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Scanning ${job.processed.toLocaleString(UI_LOCALE)}/${job.total.toLocaleString(UI_LOCALE)} · ${job.matched.toLocaleString(UI_LOCALE)} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'complete') {
-    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.errors.toLocaleString()} errors`;
-    detail = `${job.processed.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Done · ${job.matched.toLocaleString(UI_LOCALE)} found · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
+    detail = `${job.processed.toLocaleString(UI_LOCALE)} scanned · ${job.matched.toLocaleString(UI_LOCALE)} matched · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'failed') {
     shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'Cover provider unavailable.';
   }
@@ -1194,15 +1195,15 @@ async function loadCoverStatus() {
 }
 function renderPegiBulkStatus() {
   const status = state.pegiStatus; if (!status) return;
-  $('#pegi-provider-status').textContent = `${status.missing.toLocaleString()} games still need PEGI details.`;
+  $('#pegi-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need PEGI details.`;
   $('#pegi-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Exact-title and platform-aware.'; let detail = 'Unique exact titles are accepted; ambiguous editions require one platform-specific match.';
   if (job?.state === 'running') {
-    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
-    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Scanning ${job.processed.toLocaleString(UI_LOCALE)}/${job.total.toLocaleString(UI_LOCALE)} · ${job.matched.toLocaleString(UI_LOCALE)} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'complete') {
-    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`;
-    detail = `${job.processed.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.unmatched.toLocaleString()} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Done · ${job.matched.toLocaleString(UI_LOCALE)} found · ${job.unmatched.toLocaleString(UI_LOCALE)} review`;
+    detail = `${job.processed.toLocaleString(UI_LOCALE)} scanned · ${job.matched.toLocaleString(UI_LOCALE)} matched · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'failed') {
     shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'PEGI unavailable.';
   }
@@ -1214,15 +1215,15 @@ async function loadPegiStatus() {
 }
 function renderHltbBulkStatus() {
   const status = state.hltbStatus; if (!status) return;
-  $('#hltb-provider-status').textContent = `${status.missing.toLocaleString()} games still need HLTB estimates.`;
+  $('#hltb-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need HLTB estimates.`;
   $('#hltb-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Unique exact-title matches only.'; let detail = 'Ambiguous editions stay blank for manual review.';
   if (job?.state === 'running') {
-    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
-    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Scanning ${job.processed.toLocaleString(UI_LOCALE)}/${job.total.toLocaleString(UI_LOCALE)} · ${job.matched.toLocaleString(UI_LOCALE)} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'complete') {
-    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`;
-    detail = `${job.processed.toLocaleString()} scanned · ${job.matched.toLocaleString()} matched · ${job.unmatched.toLocaleString()} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Done · ${job.matched.toLocaleString(UI_LOCALE)} found · ${job.unmatched.toLocaleString(UI_LOCALE)} review`;
+    detail = `${job.processed.toLocaleString(UI_LOCALE)} scanned · ${job.matched.toLocaleString(UI_LOCALE)} matched · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'failed') {
     shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'HLTB unavailable.';
   }
@@ -1234,15 +1235,15 @@ async function loadHltbStatus() {
 }
 function renderDescriptionBulkStatus() {
   const status = state.descriptionStatus; if (!status) return;
-  $('#description-provider-status').textContent = `${status.missing.toLocaleString()} games still need descriptions.${status.thegamesdbConfigured ? ' TheGamesDB fallback connected.' : ' Steam Store only until TheGamesDB is connected.'}`;
+  $('#description-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need descriptions.${status.thegamesdbConfigured ? ' TheGamesDB fallback connected.' : ' Steam Store only until TheGamesDB is connected.'}`;
   $('#description-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Steam Store first; exact titles only.'; let detail = 'TheGamesDB is used only when Steam Store has no unique exact-title match.';
   if (job?.state === 'running') {
-    shortStatus = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
-    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Scanning ${job.processed.toLocaleString(UI_LOCALE)}/${job.total.toLocaleString(UI_LOCALE)} · ${job.matched.toLocaleString(UI_LOCALE)} found`;
+    detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'complete') {
-    shortStatus = `Done · ${job.matched.toLocaleString()} found · ${job.unmatched.toLocaleString()} review`;
-    detail = `${job.processed.toLocaleString()} scanned · ${job.unmatched.toLocaleString()} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+    shortStatus = `Done · ${job.matched.toLocaleString(UI_LOCALE)} found · ${job.unmatched.toLocaleString(UI_LOCALE)} review`;
+    detail = `${job.processed.toLocaleString(UI_LOCALE)} scanned · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched or ambiguous · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
   } else if (job?.state === 'failed') { shortStatus = 'Scan paused · details'; detail = job.lastError || job.error || 'A description source is unavailable.'; }
   setBulkStatus($('#description-bulk-status'), shortStatus, detail);
 }

@@ -14,7 +14,7 @@ function createCoverProviderBulkManager({ data, provider, label = provider, look
     jobs.set(userId, job); notify(userId, eventName, { job }); let consecutiveErrors = 0;
     for (const queued of games) {
       const game = data.getGame(userId, queued.id);
-      if (!game || game.coverUrl) { job.skipped++; job.processed++; notify(userId, eventName, { job }); continue; }
+      if (!game || game.playStatus === 'hidden' || game.coverUrl) { job.skipped++; job.processed++; notify(userId, eventName, { job }); continue; }
       job.current = game.title;
       try {
         const match = await lookup(credentials, game.title, game.platform);

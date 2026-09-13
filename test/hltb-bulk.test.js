@@ -13,6 +13,7 @@ test('HLTB batch matching only accepts one exact normalized title', () => {
   assert.equal(bestExactHltb('Game', [result('Game Deluxe')]), null);
   assert.equal(needsHltb({ hltbId: null }), true);
   assert.equal(needsHltb({ hltbId: 42 }), false);
+  assert.equal(needsHltb({ hltbId: null, playStatus: 'hidden' }), false);
 });
 
 test('HLTB batch manager updates matches and emits incremental events', async () => {

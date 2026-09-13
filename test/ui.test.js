@@ -385,10 +385,15 @@ test('collection filtering separates owned physical and digital games', () => {
   assert.match(constants, /'owned_physical', 'owned_digital'/);
 });
 
-test('collection tracking has no unavailable state or dead dashboard control', () => {
+test('hidden games use only the existing status dropdowns and never add a dashboard card', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const sorting = read('public/js/game-sorting.js'); const icons = read('public/assets/stat-icons.svg'); const css = readPublicCss();
   assert.equal((html.match(/class="stat-card /g) || []).length, 10);
+  assert.match(html, /id="status-filter"[\s\S]*?<option value="hidden">Hidden<\/option>/);
+  assert.match(html, /id="game-status"[\s\S]*?<option value="hidden">Hidden<\/option>/);
+  assert.doesNotMatch(html, /data-stat-value="hidden"/);
+  assert.match(application, /!filters\.playStatus\.value && game\.playStatus === 'hidden'/);
+  assert.match(sorting, /hidden: 5/);
   assert.doesNotMatch(html, /data-stat-value="unavailable"|value="unavailable"|>Unavailable</);
   assert.doesNotMatch(application, /stat-unavailable|unavailable: 'Unavailable'/);
   assert.doesNotMatch(sorting, /unavailable/);
@@ -618,7 +623,7 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
 
 test('cover processing uses compact text with a themed detail tooltip', () => {
   const application = read('public/app.js'); const settings = read('public/js/cover-provider-settings.js'); const css = readPublicCss();
-  assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(\)\}\/\$\{job\.total\.toLocaleString\(\)\}/);
+  assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(UI_LOCALE\)\}\/\$\{job\.total\.toLocaleString\(UI_LOCALE\)\}/);
   assert.match(application, /element\.dataset\.tooltip = detail/);
   assert.match(application, /element\.removeAttribute\('title'\)/);
   assert.match(settings, /element\.removeAttribute\('title'\)/);

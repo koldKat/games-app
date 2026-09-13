@@ -2,7 +2,8 @@ const path = require('node:path');
 const Database = require('better-sqlite3');
 const { createProgressionStore } = require('./progression-store');
 const {
-  MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
+  MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES,
+  STORED_PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
@@ -167,7 +168,8 @@ db.exec(`
     platform TEXT NOT NULL,
     pegi INTEGER CHECK (pegi IS NULL OR pegi IN (${PEGI_RATINGS.join(', ')})),
     ownership TEXT NOT NULL DEFAULT 'owned' CHECK (ownership IN (${sqlTextValues(OWNERSHIP_VALUES)})),
-    play_status TEXT NOT NULL DEFAULT 'backlog' CHECK (play_status IN (${sqlTextValues(PLAY_STATUS_VALUES)})),
+    play_status TEXT NOT NULL DEFAULT 'backlog' CHECK (play_status IN (${sqlTextValues(STORED_PLAY_STATUS_VALUES)})),
+    hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
     media_format TEXT NOT NULL DEFAULT 'physical' CHECK (media_format IN (${sqlTextValues(MEDIA_FORMAT_VALUES)})),
     cartridge_number INTEGER,
     publisher TEXT NOT NULL DEFAULT '',
@@ -239,6 +241,7 @@ if (!gameColumns.includes('description_source')) db.exec("ALTER TABLE games ADD 
 if (!gameColumns.includes('description_source_url')) db.exec("ALTER TABLE games ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
+if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
@@ -255,7 +258,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_patch_messages_thread ON patch_messages(thread_id, created_at);
 `);
 
-const selectFields = `id, title, platform, pegi, ownership, play_status AS playStatus,
+const selectFields = `id, title, platform, pegi, ownership,
+  CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END AS playStatus,
   media_format AS mediaFormat, cartridge_number AS cartridgeNumber, publisher,
   release_year AS releaseYear, notes, rating, favorite, pegi_url AS pegiUrl,
   pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
@@ -270,12 +274,12 @@ const selectFields = `id, title, platform, pegi, ownership, play_status AS playS
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
-  INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, media_format,
+  INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, hidden, media_format,
     cartridge_number, publisher, release_year, notes, rating, favorite, pegi_url, pegi_descriptors,
     pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
     cover_url, cover_source, cover_match_title, description, description_source, description_source_url)
-  VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @mediaFormat,
+  VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
@@ -283,7 +287,8 @@ const insert = db.prepare(`
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
-    play_status=@playStatus, media_format=@mediaFormat, cartridge_number=@cartridgeNumber,
+    play_status=CASE WHEN @hidden=1 THEN play_status ELSE @playStatus END, hidden=@hidden,
+    media_format=@mediaFormat, cartridge_number=@cartridgeNumber,
     publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=@rating, favorite=@favorite,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
@@ -313,7 +318,9 @@ function normalizeGame(input = {}) {
   const requestedOwnership = String(input.ownership || 'owned');
   if (!OWNERSHIP_VALUES.includes(requestedOwnership)) throw new Error('Collection must be Owned or Wishlisted.');
   const ownership = requestedOwnership;
-  const playStatus = PLAY_STATUS_VALUES.includes(input.playStatus) ? input.playStatus : 'backlog';
+  const requestedPlayStatus = PLAY_STATUS_VALUES.includes(input.playStatus) ? input.playStatus : 'backlog';
+  const hidden = requestedPlayStatus === 'hidden' ? 1 : 0;
+  const playStatus = hidden ? 'backlog' : requestedPlayStatus;
   const mediaFormat = MEDIA_FORMAT_VALUES.includes(input.mediaFormat) ? input.mediaFormat : 'physical';
   const cartridgeNumber = input.cartridgeNumber === '' || input.cartridgeNumber == null ? null : Number.parseInt(input.cartridgeNumber, 10);
   const releaseYear = input.releaseYear === '' || input.releaseYear == null ? null : Number.parseInt(input.releaseYear, 10);
@@ -323,7 +330,7 @@ function normalizeGame(input = {}) {
   if (rating != null && (!Number.isFinite(rating) || rating < 0.5 || rating > 5 || !Number.isInteger(rating * 2))) throw new Error('Rating must be in half-star steps from 0.5 to 5.');
   const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
   return {
-    title, platform, pegi, ownership, playStatus, mediaFormat, cartridgeNumber,
+    title, platform, pegi, ownership, playStatus, hidden, mediaFormat, cartridgeNumber,
     publisher: String(input.publisher || '').trim(), releaseYear,
     notes: String(input.notes || '').trim(), rating, favorite: input.favorite ? 1 : 0,
     pegiUrl: String(input.pegiUrl || '').trim(),
@@ -374,7 +381,11 @@ function listGames(userId, filters = {}) {
   } else if (OWNERSHIP_FILTER_VALUES.includes(filters.ownership)) {
     clauses.push('ownership = @ownership'); params.ownership = filters.ownership;
   }
-  if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
+  if (filters.playStatus === 'hidden') clauses.push('hidden = 1');
+  else {
+    clauses.push('hidden = 0');
+    if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }
+  }
   if (filters.pegi === 'none') clauses.push('pegi IS NULL');
   else if (filters.pegi) { clauses.push('pegi = @pegi'); params.pegi = Number(filters.pegi); }
   const missingPegi = `(pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
@@ -398,7 +409,7 @@ function listGames(userId, filters = {}) {
     pegi: `pegi IS NULL, pegi ASC, ${titleAsc}`,
     pegi_desc: `pegi IS NULL, pegi DESC, ${titleAsc}`,
     ownership: `CASE ownership WHEN 'owned' THEN 0 WHEN 'wanted' THEN 1 ELSE 2 END, ${titleAsc}`,
-    status: `CASE play_status WHEN 'playing' THEN 0 WHEN 'backlog' THEN 1 WHEN 'paused' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END, ${titleAsc}`,
+    status: `hidden ASC, CASE play_status WHEN 'playing' THEN 0 WHEN 'backlog' THEN 1 WHEN 'paused' THEN 2 WHEN 'completed' THEN 3 ELSE 4 END, ${titleAsc}`,
     favorites: `favorite DESC, ${titleAsc}`,
     newest: 'created_at DESC, id DESC',
     oldest: 'created_at ASC, id ASC',
@@ -419,7 +430,7 @@ function listGames(userId, filters = {}) {
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
 function allGamesForKatalog() {
-  return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL ORDER BY id`).all().map(hydrateGame);
+  return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL AND hidden=0 ORDER BY id`).all().map(hydrateGame);
 }
 function searchGameTitles(userId, query, limit = TITLE_SEARCH_LIMIT) {
   const clean = String(query || '').trim().slice(0, TITLE_MAX_LENGTH);
@@ -455,10 +466,10 @@ function setCoverProviderCredentials(userId, provider, credentials) {
     ON CONFLICT(user_id, provider) DO UPDATE SET credentials_json=excluded.credentials_json, updated_at=CURRENT_TIMESTAMP`)
     .run(userId, cleanProvider, JSON.stringify(credentials));
 }
-function gamesMissingCovers(userId) { return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND cover_url='' ORDER BY title COLLATE NOCASE`).all(userId); }
+function gamesMissingCovers(userId) { return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND cover_url='' ORDER BY title COLLATE NOCASE`).all(userId); }
 function updateGameCover(userId, id, cover) {
   const result = db.prepare(`UPDATE games SET cover_url=?, cover_source=?, cover_match_title=?, updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND user_id=? AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
+    WHERE id=? AND user_id=? AND hidden=0 AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
   return result.changes ? getGame(userId, id) : null;
 }
 function gamesWithRemoteCovers() {
@@ -479,7 +490,7 @@ function replaceGameCoverUrl(userId, id, expectedUrl, localUrl) {
 }
 
 function gamesMissingPegiMetadata(userId) {
-  return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=?
+  return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0
     AND pegi_url=''
     AND pegi_descriptors='[]' AND pegi_releases='[]' AND pegi_advice=''
     AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''
@@ -497,7 +508,7 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
     pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline,
     pegi_content_issues=@pegiContentIssues, pegi_other_issues=@pegiOtherIssues,
-    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0
     AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''`).run({
       id, userId, pegi, releaseYear,
@@ -511,18 +522,18 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
 }
 
 function gamesMissingHltb(userId) {
-  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
+  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
 }
 
 function gamesMissingDescriptions(userId) {
-  return db.prepare("SELECT id, title, platform FROM games WHERE user_id=? AND description='' ORDER BY title COLLATE NOCASE").all(userId);
+  return db.prepare("SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND description='' ORDER BY title COLLATE NOCASE").all(userId);
 }
 
 function updateGameDescription(userId, id, metadata = {}) {
   const description = safeText(metadata.description, DESCRIPTION_MAX_LENGTH);
   if (!description) return null;
   const result = db.prepare(`UPDATE games SET description=@description, description_source=@descriptionSource,
-    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND description=''`).run({
+    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0 AND description=''`).run({
     id, userId, description, descriptionSource: safeText(metadata.source, COVER_SOURCE_MAX_LENGTH),
     descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, URL_MAX_LENGTH),
   });
@@ -542,22 +553,26 @@ function updateGameHltb(userId, id, metadata = {}) {
     hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
     hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
     hltb_updated_at=@hltbUpdatedAt, updated_at=CURRENT_TIMESTAMP
-    WHERE id=@id AND user_id=@userId AND hltb_id IS NULL`).run({ id, userId, ...normalized });
+    WHERE id=@id AND user_id=@userId AND hidden=0 AND hltb_id IS NULL`).run({ id, userId, ...normalized });
   return result.changes ? getGame(userId, id) : null;
 }
 
 function stats(userId) {
-  const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=?').get(userId).n;
-  const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? GROUP BY ownership').all(userId);
-  const ownedFormats = db.prepare("SELECT media_format label, COUNT(*) count FROM games WHERE user_id=? AND ownership='owned' GROUP BY media_format").all(userId);
-  const platforms = db.prepare('SELECT platform label, COUNT(*) count FROM games WHERE user_id=? GROUP BY platform ORDER BY count DESC, platform').all(userId);
-  const pegi = db.prepare("SELECT COALESCE(CAST(pegi AS TEXT), 'Unrated') label, COUNT(*) count FROM games WHERE user_id=? GROUP BY pegi ORDER BY pegi").all(userId);
-  const play = db.prepare('SELECT play_status label, COUNT(*) count FROM games WHERE user_id=? GROUP BY play_status').all(userId);
-  const favorites = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND favorite=1').get(userId).n;
+  const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND hidden=0').get(userId).n;
+  const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY ownership').all(userId);
+  const ownedFormats = db.prepare("SELECT media_format label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 AND ownership='owned' GROUP BY media_format").all(userId);
+  const platforms = db.prepare('SELECT platform label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY platform ORDER BY count DESC, platform').all(userId);
+  const pegi = db.prepare("SELECT COALESCE(CAST(pegi AS TEXT), 'Unrated') label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY pegi ORDER BY pegi").all(userId);
+  const play = db.prepare('SELECT play_status label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY play_status').all(userId);
+  const favorites = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND hidden=0 AND favorite=1').get(userId).n;
   return { total, favorites, ownership, ownedFormats, platforms, pegi, play };
+}
+
+function platformNames(userId) {
+  return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
 module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
-  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, stats };
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, platformNames, stats };

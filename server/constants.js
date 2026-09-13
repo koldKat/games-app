@@ -1,6 +1,7 @@
 'use strict';
 
 const APP_USER_AGENT = 'Game-Kat-a-log/1.0 personal-library';
+const UI_LOCALE = 'en-US';
 const TITLE_LOOKUP_MIN_LENGTH = 2;
 const TITLE_AUTOCOMPLETE_MIN_LENGTH = 3;
 const PC_STOREFRONT_VALUES = Object.freeze([
@@ -11,7 +12,8 @@ const PC_STOREFRONT_VALUES = Object.freeze([
 
 const PEGI_RATINGS = Object.freeze([3, 7, 12, 16, 18]);
 const OWNERSHIP_VALUES = Object.freeze(['owned', 'wanted']);
-const PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'completed', 'paused', 'abandoned']);
+const STORED_PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'completed', 'paused', 'abandoned']);
+const PLAY_STATUS_VALUES = Object.freeze([...STORED_PLAY_STATUS_VALUES, 'hidden']);
 const MEDIA_FORMAT_VALUES = Object.freeze(['physical', 'digital', 'unknown']);
 const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted']);
 const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'cover', 'hltb', 'description', 'either', 'both']);
@@ -40,7 +42,9 @@ module.exports = {
   PC_STOREFRONT_VALUES,
   PEGI_RATINGS,
   PLAY_STATUS_VALUES,
+  STORED_PLAY_STATUS_VALUES,
   SORT_VALUES,
   TITLE_AUTOCOMPLETE_MIN_LENGTH,
   TITLE_LOOKUP_MIN_LENGTH,
+  UI_LOCALE,
 };

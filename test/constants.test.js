@@ -11,12 +11,14 @@ test('shared server constants define catalogue domains and batch policy', () => 
   assert.deepEqual(constants.PEGI_RATINGS, [3, 7, 12, 16, 18]);
   assert.deepEqual(constants.OWNERSHIP_VALUES, ['owned', 'wanted']);
   assert.deepEqual(constants.OWNERSHIP_FILTER_VALUES, ['owned_physical', 'owned_digital', 'wanted']);
-  assert.deepEqual(constants.PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned']);
+  assert.deepEqual(constants.STORED_PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned']);
+  assert.deepEqual(constants.PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned', 'hidden']);
   assert.deepEqual(constants.MEDIA_FORMAT_VALUES, ['physical', 'digital', 'unknown']);
   assert.deepEqual(constants.PC_STOREFRONT_VALUES.slice(0, 3), ['Steam', 'GOG', 'Epic Games Store']);
   assert.equal(constants.TITLE_LOOKUP_MIN_LENGTH, 2);
   assert.equal(constants.TITLE_AUTOCOMPLETE_MIN_LENGTH, 3);
   assert.equal(constants.BULK_JOB.maxConsecutiveErrors, 5);
+  assert.equal(constants.UI_LOCALE, 'en-US');
 });
 
 test('provider requests use the current shared application identity', () => {
@@ -36,4 +38,17 @@ test('browser policies name pagination, lookup, and timing contracts', () => {
   assert.match(policy, /debounceMs: 100/);
   assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
   assert.doesNotMatch(application, /state\.limit/);
+  assert.match(policy, /UI_LOCALE = 'en-US'/);
+});
+
+test('user-facing dates and numbers never inherit a device locale', () => {
+  const sources = [
+    'public/app.js', 'public/js/activity-feed.js', 'public/js/cover-provider-settings.js',
+    'public/js/patch-ui.js', 'public/js/progression-ui.js', 'public/js/public-profile.js',
+    'admin/js/core.js', 'admin/js/patch.js', 'admin/js/announcements.js',
+    'server/activity.js', 'server/forum-pages.js', 'server/katalog-pages.js',
+  ].map(read).join('\n');
+  assert.doesNotMatch(sources, /\.toLocale(?:String|DateString|TimeString)\(\s*\)/);
+  assert.doesNotMatch(sources, /\.toLocaleString\(\s*\[\s*\]/);
+  assert.doesNotMatch(sources, /Intl\.DateTimeFormat\((?:undefined|'en-GB')/);
 });

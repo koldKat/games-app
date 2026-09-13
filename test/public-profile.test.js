@@ -21,6 +21,7 @@ test('public collector profiles are opt-in and expose aggregates without private
   const contributed = data.createGame(user.id, { title: 'Physical Quest', platform: 'PlayStation 5', ownership: 'owned', mediaFormat: 'physical', playStatus: 'completed', favorite: true, notes: 'private note' });
   data.createGame(user.id, { title: 'Digital Quest', platform: 'PC (Steam)', ownership: 'owned', mediaFormat: 'digital', playStatus: 'playing' });
   data.createGame(user.id, { title: 'Future Quest', platform: 'PlayStation 5', ownership: 'wanted' });
+  data.createGame(user.id, { title: 'Private Hidden Quest', platform: 'Secret Console', playStatus: 'hidden', favorite: true });
   data.db.prepare(`INSERT INTO catalogue_entries(slug,title,title_key,platform,platform_key,cover_url,status,submitted_by_user_id,source_game_id,published_at)
     VALUES ('physical-quest-ps5','Physical Quest','physical quest','PlayStation 5','playstation 5','/covers/11111111111111111111111111111111.jpg','public',?,?,CURRENT_TIMESTAMP)`).run(user.id, contributed.id);
   data.db.prepare('INSERT INTO user_progression(user_id, xp) VALUES (?, ?)').run(user.id, 15000);

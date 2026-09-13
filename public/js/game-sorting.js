@@ -17,8 +17,8 @@ function compareGames(left, right, sort = 'title') {
   if (sort === 'pegi_desc') return number('pegi', -1);
   if (sort === 'ownership') return ({ owned: 0, wanted: 1 }[left.ownership] ?? 2)
     - ({ owned: 0, wanted: 1 }[right.ownership] ?? 2) || title();
-  if (sort === 'status') return ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4 }[left.playStatus] ?? 5)
-    - ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4 }[right.playStatus] ?? 5) || title();
+  if (sort === 'status') return ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4, hidden: 5 }[left.playStatus] ?? 6)
+    - ({ playing: 0, backlog: 1, paused: 2, completed: 3, abandoned: 4, hidden: 5 }[right.playStatus] ?? 6) || title();
   if (sort === 'favorites') return Number(right.favorite) - Number(left.favorite) || title();
   if (sort === 'newest') return String(right.createdAt).localeCompare(String(left.createdAt)) || right.id - left.id;
   if (sort === 'oldest') return String(left.createdAt).localeCompare(String(right.createdAt)) || left.id - right.id;

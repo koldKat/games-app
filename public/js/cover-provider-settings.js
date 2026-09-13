@@ -1,3 +1,5 @@
+import { UI_LOCALE } from './ui-policy.js';
+
 const PROVIDERS = Object.freeze({
   thegamesdb: { label: 'TheGamesDB', fields: ['apiKey'] },
 });
@@ -14,7 +16,7 @@ export function createCoverProviderSettings({ api, toast, showError }) {
     const panel = root(provider); const status = states.get(provider); if (!panel || !status) return;
     const editing = panel.dataset.editing === 'true'; const saving = panel.dataset.saving === 'true';
     panel.querySelector('[data-provider-status]').textContent = status.configured
-      ? `${Number(status.missing || 0).toLocaleString()} games still need covers.` : `Connect ${PROVIDERS[provider].label} to search its artwork.`;
+      ? `${Number(status.missing || 0).toLocaleString(UI_LOCALE)} games still need covers.` : `Connect ${PROVIDERS[provider].label} to search its artwork.`;
     panel.querySelector('[data-provider-connected]').hidden = !status.configured || editing;
     panel.querySelector('[data-provider-fields]').hidden = status.configured && !editing;
     const connectedInput = panel.querySelector('[data-provider-connected] input'); connectedInput.value = 'Connected'; connectedInput.disabled = true;
@@ -23,11 +25,11 @@ export function createCoverProviderSettings({ api, toast, showError }) {
     const bulk = panel.querySelector('[data-provider-bulk]'); bulk.disabled = !status.configured || status.job?.state === 'running' || Number(status.missing) === 0;
     const job = status.job; let short = 'Exact title + platform only.'; let detail = 'Automatic matching requires one exact title on the selected platform.';
     if (job?.state === 'running') {
-      short = `Scanning ${job.processed.toLocaleString()}/${job.total.toLocaleString()} · ${job.matched.toLocaleString()} found`;
-      detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped · ${job.errors.toLocaleString()} errors`;
+      short = `Scanning ${job.processed.toLocaleString(UI_LOCALE)}/${job.total.toLocaleString(UI_LOCALE)} · ${job.matched.toLocaleString(UI_LOCALE)} found`;
+      detail = `Currently scanning: ${job.current || 'preparing next title'} · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
     } else if (job?.state === 'complete') {
-      short = `Done · ${job.matched.toLocaleString()} found · ${job.errors.toLocaleString()} errors`;
-      detail = `${job.processed.toLocaleString()} scanned · ${job.unmatched.toLocaleString()} unmatched · ${(job.skipped || 0).toLocaleString()} skipped`;
+      short = `Done · ${job.matched.toLocaleString(UI_LOCALE)} found · ${job.errors.toLocaleString(UI_LOCALE)} errors`;
+      detail = `${job.processed.toLocaleString(UI_LOCALE)} scanned · ${job.unmatched.toLocaleString(UI_LOCALE)} unmatched · ${(job.skipped || 0).toLocaleString(UI_LOCALE)} skipped`;
     } else if (job?.state === 'failed') { short = 'Scan paused · details'; detail = job.lastError || job.error || `${PROVIDERS[provider].label} unavailable.`; }
     setBulkStatus(panel.querySelector('[data-provider-bulk-status]'), short, detail);
   }

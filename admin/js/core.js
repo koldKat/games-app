@@ -1,4 +1,5 @@
 const TOAST_DURATION_MS = 2_600;
+export const UI_LOCALE = 'en-US';
 
 export async function api(method, path, body) {
   const options = { method, headers: {} };
@@ -9,7 +10,7 @@ export async function api(method, path, body) {
   return result;
 }
 
-export function formatNumber(value) { return Number(value || 0).toLocaleString(); }
+export function formatNumber(value) { return Number(value || 0).toLocaleString(UI_LOCALE); }
 export function formatBytes(value) {
   let size = Number(value || 0); const units = ['B', 'KB', 'MB', 'GB']; let unit = 0;
   while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit++; }
@@ -20,8 +21,8 @@ export function formatDuration(seconds) {
   const hours = Math.floor(value / 3600); const minutes = Math.floor((value % 3600) / 60);
   return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
-export function formatDate(value) { return value ? new Date(value).toLocaleString() : '//'; }
-const countryNames = new Intl.DisplayNames(['en-US'], { type: 'region' });
+export function formatDate(value) { return value ? new Date(value).toLocaleString(UI_LOCALE) : '//'; }
+const countryNames = new Intl.DisplayNames([UI_LOCALE], { type: 'region' });
 export function countryName(code) { try { return countryNames.of(code) || code; } catch { return code; } }
 export function geoLocation(country, city) {
   if (!country && !city) return document.createTextNode('//');

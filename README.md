@@ -8,7 +8,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 
 - Multi-account, account-scoped libraries with responsive card and compact views.
 - Broad platform taxonomy plus custom platforms for unusual hardware and editions.
-- Owned and wishlisted collection states, physical/digital format, play status, personal half-star ratings, favorites, cartridge numbers, publishers, years, and notes.
+- Owned and wishlisted collection states, physical/digital format, play status (including a dropdown-only hidden state), personal half-star ratings, favorites, cartridge numbers, publishers, years, and notes.
 - Accent-insensitive search; composable platform, collection, PEGI, status, favorite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
 - PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
 - SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
