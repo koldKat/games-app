@@ -745,6 +745,18 @@ test('generated documentation highlights the section currently in view', () => {
   assert.match(generator, /getBoundingClientRect\(\)\.top<=72/);
 });
 
+test('generated documentation gives every table a responsive column-aware treatment', () => {
+  const generator = read('scripts/generate-docs.js');
+  const userGuide = read('public/docs/user-guide.html');
+  const technical = read('public/docs/technical.html');
+  assert.match(generator, /class="table-cols-\$\{headings\.length\}"/);
+  assert.match(generator, /\.table-cols-2\{border-collapse:separate/);
+  assert.match(generator, /@media\(max-width:760px\)[\s\S]*\.table-cols-2 thead\{display:none\}/);
+  assert.doesNotMatch(`${userGuide}\n${technical}`, /<div class="table-wrap"><table>/);
+  assert.match(userGuide, /<table class="table-cols-2">/);
+  assert.match(technical, /<table class="table-cols-3">/);
+});
+
 test('rich PEGI metadata is shown with themed progressive disclosure', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /id="game-pegi-details" class="game-pegi-details"/);
