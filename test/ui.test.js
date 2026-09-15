@@ -771,6 +771,7 @@ test('the product wordmark uses middle dots and no header cat artwork', () => {
 test('generated documentation highlights the section currently in view', () => {
   const generator = read('scripts/generate-docs.js');
   const navigation = read('public/js/docs-navigation.js');
+  const generatedPages = ['public/docs/index.html', 'public/docs/user-guide.html', 'public/docs/technical.html'].map(read);
   assert.match(generator, /\.toc a\.active/);
   assert.match(generator, /<script type="module" src="\/js\/docs-navigation\.js"><\/script>/);
   assert.doesNotMatch(generator, /<script>\(\(\)=>/);
@@ -778,6 +779,7 @@ test('generated documentation highlights the section currently in view', () => {
   assert.match(navigation, /getBoundingClientRect\(\)\.top <= 72/);
   assert.match(navigation, /addEventListener\('scroll', schedule/);
   assert.match(navigation, /addEventListener\('hashchange', schedule/);
+  for (const page of generatedPages) assert.match(page, /<link rel="icon" href="\/favicon\.svg" type="image\/svg\+xml">/);
 });
 
 test('generated documentation gives every table a responsive column-aware treatment', () => {
