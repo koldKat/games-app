@@ -86,6 +86,23 @@ test('public and admin interfaces include themed confirmation dialogs', () => {
   assert.match(read('admin/js/core.js'), /requiredText/);
 });
 
+test('close and search-clear controls share the green close icon template', () => {
+  const icon = read('public/assets/ui-icons.svg');
+  const sources = [
+    'public/index.html', 'admin/index.html', 'public/js/patch-ui.js',
+    'public/js/public-profile.js', 'public/js/search-clears.js',
+    'public/js/stats-ui.js', 'server/forum-pages.js', 'server/katalog-pages.js',
+  ].map(read).join('\n');
+  const styles = [readCss('public/css/foundation.css'), readCss('public/css/theme.css'), readCss('public/css/forum.css'), readCss('public/css/stats.css'), readCss('admin/style.css')].join('\n');
+  assert.match(icon, /<symbol id="close" viewBox="0 0 12 12">/);
+  assert.match(sources, /\/assets\/ui-icons\.svg#close/);
+  assert.doesNotMatch(sources, /aria-label="Close[^\"]*"[^>]*>\s*[×✕✖xX]\s*<\/button>/);
+  assert.match(styles, /border:1px solid #315e52/);
+  assert.match(styles, /background:#0b211c/);
+  assert.match(styles, /color:#83b7a9/);
+  assert.match(styles, /border-color:#5dd7b8/);
+});
+
 test('public styles are readable responsibility-based modules', () => {
   const html = read('public/index.html');
   for (const file of publicStylesheets) {
@@ -280,7 +297,10 @@ test('landing promo descriptions remain readable', () => {
 
 test('landing footer links to the public repository without replacing the app', () => {
   const html = read('public/index.html');
+  const authFooter = html.match(/<footer class="auth-footer">[\s\S]*?<\/footer>/)?.[0] || '';
   assert.match(html, /href="https:\/\/github\.com\/koldKat\/games-app" target="_blank" rel="noopener noreferrer">GITHUB/);
+  assert.doesNotMatch(authFooter, /href="\/katalog"/);
+  assert.match(read('public/css/patch.css'), /\.auth-footer \[data-patch-open\][\s\S]*border:1px solid #22313b;[\s\S]*color:#799087;/);
   assert.doesNotMatch(readPublicCss(), /\.auth-footer \.repo-link\{/);
 });
 
@@ -294,6 +314,8 @@ test('authenticated library carries the family copyright notice with a rolling y
   assert.match(html, /footer-studio-links[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net[\s\S]*target="_blank"/);
   assert.match(css, /\.footer-studio:hover \.footer-studio-links,.footer-studio:focus-within \.footer-studio-links/);
   assert.match(catalogue, /function footerMarkup\(copyright\)[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net/);
+  assert.doesNotMatch(html.match(/<footer class="app-footer"[\s\S]*?<\/footer>/)?.[0] || '', /data-stats-open/);
+  assert.doesNotMatch(catalogue.match(/function footerMarkup\(copyright\)[\s\S]*?\n}/)?.[0] || '', /data-stats-open/);
 });
 
 test('common filters never move the viewport', () => {
@@ -304,6 +326,8 @@ test('common filters never move the viewport', () => {
 test('private Kat·a·log uses ten-row pagination instead of a show-more control', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const css = readPublicCss();
   assert.match(html, /id="library-pagination" class="library-pagination" aria-label="My Kat·a·log pages"/);
+  assert.match(html, /aria-label="Previous page">page\.prev\(\)<\/button>/);
+  assert.match(html, /aria-label="Next page">page\.next\(\)<\/button>/);
   assert.doesNotMatch(html, /id="load-more"/);
   assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
   assert.match(application, /function pagedGames\(\)/);
@@ -746,9 +770,14 @@ test('the product wordmark uses middle dots and no header cat artwork', () => {
 
 test('generated documentation highlights the section currently in view', () => {
   const generator = read('scripts/generate-docs.js');
+  const navigation = read('public/js/docs-navigation.js');
   assert.match(generator, /\.toc a\.active/);
-  assert.match(generator, /aria-current/);
-  assert.match(generator, /getBoundingClientRect\(\)\.top<=72/);
+  assert.match(generator, /<script type="module" src="\/js\/docs-navigation\.js"><\/script>/);
+  assert.doesNotMatch(generator, /<script>\(\(\)=>/);
+  assert.match(navigation, /aria-current/);
+  assert.match(navigation, /getBoundingClientRect\(\)\.top <= 72/);
+  assert.match(navigation, /addEventListener\('scroll', schedule/);
+  assert.match(navigation, /addEventListener\('hashchange', schedule/);
 });
 
 test('generated documentation gives every table a responsive column-aware treatment', () => {

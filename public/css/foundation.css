@@ -655,13 +655,30 @@ dialog::backdrop {
   margin: 0;
 }
 .close-button {
-  border: 0;
-  background: #ebe8e1;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  font-size: 23px;
-  color: #666;
+  display: grid;
+  flex: 0 0 25px;
+  place-items: center;
+  width: 25px;
+  min-width: 25px;
+  height: 25px;
+  padding: 0;
+  border: 1px solid #315e52;
+  border-radius: 4px;
+  background: #0b211c;
+  color: #83b7a9;
+}
+.close-button:hover,.close-button:focus-visible {
+  border-color: #5dd7b8;
+  color: #dffff6;
+  outline: none;
+}
+.close-button svg {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
 .pegi-assist {
   border: 1px solid #d8dbe5;

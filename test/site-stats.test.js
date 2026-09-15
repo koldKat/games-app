@@ -88,7 +88,9 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.ok(server.indexOf("url.pathname === '/api/site-stats'") < server.indexOf('const user = auth.authenticate(request)'));
   assert.match(markup, /data-stats-open/);
   assert.match(markup, /src="\/js\/stats-ui\.js"/);
+  assert.match(markup, /src="\/js\/mobile-action-dock\.js"/);
   assert.match(read('server/katalog-pages.js'), /src="\/js\/stats-ui\.js"/);
+  assert.match(read('server/katalog-pages.js'), /src="\/js\/mobile-action-dock\.js"/);
   assert.match(ui, /controllerLoaderMarkup/);
   assert.match(ui, /pressedBackdrop/);
   assert.match(ui, /pointerdown/);
@@ -100,6 +102,15 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(css, /column-count: 3/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.doesNotMatch(css, /\.top-actions \.stats-button \{ display: none; \}/);
-  assert.match(read('public/css/theme.css'), /\.top-actions \.header-community-actions \{[\s\S]*position:fixed;[\s\S]*bottom:calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(read('public/css/theme.css'), /\.header-community-actions\.mobile-action-dock \{[\s\S]*position:fixed;[\s\S]*bottom:calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
+  const mobileDock = read('public/js/mobile-action-dock.js');
+  assert.match(mobileDock, /document\.body\.append\(group\)/);
+  assert.match(mobileDock, /home\.after\(group\)/);
+  assert.match(mobileDock, /classList\.add\('mobile-action-dock', 'top-actions'\)/);
+  assert.match(mobileDock, /classList\.remove\('mobile-action-dock', 'top-actions'\)/);
+  assert.match(mobileDock, /!visibilityRoot\?\.hidden/);
+  assert.match(mobileDock, /new MutationObserver\(placeActions\)/);
+  assert.match(mobileDock, /media\.addEventListener\('change', placeActions\)/);
+  assert.match(read('public/css/theme.css'), /#app-shell\[hidden\] ~ \.mobile-action-dock/);
   assert.match(read('server/katalog-pages.js'), /if \(!user\)[\s\S]*header-community-actions[\s\S]*statsButton\(\)[\s\S]*header-library-actions/);
 });

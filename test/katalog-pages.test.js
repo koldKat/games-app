@@ -46,6 +46,12 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   assert.match(detail, /portal-2-ps5/);
 });
 
+test('catalogue pagination uses symmetric code-style controls with descriptive labels', () => {
+  const html = renderKatalog({ result: { entries: [entry], total: 30, page: 2, pages: 3 }, platforms: [] });
+  assert.match(html, /aria-label="Previous page">page\.prev\(\)<\/a>/);
+  assert.match(html, /aria-label="Next page">page\.next\(\)<\/a>/);
+});
+
 test('an authenticated catalogue page uses the same account-aware header vocabulary as the app', () => {
   const html = renderKatalog({
     result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [],

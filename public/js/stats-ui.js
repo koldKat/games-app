@@ -94,7 +94,7 @@ function sections(stats) {
     { kind: 'app', label: 'The app', rows: [
       ['App age', formatDuration(stats.appAgeSeconds)], ['Session uptime', formatDuration(stats.sessionUptimeSeconds)],
       ['Total uptime', formatDuration(Math.max(0, stats.appAgeSeconds - stats.downtimeSeconds))],
-      ['Uptime', formatPercent(stats.uptimePercent)], ['Total downtime', formatDuration(stats.downtimeSeconds)],
+      ['Uptime', formatPercent(stats.uptimePercent, 2)], ['Total downtime', formatDuration(stats.downtimeSeconds)],
       ['Lines of source', formatCount(stats.linesOfCode)], ['Source size', formatBytes(stats.codeBytes)],
       ['JavaScript modules', formatCount(stats.jsModules)], ['Database size', formatBytes(stats.databaseBytes)],
       ['Stored covers', formatCount(stats.storedCovers)], ['Cover storage', formatBytes(stats.coverBytes)],
@@ -124,9 +124,9 @@ function ensureDialog() {
   const heading = element('div');
   heading.append(element('p', 'kicker', 'PUBLIC // TELEMETRY'), element('h2', '', 'Stats for Nerds'));
   heading.querySelector('h2').id = 'stats-title';
-  const closeButton = element('button', 'stats-close');
+  const closeButton = element('button', 'close-button stats-close');
   closeButton.type = 'button'; closeButton.setAttribute('aria-label', 'Close');
-  closeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>';
+  closeButton.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg>';
   closeButton.addEventListener('click', close);
   header.append(heading, closeButton);
   const body = element('div', 'stats-body'); body.dataset.statsBody = ''; body.setAttribute('aria-live', 'polite');

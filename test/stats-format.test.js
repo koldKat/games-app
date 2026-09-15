@@ -23,3 +23,9 @@ test('short and empty HLTB totals omit meaningless leading units', async () => {
   assert.equal(formatPlaytime(7.4), '7h');
   assert.equal(formatPlaytime(null), '0h');
 });
+
+test('uptime can retain enough precision to reveal small amounts of downtime', async () => {
+  const { formatPercent } = await formatModule();
+  assert.equal(formatPercent(99.9753643487, 2), '99.98%');
+  assert.equal(formatPercent(99.9753643487), '100.0%');
+});

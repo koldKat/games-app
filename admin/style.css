@@ -699,12 +699,33 @@ tbody tr:last-child td {
 }
 .confirm-card>header button {
   margin-left:auto;
+}
+.dialog-close {
+  display:grid;
+  flex:0 0 27px;
+  place-items:center;
   width:27px;
+  min-width:27px;
   height:27px;
-  border:1px solid #2c3945;
-  background:#121a23;
-  color:#a5b2bd;
+  padding:0;
+  border:1px solid #315e52;
+  border-radius:4px;
+  background:#0b211c;
+  color:#83b7a9;
   cursor:pointer
+}
+.dialog-close:hover,.dialog-close:focus-visible {
+  border-color:#5dd7b8;
+  color:#dffff6;
+  outline:none
+}
+.dialog-close svg {
+  width:11px;
+  height:11px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round
 }
 .confirm-card h2 {
   margin:12px 0 0;
@@ -963,12 +984,7 @@ html:has(dialog[open]) {
   font-size:18px
 }
 .katalog-edit-card header>button {
-  width:28px;
-  height:28px;
-  border:1px solid #2c3945;
-  background:#121a23;
-  color:#a5b2bd;
-  cursor:pointer
+  margin-left:auto
 }
 .edit-grid {
   display:grid;

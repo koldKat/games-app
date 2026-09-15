@@ -29,7 +29,8 @@ function ensureDialog() {
   const heading = element('div');
   const title = element('h2', '', 'Collector profile'); title.id = 'public-profile-title';
   heading.append(element('p', 'kicker', 'PUBLIC // CURATOR'), title);
-  const close = element('button', 'close-button', '×');
+  const close = element('button', 'close-button');
+  close.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg>';
   close.type = 'button'; close.setAttribute('aria-label', 'Close'); close.addEventListener('click', closeDialog);
   header.append(heading, close);
   const body = element('div', 'public-profile-body'); body.setAttribute('aria-live', 'polite');

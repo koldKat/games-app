@@ -105,7 +105,7 @@ function footerMarkup(copyright) {
         <a href="https://biseri.net" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m12 3 1.3 5.7L19 10l-5.7 1.3L12 17l-1.3-5.7L5 10l5.7-1.3Z"/></svg><span><b>Бисери</b><small>Семейни бисери, смешни моменти и забавни детски истории.</small></span><i aria-hidden="true">↗</i></a>
       </span>
     </span>
-    <span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav class="footer-info" aria-label="Site information"><button type="button" data-stats-open>STATS</button><a href="/docs/user-guide.html">USER GUIDE</a></nav>
+    <span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav class="footer-info" aria-label="Site information"><a href="/docs/user-guide.html">USER GUIDE</a></nav>
   </footer>`;
 }
 
@@ -162,6 +162,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <script type="module" src="/js/katalog-public.js"></script>
   <script type="module" src="/js/site-header.js"></script>
   <script type="module" src="/js/patch-page.js"></script>
+  <script type="module" src="/js/mobile-action-dock.js"></script>
   <script type="module" src="/js/stats-ui.js"></script>
   ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
   ${extraScripts}
@@ -200,9 +201,9 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
   }).join('');
   const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(item.platform)} (${item.count})</option>`).join('');
   const pagination = result.pages > 1 ? `<nav class="katalog-pagination" aria-label="Kat·a·log pages">
-    ${result.page > 1 ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page - 1 }))}">← Previous</a>` : '<span></span>'}
+    ${result.page > 1 ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page - 1 }))}" aria-label="Previous page">page.prev()</a>` : '<span></span>'}
     <span>Page ${result.page} of ${result.pages}</span>
-    ${result.page < result.pages ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page + 1 }))}">Next →</a>` : '<span></span>'}
+    ${result.page < result.pages ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page + 1 }))}" aria-label="Next page">page.next()</a>` : '<span></span>'}
   </nav>` : '';
   return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">PUBLIC // SHARED</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl))}</section>
       <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
@@ -333,7 +334,7 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
   const publisher = entry.publisher ? `<span>${escapeHtml(entry.publisher)}</span>` : '';
   return `<dialog class="katalog-game-dialog" data-katalog-game-dialog open aria-label="${escapeHtml(`${entry.title} details`)}">
     <article class="katalog-game-dialog-card">
-      <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2L2 10"/></svg></button></header>
+      <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div class="game-detail"><article class="game-overview">
         <div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div>
         <div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1>

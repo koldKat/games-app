@@ -20,7 +20,8 @@ export function mountThemedSearchClears(root = document) {
     input.before(field); field.append(input);
 
     const clear = document.createElement('button');
-    clear.type = 'button'; clear.className = 'themed-search-clear'; clear.textContent = '×';
+    clear.type = 'button'; clear.className = 'themed-search-clear';
+    clear.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg>';
     clear.setAttribute('aria-label', `Clear ${clearLabel(input)}`);
     field.append(clear);
 

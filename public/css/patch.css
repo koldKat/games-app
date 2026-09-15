@@ -269,17 +269,20 @@
 }
 .auth-footer [data-patch-open] {
   min-height:0;
-  padding:0;
-  border:0;
+  padding:4px 6px;
+  border:1px solid #22313b;
+  border-radius:0;
   background:transparent;
-  color:#9cafb4;
+  color:#799087;
   font:inherit;
-  font-size:10px;
-  letter-spacing:.1em;
+  letter-spacing:inherit;
   text-decoration:none;
+  cursor:pointer;
 }
 .auth-footer [data-patch-open]:hover,.auth-footer [data-patch-open]:focus-visible {
-  color:#67d8bd;
+  border-color:#35d6b2;
+  color:#68ddbf;
+  outline:none;
 }
 @media (max-width:580px) {
   .patch-dialog,.patch-card {

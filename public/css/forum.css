@@ -437,19 +437,31 @@
   min-height:25px;
   margin-left:auto;
   padding:3px 7px;
-  border:1px solid #40545a;
+  border:1px solid #315e52;
   border-radius:5px;
-  background:#111a20;
-  color:#c4d1d3;
+  background:#0b211c;
+  color:#83b7a9;
   font:inherit;
   font-size:9px;
   line-height:1;
   cursor:pointer;
 }
+.forum-composer [data-forum-inline-close]:hover,.forum-composer [data-forum-inline-close]:focus-visible {
+  border-color:#5dd7b8;
+  color:#dffff6;
+  outline:none;
+}
 .forum-composer>header [data-forum-inline-close] {
   width:25px;
   padding:0;
-  font-size:17px;
+}
+.forum-composer>header [data-forum-inline-close] svg {
+  width:11px;
+  height:11px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
 }
 .forum-composer [data-forum-error] {
   min-height:0;

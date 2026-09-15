@@ -41,7 +41,7 @@ function threadComposer(category) {
   if (!category) return '';
   return `<section class="forum-inline-composer" data-forum-inline-composer hidden>
   <form class="forum-composer" data-forum-thread-form>
-    <header><span>NEW THREAD // ${escapeHtml(category.name)}</span><button type="button" data-forum-inline-close aria-label="Close">×</button></header>
+    <header><span>NEW THREAD // ${escapeHtml(category.name)}</span><button type="button" class="close-button" data-forum-inline-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
     <label>Channel<input value="${escapeHtml(category.name)}" disabled></label>
     <input type="hidden" name="categoryId" value="${category.id}">
     <label>Title<input name="title" maxlength="180" required autocomplete="off" placeholder="Give the thread a clear title"></label>

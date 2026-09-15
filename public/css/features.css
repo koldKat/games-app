@@ -322,7 +322,7 @@
   .auth-footer nav {
     width: 100%;
   }
-  .auth-footer a {
+  .auth-footer nav > * {
     flex: 1;
     text-align: center;
   }

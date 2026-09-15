@@ -166,7 +166,7 @@
           <div class="promo-system"><span>FACTS SHARED</span><span>TRACKING PRIVATE</span><span>ONE-CLICK ADD</span></div>
         </article>
       </aside>
-      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><a href="/katalog">KAT·A·LOG</a><button class="text-button" type="button" data-stats-open>STATS</button><button class="text-button" type="button" data-patch-open>PATCH</button><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" data-repo-link href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
+      <footer class="auth-footer"><span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav aria-label="Public information"><button class="text-button" type="button" data-stats-open>STATS</button><button class="text-button" type="button" data-patch-open>PATCH</button><a href="/docs/user-guide.html">USER GUIDE</a><a href="/docs/technical.html">TECHNICAL</a><a class="repo-link" data-repo-link href="https://github.com/koldKat/games-app" target="_blank" rel="noopener noreferrer">GITHUB <span aria-hidden="true">↗</span></a></nav></footer>
     </div>
   </main>
 
@@ -265,9 +265,9 @@
         <div id="games" class="game-grid" aria-live="polite"></div>
         <div id="empty" class="empty-state" hidden><span>⌁</span><h3>No games found</h3><p>Try clearing a filter, or add a new title.</p><button class="button primary" data-add-game>Add a game</button></div>
         <nav id="library-pagination" class="library-pagination" aria-label="My Kat·a·log pages" hidden>
-          <button type="button" data-library-page="previous" aria-label="Previous page">← Previous</button>
+          <button type="button" data-library-page="previous" aria-label="Previous page">page.prev()</button>
           <span id="library-page-status" aria-live="polite"></span>
-          <button type="button" data-library-page="next" aria-label="Next page">Next →</button>
+          <button type="button" data-library-page="next" aria-label="Next page">page.next()</button>
         </nav>
       </section>
       </div>
@@ -281,7 +281,7 @@
           <a href="https://biseri.net" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m12 3 1.3 5.7L19 10l-5.7 1.3L12 17l-1.3-5.7L5 10l5.7-1.3Z"/></svg><span><b>Бисери</b><small>Семейни бисери, смешни моменти и забавни детски истории.</small></span><i aria-hidden="true">↗</i></a>
         </span>
       </span>
-      <span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav class="footer-info" aria-label="Site information"><button type="button" data-stats-open>STATS</button><a href="/docs/user-guide.html">USER GUIDE</a></nav>
+      <span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav class="footer-info" aria-label="Site information"><a href="/docs/user-guide.html">USER GUIDE</a></nav>
     </footer>
   </div>
 
@@ -290,7 +290,7 @@
 
   <dialog id="game-dialog">
     <form id="game-form" class="modal-card">
-      <header class="modal-head"><div><p class="kicker" id="form-kicker">Grow the shelf</p><h2 id="form-title">Add a game</h2></div><button type="button" class="close-button" data-close aria-label="Close">×</button></header>
+      <header class="modal-head"><div><p class="kicker" id="form-kicker">Grow the shelf</p><h2 id="form-title">Add a game</h2></div><button type="button" class="close-button" data-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <input type="hidden" id="game-id">
       <div class="pegi-assist">
         <div><strong>PEGI-assisted entry</strong><small>Search PEGI's public Kat·a·log and pick a match to fill the basics.</small></div>
@@ -365,14 +365,14 @@
   </dialog>
   <dialog id="game-details-dialog" class="game-details-dialog">
     <section class="modal-card game-details-card">
-      <header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close">×</button></header>
+      <header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div id="game-details-content"></div>
       <footer class="modal-actions"><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
     </section>
   </dialog>
   <dialog id="account-dialog">
     <form id="account-form" class="modal-card account-modal">
-      <header class="modal-head"><div><p class="kicker">Identity control</p><h2>Account settings</h2></div><button type="button" class="close-button" data-account-close aria-label="Close">×</button></header>
+      <header class="modal-head"><div><p class="kicker">Identity control</p><h2>Account settings</h2></div><button type="button" class="close-button" data-account-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div class="account-summary">
         <button type="button" class="account-avatar-picker" id="avatar-picker" aria-label="Change avatar"><span class="account-avatar" id="account-avatar">K</span><span class="avatar-plus">+</span></button>
         <span class="account-identity"><strong id="account-current-name">account</strong><small>Authenticated library owner</small><span class="avatar-actions"><button type="button" class="text-button" id="avatar-upload">Change avatar</button><button type="button" class="text-button avatar-remove" id="avatar-remove" hidden>Remove</button></span></span>
@@ -422,11 +422,12 @@
   </dialog>
   <dialog id="action-dialog" class="action-dialog">
     <section class="modal-card action-modal" role="document">
-      <header class="modal-head"><div><p class="kicker" id="action-kicker">Confirm action</p><h2 id="action-title">Are you sure?</h2></div><button type="button" class="close-button" id="action-close" aria-label="Close">×</button></header>
+      <header class="modal-head"><div><p class="kicker" id="action-kicker">Confirm action</p><h2 id="action-title">Are you sure?</h2></div><button type="button" class="close-button" id="action-close" aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <p id="action-message" class="action-message"></p>
       <footer class="modal-actions"><button type="button" class="button ghost" id="action-cancel">Cancel</button><button type="button" class="button action-danger" id="action-confirm">Confirm</button></footer>
     </section>
   </dialog>
+  <script type="module" src="/js/mobile-action-dock.js"></script>
   <script type="module" src="/js/stats-ui.js"></script>
   <script type="module" src="/app.js"></script>
 </body>

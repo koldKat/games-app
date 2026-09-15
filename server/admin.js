@@ -100,6 +100,16 @@ function saveSetting(key, value) {
   db.prepare('INSERT INTO runtime_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value));
 }
 
+function restartUptimeState({ stoppedAt = 0, lastHeartbeat = 0, totalDowntime = 0, sessionStarted = 0, started = startedAt } = {}) {
+  const reference = Number(stoppedAt) || Number(lastHeartbeat) || 0;
+  const gap = reference > 0 ? Math.max(0, Number(started) - reference) : 0;
+  return {
+    gap,
+    totalDowntime: Math.max(0, Number(totalDowntime) || 0) + gap,
+    sessionStarted: gap > UPTIME_DOWNTIME_GRACE_SECONDS ? Number(started) : Number(sessionStarted) || Number(started),
+  };
+}
+
 function appBirthAt() {
   const row = db.prepare(`SELECT MIN(CAST(strftime('%s', createdAt) AS INTEGER)) AS timestamp FROM (
     SELECT created_at AS createdAt FROM users
@@ -110,17 +120,14 @@ function appBirthAt() {
 }
 
 function initializeUptimeTracking() {
-  const stoppedAt = Number(setting('server_stopped_at')) || 0;
-  const lastHeartbeat = Number(setting('server_last_heartbeat')) || 0;
-  const reference = stoppedAt || lastHeartbeat;
-  const gap = reference > 0 ? Math.max(0, startedAt - reference) : 0;
-  // The first fifteen seconds of every restart are continuous uptime. Only the
-  // excess is downtime, and a new session starts fifteen seconds before boot so
-  // the live duration displays that same allowance.
-  if (gap > UPTIME_DOWNTIME_GRACE_SECONDS) {
-    saveSetting('server_total_downtime_s', (Number(setting('server_total_downtime_s')) || 0) + gap - UPTIME_DOWNTIME_GRACE_SECONDS);
-    saveSetting('server_session_start_at', startedAt - UPTIME_DOWNTIME_GRACE_SECONDS);
-  } else if (!setting('server_session_start_at')) saveSetting('server_session_start_at', startedAt);
+  const next = restartUptimeState({
+    stoppedAt: setting('server_stopped_at'),
+    lastHeartbeat: setting('server_last_heartbeat'),
+    totalDowntime: setting('server_total_downtime_s'),
+    sessionStarted: setting('server_session_start_at'),
+  });
+  if (next.gap > 0) saveSetting('server_total_downtime_s', next.totalDowntime);
+  saveSetting('server_session_start_at', next.sessionStarted);
   saveSetting('server_stopped_at', 0);
   saveSetting('server_last_heartbeat', startedAt);
 }
@@ -395,4 +402,4 @@ async function handle(request, response, url) {
   sendJson(response, 404, { error: 'Not found.' }); return true;
 }
 
-module.exports = { UPTIME_DOWNTIME_GRACE_SECONDS, handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listKatalog, deleteAccount };
+module.exports = { UPTIME_DOWNTIME_GRACE_SECONDS, handle, isLoopback, isLocalRequest, adminStats, liveStats, markServerStopped, listAccounts, listKatalog, deleteAccount, restartUptimeState };

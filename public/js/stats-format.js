@@ -45,8 +45,9 @@ export function formatPlaytime(value) {
   return parts.join(' ');
 }
 
-export function formatPercent(value) {
-  return `${Math.max(0, Number(value) || 0).toLocaleString(UI_LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+export function formatPercent(value, fractionDigits = 1) {
+  const digits = Math.max(0, Math.min(4, Math.floor(Number(fractionDigits) || 0)));
+  return `${Math.max(0, Number(value) || 0).toLocaleString(UI_LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
 }
 
 export function formatDecimal(value, maximumFractionDigits = 1) {

@@ -29,6 +29,15 @@ test('admin access requires a loopback socket and loopback proxy identity', () =
   assert.equal(admin.isLocalRequest(request('127.0.0.1', { 'x-forwarded-for': '203.0.113.9, 127.0.0.1' })), false);
 });
 
+test('uptime accounting records every gap but resets a session only after fifteen seconds', () => {
+  assert.deepEqual(admin.restartUptimeState({ started: 1_000, lastHeartbeat: 995, totalDowntime: 20, sessionStarted: 800 }), {
+    gap: 5, totalDowntime: 25, sessionStarted: 800,
+  });
+  assert.deepEqual(admin.restartUptimeState({ started: 1_000, stoppedAt: 980, lastHeartbeat: 990, totalDowntime: 20, sessionStarted: 800 }), {
+    gap: 20, totalDowntime: 40, sessionStarted: 1_000,
+  });
+});
+
 test('admin summaries span accounts while preserving owner identity', async () => {
   const alpha = await auth.register('alpha_admin_test', 'long-password-one');
   const beta = await auth.register('beta_admin_test', 'long-password-two');
