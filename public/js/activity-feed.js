@@ -4,6 +4,17 @@ import { openPublicProfile } from './public-profile.js';
 import { UI_LOCALE, UI_TIMING } from './ui-policy.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+const PEGI_ACTIVITY_COLORS = Object.freeze({
+  3: '#4fbd69',
+  7: '#83bd46',
+  12: '#e4b447',
+  16: '#e67b45',
+  18: '#df5656',
+});
+function pegiGameLinkStyle(rating) {
+  const color = PEGI_ACTIVITY_COLORS[rating];
+  return color ? ` style="color:${color};text-decoration-color:${color}"` : '';
+}
 function age(value) {
   const seconds = Math.max(0, Math.round((Date.now() - new Date(value.replace(' ', 'T') + 'Z')) / 1000));
   if (seconds < 60) return 'now'; if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
@@ -38,7 +49,8 @@ function phrase(entry) {
   if (entry.type === 'announcement') return `<strong>${escapeHtml(entry.title)}</strong><span class="activity-announcement-body">${formatAnnouncementBody(entry.body)}</span>`;
   const user = userLabel(entry);
   if (entry.type === 'catalogue_contribution') {
-    const game = preview(`<a class="activity-game-link" href="/game/${encodeURIComponent(entry.gameSlug)}">${escapeHtml(entry.gameTitle)}</a>`, entry.coverUrl, 'cover', `${entry.gameTitle} cover`);
+    const rating = [3, 7, 12, 16, 18].includes(Number(entry.gamePegi)) ? Number(entry.gamePegi) : null;
+    const game = preview(`<a class="activity-game-link${rating ? ` activity-game-link--pegi-${rating}` : ''}"${pegiGameLinkStyle(rating)} href="/game/${encodeURIComponent(entry.gameSlug)}">${escapeHtml(entry.gameTitle)}</a>`, entry.coverUrl, 'cover', `${entry.gameTitle} cover`);
     return `${user} contributed ${game} to the Kat·a·log.`;
   }
   const base = escapeHtml(entry.template || '').replaceAll('{name}', user).replaceAll('{level}', escapeHtml(entry.level));

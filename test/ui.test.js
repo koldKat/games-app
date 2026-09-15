@@ -124,7 +124,13 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt, detail = ''\)/);
   assert.match(read('public/js/activity-feed.js'), /class="activity-preview-profile"/);
   assert.match(activity, /userLevel: progression\.level, userTitle: progression\.title/);
-  assert.match(read('public/js/activity-feed.js'), /class="activity-game-link"/);
+  assert.match(read('public/js/activity-feed.js'), /class="activity-game-link\$\{rating/);
+  assert.match(read('public/js/activity-feed.js'), /activity-game-link--pegi-\$\{rating\}/);
+  assert.match(read('public/js/activity-feed.js'), /const PEGI_ACTIVITY_COLORS = Object\.freeze/);
+  assert.match(read('public/js/activity-feed.js'), /function pegiGameLinkStyle\(rating\)/);
+  assert.match(read('public/js/activity-feed.js'), /style="color:\$\{color\};text-decoration-color:\$\{color\}"/);
+  assert.match(read('public/css/activity.css'), /activity-game-link--pegi-18/);
+  assert.match(read('public/css/activity.css'), /activity-game-link--pegi-3:visited/);
   assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
   assert.match(read('public/js/activity-feed.js'), /typeof link\.blur === 'function'/);
   assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerleave'/);

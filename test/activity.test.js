@@ -56,14 +56,16 @@ test('existing progression history backfills real level crossings with their ori
   assert.equal(entry.createdAt, '2026-08-29 10:00:00');
 });
 
-test('public Kat·a·log contributions can be safely backfilled into Signal', async () => {
+test('public Kat·a·log contributions can be safely backfilled into Signal with their PEGI rating', async () => {
   const user = await auth.register('signal_curator', 'password-three');
-  const game = data.createGame(user.id, { title: 'Signal Public Game', platform: 'PC' });
-  data.db.prepare(`INSERT INTO catalogue_entries(slug,title,title_key,platform,platform_key,cover_url,status,submitted_by_user_id,source_game_id,published_at)
-    VALUES ('signal-public-game-pc','Signal Public Game','signal public game','PC','pc','/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg','public',?,?,CURRENT_TIMESTAMP)`).run(user.id, game.id);
+  const game = data.createGame(user.id, { title: 'Signal Public Game', platform: 'PC', pegi: 12 });
+  data.db.prepare(`INSERT INTO catalogue_entries(slug,title,title_key,platform,platform_key,pegi,cover_url,status,submitted_by_user_id,source_game_id,published_at)
+    VALUES ('signal-public-game-pc','Signal Public Game','signal public game','PC','pc',12,'/covers/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg','public',?,?,CURRENT_TIMESTAMP)`).run(user.id, game.id);
   assert.equal(activity.backfillContributions(), 1);
   assert.equal(activity.backfillContributions(), 0);
-  assert.equal(activity.list().find(entry => entry.type === 'catalogue_contribution')?.gameTitle, 'Signal Public Game');
+  const contribution = activity.list().find(entry => entry.type === 'catalogue_contribution');
+  assert.equal(contribution?.gameTitle, 'Signal Public Game');
+  assert.equal(contribution?.gamePegi, 12);
 });
 
 test('admin announcements stay drafts until published and a pinned notice leads Signal', () => {

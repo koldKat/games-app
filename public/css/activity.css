@@ -46,8 +46,27 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
+.activity-game-link--pegi-3, .activity-game-link--pegi-3:visited, .activity-game-link--pegi-3:hover, .activity-game-link--pegi-3:focus-visible {
+  color: #4fbd69;
+  text-decoration-color: #4fbd69;
+}
+.activity-game-link--pegi-7, .activity-game-link--pegi-7:visited, .activity-game-link--pegi-7:hover, .activity-game-link--pegi-7:focus-visible {
+  color: #83bd46;
+  text-decoration-color: #83bd46;
+}
+.activity-game-link--pegi-12, .activity-game-link--pegi-12:visited, .activity-game-link--pegi-12:hover, .activity-game-link--pegi-12:focus-visible {
+  color: #e4b447;
+  text-decoration-color: #e4b447;
+}
+.activity-game-link--pegi-16, .activity-game-link--pegi-16:visited, .activity-game-link--pegi-16:hover, .activity-game-link--pegi-16:focus-visible {
+  color: #e67b45;
+  text-decoration-color: #e67b45;
+}
+.activity-game-link--pegi-18, .activity-game-link--pegi-18:visited, .activity-game-link--pegi-18:hover, .activity-game-link--pegi-18:focus-visible {
+  color: #df5656;
+  text-decoration-color: #df5656;
+}
 .activity-game-link:hover, .activity-game-link:focus-visible {
-  color: #ecfffa;
   text-decoration-style: solid;
   outline: none;
 }
