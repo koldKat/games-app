@@ -78,6 +78,16 @@ Selecting a summary card applies its corresponding library filter and highlights
 
 ---
 
+## Stats for Nerds
+
+Select **Stats** in the desktop header, the fixed mobile community dock, or any site footer to open the public telemetry panel. On phones, the community dock keeps Signal, Forum, Stats, Patch, and Ping at the lower left while the existing add-game control remains at the lower right; primary Kat·a·log and account navigation stays in the compact header. The panel follows the same compact three-column idea as Gamebooks on desktop, becomes two columns on narrower screens, and uses one scrollable column on phones. It stays within 80 percent of the desktop viewport, uses the application scrollbar, closes with Escape or a genuine backdrop click, and does not close when a text selection begins inside it and ends outside.
+
+The sections are adapted to games: collectors, private-library aggregates, play status, public Kat·a·log growth, metadata coverage, combined HLTB estimates, half-star ratings, XP progression, Forum and Signal activity, leading public platforms, server hardware, and application storage/uptime. Large HLTB totals are converted from decimal hours into compact years, days, and hours, using 365-day years. Average collector level is floored to a whole level. App level follows Gamebooks' pooled curve: total community XP is scaled by the complete registered collector count before applying the standard quadratic level formula. The XP event-type total counts every supported award definition, including types that have not yet occurred. Server statistics include the deployment CPU's age and clock speed. After the first second of a server session, the application section also shows running session averages for CPU use, heap used, heap total, and resident memory. Counts refresh when the panel opens and may remain cached for up to 15 seconds to protect the public endpoint from repeated expensive scans.
+
+Only aggregate numbers are public. The response never contains usernames, emails, account locations, credentials, private game titles, notes, descriptions, or individual library rows. Public-profile privacy and Signal visibility settings remain independent of these anonymous totals.
+
+---
+
 ## Finding games
 
 The library updates as filters change.

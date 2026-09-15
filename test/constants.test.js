@@ -53,6 +53,8 @@ test('site identity and input limits have explicit small policy modules', () => 
   assert.equal(GAME_LIMITS.notesMax, 2_000);
   assert.equal(GAME_LIMITS.descriptionMax, 12_000);
   assert.equal(KATALOG_LIMITS.pageSize, 80);
+  assert.equal(require('../server/runtime-policy').siteStatsCacheMs, 15_000);
+  assert.equal(require('../server/hardware-policy').CPU_RELEASE_DATES['i7-4785T'], '2014-05-11');
   const productionSources = [read('server/auth.js'), read('server/admin.js')].join('\n');
   assert.doesNotMatch(productionSources, /['"]koldkat['"]/i);
 });

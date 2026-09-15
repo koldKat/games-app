@@ -47,19 +47,33 @@ function navIcon(kind) {
   const paths = {
     signal: '<circle cx="12" cy="12" r="1.5"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9.2 9.2 0 0 0 0 13M18.5 5.5a9.2 9.2 0 0 1 0 13"/>',
     forum: '<path d="M4 5h16v11H10l-5 4v-4H4V5Z"/><path d="M8 10h8M8 13h5"/>',
+    stats: '<path d="M5 19V10h4v9M10 19V5h4v14M15 19v-7h4v7"/>',
     katalog: '<path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h4M9 12h6M9 16h6"/>',
     library: '<path d="M4 11.5 12 4l8 7.5V20H5v-8.5Z"/><path d="M10 20v-5h4v5"/>',
   };
   return `<svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[kind]}</svg>`;
 }
 function headerNav(kind, label, href, active = false) { return `<a class="button ${kind}-button${active ? ' active' : ''}" href="${href}">${navIcon(kind)}<span class="header-nav-label">${label}</span></a>`; }
+function statsButton() { return `<button class="button stats-button" type="button" data-stats-open>${navIcon('stats')}<span class="header-nav-label">Stats</span></button>`; }
 
 function headerActions(user, progress = null, currentView = '') {
-  if (!user) return `<div class="top-actions">${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}${headerNav('katalog', 'Kat·a·log', '/katalog', currentView === 'catalogue')}<button class="button patch-button" type="button" data-patch-open>Patch</button><a class="button primary" href="/">Sign in</a></div>`;
+  if (!user) return `<div class="top-actions">
+    <div class="header-community-actions">
+    ${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}
+    ${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}
+    ${statsButton()}
+    <button class="button patch-button" type="button" data-patch-open>Patch</button>
+    </div>
+    <div class="header-library-actions">
+    ${headerNav('katalog', 'Kat·a·log', '/katalog', currentView === 'catalogue')}
+    <a class="button primary" href="/">Sign in</a>
+    </div>
+  </div>`;
   return `<div class="top-actions">
     <div class="header-community-actions">
     ${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}
     ${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}
+    ${statsButton()}
     <button class="button patch-button" type="button" data-patch-open>Patch</button>
     <button class="button ping-button" type="button" data-ping-open>Ping <b class="ping-badge" data-ping-badge hidden></b></button>
     </div>
@@ -91,7 +105,7 @@ function footerMarkup(copyright) {
         <a href="https://biseri.net" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m12 3 1.3 5.7L19 10l-5.7 1.3L12 17l-1.3-5.7L5 10l5.7-1.3Z"/></svg><span><b>Бисери</b><small>Семейни бисери, смешни моменти и забавни детски истории.</small></span><i aria-hidden="true">↗</i></a>
       </span>
     </span>
-    <span>GAMEKAT.NET // GAME KAT·A·LOG</span><a href="/docs/user-guide.html">USER GUIDE</a>
+    <span>GAMEKAT.NET // GAME KAT·A·LOG</span><nav class="footer-info" aria-label="Site information"><button type="button" data-stats-open>STATS</button><a href="/docs/user-guide.html">USER GUIDE</a></nav>
   </footer>`;
 }
 
@@ -130,6 +144,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <link rel="stylesheet" href="/css/activity.css">
   <link rel="stylesheet" href="/css/public-profile.css">
   <link rel="stylesheet" href="/css/patch.css">
+  <link rel="stylesheet" href="/css/stats.css">
   <link rel="stylesheet" href="/css/katalog.css">
   ${extraStyles}
   <script type="application/ld+json">${jsonLd(structuredData)}</script>
@@ -147,6 +162,7 @@ function pageShell({ title, description, canonical, content, structuredData, use
   <script type="module" src="/js/katalog-public.js"></script>
   <script type="module" src="/js/site-header.js"></script>
   <script type="module" src="/js/patch-page.js"></script>
+  <script type="module" src="/js/stats-ui.js"></script>
   ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
   ${extraScripts}
 </body>

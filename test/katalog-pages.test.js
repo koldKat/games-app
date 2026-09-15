@@ -90,6 +90,10 @@ test('guest public navigation marks the current Signal or Kat·a·log section in
   const signal = renderSignal();
   assert.match(catalogue, /class="button katalog-button active" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(signal, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
+  for (const html of [catalogue, signal]) {
+    assert.match(html, /class="header-community-actions"[\s\S]*data-stats-open[\s\S]*class="header-library-actions"/);
+    assert.match(html, /src="\/js\/stats-ui\.js"/);
+  }
 });
 
 test('public release pages show a community aggregate but never offer a public voting control', () => {

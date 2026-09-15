@@ -31,6 +31,7 @@ const publicProfiles = require('./server/public-profiles');
 const { createKatalogRoutes } = require('./server/katalog-routes');
 const { createForumRoutes } = require('./server/forum-routes');
 const { createPatchRoutes } = require('./server/patch-routes');
+const { createSiteStats } = require('./server/site-stats');
 const { isAppViewPath, wantsAuthenticatedShell } = require('./server/app-shell');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
@@ -64,6 +65,7 @@ const MIME = {
 const coverJobs = new Map();
 const progression = createProgressionService({ store: db.progression, data: db });
 const showcasePool = createShowcasePool(db.db);
+const siteStats = createSiteStats(db.db, { root: __dirname });
 const externalCoverProviders = Object.freeze({
   thegamesdb: {
     label: 'TheGamesDB', client: thegamesdb,
@@ -264,6 +266,9 @@ function serveStatic(request, requestPath, response) {
 async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/api/config') {
     return sendJson(response, 200, { version: readVersion() });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/site-stats') {
+    return sendJson(response, 200, siteStats.snapshot());
   }
   if (request.method === 'GET' && url.pathname === '/api/showcase/covers') {
     const user = auth.authenticate(request, { touch: false });

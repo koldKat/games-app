@@ -1435,8 +1435,29 @@ dialog::backdrop {
   .top-actions {
     gap: 4px;
   }
-  .header-community-actions,.header-library-actions {
+  .header-library-actions {
     display:contents
+  }
+  .top-actions .header-community-actions {
+    position:fixed;
+    z-index:20;
+    left:10px;
+    bottom:calc(10px + env(safe-area-inset-bottom));
+    display:flex;
+    align-items:center;
+    gap:3px;
+    padding:3px;
+    border:1px solid #28483f;
+    border-radius:6px;
+    background:#08120ff2;
+    box-shadow:0 6px 20px #000a;
+    backdrop-filter:blur(7px)
+  }
+  .top-actions .header-community-actions .button {
+    width:36px;
+    min-width:36px;
+    height:36px;
+    padding:0
   }
   .header-progression {
     display:none

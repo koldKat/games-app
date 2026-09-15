@@ -16,6 +16,7 @@ Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation,
 - HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching, plus opt-in HLTB cover choices inside Request cover.
 - Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
 - Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
+- Public **Stats for Nerds** telemetry covering collectors, private-library aggregates, play states, public releases, metadata coverage, HLTB time, ratings, progression, community activity, platforms, storage, uptime, and server hardware without exposing private records.
 - Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), a per-account hide control, and opt-in collector profiles with aggregate stats.
 - Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, account activity, and moderation controls.
 - Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
@@ -60,7 +61,7 @@ The panel is loopback-only. Requests forwarded by nginx with a non-loopback clie
 
 ## Public landing and SEO
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the Kat·a·log. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the Kat·a·log. The public **Stats for Nerds** panel exposes aggregate collection and application telemetry without exposing account credentials or individual private records. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
 
 ## Public Kat·a·log
 
