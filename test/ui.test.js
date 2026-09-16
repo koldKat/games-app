@@ -154,18 +154,34 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/signal-page.js'), /dismissActivityPreview\(link\)/);
   assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
   assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
-  assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries\)/);
+  assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries, idPrefix/);
+  assert.match(read('public/js/activity-feed.js'), /function newspaperCards\(entries\)/);
+  assert.match(read('public/js/activity-feed.js'), /KAT·A·LOG \/\/ UPDATES/);
+  assert.match(read('public/js/activity-feed.js'), /COLLECTORS \/\/ SIGNAL/);
+  assert.match(read('public/js/activity-feed.js'), /KATALOG_ACTIVITY_TYPES = new Set\(\['catalogue_contribution'\]\)/);
+  assert.match(read('public/js/activity-feed.js'), /SIGNAL_MOBILE_QUERY = '\(max-width: 760px\)'/);
+  assert.match(read('public/js/activity-feed.js'), /const desktopNewspaper = host\.dataset\.activityLayout === 'newspaper' && !mobileLayout\.matches/);
+  assert.match(read('public/js/activity-feed.js'), /desktopNewspaper[\s\S]*\? newspaperCards\(visible\)/);
+  assert.match(read('public/js/activity-feed.js'), /laneEntries\.length \? groupedCards[\s\S]*activity-feed-empty/);
+  assert.match(read('public/js/activity-feed.js'), /mobileLayout\.addEventListener\('change', refreshLayout\)/);
+  assert.match(read('public/js/activity-feed.js'), /mobileLayout\.removeEventListener\('change', refreshLayout\)/);
+  assert.doesNotMatch(read('public/js/activity-feed.js'), /activity-mobile-stream/);
   assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 6/);
-  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex, dayKey\)/);
+  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex, dayKey, idPrefix/);
   assert.match(read('public/js/activity-feed.js'), /activity-group-chevron/);
   assert.match(read('public/js/activity-feed.js'), /data-activity-group-key/);
   assert.match(read('public/js/activity-feed.js'), /const expandedKeys = new Set/);
+  assert.match(read('public/js/activity-feed.js'), /function setGroupExpanded\(host, groupKey, expanded\)/);
+  assert.match(read('public/js/activity-feed.js'), /setGroupExpanded\(host, toggle\.dataset\.activityGroupKey/);
   assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
   assert.match(read('public/js/activity-feed.js'), /const targets = hosts\(\)/);
   assert.match(read('public/js/activity-feed.js'), /controllerLoaderMarkup\('Tuning the signal…'\)/);
   assert.match(read('public/css/katalog.css'), /\.signal-feed-loader/);
   assert.match(read('public/js/katalog-navigation.js'), /onSignalVisible\(\)/);
   assert.match(read('public/css/katalog.css'), /\.signal-feed \.activity-day h3/);
+  assert.match(read('public/css/katalog.css'), /\.activity-newspaper \{/);
+  assert.match(read('public/css/katalog.css'), /grid-template-columns:minmax\(0,11fr\) minmax\(280px,9fr\)/);
+  assert.match(read('public/css/katalog.css'), /align-items:stretch/);
   assert.match(read('public/js/activity-feed.js'), /entry\.type === 'announcement'/);
   assert.match(read('public/js/activity-feed.js'), /body\.pinned/);
   assert.match(read('public/js/activity-feed.js'), /function pinnedCard\(entry\)/);
@@ -177,6 +193,22 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('admin/js/boot.js'), /loadAnnouncements/);
   assert.match(read('admin/js/announcements.js'), /\/api\/admin\/announcements/);
   assert.match(read('server/admin.js'), /activity\.publishAnnouncement/);
+});
+
+test('desktop header actions use below-control themed tooltips without mobile overlays', () => {
+  const html = read('public/index.html');
+  const pages = read('server/katalog-pages.js');
+  const patchUi = read('public/js/patch-ui.js');
+  const features = readCss('public/css/features.css');
+  const siteHeader = read('public/js/site-header.js');
+  for (const name of ['Signal', 'Forum', 'Stats for nerds', 'Send a Patch', 'Open Ping', 'Kat·a·log', 'My Kat·a·log', 'Add a game', 'Open profile']) {
+    assert.match(html, new RegExp(`themed-tooltip header-tooltip[^>]*data-tooltip="${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`), name);
+  }
+  assert.match(pages, /themed-tooltip header-tooltip/);
+  assert.match(patchUi, /button\.dataset\.tooltip = empty \? 'No Ping conversations yet\.' : 'Open Ping'/);
+  assert.match(features, /@media \(min-width:761px\)[\s\S]*\.top-actions \.header-tooltip::after\{top:calc\(100% \+ 6px\);bottom:auto/);
+  assert.match(features, /@media \(max-width:760px\)[\s\S]*\.top-actions \.header-tooltip::after\{display:none}/);
+  assert.match(siteHeader, /closest\('\.top-actions a\.active'\)[\s\S]*event\.preventDefault\(\)/);
 });
 
 test('maintained markup does not hardcode decorative placeholder clusters', () => {
@@ -373,7 +405,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /window\.history\.pushState/);
   assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
   assert.match(navigation, /\}, \{ capture: true \}\);/);
-  assert.match(html, /header-community-actions[\s\S]*class="button signal-button" href="\/signal">[\s\S]*header-nav-label">Signal[\s\S]*class="button forum-button" href="\/forum">[\s\S]*header-nav-label">Forum[\s\S]*header-progression[\s\S]*header-library-actions[\s\S]*class="button katalog-button" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log[\s\S]*class="button library-button" href="\/">[\s\S]*header-nav-label">My Kat·a·log/);
+  assert.match(html, /header-community-actions[\s\S]*class="button signal-button themed-tooltip header-tooltip" href="\/signal"[\s\S]*header-nav-label">Signal[\s\S]*class="button forum-button themed-tooltip header-tooltip" href="\/forum"[\s\S]*header-nav-label">Forum[\s\S]*header-progression[\s\S]*header-library-actions[\s\S]*class="button katalog-button themed-tooltip header-tooltip" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log[\s\S]*class="button library-button themed-tooltip header-tooltip" href="\/"[\s\S]*header-nav-label">My Kat·a·log/);
   assert.match(navigation, /libraryButton\.classList\.toggle\('active', libraryOpen\)/);
   assert.match(navigation, /katalogButton\.classList\.toggle\('active', katalogOpen\)/);
   assert.doesNotMatch(navigation, /toggle\.textContent/);

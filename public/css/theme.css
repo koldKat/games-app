@@ -1224,7 +1224,7 @@ dialog::backdrop {
   background:#11161b;
   color:#68737d;
   cursor:default;
-  pointer-events:none;
+  pointer-events:auto;
 }
 .top-actions .signal-button {
   width:auto;

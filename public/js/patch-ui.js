@@ -45,6 +45,7 @@ function mountHeaderButtons() {
   for (const [selector, kind, label] of [['.top-actions [data-patch-open]', 'patch', 'Patch'], ['.top-actions [data-ping-open]', 'ping', 'Ping']]) {
     document.querySelectorAll(selector).forEach(button => {
       const badge = button.querySelector('[data-ping-badge]'); button.replaceChildren();
+      button.classList.add('themed-tooltip', 'header-tooltip');
       button.setAttribute('aria-label', label); button.insertAdjacentHTML('beforeend', navIcon(kind));
       const text = document.createElement('span'); text.className = 'header-nav-label'; text.textContent = label; button.append(text);
       if (badge) button.append(badge);
@@ -78,9 +79,7 @@ export function createPatchUi({ api, toast, getUser }) {
       const empty = Number(count) === 0;
       button.disabled = empty;
       button.setAttribute('aria-disabled', String(empty));
-      button.classList.toggle('themed-tooltip', empty);
-      if (empty) button.dataset.tooltip = 'No Ping conversations yet.';
-      else delete button.dataset.tooltip;
+      button.dataset.tooltip = empty ? 'No Ping conversations yet.' : 'Open Ping';
       button.removeAttribute('title');
     });
   }

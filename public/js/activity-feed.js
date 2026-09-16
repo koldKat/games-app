@@ -74,6 +74,12 @@ function dayLabel(value) {
   return new Intl.DateTimeFormat(UI_LOCALE, { weekday: 'short', day: 'numeric', month: 'short', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' }).format(date);
 }
 const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
+const SIGNAL_MOBILE_QUERY = '(max-width: 760px)';
+const KATALOG_ACTIVITY_TYPES = new Set(['catalogue_contribution']);
+function activityLane(entry) {
+  if (entry.type === 'announcement') return 'announcement';
+  return KATALOG_ACTIVITY_TYPES.has(entry.type) ? 'katalog' : 'collector';
+}
 function contributionGroup(entry, entries, id, groupKey) {
   const count = entries.length;
   const username = escapeHtml(entry.username);
@@ -82,7 +88,7 @@ function contributionGroup(entry, entries, id, groupKey) {
     <div class="activity-group-items" id="${id}" hidden>${entries.map(card).join('')}</div>
   </section>`;
 }
-function collapseContributions(entries, dayIndex, dayKey) {
+function collapseContributions(entries, dayIndex, dayKey, idPrefix = 'activity') {
   const byUser = new Map();
   for (const entry of entries) {
     if (entry.type !== 'catalogue_contribution') continue;
@@ -95,21 +101,50 @@ function collapseContributions(entries, dayIndex, dayKey) {
     const group = byUser.get(entry.username);
     if (rendered.has(group)) return '';
     rendered.add(group);
-    return contributionGroup(entry, group, `activity-contributions-${dayIndex}-${groupIndex++}`, `${dayKey}:${entry.username}`);
+    return contributionGroup(entry, group, `${idPrefix}-contributions-${dayIndex}-${groupIndex++}`, `${dayKey}:${entry.username}`);
   }).join('');
 }
-function groupedCards(entries) {
+function groupedCards(entries, idPrefix = 'activity') {
   const groups = new Map();
   for (const entry of entries) {
     const key = timestamp(entry.createdAt).toDateString();
     const group = groups.get(key) || { key, label: dayLabel(entry.createdAt), entries: [] };
     group.entries.push(entry); groups.set(key, group);
   }
-  return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index, group.key)}</div></section>`).join('');
+  return [...groups.values()].map((group, index) => `<section class="activity-day"><h3>${escapeHtml(group.label)}</h3><div>${collapseContributions(group.entries, index, group.key, idPrefix)}</div></section>`).join('');
+}
+function laneMarkup(entries, lane, heading, description) {
+  const laneEntries = entries.filter(entry => activityLane(entry) === lane);
+  const empty = lane === 'katalog' ? 'No Kat·a·log updates in range.' : 'No collector signals in range.';
+  return `<section class="activity-column activity-column--${lane}">
+    <header><h3>${heading}</h3><p>${description}</p></header>
+    <div class="activity-column-stream">${laneEntries.length ? groupedCards(laneEntries, `activity-${lane}`) : `<p class="activity-feed-empty">${empty}</p>`}</div>
+  </section>`;
+}
+function newspaperCards(entries) {
+  const announcements = entries.filter(entry => activityLane(entry) === 'announcement');
+  const announcementMarkup = announcements.length
+    ? `<div class="activity-newspaper-announcements">${groupedCards(announcements, 'activity-announcement')}</div>`
+    : '';
+  return `${announcementMarkup}<div class="activity-newspaper">
+    ${laneMarkup(entries, 'katalog', 'KAT·A·LOG // UPDATES', 'Games joining the shared index.')}
+    ${laneMarkup(entries, 'collector', 'COLLECTORS // SIGNAL', 'New curators, levels, and titles.')}
+  </div>`;
 }
 export function createActivityFeed() {
   const hosts = () => [...document.querySelectorAll('[data-activity-feed]')];
-  let refreshTimer = null; let source = null; let cachedPayload = null; let cachedAt = 0; let loading = null;
+  const mobileLayout = window.matchMedia(SIGNAL_MOBILE_QUERY);
+  let refreshTimer = null; let source = null; let cachedPayload = null; let cachedAt = 0; let loading = null; let layoutListening = false;
+  function setGroupExpanded(host, groupKey, expanded) {
+    host.querySelectorAll('[data-activity-group-key]').forEach(toggle => {
+      if (toggle.dataset.activityGroupKey !== groupKey) return;
+      const list = host.querySelector(`#${CSS.escape(toggle.dataset.activityGroupToggle)}`);
+      if (!list) return;
+      list.hidden = !expanded;
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} contributed games`);
+    });
+  }
   function bindInteractions(host) {
     if (host.dataset.activityGroupsBound === 'true') return;
     host.dataset.activityGroupsBound = 'true';
@@ -120,10 +155,7 @@ export function createActivityFeed() {
         void openPublicProfile(profile.dataset.publicProfile); return;
       }
       const toggle = event.target.closest('[data-activity-group-toggle]'); if (!toggle) return;
-      const list = host.querySelector(`#${CSS.escape(toggle.dataset.activityGroupToggle)}`); if (!list) return;
-      list.hidden = !list.hidden; const expanded = !list.hidden;
-      toggle.setAttribute('aria-expanded', String(expanded));
-      toggle.setAttribute('aria-label', `${expanded ? 'Hide' : 'Show'} contributed games`);
+      setGroupExpanded(host, toggle.dataset.activityGroupKey, toggle.getAttribute('aria-expanded') !== 'true');
     });
   }
   function render(targets, body) {
@@ -133,16 +165,14 @@ export function createActivityFeed() {
       const limit = host.dataset.activityLimit === 'all' ? entries.length : Math.max(1, Number(host.dataset.activityLimit) || 3);
       const visible = entries.slice(0, limit);
       const pinnedMarkup = pinned ? pinnedCard(pinned) : '';
-      const entriesMarkup = visible.length ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible) : visible.map(card).join('')) : '';
+      const desktopNewspaper = host.dataset.activityLayout === 'newspaper' && !mobileLayout.matches;
+      const entriesMarkup = desktopNewspaper
+        ? newspaperCards(visible)
+        : visible.length
+          ? (host.dataset.activityGrouped === 'true' ? groupedCards(visible, host.dataset.activityLayout === 'newspaper' ? 'activity-mobile' : 'activity') : visible.map(card).join(''))
+          : '';
       host.innerHTML = pinnedMarkup || entriesMarkup ? `${pinnedMarkup}${entriesMarkup}` : '<p class="activity-feed-empty">Quiet channel. New signal soon.</p>';
-      host.querySelectorAll('[data-activity-group-key]').forEach(toggle => {
-        if (!expandedKeys.has(toggle.dataset.activityGroupKey)) return;
-        const list = host.querySelector(`#${CSS.escape(toggle.dataset.activityGroupToggle)}`);
-        if (!list) return;
-        list.hidden = false;
-        toggle.setAttribute('aria-expanded', 'true');
-        toggle.setAttribute('aria-label', 'Hide contributed games');
-      });
+      for (const groupKey of expandedKeys) setGroupExpanded(host, groupKey, true);
       host.dataset.activityLoaded = 'true'; bindInteractions(host);
     }
   }
@@ -171,9 +201,16 @@ export function createActivityFeed() {
     })();
     return loading;
   }
+  function refreshLayout() {
+    if (cachedPayload && hosts().some(host => host.dataset.activityLayout === 'newspaper')) render(hosts(), cachedPayload);
+  }
   function start() {
+    if (!layoutListening) { mobileLayout.addEventListener('change', refreshLayout); layoutListening = true; }
     void load(); source?.close(); source = new EventSource('/api/activity/stream');
     source.addEventListener('activity-changed', () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => void load({ force: true }), UI_TIMING.signalRefreshDebounceMs); });
   }
-  return { start, stop: () => { clearTimeout(refreshTimer); refreshTimer = null; source?.close(); source = null; }, load };
+  return { start, stop: () => {
+    clearTimeout(refreshTimer); refreshTimer = null; source?.close(); source = null;
+    if (layoutListening) { mobileLayout.removeEventListener('change', refreshLayout); layoutListening = false; }
+  }, load };
 }

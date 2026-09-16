@@ -358,6 +358,9 @@
   position: relative;
   z-index: 1;
 }
+#app-shell > .topbar {
+  z-index: 30;
+}
 .session-resume-screen {
   display: none;
   position: fixed;
@@ -483,6 +486,23 @@
   opacity: 1;
   transform: translate(-50%, 0);
   visibility: visible;
+}
+@media (min-width: 761px) {
+  .top-actions .header-tooltip::after {
+    top: calc(100% + 6px);
+    bottom: auto;
+    z-index: 80;
+    transform: translate(-50%, -3px);
+  }
+  .top-actions .header-tooltip:hover::after,
+  .top-actions .header-tooltip:focus-visible::after {
+    transform: translate(-50%, 0);
+  }
+}
+@media (max-width: 760px) {
+  .top-actions .header-tooltip::after {
+    display: none;
+  }
 }
 .integration-bulk .bulk-status:after {
   content: attr(data-tooltip);

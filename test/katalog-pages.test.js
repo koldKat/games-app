@@ -63,30 +63,30 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
   assert.match(html, /class="brand"/);
   assert.match(html, /class="brand-mark"/);
   assert.match(html, /class="top-actions"/);
-  assert.match(html, /class="button account-button"/);
+  assert.match(html, /class="button account-button themed-tooltip header-tooltip"/);
   assert.match(html, /class="nav-avatar"/);
   assert.match(html, /Your collection, one place/);
   assert.match(html, /avatars\/koldkat\.jpg/);
   assert.match(html, /My Kat·a·log/);
-  assert.match(html, /class="button library-button" href="\/">[\s\S]*header-nav-label">My Kat·a·log/);
-  assert.match(html, /class="button katalog-button(?: active)?" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
+  assert.match(html, /class="button library-button themed-tooltip header-tooltip" href="\/"[\s\S]*header-nav-label">My Kat·a·log/);
+  assert.match(html, /class="button katalog-button themed-tooltip header-tooltip(?: active)?" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(html, /button-label">Game/);
-  assert.match(html, /class="button signal-button" href="\/signal">[\s\S]*header-nav-label">Signal/);
+  assert.match(html, /class="button signal-button themed-tooltip header-tooltip" href="\/signal"[\s\S]*header-nav-label">Signal/);
 });
 
 test('Signal is a crawlable public page that attaches to the live feed client', () => {
   const html = renderSignal({ user: { username: 'signal_user' }, progress: { level: 17, title: 'Kat·a·log Architect', xp: 153995, progress: 4, nextLevelXp: 171000 }, coverUrls: [entry.coverUrl] });
   assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/signal">/);
   assert.match(html, /<h1>Kat·a·log Signal<\/h1>/);
-  assert.match(html, /data-activity-feed data-activity-limit="all" data-activity-grouped="true"/);
+  assert.match(html, /data-activity-feed data-activity-limit="all" data-activity-grouped="true" data-activity-layout="newspaper"/);
   assert.match(html, /src="\/js\/signal-page\.js"/);
-  assert.match(html, /Personal libraries, ratings, wishlists, edits, and play status stay private/);
+  assert.doesNotMatch(html, /LAST 30 DAYS|Recent public activity|Personal libraries, ratings, wishlists, edits, and play status stay private/);
   assert.match(html, /id="header-progression" class="header-progression"/);
   assert.match(html, /LV 17/);
   assert.match(html, /Kat·a·log Architect/);
   assert.match(html, /<progress class="header-progression-meter" data-header-progress-meter max="100" value="4"/);
   assert.doesNotMatch(html, /data-header-progress-meter style=/);
-  assert.match(html, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
+  assert.match(html, /class="button signal-button themed-tooltip header-tooltip active" href="\/signal"[\s\S]*header-nav-label">Signal/);
   assert.match(html, /class="hero-art katalog-hero-art"/);
   assert.match(html, /class="hero-cover katalog-hero-cover hero-cover-3 has-art"/);
 });
@@ -94,8 +94,8 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
 test('guest public navigation marks the current Signal or Kat·a·log section inactive', () => {
   const catalogue = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
   const signal = renderSignal();
-  assert.match(catalogue, /class="button katalog-button active" href="\/katalog">[\s\S]*header-nav-label">Kat·a·log/);
-  assert.match(signal, /class="button signal-button active" href="\/signal">[\s\S]*header-nav-label">Signal/);
+  assert.match(catalogue, /class="button katalog-button themed-tooltip header-tooltip active" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log/);
+  assert.match(signal, /class="button signal-button themed-tooltip header-tooltip active" href="\/signal"[\s\S]*header-nav-label">Signal/);
   for (const html of [catalogue, signal]) {
     assert.match(html, /class="header-community-actions"[\s\S]*data-stats-open[\s\S]*class="header-library-actions"/);
     assert.match(html, /src="\/js\/stats-ui\.js"/);

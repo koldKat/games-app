@@ -1,4 +1,8 @@
 const source = new EventSource('/api/site/stream');
+document.addEventListener('click', event => {
+  const current = event.target.closest('.top-actions a.active');
+  if (current) event.preventDefault();
+});
 source.addEventListener('version-updated', event => {
   try {
     const version = JSON.parse(event.data).version;

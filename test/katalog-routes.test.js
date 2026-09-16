@@ -53,7 +53,7 @@ test('the public Signal route is available without an account', async () => {
   const handled = await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/signal'));
   assert.equal(handled, true);
   assert.equal(output.status, 200);
-  assert.match(output.body, /data-activity-feed data-activity-limit="all" data-activity-grouped="true"/);
+  assert.match(output.body, /data-activity-feed data-activity-limit="all" data-activity-grouped="true" data-activity-layout="newspaper"/);
   assert.match(output.body, /signal-page\.js/);
 });
 
