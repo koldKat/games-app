@@ -13,7 +13,7 @@ export async function api(method, path, body) {
 
 export function formatNumber(value) { return Number(value || 0).toLocaleString(UI_LOCALE); }
 export function formatBytes(value) {
-  let size = Number(value || 0); const units = ['B', 'KB', 'MB', 'GB']; let unit = 0;
+  let size = Number(value || 0); const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']; let unit = 0;
   while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit++; }
   return `${unit ? size.toFixed(1) : Math.round(size)} ${units[unit]}`;
 }

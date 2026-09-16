@@ -49,6 +49,7 @@ test('public site stats aggregate game-focused facts without exposing private re
   const stats = createSiteStats(data.db, {
     root: path.join(__dirname, '..'),
     resourceAverages: () => ({ avgCpu: 0.2, avgHeapUsed: 10, avgHeapTotal: 20, avgRss: 30, avgSamples: 60 }),
+    trafficStats: () => ({ trafficIn: 2_048, trafficOut: 4_096 }),
   }).snapshot();
   assert.equal(stats.users, 3);
   assert.equal(stats.libraryRecords, 3);
@@ -69,6 +70,8 @@ test('public site stats aggregate game-focused facts without exposing private re
   assert.equal(stats.avgCpu, 0.2);
   assert.equal(stats.avgHeapTotal, 20);
   assert.equal(stats.avgSamples, 60);
+  assert.equal(stats.trafficIn, 2_048);
+  assert.equal(stats.trafficOut, 4_096);
   assert.equal(stats.forumThreads, 1);
   assert.equal(stats.signalEvents, 1);
   assert.equal(stats.announcements, 1);
@@ -98,6 +101,12 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(ui, /formatCount\(Math\.floor\(Number\(stats\.averageLevel\)/);
   assert.match(ui, /Avg CPU \(session\)/);
   assert.match(ui, /CPU age/);
+  assert.match(ui, /Traffic in/);
+  assert.match(ui, /Traffic out/);
+  assert.match(read('server.js'), /trafficMetrics\.trackRequest\(request, response\)/);
+  assert.match(read('server.js'), /trafficMetrics\.flush\(\);[\s\S]*server\.close/);
+  assert.match(read('admin/index.html'), /id="metric-traffic-in"/);
+  assert.match(read('admin/js/dashboard.js'), /data\.trafficOut/);
   assert.match(css, /max-height: 80dvh/);
   assert.match(css, /column-count: 3/);
   assert.match(css, /@media \(max-width: 600px\)/);

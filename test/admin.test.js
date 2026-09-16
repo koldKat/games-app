@@ -65,6 +65,8 @@ test('admin summaries span accounts while preserving owner identity', async () =
   const live = admin.liveStats();
   assert.equal(typeof live.heapUsed, 'number');
   assert.equal(typeof live.cpuPct, 'number');
+  assert.equal(typeof live.trafficIn, 'number');
+  assert.equal(typeof live.trafficOut, 'number');
   assert.ok(live.appAgeSeconds >= 0);
 
   data.db.prepare("UPDATE users SET last_country='BG', last_city='Sofia' WHERE id=?").run(alpha.id);

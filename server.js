@@ -32,6 +32,8 @@ const { createKatalogRoutes } = require('./server/katalog-routes');
 const { createForumRoutes } = require('./server/forum-routes');
 const { createPatchRoutes } = require('./server/patch-routes');
 const { createSiteStats } = require('./server/site-stats');
+const trafficMetrics = require('./server/traffic-metrics');
+const { decodeRequestPathname, parseRequestUrl } = require('./server/request-url');
 const { isAppViewPath, wantsAuthenticatedShell } = require('./server/app-shell');
 const { readVersion } = require('./server/version');
 const backup = require('./server/backup');
@@ -559,8 +561,10 @@ async function handleApi(request, response, url) {
 }
 
 const server = http.createServer(async (request, response) => {
+  trafficMetrics.trackRequest(request, response);
   setPublicSecurityHeaders(response);
-  const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+  const url = parseRequestUrl(request.url);
+  if (!url) return sendJson(response, 400, { error: 'Invalid request target.' });
   try {
     if (await admin.handle(request, response, url)) return;
     if (isAppViewPath(url.pathname)) {
@@ -574,7 +578,9 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname.startsWith('/api/')) {
     handleApi(request, response, url).catch(error => sendJson(response, 500, { error: error.message || 'Unexpected server error.' }));
   } else {
-    serveStatic(request, decodeURIComponent(url.pathname), response);
+    const pathname = decodeRequestPathname(url);
+    if (pathname == null) return sendJson(response, 400, { error: 'Invalid request path.' });
+    serveStatic(request, pathname, response);
   }
 });
 
@@ -591,7 +597,8 @@ server.listen(PORT, HOST, () => {
 
 function shutdown() {
   admin.markServerStopped();
-  server.close(() => { db.db.close(); process.exit(0); });
+  trafficMetrics.flush();
+  server.close(() => { trafficMetrics.flush(); db.db.close(); process.exit(0); });
   setTimeout(() => process.exit(1), RUNTIME_POLICY.shutdownGraceMs).unref();
 }
 process.on('SIGINT', shutdown);

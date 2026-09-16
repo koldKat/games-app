@@ -6,6 +6,7 @@ const path = require('node:path');
 const { XP_EVENTS, computeLevel, titleForLevel } = require('./progression-policy');
 const { CPU_RELEASE_DATES } = require('./hardware-policy');
 const { getResourceAverages } = require('./resource-metrics');
+const { stats: getTrafficStats } = require('./traffic-metrics');
 const RUNTIME_POLICY = require('./runtime-policy');
 
 const SOURCE_EXTENSIONS = new Set(['.js', '.css', '.html', '.md']);
@@ -61,7 +62,7 @@ function cpuInfo(currentMs) {
   };
 }
 
-function createSiteStats(database, { root = path.join(__dirname, '..'), now = () => Date.now(), resourceAverages = getResourceAverages } = {}) {
+function createSiteStats(database, { root = path.join(__dirname, '..'), now = () => Date.now(), resourceAverages = getResourceAverages, trafficStats = getTrafficStats } = {}) {
   const source = codeStats(root);
   const scalar = (sql, params = []) => Number(database.prepare(sql).get(...params)?.n || 0);
   const setting = key => database.prepare('SELECT value FROM runtime_settings WHERE key=?').get(key)?.value || '';
@@ -152,6 +153,7 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       platforms: database.prepare("SELECT platform, COUNT(*) count FROM catalogue_entries WHERE status='public' GROUP BY platform_key ORDER BY count DESC, platform COLLATE NOCASE LIMIT 8").all(),
       ...cpuInfo(currentMs),
       ...resourceAverages(),
+      ...trafficStats(),
       ...source,
       ...covers,
       databaseBytes: pageCount * pageSize,

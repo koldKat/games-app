@@ -1,92 +1,183 @@
 # Game Kat·a·log
 
-A responsive, private-library-first, multi-platform game collection manager with a shared public discovery Kat·a·log, built with the same lightweight stack as the other household apps: plain Node.js, `better-sqlite3`, and dependency-free HTML/CSS/JavaScript.
+Game Kat·a·log is a responsive, private-library-first game tracker with a shared public release index and community layer. It uses a lightweight stack: plain Node.js, `better-sqlite3`, server-rendered public pages, and dependency-free browser JavaScript.
 
-Game Kat·a·log tracks owned and wishlisted games across Nintendo, PlayStation, Xbox, Sega, Atari, computers, handhelds, mobile, arcade, VR, streaming services, and custom platforms. Each title can carry physical/digital format, play-state, PEGI details, cover-art, HowLongToBeat estimates, a personal half-star rating, favorite, publisher, release-year, cartridge, and note metadata.
+Track owned and wishlisted games across consoles, handhelds, computers, storefronts, mobile, arcade, VR, streaming services, and custom platforms. Personal collection data stays account-scoped while sufficiently enriched factual release data can contribute to the public Kat·a·log.
 
 ## Features
 
-- Multi-account, account-scoped libraries with responsive card and compact views.
-- Broad platform taxonomy plus custom platforms for unusual hardware and editions.
-- Owned and wishlisted collection states, physical/digital format, play status (including a dropdown-only hidden state), personal half-star ratings, favorites, cartridge numbers, publishers, years, and notes.
-- Accent-insensitive search; composable platform, collection, PEGI, status, favorite, and missing-data filters; and 23 Kat·a·log or HLTB sort orders.
-- PEGI-assisted ratings, descriptors, releases, guidance, and conservative batch enrichment.
-- SteamGridDB and TheGamesDB cover search with provider-specific missing-cover scans, durable public local artwork, and SteamGridDB title suggestions.
-- Editable game descriptions with Steam Store-first and TheGamesDB-fallback lookup and conservative background filling.
-- HowLongToBeat Main Story, Main + Sides, Completionist, and All Styles estimates with manual and batch matching, plus opt-in HLTB cover choices inside Request cover.
-- Server-sent live updates that patch affected cards without reloading the grid or moving the viewport.
-- Collector progression with the Gamebooks level curve, permanent action awards, titles, milestone XP, and live account updates.
-- Public **Stats for Nerds** telemetry covering collectors, private-library aggregates, play states, public releases, metadata coverage, HLTB time, ratings, progression, community activity, platforms, storage, uptime, and server hardware without exposing private records.
-- Public, SSE-updated Kat·a·log Signal page with database-backed randomized join and level-up messages, public contribution notices, administrator announcements (draft, publish, pin), a per-account hide control, and opt-in collector profiles with aggregate stats.
-- Private Patch support threads with a live Ping inbox for replies; the localhost-only admin panel carries the operator queue, unread state, replies, account activity, and moderation controls.
-- Public, live-updating forum with collection, game, hardware, and Kat·a·log channels; members can own their posts while the localhost panel moderates threads and channels.
-- SQLite-backed view, search, filter, and sort preferences that follow an account across devices.
-- Dense, responsive desktop and mobile interfaces with background enrichment progress and targeted live card updates.
-- A crawlable public release Kat·a·log that grows from fully enriched libraries and lets signed-in members add an existing release without re-entering factual metadata.
+### Private libraries
 
-## Accounts
+- Separate SQLite-backed libraries for every account, with settings synchronized across devices.
+- Owned physical, owned digital, and wishlisted collection states.
+- Backlog, playing, completed, paused, abandoned, and dropdown-only hidden play states.
+- Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, cover art, and HowLongToBeat estimates.
+- Grid and compact views, accent-insensitive live search, composable filters, and 23 sorting modes.
+- Ten-row desktop pagination for both private and public collections.
+- Same-title copies grouped into one card when no platform filter is active. Platform chips select the exact private copy being viewed, rated, or edited; applying a platform filter separates the editions again.
+- Clicking a private card opens its read-only details. Editing remains an explicit action.
 
-Registration and login use scrypt-hashed passwords and random sessions delivered through an HttpOnly, SameSite cookie with a rolling two-week expiry. The browser stores no authentication or preference state in local or session storage. Each account has an isolated library and can change its own username or password from the account menu.
+### Adding and enriching games
 
-New accounts begin with isolated, empty libraries. Existing game ownership is stored by immutable numeric account ID, so renaming an account does not affect its collection.
+- A broad grouped platform list includes console families, handhelds, computers, operating systems, Steam, GOG, Epic Games Store, other launchers, and a Custom option.
+- Title autocomplete checks the current account first, then the public Kat·a·log, then optional SteamGridDB suggestions.
+- Duplicate title/platform copies are blocked while different-platform editions remain valid.
+- PEGI lookup can fill ratings, descriptors, releases, publisher, year, consumer advice, outlines, and content details.
+- HowLongToBeat lookup stores Main Story, Main + Sides, Completionist, and All Styles estimates.
+- Cover requests can use SteamGridDB, TheGamesDB, and an HLTB match already selected for that game. Users can also upload their own cover.
+- Description lookup checks Steam Store first and can use TheGamesDB as a fallback.
+- Account-scoped background scans can fill missing covers, PEGI, HLTB, and descriptions.
+- Live updates patch affected cards without reloading the full grid or moving the viewport.
+- Stored covers are durable local JPEGs capped at 900 pixels and 256 KiB. Avatars are center-cropped 512×512 JPEGs capped at 256 KiB.
 
-Library view, search text, filters, sorting, and profile privacy are stored per account in SQLite. Signing in from another desktop or phone therefore restores the same workspace settings. Collector profiles remain private by default; an account can explicitly publish its avatar, level, join month, aggregate collection counts, contributions, and leading platforms for visitors who select its name in Signal.
+### One persistent application shell
 
-The add/edit form includes a broad grouped platform list plus a custom-platform escape hatch. PEGI rating colors provide the card rail identity; the platform remains visible on each card.
+The signed-in app has four top-level views with one shared header and cover fan:
 
-## Run
+- **My Kat·a·log** for the private library.
+- **Public Kat·a·log** for shared releases and one-click additions.
+- **Kat·a·log Signal** for public-safe community activity.
+- **Kat·a·log Forum** for public discussions.
+
+Navigation swaps only the content below the header. The account control, collector progress, view buttons, and `+Game` action remain mounted. Direct refreshes on public views restore the requested section without briefly exposing the login screen.
+
+### Collector progression
+
+- The Gamebooks level curve, 100 levels, and Kat·a·log-specific titles.
+- Permanent XP awards for building and enriching a collection, playing games, milestones, public contributions, avatars, and forum participation.
+- Stable event references prevent repeated actions from farming XP.
+- The header XP meter updates live and animates awards in level-scaled steps.
+- Future award amounts can be tuned from the localhost admin panel without rewriting historical XP.
+
+### Public Kat·a·log
+
+- Crawlable browse pages at `/katalog` and stable factual release pages at `/game/:slug`.
+- Public cards group editions by title until a platform filter is applied.
+- Signed-in members can add an existing public release without re-entering factual metadata.
+- Existing title/platform copies are detected before the add action, with server-side duplicate protection retained for races between tabs.
+- Anonymous community ratings appear from the first private rating onward.
+- Public covers are independent durable copies, so private edits or deletion cannot break a public release.
+
+A private game becomes eligible only when it has a durable cover, substantive PEGI data, and HLTB timing data. Exact normalized cover and HLTB title matches publish automatically. Complete but ambiguous records enter the localhost review queue. Hidden and incomplete games stay private.
+
+The shared entry contains factual release metadata only. It never includes the contributing account, ownership, format, play state, personal rating, favorite, cartridge number, notes, private row ID, email, or location.
+
+### Signal and public profiles
+
+- Signal is public at `/signal`, grouped by local day, limited to the last 30 days, and updated live.
+- Public-safe events include new accounts, level-ups, public game contributions, and administrator announcements. Private library activity never appears.
+- Larger same-day contribution groups collapse into one compact expandable entry.
+- Accounts can hide all of their Signal activity, including existing events.
+- Public collector profiles are opt-in and contain only aggregate collection information.
+- Administrators can draft, publish, unpublish, delete, and pin Signal announcements.
+
+### Forum, Patch, and Ping
+
+- `/forum` is a public, search-visible discussion area with channels, threads, replies, ownership controls, and live updates.
+- New-thread composition stays inline inside the selected channel.
+- Members can edit or delete their own forum content; administrators can manage channels and moderate any thread.
+- Patch is a private support and feedback channel for members and visitors.
+- Ping is the signed-in private inbox for Patch replies, with live unread updates.
+- Optional SMTP notifications use branded email templates linking back to the app.
+
+### Stats for Nerds
+
+The public Stats for Nerds panel provides an anonymous aggregate view of the collection, community, metadata, progression, and application. It never exposes credentials, emails, locations, private game titles, notes, or individual library rows.
+
+## Accounts and security
+
+- Registration includes username, password confirmation, and an optional email address.
+- Passwords use scrypt with random salts. Sessions use random HttpOnly, SameSite cookies with rolling two-week expiry.
+- Login throttling and temporary locks protect against repeated password failures.
+- Accounts can change username, email, password, avatar, public-profile visibility, and Signal visibility.
+- Password-reset links are one-time, expire after an hour, and revoke all existing sessions after use.
+- The browser stores no authentication or account preferences in local storage or session storage.
+- A configured owner account is protected from admin deletion, locking, and renaming. No username is hardcoded in the application.
+- The public surface uses restrictive CSP, content-type, referrer, framing, and permissions headers.
+
+## Requirements and startup
+
+- Node.js 20 or newer.
+- npm.
+- The host `zip` command for scheduled database backups.
 
 ```bash
 npm install
 npm start
 ```
 
-Open `http://localhost:3005`. The server listens on all interfaces by default, so the app can also be opened from a phone on the same network using the computer's LAN address.
+Open `http://localhost:3005`. The default listener accepts LAN connections, so another device can use the host computer's LAN address.
 
 Optional environment variables:
 
 ```bash
-PORT=3005 HOST=0.0.0.0 DB_PATH=/path/to/games.db PUBLIC_URL=https://gamekat.net OWNER_USERNAME=your_name npm start
+PORT=3005 \
+HOST=0.0.0.0 \
+DB_PATH=/path/to/games.db \
+PUBLIC_URL=https://gamekat.net \
+OWNER_USERNAME=your_name \
+npm start
 ```
 
-`PUBLIC_URL` controls absolute server-rendered links, canonical URLs, email actions, and the SMTP greeting host. `OWNER_USERNAME` is optional; when omitted, the oldest account is the owner. The owner is the protected operator account used by Patch/Ping and cannot be renamed, locked, or deleted through admin controls. No account name is embedded in application code.
+`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner.
 
-## Local admin
+The current arbitrary release string lives in `VERSION`. It can be edited through the localhost admin panel and is broadcast immediately to open headers.
 
-Open `http://127.0.0.1:3005/admin/` on the host machine for the dense, terminal-style control panel. It exposes live process health plus one-minute collection/Kat·a·log summaries, recent account country/city resolved through an offline GeoIP database, account locks and session revocation, collector XP tuning, SMTP settings for password resets and Patch/Ping notices, cross-account private-row inspection, public Kat·a·log review, Signal announcement drafts/publishing/pinning, forum channel and thread moderation, private Patch triage with replies delivered to Ping, SQLite maintenance, hourly compressed backups, and an arbitrary release-string editor backed by `VERSION`.
+## Localhost admin
 
-The server makes one database-only ZIP backup at startup and then on every hour, retaining 15 days under the Git-ignored `backups/` directory. Cover binaries in `public/covers/` are deliberately excluded. The host `zip` command is required.
+Open `http://127.0.0.1:3005/admin/` on the server itself. The panel deliberately rejects LAN and reverse-proxied public clients.
 
-The panel is loopback-only. Requests forwarded by nginx with a non-loopback client address are rejected even though nginx itself connects locally.
+The terminal-style admin provides:
 
-## Public landing and SEO
+- Collection, account, metadata, public Kat·a·log, process, and application summaries.
+- Account activity, approximate offline GeoIP location, session revocation, locking, and deletion controls.
+- Collector XP tuning.
+- Cross-account private-row inspection and deliberate game deletion.
+- Public Kat·a·log review, factual editing, cover replacement, state management, and deletion.
+- Signal announcement management.
+- Forum channel and thread moderation.
+- Private Patch queue triage and Ping replies.
+- SMTP configuration and test email.
+- SQLite maintenance, release-string editing, and backup controls.
 
-The authentication landing page doubles as a crawler-readable product page for `https://gamekat.net/`. Its public Kat·a·log is server-rendered at `/katalog`, its public live activity feed is at `/signal`, and each release receives a stable `/game/:slug` URL with factual metadata and `VideoGame` structured data; browser visitors see that release's detail dialog over the Kat·a·log. The public **Stats for Nerds** panel exposes aggregate collection and application telemetry without exposing account credentials or individual private records. Canonical, Open Graph, Twitter, install-manifest, and JSON-LD metadata use the same product language and link to the public guide and GitHub repository. `robots.txt` excludes API, admin, and avatar paths; the dynamic sitemap uses the standard URL-set format and exposes the landing page, documentation, Signal, Kat·a·log, published releases, and their latest update dates. A 1200×630 social preview and installable-app PNG icons are kept in `public/`.
+## Backups and durable files
 
-## Public Kat·a·log
+The server creates a compressed SQLite backup at startup and then on every hour. Archives are retained for 15 days in the Git-ignored `backups/` directory.
 
-Private libraries remain the primary workspace. A release becomes public automatically only after it has a durable local cover, substantive PEGI metadata, HLTB timing data, and exact normalized cover and HLTB title matches. Complete but ambiguous records enter the localhost-only review queue; incomplete records remain private. An administrator can edit shared factual metadata, replace a shared cover from a supported artwork provider, publish, reject, return, or delete Kat·a·log entries. For signed-in users, Kat·a·log navigation retains the shared app header and swaps only the workspace below it; Kat·a·log, My Kat·a·log, and +Game stay fixed, with the current view visibly inactive.
+Backups intentionally contain the database only. Durable cover binaries in `public/covers/` and avatars in `public/avatars/` must be handled separately if the host itself is being backed up.
 
-Only factual release data is copied into a public release. Account identity, ownership, media format, play state, personal ratings, favorites, cartridge numbers, notes, and private row IDs are never attached to that release. Separately, an account may opt into a public collector profile containing aggregate counts but no individual private game rows, email, location, notes, or settings. An added public release stays linked to its private copy so the public detail dialog can show only an anonymous community rating average and count from the first rating. The Kat·a·log owns a separate cover file so later private edits or deletion cannot break a public release. A signed-in release detail detects an existing title-and-platform copy and shows an already-added state instead of add controls; normal duplicate protection remains as a race safeguard.
+Do not copy only `games.db` while the server is actively writing unless its WAL files are also handled correctly. Use the built-in backup path or SQLite's backup API.
 
-## PEGI lookup
+## Public pages and SEO
 
-PEGI does not publish a documented public developer API. The add/edit dialog therefore performs a user-triggered search of PEGI's public Kat·a·log and parses only the displayed result metadata. It fills title, rating, publisher, release year, descriptors, and release/platform details. An account-scoped background scan can conservatively fill missing PEGI metadata for an existing library. Manual entry remains available if PEGI is offline or changes its page.
+The authentication landing page is also the crawler-readable product page for `https://gamekat.net/`. Public routes include:
 
-## HowLongToBeat estimates
+- `/katalog`
+- `/game/:slug`
+- `/signal`
+- `/forum`
+- `/forum/:channel`
+- `/forum/thread/:id`
+- `/docs/`
 
-The add/edit dialog can search HowLongToBeat and store Main Story, Main + Sides, Completionist, and All Styles estimates. An account-scoped background scan fills only unique exact-title matches and leaves ambiguous editions for manual review. The provider is implemented entirely in Node.js; no Python runtime or worker process is required.
+The app supplies canonical URLs, Open Graph and Twitter metadata, structured data, an install manifest, social artwork, controller icons, `robots.txt`, and a dynamic XML sitemap. The sitemap includes public releases and forum threads, but never private libraries, review candidates, rejected entries, API routes, admin routes, or avatars.
 
-Cover, PEGI, and HLTB batch progress is delivered over an authenticated server-sent event stream. Matching cards are patched in place as results arrive, without reloading or repositioning the complete library grid.
+## Development and tests
 
-Provider artwork is copied into durable public storage rather than hotlinked. Covers are normalized to JPEG, capped at 900 pixels on the longest edge and 256 KiB; avatars are 512×512 JPEGs capped at 256 KiB.
-
-## Data and tests
-
-The SQLite database is `games.db`. Run the regression tests with:
+Application code has no browser build step. Run the complete regression suite and documentation consistency check with:
 
 ```bash
 npm test
+```
+
+Useful maintenance commands:
+
+```bash
+npm run dev
+npm run docs:build
+npm run docs:check
+npm run covers:normalize
+npm run covers:showcase
 ```
 
 ## Documentation
@@ -95,9 +186,4 @@ npm test
 - [Technical reference](docs/technical.md)
 - Browser documentation index: `http://localhost:3005/docs/`
 
-Markdown is the source of truth. Regenerate and verify the standalone HTML mirrors with:
-
-```bash
-npm run docs:build
-npm run docs:check
-```
+The Markdown files are the source of truth. `npm run docs:build` regenerates the standalone HTML mirrors, and `npm run docs:check` fails when those mirrors are stale.

@@ -53,6 +53,8 @@ export async function loadLive() {
     document.getElementById('metric-heap-sub').textContent = `${formatBytes(data.heapTotal)} total`;
     document.getElementById('metric-rss').textContent = formatBytes(data.rss);
     document.getElementById('metric-cpu').textContent = `${Number(data.cpuPct).toFixed(1)}% CPU`;
+    document.getElementById('metric-traffic-in').textContent = formatBytes(data.trafficIn);
+    document.getElementById('metric-traffic-out').textContent = `${formatBytes(data.trafficOut)} out`;
   } catch (error) { /* A one-second status poll should not interrupt admin work. */ }
   finally { liveLoading = false; }
 }

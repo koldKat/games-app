@@ -98,6 +98,7 @@ function sections(stats) {
       ['Lines of source', formatCount(stats.linesOfCode)], ['Source size', formatBytes(stats.codeBytes)],
       ['JavaScript modules', formatCount(stats.jsModules)], ['Database size', formatBytes(stats.databaseBytes)],
       ['Stored covers', formatCount(stats.storedCovers)], ['Cover storage', formatBytes(stats.coverBytes)],
+      ['Traffic in', formatBytes(stats.trafficIn)], ['Traffic out', formatBytes(stats.trafficOut)],
       ...(Number(stats.avgSamples) > 0 ? [
         ['Avg CPU (session)', `${Number(stats.avgCpu || 0).toFixed(1)}%`],
         ['Avg heap used (session)', formatBytes(stats.avgHeapUsed)],

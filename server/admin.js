@@ -13,6 +13,7 @@ const events = require('./events');
 const forum = require('./forum-data');
 const patch = require('./patch-data');
 const { KATALOG_LIMITS } = require('./validation-policy');
+const trafficMetrics = require('./traffic-metrics');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -157,7 +158,7 @@ function liveStats() {
   const cpuPct = Math.max(0, Math.round(usedUs / (elapsedUs * Math.max(1, os.cpus().length)) * 1000) / 10);
   lastCpuAt = now; lastCpuUsage = cpuNow;
   const memory = process.memoryUsage();
-  return { heapUsed: memory.heapUsed, heapTotal: memory.heapTotal, rss: memory.rss, cpuPct, ...uptimeStats() };
+  return { heapUsed: memory.heapUsed, heapTotal: memory.heapTotal, rss: memory.rss, cpuPct, ...uptimeStats(), ...trafficMetrics.stats() };
 }
 
 initializeUptimeTracking();
