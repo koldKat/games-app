@@ -181,6 +181,17 @@ db.exec(`
     description TEXT NOT NULL DEFAULT '',
     description_source TEXT NOT NULL DEFAULT '',
     description_source_url TEXT NOT NULL DEFAULT '',
+    igdb_id INTEGER,
+    igdb_slug TEXT NOT NULL DEFAULT '',
+    igdb_url TEXT NOT NULL DEFAULT '',
+    igdb_rating REAL,
+    igdb_rating_count INTEGER NOT NULL DEFAULT 0,
+    igdb_critic_rating REAL,
+    igdb_critic_rating_count INTEGER NOT NULL DEFAULT 0,
+    igdb_genres TEXT NOT NULL DEFAULT '[]',
+    igdb_themes TEXT NOT NULL DEFAULT '[]',
+    igdb_developers TEXT NOT NULL DEFAULT '[]',
+    igdb_updated_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -230,6 +241,17 @@ if (!gameColumns.includes('hltb_updated_at')) db.exec('ALTER TABLE games ADD COL
 if (!gameColumns.includes('description')) db.exec("ALTER TABLE games ADD COLUMN description TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('description_source')) db.exec("ALTER TABLE games ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
 if (!gameColumns.includes('description_source_url')) db.exec("ALTER TABLE games ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('igdb_id')) db.exec('ALTER TABLE games ADD COLUMN igdb_id INTEGER');
+if (!gameColumns.includes('igdb_slug')) db.exec("ALTER TABLE games ADD COLUMN igdb_slug TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('igdb_url')) db.exec("ALTER TABLE games ADD COLUMN igdb_url TEXT NOT NULL DEFAULT ''");
+if (!gameColumns.includes('igdb_rating')) db.exec('ALTER TABLE games ADD COLUMN igdb_rating REAL');
+if (!gameColumns.includes('igdb_rating_count')) db.exec('ALTER TABLE games ADD COLUMN igdb_rating_count INTEGER NOT NULL DEFAULT 0');
+if (!gameColumns.includes('igdb_critic_rating')) db.exec('ALTER TABLE games ADD COLUMN igdb_critic_rating REAL');
+if (!gameColumns.includes('igdb_critic_rating_count')) db.exec('ALTER TABLE games ADD COLUMN igdb_critic_rating_count INTEGER NOT NULL DEFAULT 0');
+if (!gameColumns.includes('igdb_genres')) db.exec("ALTER TABLE games ADD COLUMN igdb_genres TEXT NOT NULL DEFAULT '[]'");
+if (!gameColumns.includes('igdb_themes')) db.exec("ALTER TABLE games ADD COLUMN igdb_themes TEXT NOT NULL DEFAULT '[]'");
+if (!gameColumns.includes('igdb_developers')) db.exec("ALTER TABLE games ADD COLUMN igdb_developers TEXT NOT NULL DEFAULT '[]'");
+if (!gameColumns.includes('igdb_updated_at')) db.exec('ALTER TABLE games ADD COLUMN igdb_updated_at TEXT');
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
@@ -262,6 +284,11 @@ const selectFields = `id, title, platform, pegi, ownership,
   hltb_updated_at AS hltbUpdatedAt,
   cover_url AS coverUrl, cover_source AS coverSource, cover_match_title AS coverMatchTitle,
   description, description_source AS descriptionSource, description_source_url AS descriptionSourceUrl,
+  igdb_id AS igdbId, igdb_slug AS igdbSlug, igdb_url AS igdbUrl,
+  igdb_rating AS igdbRating, igdb_rating_count AS igdbRatingCount,
+  igdb_critic_rating AS igdbCriticRating, igdb_critic_rating_count AS igdbCriticRatingCount,
+  igdb_genres AS igdbGenresJson, igdb_themes AS igdbThemesJson, igdb_developers AS igdbDevelopersJson,
+  igdb_updated_at AS igdbUpdatedAt,
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
@@ -269,12 +296,16 @@ const insert = db.prepare(`
     cartridge_number, publisher, release_year, notes, rating, favorite, pegi_url, pegi_descriptors,
     pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
-    cover_url, cover_source, cover_match_title, description, description_source, description_source_url)
+    cover_url, cover_source, cover_match_title, description, description_source, description_source_url,
+    igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
+    igdb_genres, igdb_themes, igdb_developers, igdb_updated_at)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
-    @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl)
+    @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl,
+    @igdbId, @igdbSlug, @igdbUrl, @igdbRating, @igdbRatingCount, @igdbCriticRating, @igdbCriticRatingCount,
+    @igdbGenresJson, @igdbThemesJson, @igdbDevelopersJson, @igdbUpdatedAt)
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
@@ -288,7 +319,11 @@ const update = db.prepare(`
     hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles, hltb_updated_at=@hltbUpdatedAt,
     cover_url=@coverUrl, cover_source=@coverSource,
     cover_match_title=@coverMatchTitle, description=@description, description_source=@descriptionSource,
-    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
+    description_source_url=@descriptionSourceUrl, igdb_id=@igdbId, igdb_slug=@igdbSlug, igdb_url=@igdbUrl,
+    igdb_rating=@igdbRating, igdb_rating_count=@igdbRatingCount,
+    igdb_critic_rating=@igdbCriticRating, igdb_critic_rating_count=@igdbCriticRatingCount,
+    igdb_genres=@igdbGenresJson, igdb_themes=@igdbThemesJson, igdb_developers=@igdbDevelopersJson,
+    igdb_updated_at=@igdbUpdatedAt, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
 const searchTitles = db.prepare(`
@@ -320,6 +355,10 @@ function normalizeGame(input = {}) {
   if (releaseYear != null && !validReleaseYear(releaseYear)) throw new Error('Release year is invalid.');
   if (rating != null && (!Number.isFinite(rating) || rating < 0.5 || rating > 5 || !Number.isInteger(rating * 2))) throw new Error('Rating must be in half-star steps from 0.5 to 5.');
   const hltbId = Number.isInteger(Number(input.hltbId)) && Number(input.hltbId) > 0 ? Number(input.hltbId) : null;
+  const igdbId = Number.isInteger(Number(input.igdbId)) && Number(input.igdbId) > 0 ? Number(input.igdbId) : null;
+  const igdbScore = value => igdbId && value !== '' && value != null && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
+    ? Math.round(Number(value) * 10) / 10 : null;
+  const igdbCount = value => igdbId ? Math.max(0, Number.parseInt(value, 10) || 0) : 0;
   return {
     title, platform, pegi, ownership, playStatus, hidden, mediaFormat, cartridgeNumber,
     publisher: boundedText(input.publisher, GAME_LIMITS.publisherMax, 'Publisher'), releaseYear,
@@ -342,6 +381,14 @@ function normalizeGame(input = {}) {
     description: safeText(input.description, GAME_LIMITS.descriptionMax),
     descriptionSource: safeText(input.description) ? String(input.descriptionSource || '').trim().slice(0, GAME_LIMITS.coverSourceMax) : '',
     descriptionSourceUrl: safeText(input.description) ? String(input.descriptionSourceUrl || '').trim().slice(0, GAME_LIMITS.urlMax) : '',
+    igdbId, igdbSlug: igdbId ? safeText(input.igdbSlug, GAME_LIMITS.igdbSlugMax) : '',
+    igdbUrl: igdbId ? safeText(input.igdbUrl, GAME_LIMITS.urlMax) : '',
+    igdbRating: igdbScore(input.igdbRating), igdbRatingCount: igdbCount(input.igdbRatingCount),
+    igdbCriticRating: igdbScore(input.igdbCriticRating), igdbCriticRatingCount: igdbCount(input.igdbCriticRatingCount),
+    igdbGenresJson: JSON.stringify(igdbId ? safeList(input.igdbGenres) : []),
+    igdbThemesJson: JSON.stringify(igdbId ? safeList(input.igdbThemes) : []),
+    igdbDevelopersJson: JSON.stringify(igdbId ? safeList(input.igdbDevelopers) : []),
+    igdbUpdatedAt: igdbId ? safeText(input.igdbUpdatedAt, GAME_LIMITS.hltbTimestampMax) || new Date().toISOString() : null,
   };
 }
 
@@ -351,8 +398,9 @@ function parseStoredList(value) {
 }
 function hydrateGame(row) {
   if (!row) return row;
-  const { pegiDescriptorsJson, pegiReleasesJson, ...game } = row;
-  return { ...game, pegiDescriptors: parseStoredList(pegiDescriptorsJson), pegiReleases: parseStoredList(pegiReleasesJson) };
+  const { pegiDescriptorsJson, pegiReleasesJson, igdbGenresJson, igdbThemesJson, igdbDevelopersJson, ...game } = row;
+  return { ...game, pegiDescriptors: parseStoredList(pegiDescriptorsJson), pegiReleases: parseStoredList(pegiReleasesJson),
+    igdbGenres: parseStoredList(igdbGenresJson), igdbThemes: parseStoredList(igdbThemesJson), igdbDevelopers: parseStoredList(igdbDevelopersJson) };
 }
 
 function listGames(userId, filters = {}) {
@@ -382,11 +430,12 @@ function listGames(userId, filters = {}) {
   const missingPegi = `(pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='')`;
   if (filters.missing === 'pegi' || filters.missingPegi === '1') clauses.push(missingPegi);
+  if (filters.missing === 'igdb') clauses.push('igdb_id IS NULL');
   if (filters.missing === 'cover' || filters.missingCover === '1') clauses.push("cover_url=''");
   if (filters.missing === 'hltb') clauses.push('hltb_id IS NULL');
   if (filters.missing === 'description') clauses.push("description=''");
-  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR cover_url='' OR hltb_id IS NULL OR description='')`);
-  if (filters.missing === 'both') clauses.push(`${missingPegi} AND cover_url='' AND hltb_id IS NULL AND description=''`);
+  if (filters.missing === 'either') clauses.push(`(${missingPegi} OR igdb_id IS NULL OR cover_url='' OR hltb_id IS NULL OR description='')`);
+  if (filters.missing === 'both') clauses.push(`${missingPegi} AND igdb_id IS NULL AND cover_url='' AND hltb_id IS NULL AND description=''`);
   if (filters.favorite === '1') clauses.push('favorite = 1');
   const titleAsc = 'search_normalize(title) ASC, id ASC';
   const titleDesc = 'search_normalize(title) DESC, id DESC';
@@ -413,6 +462,10 @@ function listGames(userId, filters = {}) {
     hltb_100_long: `hltb_completionist IS NULL, hltb_completionist DESC, ${titleAsc}`,
     hltb_all_short: `hltb_all_styles IS NULL, hltb_all_styles ASC, ${titleAsc}`,
     hltb_all_long: `hltb_all_styles IS NULL, hltb_all_styles DESC, ${titleAsc}`,
+    igdb_user: `igdb_rating IS NULL, igdb_rating ASC, ${titleAsc}`,
+    igdb_user_desc: `igdb_rating IS NULL, igdb_rating DESC, ${titleAsc}`,
+    igdb_critic: `igdb_critic_rating IS NULL, igdb_critic_rating ASC, ${titleAsc}`,
+    igdb_critic_desc: `igdb_critic_rating IS NULL, igdb_critic_rating DESC, ${titleAsc}`,
     cartridge: `cartridge_number IS NULL, cartridge_number ASC, ${titleAsc}`,
   };
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
@@ -520,6 +573,42 @@ function gamesMissingDescriptions(userId) {
   return db.prepare("SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND description='' ORDER BY title COLLATE NOCASE").all(userId);
 }
 
+function gamesMissingIgdb(userId) {
+  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND igdb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
+}
+
+function updateGameIgdb(userId, id, metadata = {}) {
+  const igdbId = Number.isInteger(Number(metadata.igdbId ?? metadata.id)) && Number(metadata.igdbId ?? metadata.id) > 0
+    ? Number(metadata.igdbId ?? metadata.id) : null;
+  if (!igdbId) return null;
+  const score = value => value !== '' && value != null && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
+    ? Math.round(Number(value) * 10) / 10 : null;
+  const count = value => Math.max(0, Number.parseInt(value, 10) || 0);
+  const description = safeText(metadata.description, GAME_LIMITS.descriptionMax);
+  const result = db.prepare(`UPDATE games SET igdb_id=@igdbId, igdb_slug=@igdbSlug, igdb_url=@igdbUrl,
+    igdb_rating=@igdbRating, igdb_rating_count=@igdbRatingCount,
+    igdb_critic_rating=@igdbCriticRating, igdb_critic_rating_count=@igdbCriticRatingCount,
+    igdb_genres=@igdbGenres, igdb_themes=@igdbThemes, igdb_developers=@igdbDevelopers,
+    igdb_updated_at=@igdbUpdatedAt,
+    publisher=CASE WHEN publisher='' AND @publisher<>'' THEN @publisher ELSE publisher END,
+    release_year=CASE WHEN release_year IS NULL THEN @releaseYear ELSE release_year END,
+    description=CASE WHEN description='' AND @description<>'' THEN @description ELSE description END,
+    description_source=CASE WHEN description='' AND @description<>'' THEN 'IGDB' ELSE description_source END,
+    description_source_url=CASE WHEN description='' AND @description<>'' THEN @igdbUrl ELSE description_source_url END,
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0 AND igdb_id IS NULL`).run({
+      id, userId, igdbId, igdbSlug: safeText(metadata.slug ?? metadata.igdbSlug, GAME_LIMITS.igdbSlugMax),
+      igdbUrl: safeText(metadata.sourceUrl ?? metadata.igdbUrl, GAME_LIMITS.urlMax),
+      igdbRating: score(metadata.rating ?? metadata.igdbRating), igdbRatingCount: count(metadata.ratingCount ?? metadata.igdbRatingCount),
+      igdbCriticRating: score(metadata.criticRating ?? metadata.igdbCriticRating), igdbCriticRatingCount: count(metadata.criticRatingCount ?? metadata.igdbCriticRatingCount),
+      igdbGenres: JSON.stringify(safeList(metadata.genres ?? metadata.igdbGenres)),
+      igdbThemes: JSON.stringify(safeList(metadata.themes ?? metadata.igdbThemes)),
+      igdbDevelopers: JSON.stringify(safeList(metadata.developers ?? metadata.igdbDevelopers)),
+      igdbUpdatedAt: new Date().toISOString(), publisher: safeText(metadata.publisher, GAME_LIMITS.publisherMax),
+      releaseYear: validReleaseYear(metadata.releaseYear) ? Number(metadata.releaseYear) : null, description,
+    });
+  return result.changes ? getGame(userId, id) : null;
+}
+
 function updateGameDescription(userId, id, metadata = {}) {
   const description = safeText(metadata.description, GAME_LIMITS.descriptionMax);
   if (!description) return null;
@@ -566,4 +655,5 @@ function platformNames(userId) {
 module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
-  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription, platformNames, stats };
+  gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,
+  gamesMissingIgdb, updateGameIgdb, platformNames, stats };

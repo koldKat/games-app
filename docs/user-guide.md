@@ -41,7 +41,7 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Public Kat·a·log
 
-Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. With no platform filter, one card represents a game title and lists its available platform releases; applying a platform filter deliberately shows the matching release rows separately. A release detail dialog shows its cover, PEGI details, publisher and year, all available HowLongToBeat estimates, and links to the other public platform editions.
+Select **Kat·a·log** from the login-page footer or signed-in header to browse the shared release index at `/katalog`. While signed in, the application shell stays in place: only the content beneath the header changes; **Kat·a·log**, **My Kat·a·log**, and **+Game** remain in their fixed header positions, with the current view visibly inactive. Direct public pages use the same shell treatment, including its subtle shared-cover spread. This page is public and search-engine-visible; it can be searched by title, publisher, or platform and filtered to one platform. With no platform filter, one card represents a game title and lists its available platform releases; applying a platform filter deliberately shows the matching release rows separately. A release detail dialog shows its cover, PEGI details, publisher and year, all available HowLongToBeat estimates, optional IGDB user and critic ratings and credits, and links to the other public platform editions.
 
 When signed in, choose collection and media format in a release detail dialog, then select **Add to my Kat·a·log**. The app creates an ordinary private library row with the release facts already filled. Your ownership, format, play state, favorite, notes, and other tracking remain private and editable. If that title and platform already exist in your account, the dialog shows **Already in your Kat·a·log** instead of add controls. Opening My Kat·a·log from either state closes the details dialog first, leaving the private library immediately interactive. The server keeps duplicate protection as a safeguard if another tab adds it while the dialog is open.
 
@@ -53,7 +53,7 @@ The Kat·a·log grows conservatively from member libraries. A release publishes 
 
 Complete records with an ambiguous cover or HLTB title wait for localhost administrator review. Incomplete records do not enter the shared index. The public copy contains factual release metadata only // never the contributing account, ownership, media format, play state, personal rating, favorite, cartridge number, notes, or private game-row ID. From the first linked private rating, it can show an anonymous community average and rating count. It also owns a separate cover copy, so editing or deleting a private game does not break the public page.
 
-Public Kat·a·log matches also appear between games already in your library and optional SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its public release details over the Kat·a·log, where you can inspect the metadata before adding it. Each release also has a stable shareable URL for search engines; opening one directly lands on the same Kat·a·log detail dialog, and closing it returns to the Kat·a·log without creating a redundant browser-history entry. If the same title and platform are already in your library, the page shows **Already in your Kat·a·log** instead of an add form and links back to your library.
+Public Kat·a·log matches also appear between games already in your library and optional IGDB or SteamGridDB title suggestions while typing in the add dialog. Selecting one opens its public release details over the Kat·a·log, where you can inspect the metadata before adding it. Each release also has a stable shareable URL for search engines; opening one directly lands on the same Kat·a·log detail dialog, and closing it returns to the Kat·a·log without creating a redundant browser-history entry. If the same title and platform are already in your library, the page shows **Already in your Kat·a·log** instead of an add form and links back to your library.
 
 ---
 
@@ -104,14 +104,14 @@ Search matches the game title, publisher, notes, and description. It is case- an
 | **Collection** | Owned physical, Owned digital, or Wishlisted |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, Abandoned, or Hidden |
-| **Data gaps** | No PEGI info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
-| **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; or shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time |
+| **Data gaps** | No PEGI info, no IGDB info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
+| **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time; or lowest/highest IGDB user and critic scores |
 
 Select **Clear filters** to return to the complete library. Results are paginated in ten desktop rows.
 
 Set a game's play status to **Hidden** to remove it from the normal library, summary totals, decorative cover pool, public profile statistics, and automatic metadata scans. Hidden games have no dashboard card and appear only when **Hidden** is selected from the Play status filter. Choose any regular play status in the edit form to return a hidden game to the normal library.
 
-HLTB duration sorts always place games without that particular estimate after games with a known time. This keeps missing data from appearing as zero-hour games. Live batch updates use the same selected order as a full library reload.
+HLTB duration and IGDB score sorts always place games without that particular value after games with known data. This keeps missing data from appearing as a zero-hour game or a zero rating. Live batch updates use the same selected order as a full library reload.
 
 ### Card and compact views
 
@@ -172,9 +172,9 @@ Select **Add a game** on desktop or the **+** floating button on mobile.
 
 Only **Title** and **Platform** are required. Every other field can be added later.
 
-After three title characters, matching games already in the current account appear first, with their platform and collection state. Public Kat·a·log matches follow and open their release-details dialog; optional SteamGridDB title suggestions appear last when that provider is connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
+After three title characters, matching games already in the current account appear first, with their platform and collection state. Public Kat·a·log matches follow and open their release-details dialog. When IGDB is connected, its richer title suggestions appear last and can apply a selected title, platform, publisher, year, description, cover, genres, credits, and ratings. SteamGridDB title suggestions remain the fallback when IGDB is not connected. Select an existing result to open it instead of creating another entry. Pointer selection, arrow keys, Enter, and Escape are supported.
 
-An exact title-and-platform match shows an **Already in your library** warning and an **Open existing** action. Saving a new game with that same pair requires a themed **Add anyway** confirmation because multiple copies or editions can be legitimate. The same title on another platform is not considered a duplicate. Suggestions are optional: any title can still be entered manually. If SteamGridDB is unavailable or not configured, its suggestions disappear silently while local duplicate detection and ordinary title entry continue working.
+An exact title-and-platform match shows an **Already in your library** warning and an **Open existing** action. Saving a new game with that same pair requires a themed **Add anyway** confirmation because multiple copies or editions can be legitimate. The same title on another platform is not considered a duplicate. Suggestions are optional: any title can still be entered manually. If IGDB or SteamGridDB is unavailable, remote suggestions disappear silently while local duplicate detection and ordinary title entry continue working.
 
 PC libraries can be tracked by storefront rather than only by operating system. The built-in platform list includes Steam, GOG, Epic Games Store, Microsoft Store, PC Game Pass, Xbox app, EA app and Origin, Ubisoft Connect and Uplay, Battle.net, Rockstar Games Launcher, itch.io, and Amazon Games. These remain distinct platforms for filtering and duplicate detection, while PEGI matching treats them as PC editions and preserves the chosen storefront when applying a generic PC result.
 
@@ -217,7 +217,7 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 
 ### Cover-assisted entry
 
-1. Open **Account Settings** and connect one or both artwork sources: SteamGridDB or TheGamesDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts.
+1. Open **Account Settings** and connect one or more data or artwork sources: SteamGridDB, TheGamesDB, or IGDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts. IGDB uses the Client ID and Client Secret from a Twitch developer application.
 2. Type a title in the game form and select **Request cover**.
 3. Review the portrait artwork and game names, then select the correct edition.
 4. Or select **Upload cover** to choose your own JPEG, PNG, or WebP image. The preview is local until you save; the server then normalizes it to the same durable cover format used by provider artwork.
@@ -227,7 +227,7 @@ After validation, that provider's disabled field shows **Connected** in green. S
 
 If a provider cannot be reached while Account Settings loads, its scan action stays disabled and its credential fields remain available instead of displaying a stale connection from an earlier session.
 
-**Request cover** searches every connected source plus HowLongToBeat and labels each result with its provider. HLTB is available only in this deliberate per-game request flow // it is never used for a bulk cover scan. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. TheGamesDB and HLTB cards carry a source-credit link.
+**Request cover** searches every connected source plus HowLongToBeat and labels each result with its provider. This includes IGDB when it is connected. HLTB is available only in this deliberate per-game request flow // it is never used for a bulk cover scan. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. Provider artwork carries a source-credit link.
 
 TheGamesDB's smaller preview derivatives are not reliable, so its chooser rows load the authoritative original artwork directly. This avoids broken preview tiles; selecting and saving a result still stores the app's own optimized durable copy.
 
@@ -246,9 +246,17 @@ After connecting SteamGridDB, select **Fill missing covers** in Account Settings
 
 TheGamesDB has its own **Fill with TheGamesDB** action. Its scan is platform-aware and requires exactly one normalized title record for the saved platform. Run it after SteamGridDB to fill remaining gaps; it touches only games that still have no cover.
 
+### IGDB information
+
+Connect IGDB in Account Settings with a Twitch developer application's Client ID and Client Secret. Create the Twitch application as **Confidential**, using `http://localhost` as its otherwise-unused OAuth redirect URL; Public clients cannot generate the secret required by IGDB. Credentials stay on the server. The app obtains and refreshes the short-lived access token itself.
+
+While adding or editing a game, select **Look up on IGDB** to inspect matches. Applying one stores the IGDB identity, user score and vote count, critic score and review count, developer, genres, themes, source link, and any blank publisher, release-year, description, or cover fields. Existing personal and provider data is not blindly overwritten. IGDB ratings appear in the read-only game details dialog and public release details, not on library cards.
+
+Select **Fill IGDB information** to scan the account in the background. Automatic matches require one normalized exact title on the saved platform. Ambiguous results remain untouched. A successful match can fill an empty description and cover, with selected artwork downloaded into the same durable local cover store. Progress and successful game updates arrive live without reloading the grid.
+
 ### Game descriptions
 
-Each game has an editable **Description** field. Select **Look up description** to choose a result from Steam Store or, when connected, TheGamesDB. The selected source is retained for the public Kat·a·log page; editing the text yourself marks it as manual.
+Each game has an editable **Description** field. Select **Look up description** to choose a result from Steam Store or, when connected, IGDB or TheGamesDB. The selected source is retained for the public Kat·a·log page; editing the text yourself marks it as manual.
 
 Select **Fill descriptions** in Account Settings to scan games with an empty description. Steam Store is always tried first and only one normalized exact-title match is accepted. TheGamesDB is used only as a fallback and only when its existing account key is connected. The scan pauses rather than continuing if TheGamesDB rejects a request or reaches its API limit, so it does not burn through the remaining monthly allowance.
 
@@ -383,4 +391,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // SteamGridDB and/or TheGamesDB // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. SteamGridDB autocomplete, when configured, also sends the text currently being typed after the third character.
+The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // SteamGridDB, TheGamesDB, and/or IGDB // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. A connected IGDB account sends the text currently being typed after the third character; SteamGridDB is used as the remote fallback. Failed remote autocomplete remains invisible.

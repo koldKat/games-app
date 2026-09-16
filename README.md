@@ -11,8 +11,8 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 - Separate SQLite-backed libraries for every account, with settings synchronized across devices.
 - Owned physical, owned digital, and wishlisted collection states.
 - Backlog, playing, completed, paused, abandoned, and dropdown-only hidden play states.
-- Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, cover art, and HowLongToBeat estimates.
-- Grid and compact views, accent-insensitive live search, composable filters, and 23 sorting modes.
+- Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB user and critic ratings, cover art, and HowLongToBeat estimates.
+- Grid and compact views, accent-insensitive live search, composable filters, and 27 sorting modes.
 - Ten-row desktop pagination for both private and public collections.
 - Same-title copies grouped into one card when no platform filter is active. Platform chips select the exact private copy being viewed, rated, or edited; applying a platform filter separates the editions again.
 - Clicking a private card opens its read-only details. Editing remains an explicit action.
@@ -20,13 +20,13 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 ### Adding and enriching games
 
 - A broad grouped platform list includes console families, handhelds, computers, operating systems, Steam, GOG, Epic Games Store, other launchers, and a Custom option.
-- Title autocomplete checks the current account first, then the public Kat·a·log, then optional SteamGridDB suggestions.
+- Title autocomplete checks the current account first, then the public Kat·a·log, then optional IGDB or SteamGridDB suggestions.
 - Duplicate title/platform copies are blocked while different-platform editions remain valid.
 - PEGI lookup can fill ratings, descriptors, releases, publisher, year, consumer advice, outlines, and content details.
 - HowLongToBeat lookup stores Main Story, Main + Sides, Completionist, and All Styles estimates.
-- Cover requests can use SteamGridDB, TheGamesDB, and an HLTB match already selected for that game. Users can also upload their own cover.
-- Description lookup checks Steam Store first and can use TheGamesDB as a fallback.
-- Account-scoped background scans can fill missing covers, PEGI, HLTB, and descriptions.
+- Cover requests can use SteamGridDB, TheGamesDB, IGDB, and an HLTB match already selected for that game. Users can also upload their own cover.
+- Description lookup checks Steam Store and can use IGDB and TheGamesDB as additional sources.
+- Account-scoped background scans can fill missing covers, PEGI, HLTB, descriptions, and conservative exact-match IGDB metadata.
 - Live updates patch affected cards without reloading the full grid or moving the viewport.
 - Stored covers are durable local JPEGs capped at 900 pixels and 256 KiB. Avatars are center-cropped 512×512 JPEGs capped at 256 KiB.
 
@@ -116,10 +116,12 @@ HOST=0.0.0.0 \
 DB_PATH=/path/to/games.db \
 PUBLIC_URL=https://gamekat.net \
 OWNER_USERNAME=your_name \
+IGDB_CLIENT_ID=optional_server_wide_client_id \
+IGDB_CLIENT_SECRET=optional_server_wide_client_secret \
 npm start
 ```
 
-`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner.
+`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. IGDB credentials can instead be connected per account in Account Settings and are never sent back to the browser. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
 
 The current arbitrary release string lives in `VERSION`. It can be edited through the localhost admin panel and is broadcast immediately to open headers.
 

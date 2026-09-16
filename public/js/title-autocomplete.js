@@ -5,7 +5,7 @@ const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ')
 
 export function createTitleAutocomplete({
   input, suggestionBox, warning, summary, openButton, platformInput, customPlatformInput,
-  api, escapeHtml, labels, getPlatform, getEditingId, openExisting, openKatalog,
+  api, escapeHtml, labels, getPlatform, getEditingId, openExisting, openKatalog, onExternalSelect = () => {},
 }) {
   let timer = null;
   let request = null;
@@ -58,6 +58,7 @@ export function createTitleAutocomplete({
     if (!choice) return;
     if (choice.kind === 'existing') return openExisting(choice.game.id);
     if (choice.kind === 'katalog') return openKatalog(choice.entry.slug);
+    if (choice.kind === 'igdb') { close(); onExternalSelect(choice.result); return; }
     input.value = choice.title; close(); updateWarning(); input.focus();
   }
 
@@ -65,18 +66,19 @@ export function createTitleAutocomplete({
     existingMatches = Array.isArray(results.existing) ? results.existing : [];
     const katalog = Array.isArray(results.catalogue) ? results.catalogue : [];
     const katalogMatches = katalog.filter(entry => !existingMatches.some(game => sameText(game.title, entry.title) && sameText(game.platform, entry.platform)));
-    const remote = Array.isArray(results.suggestions)
-      ? results.suggestions.filter(title => typeof title === 'string' && title.trim()).slice(0, AUTOCOMPLETE_POLICY.resultLimit) : [];
+    const remote = Array.isArray(results.suggestions) ? results.suggestions.filter(item => typeof item === 'string' ? item.trim() : item?.title).slice(0, AUTOCOMPLETE_POLICY.resultLimit) : [];
     suggestions = [
       ...existingMatches.map(game => ({ kind: 'existing', game })),
       ...katalogMatches.slice(0, AUTOCOMPLETE_POLICY.resultLimit).map(entry => ({ kind: 'katalog', entry })),
-      ...remote.filter(title => !existingMatches.some(game => sameText(game.title, title))
-        && !katalogMatches.some(entry => sameText(entry.title, title))).map(title => ({ kind: 'remote', title })),
+      ...remote.filter(item => !existingMatches.some(game => sameText(game.title, typeof item === 'string' ? item : item.title) && sameText(game.platform, getPlatform()))
+        && !katalogMatches.some(entry => sameText(entry.title, typeof item === 'string' ? item : item.title)))
+        .map(item => typeof item === 'string' ? { kind: 'remote', title: item } : { kind: 'igdb', title: item.title, result: item }),
     ];
     activeSuggestion = -1;
     suggestionBox.innerHTML = suggestions.map((choice, index) => {
       if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(choice.game.platform)} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
       if (choice.kind === 'katalog') return `<button type="button" class="katalog" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small>${escapeHtml(choice.entry.platform)}${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
+      if (choice.kind === 'igdb') return `<button type="button" class="igdb" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}<small>${escapeHtml([choice.result.releaseYear, ...(choice.result.platforms || []).slice(0, 2)].filter(Boolean).join(' · '))}</small></span><b>IGDB</b></button>`;
       return `<button type="button" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}</span><small>SteamGridDB</small></button>`;
     }).join('');
     suggestionBox.hidden = suggestions.length === 0;

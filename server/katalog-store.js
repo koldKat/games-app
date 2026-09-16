@@ -16,6 +16,11 @@ const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, pu
   hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles,
   cover_url AS coverUrl, cover_source AS coverSource, cover_match_title AS coverMatchTitle,
   description, description_source AS descriptionSource, description_source_url AS descriptionSourceUrl,
+  igdb_id AS igdbId, igdb_slug AS igdbSlug, igdb_url AS igdbUrl,
+  igdb_rating AS igdbRating, igdb_rating_count AS igdbRatingCount,
+  igdb_critic_rating AS igdbCriticRating, igdb_critic_rating_count AS igdbCriticRatingCount,
+  igdb_genres AS igdbGenresJson, igdb_themes AS igdbThemesJson, igdb_developers AS igdbDevelopersJson,
+  igdb_updated_at AS igdbUpdatedAt,
   (SELECT AVG(g.rating) FROM catalogue_game_links AS catalogue_link JOIN games AS g ON g.id=catalogue_link.game_id
     WHERE catalogue_link.catalogue_id=catalogue_entries.id AND g.rating IS NOT NULL) AS ratingAverage,
   (SELECT COUNT(g.rating) FROM catalogue_game_links AS catalogue_link JOIN games AS g ON g.id=catalogue_link.game_id
@@ -30,11 +35,12 @@ function parseList(value) {
 
 function hydrateEntry(row) {
   if (!row) return row;
-  const { pegiDescriptorsJson, pegiReleasesJson, reasonsJson, ...entry } = row;
+  const { pegiDescriptorsJson, pegiReleasesJson, igdbGenresJson, igdbThemesJson, igdbDevelopersJson, reasonsJson, ...entry } = row;
   return {
     ...entry,
     pegiDescriptors: parseList(pegiDescriptorsJson),
     pegiReleases: parseList(pegiReleasesJson),
+    igdbGenres: parseList(igdbGenresJson), igdbThemes: parseList(igdbThemesJson), igdbDevelopers: parseList(igdbDevelopersJson),
     reasons: parseList(reasonsJson),
   };
 }
@@ -110,6 +116,17 @@ function createKatalogStore(database) {
       description TEXT NOT NULL DEFAULT '',
       description_source TEXT NOT NULL DEFAULT '',
       description_source_url TEXT NOT NULL DEFAULT '',
+      igdb_id INTEGER,
+      igdb_slug TEXT NOT NULL DEFAULT '',
+      igdb_url TEXT NOT NULL DEFAULT '',
+      igdb_rating REAL,
+      igdb_rating_count INTEGER NOT NULL DEFAULT 0,
+      igdb_critic_rating REAL,
+      igdb_critic_rating_count INTEGER NOT NULL DEFAULT 0,
+      igdb_genres TEXT NOT NULL DEFAULT '[]',
+      igdb_themes TEXT NOT NULL DEFAULT '[]',
+      igdb_developers TEXT NOT NULL DEFAULT '[]',
+      igdb_updated_at TEXT,
       status TEXT NOT NULL DEFAULT 'candidate' CHECK (status IN ('candidate','public','rejected')),
       confidence INTEGER NOT NULL DEFAULT 0,
       reasons TEXT NOT NULL DEFAULT '[]',
@@ -136,6 +153,14 @@ function createKatalogStore(database) {
   if (!catalogueColumns.includes('description')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description TEXT NOT NULL DEFAULT ''");
   if (!catalogueColumns.includes('description_source')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
   if (!catalogueColumns.includes('description_source_url')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description_source_url TEXT NOT NULL DEFAULT ''");
+  const igdbColumns = {
+    igdb_id: 'INTEGER', igdb_slug: "TEXT NOT NULL DEFAULT ''", igdb_url: "TEXT NOT NULL DEFAULT ''", igdb_rating: 'REAL',
+    igdb_rating_count: 'INTEGER NOT NULL DEFAULT 0', igdb_critic_rating: 'REAL', igdb_critic_rating_count: 'INTEGER NOT NULL DEFAULT 0',
+    igdb_genres: "TEXT NOT NULL DEFAULT '[]'", igdb_themes: "TEXT NOT NULL DEFAULT '[]'", igdb_developers: "TEXT NOT NULL DEFAULT '[]'", igdb_updated_at: 'TEXT',
+  };
+  for (const [column, definition] of Object.entries(igdbColumns)) {
+    if (!catalogueColumns.includes(column)) database.exec(`ALTER TABLE catalogue_entries ADD COLUMN ${column} ${definition}`);
+  }
   if (catalogueColumns.includes('esrb_rating')) database.prepare(`UPDATE catalogue_entries SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
   for (const column of ['esrb_rating', 'esrb_url', 'esrb_descriptors', 'esrb_interactive_elements', 'esrb_summary']) {
     if (catalogueColumns.includes(column)) database.exec(`ALTER TABLE catalogue_entries DROP COLUMN ${column}`);
@@ -178,6 +203,11 @@ function createKatalogStore(database) {
       hltbCompletionist: game.hltbCompletionist ?? null, hltbAllStyles: game.hltbAllStyles ?? null,
       coverUrl, coverSource: String(game.coverSource || ''), coverMatchTitle: String(game.coverMatchTitle || ''),
       description: String(game.description || ''), descriptionSource: String(game.descriptionSource || ''), descriptionSourceUrl: String(game.descriptionSourceUrl || ''),
+      igdbId: game.igdbId ?? null, igdbSlug: String(game.igdbSlug || ''), igdbUrl: String(game.igdbUrl || ''),
+      igdbRating: game.igdbRating ?? null, igdbRatingCount: game.igdbRatingCount || 0,
+      igdbCriticRating: game.igdbCriticRating ?? null, igdbCriticRatingCount: game.igdbCriticRatingCount || 0,
+      igdbGenres: JSON.stringify(game.igdbGenres || []), igdbThemes: JSON.stringify(game.igdbThemes || []),
+      igdbDevelopers: JSON.stringify(game.igdbDevelopers || []), igdbUpdatedAt: game.igdbUpdatedAt || null,
       status: evaluation.status, confidence: evaluation.confidence, reasons: JSON.stringify(evaluation.reasons),
     };
   }
@@ -209,6 +239,10 @@ function createKatalogStore(database) {
           hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
           cover_url=@coverUrl, cover_source=@coverSource, cover_match_title=@coverMatchTitle,
           description=@description, description_source=@descriptionSource, description_source_url=@descriptionSourceUrl,
+          igdb_id=@igdbId, igdb_slug=@igdbSlug, igdb_url=@igdbUrl, igdb_rating=@igdbRating,
+          igdb_rating_count=@igdbRatingCount, igdb_critic_rating=@igdbCriticRating,
+          igdb_critic_rating_count=@igdbCriticRatingCount, igdb_genres=@igdbGenres,
+          igdb_themes=@igdbThemes, igdb_developers=@igdbDevelopers, igdb_updated_at=@igdbUpdatedAt,
           status=@status, confidence=@confidence, reasons=@reasons,
           submitted_by_user_id=@userId, source_game_id=@gameId,
           published_at=CASE WHEN @status='public' THEN COALESCE(published_at,CURRENT_TIMESTAMP) ELSE published_at END,
@@ -222,12 +256,16 @@ function createKatalogStore(database) {
       slug, title, title_key, platform, platform_key, pegi, publisher, release_year,
       pegi_url, pegi_descriptors, pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
       hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles,
-      cover_url, cover_source, cover_match_title, description, description_source, description_source_url, status, confidence, reasons,
+      cover_url, cover_source, cover_match_title, description, description_source, description_source_url,
+      igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
+      igdb_genres, igdb_themes, igdb_developers, igdb_updated_at, status, confidence, reasons,
       submitted_by_user_id, source_game_id, published_at)
       VALUES (@slug,@title,@titleKey,@platform,@platformKey,@pegi,@publisher,@releaseYear,
       @pegiUrl,@pegiDescriptors,@pegiReleases,@pegiAdvice,@pegiOutline,@pegiContentIssues,@pegiOtherIssues,
       @hltbId,@hltbTitle,@hltbUrl,@hltbMainStory,@hltbMainExtra,@hltbCompletionist,@hltbAllStyles,
-      @coverUrl,@coverSource,@coverMatchTitle,@description,@descriptionSource,@descriptionSourceUrl,@status,@confidence,@reasons,@userId,@gameId,
+      @coverUrl,@coverSource,@coverMatchTitle,@description,@descriptionSource,@descriptionSourceUrl,
+      @igdbId,@igdbSlug,@igdbUrl,@igdbRating,@igdbRatingCount,@igdbCriticRating,@igdbCriticRatingCount,
+      @igdbGenres,@igdbThemes,@igdbDevelopers,@igdbUpdatedAt,@status,@confidence,@reasons,@userId,@gameId,
       CASE WHEN @status='public' THEN CURRENT_TIMESTAMP ELSE NULL END)`).run({
         ...next, slug: uniqueSlug(game.title, game.platform), userId, gameId: game.id,
       });
@@ -340,6 +378,21 @@ function createKatalogStore(database) {
     return result.changes ? getById(id) : getById(id);
   }
 
+  function addIgdbIfMissing(id, game = {}) {
+    if (!game.igdbId) return getById(id);
+    const existing = getById(id);
+    if (!existing || (existing.igdbId && Number(existing.igdbId) !== Number(game.igdbId))) return existing;
+    if (existing.igdbId && existing.igdbUpdatedAt === (game.igdbUpdatedAt || null)) return existing;
+    database.prepare(`UPDATE catalogue_entries SET igdb_id=?, igdb_slug=?, igdb_url=?, igdb_rating=?, igdb_rating_count=?,
+      igdb_critic_rating=?, igdb_critic_rating_count=?, igdb_genres=?, igdb_themes=?, igdb_developers=?, igdb_updated_at=?,
+      updated_at=CURRENT_TIMESTAMP WHERE id=? AND (igdb_id IS NULL OR igdb_id=?)`).run(
+      game.igdbId, String(game.igdbSlug || ''), String(game.igdbUrl || ''), game.igdbRating ?? null, game.igdbRatingCount || 0,
+      game.igdbCriticRating ?? null, game.igdbCriticRatingCount || 0, JSON.stringify(game.igdbGenres || []),
+      JSON.stringify(game.igdbThemes || []), JSON.stringify(game.igdbDevelopers || []), game.igdbUpdatedAt || null, Number(id), game.igdbId,
+    );
+    return getById(id);
+  }
+
   function remove(id) {
     const entry = getById(id);
     if (!entry) return null;
@@ -363,7 +416,7 @@ function createKatalogStore(database) {
   }
 
   return {
-    addDescriptionIfMissing, contributionSources, counts, findByIdentity, getById, getBySlug, getPublicById, getPublicBySlug,
+    addDescriptionIfMissing, addIgdbIfMissing, contributionSources, counts, findByIdentity, getById, getBySlug, getPublicById, getPublicBySlug,
     link, listAdmin, listPublic, publicPlatforms, remove, replaceCover, searchPublic, setStatus, sitemapEntries, updateAdmin, upsertFromGame,
   };
 }

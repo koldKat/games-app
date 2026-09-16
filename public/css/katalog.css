@@ -300,9 +300,9 @@
 .game-summary h1 {
   margin: 0;
   color: #edf7f3;
-  font-size: clamp(27px,3vw,38px);
-  line-height: 1.05;
-  letter-spacing: -.04em;
+  font-size: clamp(18px,2vw,24px);
+  line-height: 1.15;
+  letter-spacing: -.025em;
 }
 .katalog-search {
   display: grid;
@@ -861,6 +861,20 @@
   color: var(--green);
   font-size: 11px;
 }
+.game-metadata .igdb-metadata {
+  grid-column: 1 / -1;
+  border-color: #255b50;
+  background: #091713;
+}
+.game-metadata .igdb-metadata header span {
+  color: #67e7c5;
+}
+.game-metadata .igdb-score-grid {
+  margin: 0 0 12px;
+}
+.game-metadata .igdb-metadata p strong {
+  color: #d7eee7;
+}
 .game-summary .game-description {
   margin-top: 10px;
   padding: 13px;
@@ -936,7 +950,7 @@
     padding: 9px;
   }
   .game-summary h1 {
-    font-size: clamp(21px,8vw,34px);
+    font-size: clamp(17px,5vw,21px);
   }
   .katalog-add {
     grid-column: 1/-1;

@@ -31,6 +31,11 @@ function compareGames(left, right, sort = 'title') {
     hltb_all_short: ['hltbAllStyles', 1], hltb_all_long: ['hltbAllStyles', -1],
   };
   if (hltbSorts[sort]) return number(...hltbSorts[sort]);
+  const igdbSorts = {
+    igdb_user: ['igdbRating', 1], igdb_user_desc: ['igdbRating', -1],
+    igdb_critic: ['igdbCriticRating', 1], igdb_critic_desc: ['igdbCriticRating', -1],
+  };
+  if (igdbSorts[sort]) return number(...igdbSorts[sort]);
   if (sort === 'cartridge') return number('cartridgeNumber');
   return title();
 }

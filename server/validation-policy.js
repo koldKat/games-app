@@ -21,6 +21,7 @@ const GAME_LIMITS = Object.freeze({
   coverSourceMax: 80,
   coverMatchTitleMax: 300,
   hltbTimestampMax: 40,
+  igdbSlugMax: 180,
   hltbHoursMax: 100_000,
   releaseYearMin: 1970,
   releaseYearMax: 2100,

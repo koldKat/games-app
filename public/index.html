@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Build a private multi-platform game library, discover enriched public releases, and track wishlists, PEGI data, HLTB playtimes, and cover art.">
+  <meta name="description" content="Build a private multi-platform game library, discover enriched public releases, and track wishlists, PEGI and IGDB data, HLTB playtimes, and cover art.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="application-name" content="Game Kat·a·log">
   <meta name="apple-mobile-web-app-title" content="Game Kat·a·log">
@@ -16,7 +16,7 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://gamekat.net/">
   <meta property="og:title" content="Game Kat·a·log // Game Collection, Backlog &amp; Wishlist Tracker">
-  <meta property="og:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
+  <meta property="og:description" content="Track every platform with powerful filters, synced account settings, PEGI and IGDB data, HLTB playtimes, and cover art.">
   <meta property="og:image" content="https://gamekat.net/social-preview.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
   <meta property="og:image:alt" content="Game Kat·a·log personal game collection manager">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Game Kat·a·log // Game Collection, Backlog &amp; Wishlist Tracker">
-  <meta name="twitter:description" content="Track every platform with powerful filters, synced account settings, PEGI data, HLTB playtimes, and cover art.">
+  <meta name="twitter:description" content="Track every platform with powerful filters, synced account settings, PEGI and IGDB data, HLTB playtimes, and cover art.">
   <meta name="twitter:image" content="https://gamekat.net/social-preview.png">
   <meta name="twitter:image:alt" content="Game Kat·a·log personal game collection manager">
   <title>Game Kat·a·log // Video Game Collection, Backlog &amp; Wishlist Tracker</title>
@@ -50,7 +50,7 @@
       "@type": "WebApplication",
       "name": "Game Kat·a·log",
       "url": "https://gamekat.net/",
-      "description": "A multi-platform video game collection, wishlist, and backlog manager with deep filters, PEGI metadata, HLTB playtimes, cover art, and cross-device account settings.",
+      "description": "A multi-platform video game collection, wishlist, and backlog manager with deep filters, PEGI and IGDB metadata, HLTB playtimes, cover art, and cross-device account settings.",
       "applicationCategory": "UtilitiesApplication",
       "applicationSubCategory": "Video game collection manager",
       "operatingSystem": "Any modern web browser",
@@ -64,8 +64,9 @@
         "Physical and digital collection tracking",
         "Wishlist, backlog, and play-status management",
         "PEGI-assisted ratings and metadata",
+        "IGDB title discovery, ratings, credits, genres, descriptions, and cover art",
         "HowLongToBeat playtime estimates",
-        "SteamGridDB and TheGamesDB cover-art lookup",
+        "SteamGridDB, TheGamesDB, IGDB, and HLTB cover-art lookup",
         "Advanced filters, missing-data views, and playtime sorting",
         "Live incremental batch updates",
         "Cross-device account preferences",
@@ -151,7 +152,7 @@
           <span class="promo-code">BOX_ART // ONLINE</span>
           <div class="promo-cover-deck" data-cover-slots="5" aria-hidden="true"></div>
           <h2>Your covers on deck.</h2>
-          <p>Search SteamGridDB and TheGamesDB per title or run conservative account-wide cover scans.</p>
+          <p>Search SteamGridDB, TheGamesDB, IGDB, and HLTB per title or run conservative account-wide scans.</p>
         </article>
         <article class="auth-promo promo-track">
           <span class="promo-code">WORKSPACE // SYNCED</span>
@@ -236,14 +237,15 @@
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
             <label><span>PEGI</span><select id="pegi-filter"><option value="">Any rating</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option><option value="none">Unrated</option></select></label>
             <label><span>Play status</span><select id="status-filter"><option value="">Any status</option><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option><option value="hidden">Hidden</option></select></label>
-            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
+            <label><span>Data gaps</span><select id="missing-filter"><option value="">All games</option><option value="pegi">No PEGI info</option><option value="igdb">No IGDB info</option><option value="cover">No cover</option><option value="hltb">No HLTB info</option><option value="description">No description</option><option value="either">Any missing</option><option value="both">All missing</option></select></label>
             <label><span>Sort by</span><select id="sort-filter">
               <option value="title">Title · A–Z</option><option value="title_desc">Title · Z–A</option><option value="platform">Platform · A–Z</option><option value="publisher">Publisher · A–Z</option>
               <option value="year_desc">Release year · newest</option><option value="year">Release year · oldest</option><option value="pegi">PEGI · low to high</option><option value="pegi_desc">PEGI · high to low</option>
               <option value="ownership">Collection state</option><option value="status">Play status</option><option value="favorites">Favorites first</option><option value="newest">Recently added</option>
               <option value="oldest">Oldest added</option><option value="updated">Recently updated</option><option value="hltb_main_short">HLTB main · shortest</option><option value="hltb_main_long">HLTB main · longest</option>
               <option value="hltb_extra_short">HLTB main + sides · shortest</option><option value="hltb_extra_long">HLTB main + sides · longest</option><option value="hltb_100_short">HLTB completionist · shortest</option>
-              <option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option><option value="cartridge">Cartridge no.</option>
+              <option value="hltb_100_long">HLTB completionist · longest</option><option value="hltb_all_short">HLTB all styles · shortest</option><option value="hltb_all_long">HLTB all styles · longest</option>
+              <option value="igdb_user_desc">IGDB users · highest</option><option value="igdb_user">IGDB users · lowest</option><option value="igdb_critic_desc">IGDB critics · highest</option><option value="igdb_critic">IGDB critics · lowest</option><option value="cartridge">Cartridge no.</option>
             </select></label>
           </div>
           <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
@@ -297,6 +299,11 @@
         <button type="button" class="button secondary" id="pegi-search-button">Look up title</button>
       </div>
       <div id="pegi-results" class="pegi-results" hidden></div>
+      <div class="pegi-assist igdb-assist">
+        <div><strong>IGDB information</strong><small>Match a title to add IGDB ratings, credits, genres, description, and artwork.</small></div>
+        <button type="button" class="button secondary" id="igdb-search-button">Look up on IGDB</button>
+      </div>
+      <div id="igdb-results" class="pegi-results igdb-results" hidden></div>
       <div class="cover-assist">
         <div><strong>Box art</strong><small>Search connected artwork providers or upload your own cover.</small></div>
         <div class="cover-assist-actions"><button type="button" class="button ghost" id="cover-remove-button" hidden>Remove cover</button><button type="button" class="button secondary" id="cover-upload-button">Upload cover</button><button type="button" class="button secondary" id="cover-search-button">Request cover</button></div>
@@ -310,7 +317,7 @@
       </div>
       <div id="hltb-results" class="pegi-results hltb-results" hidden></div>
       <div class="pegi-assist">
-        <div><strong>Game description</strong><small>Search Steam Store and TheGamesDB, or write your own.</small></div>
+        <div><strong>Game description</strong><small>Search Steam Store, IGDB and TheGamesDB, or write your own.</small></div>
         <button type="button" class="button secondary" id="description-search-button">Look up description</button>
       </div>
       <div id="description-results" class="pegi-results" hidden></div>
@@ -345,6 +352,12 @@
       <section id="game-hltb-details" class="game-hltb-details" hidden>
         <header><span><small>HowLongToBeat match</small><strong id="game-hltb-title"></strong></span><a id="game-hltb-source" href="https://howlongtobeat.com/" target="_blank" rel="noopener">View source ↗</a></header>
         <div id="game-hltb-times" class="hltb-time-grid"></div>
+      </section>
+      <section id="game-igdb-details" class="game-igdb-details" hidden>
+        <header><span><small>IGDB match</small><strong id="game-igdb-match-title"></strong></span><a id="game-igdb-source" href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer">View source ↗</a></header>
+        <div class="igdb-score-grid"><div><span>IGDB users</span><strong id="game-igdb-user-score">Not rated</strong></div><div><span>Critics</span><strong id="game-igdb-critic-score">Not rated</strong></div></div>
+        <p id="game-igdb-tags" class="game-igdb-tags"></p>
+        <button type="button" class="button ghost" id="game-igdb-remove">Unlink IGDB match</button>
       </section>
       <details id="game-pegi-details" class="game-pegi-details" hidden>
         <summary><span>PEGI details</span><small id="game-pegi-summary"></small></summary>
@@ -393,6 +406,25 @@
         <div class="integration-key provider-connected" data-provider-connected><input class="is-connected" type="text" value="Checking…" aria-label="TheGamesDB connection" disabled><button type="button" class="button secondary" data-provider-replace>Replace key</button></div>
         <div class="provider-fields" data-provider-fields hidden><div class="integration-key"><input type="password" autocomplete="off" data-credential="apiKey" aria-label="TheGamesDB API key" placeholder="API key"><button type="button" class="button secondary" data-provider-save>Connect</button></div></div>
         <div class="integration-bulk"><span class="bulk-status" data-provider-bulk-status tabindex="0">TheGamesDB scan idle.</span><button type="button" class="button ghost" data-provider-bulk>Fill with TheGamesDB</button></div>
+      </section>
+      <section class="integration-panel external-cover-integration" data-cover-provider="igdb">
+        <div class="integration-head"><span><strong>IGDB game data</strong><small data-provider-status>Checking configuration…</small></span><span class="integration-links"><a href="https://dev.twitch.tv/console/apps" target="_blank" rel="noopener noreferrer">Twitch developer apps ↗</a><a href="https://api-docs.igdb.com/" target="_blank" rel="noopener noreferrer">IGDB API guide ↗</a></span></div>
+        <div class="integration-key provider-connected" data-provider-connected><input class="is-connected" type="text" value="Checking…" aria-label="IGDB connection" disabled><button type="button" class="button secondary" data-provider-replace>Replace credentials</button></div>
+        <div class="provider-fields" data-provider-fields hidden>
+          <div class="integration-key provider-credential-pair">
+            <label>
+              <span>Client ID</span>
+              <input type="text" maxlength="128" autocomplete="off" data-credential="clientId" aria-label="IGDB Client ID" placeholder="Paste Client ID">
+            </label>
+            <label>
+              <span>Client Secret</span>
+              <input type="password" maxlength="256" autocomplete="off" data-credential="clientSecret" aria-label="IGDB Client Secret" placeholder="Paste Client Secret">
+            </label>
+            <button type="button" class="button secondary" data-provider-save>Connect</button>
+          </div>
+        </div>
+        <div class="integration-bulk"><span class="bulk-status" data-provider-bulk-status tabindex="0">IGDB scan idle.</span><button type="button" class="button ghost" data-provider-bulk>Fill IGDB information</button></div>
+        <small class="integration-note">Requires a Confidential Twitch application. IGDB ratings appear in game details, never on cards.</small>
       </section>
       <section class="integration-panel">
         <div class="integration-head"><span><strong>Game descriptions</strong><small id="description-provider-status">Checking library…</small></span><span class="integration-links"><a href="https://store.steampowered.com/" target="_blank" rel="noopener">Steam Store ↗</a><a href="https://thegamesdb.net/" target="_blank" rel="noopener">TheGamesDB ↗</a></span></div>

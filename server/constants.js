@@ -16,12 +16,12 @@ const STORED_PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'complete
 const PLAY_STATUS_VALUES = Object.freeze([...STORED_PLAY_STATUS_VALUES, 'hidden']);
 const MEDIA_FORMAT_VALUES = Object.freeze(['physical', 'digital', 'unknown']);
 const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted']);
-const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'cover', 'hltb', 'description', 'either', 'both']);
+const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'igdb', 'cover', 'hltb', 'description', 'either', 'both']);
 const SORT_VALUES = Object.freeze([
   'title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
   'ownership', 'status', 'favorites', 'newest', 'oldest', 'updated', 'hltb_main_short', 'hltb_main_long',
   'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long',
-  'cartridge',
+  'igdb_user', 'igdb_user_desc', 'igdb_critic', 'igdb_critic_desc', 'cartridge',
 ]);
 
 const BULK_JOB = Object.freeze({
@@ -30,6 +30,7 @@ const BULK_JOB = Object.freeze({
   pegiDelayMs: 500,
   hltbDelayMs: 1_500,
   descriptionDelayMs: 1_500,
+  igdbDelayMs: 300,
 });
 
 module.exports = {

@@ -1,7 +1,8 @@
 import { UI_LOCALE } from './ui-policy.js';
 
 const PROVIDERS = Object.freeze({
-  thegamesdb: { label: 'TheGamesDB', fields: ['apiKey'] },
+  thegamesdb: { label: 'TheGamesDB', fields: ['apiKey'], noun: 'covers', purpose: 'search its artwork', started: 'cover scan' },
+  igdb: { label: 'IGDB', fields: ['clientId', 'clientSecret'], noun: 'games without IGDB information', purpose: 'match games and retrieve metadata', started: 'metadata scan' },
 });
 
 function setBulkStatus(element, shortStatus, detail) {
@@ -16,7 +17,7 @@ export function createCoverProviderSettings({ api, toast, showError }) {
     const panel = root(provider); const status = states.get(provider); if (!panel || !status) return;
     const editing = panel.dataset.editing === 'true'; const saving = panel.dataset.saving === 'true';
     panel.querySelector('[data-provider-status]').textContent = status.configured
-      ? `${Number(status.missing || 0).toLocaleString(UI_LOCALE)} games still need covers.` : `Connect ${PROVIDERS[provider].label} to search its artwork.`;
+      ? `${Number(status.missing || 0).toLocaleString(UI_LOCALE)} ${PROVIDERS[provider].noun} remain.` : `Connect ${PROVIDERS[provider].label} to ${PROVIDERS[provider].purpose}.`;
     panel.querySelector('[data-provider-connected]').hidden = !status.configured || editing;
     panel.querySelector('[data-provider-fields]').hidden = status.configured && !editing;
     const connectedInput = panel.querySelector('[data-provider-connected] input'); connectedInput.value = 'Connected'; connectedInput.disabled = true;
@@ -62,7 +63,7 @@ export function createCoverProviderSettings({ api, toast, showError }) {
     });
     panel.querySelector('[data-provider-bulk]').addEventListener('click', async event => {
       event.currentTarget.disabled = true;
-      try { await api(`/api/cover-providers/${provider}/bulk`, { method: 'POST' }); toast(`${definition.label} cover scan started.`); await loadOne(provider); }
+      try { await api(`/api/cover-providers/${provider}/bulk`, { method: 'POST' }); toast(`${definition.label} ${definition.started} started.`); await loadOne(provider); }
       catch (error) { showError(error.message); render(provider); }
     });
   }

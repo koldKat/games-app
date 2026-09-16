@@ -28,6 +28,17 @@ function katalogGameInput(entry, personal = {}) {
     description: entry.description,
     descriptionSource: entry.descriptionSource,
     descriptionSourceUrl: entry.descriptionSourceUrl,
+    igdbId: entry.igdbId,
+    igdbSlug: entry.igdbSlug,
+    igdbUrl: entry.igdbUrl,
+    igdbRating: entry.igdbRating,
+    igdbRatingCount: entry.igdbRatingCount,
+    igdbCriticRating: entry.igdbCriticRating,
+    igdbCriticRatingCount: entry.igdbCriticRatingCount,
+    igdbGenres: entry.igdbGenres,
+    igdbThemes: entry.igdbThemes,
+    igdbDevelopers: entry.igdbDevelopers,
+    igdbUpdatedAt: entry.igdbUpdatedAt,
     ownership: personal.ownership || 'owned',
     mediaFormat: personal.mediaFormat || 'physical',
     playStatus: personal.playStatus || 'backlog',
@@ -44,7 +55,8 @@ function createKatalogService({ data, store, covers, logger = console }) {
     const existing = store.findByIdentity(evaluation.identity.titleKey, evaluation.identity.platformKey);
     if (existing?.status === 'public') {
       store.link(existing.id, game.id, userId);
-      return { state: 'linked', entry: store.addDescriptionIfMissing?.(existing.id, game) || existing, evaluation };
+      store.addDescriptionIfMissing?.(existing.id, game);
+      return { state: 'linked', entry: store.addIgdbIfMissing?.(existing.id, game) || store.getById(existing.id), evaluation };
     }
     let katalogCoverUrl = '';
     try {

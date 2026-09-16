@@ -23,6 +23,8 @@ test('preferences persist per account and invalid values fall back safely', asyn
   assert.deepEqual(preferences.get(first.id), saved);
   assert.equal(preferences.set(first.id, { filters: { ownership: 'owned_digital' } }).filters.ownership, 'owned_digital');
   assert.equal(preferences.set(first.id, { filters: { playStatus: 'hidden' } }).filters.playStatus, 'hidden');
+  assert.equal(preferences.set(first.id, { filters: { missing: 'igdb' } }).filters.missing, 'igdb');
+  assert.equal(preferences.set(first.id, { filters: { sort: 'igdb_critic_desc' } }).filters.sort, 'igdb_critic_desc');
   assert.deepEqual(preferences.get(second.id), preferences.defaults());
   assert.deepEqual(preferences.set(second.id, { view: 'invalid', filters: { ownership: 'broken', sort: 'DROP TABLE games' } }), preferences.defaults());
 });

@@ -23,6 +23,17 @@ test('client HLTB duration sorts mirror null-last server ordering', async () => 
   }
 });
 
+test('client IGDB score sorts keep missing ratings last', async () => {
+  const { compareGames } = await sortingModule();
+  const rated = [
+    { id: 1, title: 'High', igdbRating: 92, igdbCriticRating: 84 },
+    { id: 2, title: 'Missing', igdbRating: null, igdbCriticRating: null },
+    { id: 3, title: 'Low', igdbRating: 61, igdbCriticRating: 70 },
+  ];
+  assert.deepEqual([...rated].sort((a, b) => compareGames(a, b, 'igdb_user_desc')).map(game => game.title), ['High', 'Low', 'Missing']);
+  assert.deepEqual([...rated].sort((a, b) => compareGames(a, b, 'igdb_critic')).map(game => game.title), ['Low', 'High', 'Missing']);
+});
+
 test('client title ordering is accent-insensitive and deterministic', async () => {
   const { compareGames } = await sortingModule();
   const titles = [{ id: 3, title: 'Zelda' }, { id: 2, title: 'Pokemon' }, { id: 1, title: 'Pokémon' }];

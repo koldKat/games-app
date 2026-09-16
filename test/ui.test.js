@@ -464,9 +464,9 @@ test('hidden games use only the existing status dropdowns and never add a dashbo
   assert.match(css, /\.stats\{grid-template-columns:repeat\(10,minmax\(0,1fr\)\)/);
 });
 
-test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, and descriptions', () => {
+test('one data-gaps filter handles missing PEGI, IGDB, covers, HLTB times, and descriptions', () => {
   const html = read('public/index.html'); const application = read('public/app.js'); const database = read('server/db.js');
-  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All missing/);
+  assert.match(html, /id="missing-filter"[\s\S]*No PEGI info[\s\S]*No IGDB info[\s\S]*No cover[\s\S]*No HLTB info[\s\S]*No description[\s\S]*Any missing[\s\S]*All missing/);
   assert.doesNotMatch(html, /id="missing-(?:pegi|cover)-filter"/);
   assert.match(application, /filters\.missing\.value === 'either'/);
   assert.match(application, /filters\.missing\.value === 'both'/);
@@ -474,6 +474,8 @@ test('one data-gaps filter handles missing PEGI metadata, covers, HLTB times, an
   assert.match(database, /filters\.missing === 'both'/);
   assert.match(application, /filters\.missing\.value === 'description'/);
   assert.match(database, /filters\.missing === 'description'/);
+  assert.match(application, /filters\.missing\.value === 'igdb'/);
+  assert.match(database, /filters\.missing === 'igdb'/);
 });
 
 test('game editor supports an own cover upload without storing it before save', () => {
@@ -598,6 +600,12 @@ test('public release links retain crawlable URLs while opening in the Kat·a·lo
   assert.match(css, /\.katalog-game-dialog/);
 });
 
+test('public game details keep long titles at a compact dialog scale', () => {
+  const css = readCss('public/css/katalog.css');
+  assert.match(css, /\.game-summary h1\{margin:0;color:#edf7f3;font-size:clamp\(18px,2vw,24px\);line-height:1\.15/);
+  assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:clamp\(17px,5vw,21px\)}/);
+});
+
 test('public Kat·a·log cards overlay community ratings on their covers', () => {
   const pages = read('server/katalog-pages.js'); const css = readCss('public/css/katalog.css');
   assert.match(pages, /class="katalog-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
@@ -623,7 +631,7 @@ test('logged-out public pages load their cover background after rendering', () =
   assert.match(catalogue, /void loadPublicBackgroundCovers\(\)/);
 });
 
-test('sorting is modular and includes catalogue and HLTB duration orders', () => {
+test('sorting is modular and includes Katalog, HLTB duration, and IGDB score orders', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const sorting = read('public/js/game-sorting.js'); const database = read('server/db.js');
   assert.match(application, /import \{ compareGames \} from '\.\/js\/game-sorting\.js'/);
@@ -632,6 +640,9 @@ test('sorting is modular and includes catalogue and HLTB duration orders', () =>
   assert.match(html, /HLTB main · shortest[\s\S]*HLTB main \+ sides · longest[\s\S]*HLTB completionist · shortest[\s\S]*HLTB all styles · longest/);
   for (const value of ['hltb_main_short', 'hltb_main_long', 'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long']) {
     assert.match(sorting, new RegExp(value)); assert.match(database, new RegExp(`${value}:`));
+  }
+  for (const value of ['igdb_user', 'igdb_user_desc', 'igdb_critic', 'igdb_critic_desc']) {
+    assert.match(sorting, new RegExp(value)); assert.match(database, new RegExp(`${value}:`)); assert.match(html, new RegExp(`value="${value}"`));
   }
   assert.match(application, /compareGames\(left, right, filters\.sort\.value\)/);
 });
@@ -766,9 +777,22 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
   assert.match(application, /coverProviderSettings\.handleEvent/);
   assert.match(application, /TheGamesDB art ↗/);
   assert.match(server, /db\.coverProviderCredentials\(userId, provider\)/);
-  assert.match(server, /\(thegamesdb\)/);
+  assert.match(server, /\(thegamesdb\|igdb\)/);
   assert.match(server, /thumbnailUrl: `\/api\/covers\/preview\?url=\$\{encodeURIComponent\(result\.url\)\}`/);
   assert.match(server, /url\.pathname === '\/api\/covers\/preview'/);
+});
+
+test('IGDB integration stays modular and keeps external ratings in details', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const client = read('server/igdb.js'); const batch = read('server/igdb-bulk.js'); const ui = read('public/js/igdb-ui.js'); const css = readPublicCss();
+  assert.match(html, /data-cover-provider="igdb"/); assert.match(html, /data-credential="clientId"/); assert.match(html, /data-credential="clientSecret"/);
+  assert.match(html, /<span>Client ID<\/span>[\s\S]*<span>Client Secret<\/span>/);
+  assert.match(css, /\.provider-fields \.provider-credential-pair input\{width:100%/);
+  assert.match(application, /import \{ createIgdbLookup, igdbDetailsMarkup \} from '\.\/js\/igdb-ui\.js'/);
+  assert.match(application, /igdbDetailsMarkup\(game, escapeHtml\)/); assert.doesNotMatch(application, /card[\s\S]{0,120}igdbRating/);
+  assert.match(ui, /IGDB users/); assert.match(ui, /Critics/); assert.match(ui, /onExternalSelect|export function createIgdbLookup/);
+  assert.match(client, /id\.twitch\.tv\/oauth2\/token/); assert.match(client, /'Client-ID'/); assert.match(client, /aggregated_rating/);
+  assert.match(batch, /game-updated/); assert.match(batch, /gamesMissingIgdb/);
 });
 
 test('durable public covers stream from disk instead of buffering whole images', () => {

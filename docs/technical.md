@@ -38,6 +38,8 @@ games-app/
     showcase-covers.js      atomic public decorative-cover Kat·a·log writer
     showcase-pool.js        account-scoped owned and shared decorative-cover selectors
     thegamesdb.js           TheGamesDB boxart search, CDN URL parsing and credential checks
+    igdb.js                 IGDB OAuth token lifecycle, search, ratings, metadata and artwork mapping
+    igdb-bulk.js            conservative account-scoped IGDB enrichment jobs
     steam-store.js          Steam Store description lookup
     description-bulk.js     Steam-first, quota-safe missing-description scan
     cover-provider-utils.js shared title/platform normalization for artwork providers
@@ -76,7 +78,8 @@ games-app/
     js/katalog-public.js    release-detail dialog and one-click private-library add bindings
     js/katalog-navigation.js persistent authenticated-shell Kat·a·log navigation
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
-    js/cover-provider-settings.js TheGamesDB connection and scan controls
+    js/cover-provider-settings.js TheGamesDB and IGDB connection and scan controls
+    js/igdb-ui.js           IGDB match selection, form metadata and detail presentation
     js/cover-result-images.js failed-thumbnail fallback to provider originals
     js/artwork-url.js       accepted remote and durable-local artwork URL policy
     js/ui-policy.js         browser pagination, lookup limits and interaction timing
@@ -108,6 +111,7 @@ games-app/
     pegi-bulk.test.js       exact-title matching, skips, and job notifications
     cover-providers.test.js provider parsing, image URLs and platform aliases
     cover-provider-bulk.test.js reusable cover-job updates and race protection
+    igdb.test.js            IGDB mapping, server-side authentication and batch updates
     cover-storage.test.js   provider allow-list, image validation and local migration
     image-policy.test.js    cover/avatar dimensions, format and byte ceilings
     cover-result-images.test.js browser thumbnail fallback contract
@@ -186,6 +190,8 @@ Environment variables:
 | `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
 | `STEAMGRIDDB_API_KEY` | blank | Optional server-wide cover API key; per-account keys can instead be configured in the UI |
 | `THEGAMESDB_API_KEY` | blank | Optional server-wide TheGamesDB key |
+| `IGDB_CLIENT_ID` | blank | Optional server-wide IGDB/Twitch application Client ID |
+| `IGDB_CLIENT_SECRET` | blank | Optional server-wide IGDB/Twitch application Client Secret |
 
 Start the server with `npm start`. Development watch mode is available through `npm run dev`.
 
@@ -262,6 +268,11 @@ Missing rows produce safe defaults. `server/preferences.js` validates every enum
 | `hltb_completionist`, `hltb_all_styles` | Completionist and All Styles hour estimates |
 | `hltb_updated_at` | Timestamp of the selected HLTB metadata |
 | `cover_url`, `cover_source`, `cover_match_title` | Selected artwork and match provenance |
+| `igdb_id`, `igdb_slug`, `igdb_url` | Selected IGDB identity and source provenance |
+| `igdb_rating`, `igdb_rating_count` | IGDB community score and vote count |
+| `igdb_critic_rating`, `igdb_critic_rating_count` | IGDB aggregated critic score and review count |
+| `igdb_genres`, `igdb_themes`, `igdb_developers` | Validated JSON metadata lists from IGDB |
+| `igdb_updated_at` | Last accepted IGDB metadata timestamp |
 | `description`, `description_source`, `description_source_url` | Selected game description and its required source attribution |
 | `created_at`, `updated_at` | SQLite timestamps |
 
@@ -269,7 +280,7 @@ Indexes cover owner, platform, ownership, PEGI, and case-insensitive title.
 
 ### `catalogue_entries`
 
-This table stores one shared factual release per normalized `(title, platform)` identity. It includes a stable unique slug, PEGI and HLTB facts, publisher/year, a katalog-owned cover URL, source provenance, confidence reasons, and a `candidate`, `public`, or `rejected` moderation state. Public browse results group public releases by normalized title before pagination when no platform filter is active; a platform filter intentionally returns individual release rows. Detail URLs retain the stable per-release slug, and the dialog exposes sibling platform releases. The grouped primary release supplies the card cover and sitemap URL, while every underlying release remains an independently moderated factual record.
+This table stores one shared factual release per normalized `(title, platform)` identity. It includes a stable unique slug, PEGI and HLTB facts, optional IGDB identity, scores and credits, publisher/year, a katalog-owned cover URL, source provenance, confidence reasons, and a `candidate`, `public`, or `rejected` moderation state. Public browse results group public releases by normalized title before pagination when no platform filter is active; a platform filter intentionally returns individual release rows. Detail URLs retain the stable per-release slug, and the dialog exposes sibling platform releases. The grouped primary release supplies the card cover and sitemap URL, while every underlying release remains an independently moderated factual record. IGDB supplementation updates an existing public release only when it is first linked or its selected IGDB timestamp changes, so unrelated private saves do not churn public sitemap timestamps.
 
 Public projections explicitly remove contributor account ID, source private-game ID, confidence reasons, moderation state, and internal creation data. Personal fields do not exist in this table at all.
 
@@ -279,7 +290,7 @@ This join table records which private game rows are represented by a shared rele
 
 Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 
-`cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets are never returned to the browser.
+`cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB and IGDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets and IGDB access tokens are never returned to the browser. IGDB access tokens remain process-memory cache entries and are refreshed before expiry.
 
 Username comparison is case-insensitive. Renaming an account later does not alter ownership because all collection queries use the immutable numeric user ID.
 
@@ -385,26 +396,27 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/hltb/status` | Missing-timing count and current account job state |
 | POST | `/api/hltb/bulk` | Start an account-scoped exact-title timing scan |
 | GET | `/api/descriptions/status` | Missing-description count, source availability, and job state |
-| GET | `/api/descriptions/search?q=...&platform=...` | Search Steam Store and connected TheGamesDB descriptions |
+| GET | `/api/descriptions/search?q=...&platform=...` | Search Steam Store plus connected IGDB and TheGamesDB descriptions |
 | POST | `/api/descriptions/bulk` | Start an account-scoped Steam-first missing-description scan |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
 | PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
 | DELETE | `/api/covers/config` | Remove the account-specific provider key |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
-| GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and up to ten SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
+| GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and IGDB suggestions when connected, otherwise SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
+| GET | `/api/igdb/search?q=...` | Search IGDB through the server using the account's stored application credentials |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
-| GET | `/api/cover-providers/:provider/status` | TheGamesDB connection state, missing count, and job progress |
+| GET | `/api/cover-providers/:provider/status` | TheGamesDB or IGDB connection state, missing count, and job progress |
 | PUT | `/api/cover-providers/:provider/config` | Validate and store an account's provider credentials |
 | DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
-| POST | `/api/cover-providers/:provider/bulk` | Start that provider's conservative missing-cover scan |
+| POST | `/api/cover-providers/:provider/bulk` | Start a conservative TheGamesDB cover scan or IGDB metadata scan |
 
 Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. Contribution rows include only the linked public release's PEGI value; `public/js/activity-feed.js` accepts the five valid ratings and applies the matching PEGI link color, leaving absent or invalid values on the existing muted fallback. On desktop, the reusable renderer projects that one ordered payload into a 55/45 newspaper layout: **KAT·A·LOG // UPDATES** occupies the wider left lane, **COLLECTORS // SIGNAL** occupies the right lane, and announcements span both above them. The desktop newspaper renderer is retained for an empty payload so both lane mastheads and their quiet states remain visible. The grid stretches both lane containers to the taller track so the separating rule reaches the bottom of the feed. At 760 pixels and below, the renderer selects one unified chronological stream. A media-query listener rerenders from the cached payload when that breakpoint changes, retaining stable day/account expansion keys without keeping a hidden duplicate feed that would fetch every cover and avatar twice. The landing-page preview continues using the original compact renderer rather than the newspaper layout. Six or more Kat·a·log contributions from the same account within one day become a single themed summary with an accessible inline expander; runs of up to five, joins, level-ups, and announcements remain individual entries. Before an SSE refresh replaces feed markup, the client snapshots expanded groups by local day and account, then restores the matching groups. New activity therefore does not collapse a contribution list the visitor is already reading.
 
 `users.public_profile` is a separate opt-in from `hide_from_activity`. Signal projects the boolean so `public/js/activity-feed.js` renders a real profile button only for opted-in, unlocked accounts. `server/public-profiles.js` rejects private, locked, and missing accounts through the same 404 response, then returns only avatar, join date, level/title, aggregate library counts, public contribution count, and five leading platforms. It never selects email, location, notes, per-game records, personal ratings, credentials, or settings. Avatar upload/removal and account privacy changes invalidate the public Signal projection through SSE. The reusable native dialog preserves the current Signal view, uses a start-and-release backdrop check so dragging text outside cannot close it, and aborts an unfinished request when closed or replaced.
 
-List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `playStatus=hidden` is the only list query that returns hidden rows; an absent or regular play-status filter always adds `hidden=0`. The public API exposes a hidden row's effective `playStatus` as `hidden`, while the separate flag preserves its prior stored play state. `missing` accepts `pegi`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. Missing-PEGI filtering and automatic PEGI enrichment include Evercade like every other platform, but all automatic enrichment queues omit hidden rows. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
+List query parameters are `q`, `platform`, `ownership`, `playStatus`, `pegi`, `missing`, `favorite`, and `sort`. `ownership` accepts `owned_physical`, `owned_digital`, or `wanted`; the two owned values combine the stored `owned` collection state with the corresponding media format. `playStatus=hidden` is the only list query that returns hidden rows; an absent or regular play-status filter always adds `hidden=0`. The public API exposes a hidden row's effective `playStatus` as `hidden`, while the separate flag preserves its prior stored play state. `missing` accepts `pegi`, `igdb`, `cover`, `hltb`, `description`, `either`, or `both`; `either` means any enrichment data set is absent and `both` means all are absent. Missing-PEGI filtering and automatic PEGI enrichment include Evercade like every other platform, but all automatic enrichment queues omit hidden rows. Legacy `missingPegi=1` and `missingCover=1` requests remain accepted.
 
-Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favorites, creation/update timestamps, cartridge number, and ascending/descending values for all four HLTB estimates. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
+Sort values cover ascending/descending title, platform, publisher, release year, PEGI, collection and play-state priority, favorites, creation/update timestamps, cartridge number, ascending/descending values for all four HLTB estimates, and ascending/descending IGDB user and critic scores. SQL ordering always puts null numeric metadata last. Text ordering uses the same accent-insensitive normalization as collection search and includes numeric ID tie-breakers for deterministic placement. The focused `public/js/game-sorting.js` module mirrors those contracts for cards patched into the current result set through SSE, preventing live enrichment from temporarily using a different order than the server response.
 
 Avatar filenames contain only the authenticated numeric user ID, timestamp, and random suffix. The browser center-crops and compresses before upload; the server independently decodes and reprocesses the image through the shared policy before accepting it, guaranteeing a 512×512 JPEG no larger than 256 KiB. Avatars are stored beneath `public/avatars/`; replacement and removal delete only the filename recorded for that account after a basename traversal check. Avatar binaries are excluded from Git.
 
@@ -478,6 +490,16 @@ This integration is deliberately nonessential. Parsing or network failure return
 
 ---
 
+## IGDB integration
+
+IGDB is optional and server-side. Each account can store a Twitch application Client ID and Client Secret, or the operator can provide `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` as a server-wide fallback. The Twitch application must use the **Confidential** client type because Public clients cannot issue a secret; IGDB recommends `http://localhost` for the otherwise-unused redirect URL. `server/igdb.js` exchanges those credentials at Twitch's client-credentials endpoint, keeps the access token only in memory, refreshes it before expiry, and sends the required Client ID and bearer headers to IGDB. Browser code never receives either credential or token.
+
+IGDB calls pass through one serialized request lane, keeping concurrent autocomplete, cover, description, and batch work below the published four-request-per-second limit. Concurrent requests for the same credentials share one in-flight token exchange, and identical searches share one in-flight game request. Requests are capped by a timeout, retried once after an authorization or rate-limit response, and cached for 30 minutes by normalized query and credential fingerprint. Expired entries are pruned and the cache is capped at 500 searches. Results map the IGDB identity, source URL, description, release year, publisher and developer credits, genres, themes, platforms, cover image, community rating/count, and aggregated critic rating/count. Manual autocomplete failures are deliberately silent; the user can continue typing normally.
+
+`public/js/igdb-ui.js` owns explicit match selection and form presentation. It fills only blank publisher, year, description, and cover fields while storing the selected IGDB identity and ratings. User and critic ratings are deliberately absent from cards and appear in private and public game-detail views. A chosen remote cover follows the ordinary save path, so it is validated, resized, and persisted locally rather than remaining dependent on the IGDB CDN.
+
+`server/igdb-bulk.js` scans only visible games without an IGDB identity. It accepts one normalized exact-title result on the saved platform, reloads each row before writing, and skips records changed during the run. Successful writes preserve personal fields and existing factual values, may fill blank publisher/year/description/cover data, synchronize eligible public Kat·a·log facts, and publish `igdb-job` plus `game-updated` SSE events. Job state is process-local; stored metadata is durable.
+
 ## HowLongToBeat integration
 
 HowLongToBeat does not provide a documented public developer API. `server/hltb.js` uses Node's built-in `fetch` implementation against HLTB's current token-gated search route, requests the rotating search credentials, and performs opt-in searches. The same results expose HLTB game-image filenames, which are offered only within an explicit per-game Request cover search // never by bulk cover work. The provider is native JavaScript: it does not spawn Python, invoke the old Downloads script, or add a Python dependency.
@@ -492,13 +514,13 @@ The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Look
 
 ## Cover-art integration
 
-The artwork layer supports SteamGridDB and TheGamesDB. SteamGridDB supplies portrait grids and title autocomplete. TheGamesDB supplies front boxart and platform metadata from its CDN. Manual lookup runs both configured sources concurrently, preserves provider provenance, and returns successful results even when the other source is unavailable.
+The artwork layer supports SteamGridDB, TheGamesDB, and IGDB. SteamGridDB supplies portrait grids and fallback title autocomplete. TheGamesDB supplies front boxart and platform metadata from its CDN. IGDB supplies cover art alongside its game metadata. Manual lookup runs configured sources concurrently, preserves provider provenance, and returns successful results even when another source is unavailable.
 
-SteamGridDB requires a personal bearer API key stored in `user_integrations`. TheGamesDB requires an API key stored in `cover_provider_credentials`; its key page requires an authenticated TheGamesDB site account, so Account Settings links to sign-in/registration separately from the key page. `STEAMGRIDDB_API_KEY` and `THEGAMESDB_API_KEY` provide optional server-wide fallbacks. Secrets are validated before storage and never returned to the browser.
+SteamGridDB requires a personal bearer API key stored in `user_integrations`. TheGamesDB requires an API key stored in `cover_provider_credentials`; its key page requires an authenticated TheGamesDB site account, so Account Settings links to sign-in/registration separately from the key page. IGDB stores its Client ID and Client Secret in the same account-scoped credential table. `STEAMGRIDDB_API_KEY`, `THEGAMESDB_API_KEY`, `IGDB_CLIENT_ID`, and `IGDB_CLIENT_SECRET` provide optional server-wide fallbacks. Secrets are validated before storage and never returned to the browser.
 
 Cover-status responses expose only whether lookup is configured. When connected, Account Settings renders a disabled field as a green **Connected** state; secrets are never returned to the browser. Selecting **Replace key** or **Replace credentials** explicitly enters replacement mode with empty fields.
 
-The add/edit title field searches the authenticated account's own titles and reuses SteamGridDB's game autocomplete after three characters. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
+The add/edit title field searches the authenticated account's own titles, the public Kat·a·log, and IGDB after three characters when connected; SteamGridDB remains the remote fallback. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
 
 An exact case-insensitive, whitespace-normalized title-and-platform pair is treated as a possible duplicate. Save-time validation uses a dedicated account-scoped exact lookup rather than the autocomplete result limit, so spacing variants and collections with many editions cannot bypass the warning. The warning can open the existing record. Creating another entry requires an explicit themed confirmation, but remains permitted for multiple copies or editions; another platform is never treated as the same record. The authenticated autocomplete route deliberately returns local results plus an empty remote list when no key is configured or SteamGridDB fails. The interface shows no provider warning, toast, empty state, or loading indicator: remote autocomplete is optional assistance and manual entry always remains available.
 

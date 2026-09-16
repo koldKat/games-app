@@ -12,9 +12,11 @@ const hltb = require('./server/hltb');
 const { createHltbBulkManager } = require('./server/hltb-bulk');
 const covers = require('./server/covers');
 const thegamesdb = require('./server/thegamesdb');
+const igdb = require('./server/igdb');
 const steamStore = require('./server/steam-store');
 const { createDescriptionBulkManager } = require('./server/description-bulk');
 const { createCoverProviderBulkManager } = require('./server/cover-provider-bulk');
+const { createIgdbBulkManager } = require('./server/igdb-bulk');
 const coverStorage = require('./server/cover-storage');
 const imagePolicy = require('./server/image-policy');
 const showcaseCovers = require('./server/showcase-covers');
@@ -52,7 +54,7 @@ const PUBLIC_CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://cdn.thegamesdb.net https://cdn.steamgriddb.com https://cdn2.steamgriddb.com https://howlongtobeat.com",
+  "img-src 'self' data: blob: https://cdn.thegamesdb.net https://cdn.steamgriddb.com https://cdn2.steamgriddb.com https://images.igdb.com https://howlongtobeat.com",
   "connect-src 'self'",
   "font-src 'self'",
   "frame-ancestors 'self'",
@@ -72,6 +74,11 @@ const externalCoverProviders = Object.freeze({
   thegamesdb: {
     label: 'TheGamesDB', client: thegamesdb,
     environment: () => process.env.THEGAMESDB_API_KEY ? { apiKey: process.env.THEGAMESDB_API_KEY } : null,
+  },
+  igdb: {
+    label: 'IGDB', client: igdb,
+    environment: () => process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET
+      ? { clientId: process.env.IGDB_CLIENT_ID, clientSecret: process.env.IGDB_CLIENT_SECRET } : null,
   },
 });
 const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
@@ -108,9 +115,11 @@ async function storeMatchedCover(userId, game, match, source) {
     return updated;
   } catch (error) { coverStorage.removeLocal(localUrl); throw error; }
 }
-const externalCoverJobs = Object.fromEntries(Object.entries(externalCoverProviders).map(([provider, definition]) => [provider,
-  createCoverProviderBulkManager({ data: db, provider, label: definition.label, lookup: definition.client.bestExactCover,
-    saveCover: storeMatchedCover, notify: publishAppEvent })]));
+const externalCoverJobs = {
+  thegamesdb: createCoverProviderBulkManager({ data: db, provider: 'thegamesdb', label: 'TheGamesDB', lookup: thegamesdb.bestExactCover,
+    saveCover: storeMatchedCover, notify: publishAppEvent }),
+};
+const igdbJobs = createIgdbBulkManager({ data: db, lookup: igdb.exactGame, saveCover: storeMatchedCover, notify: publishAppEvent });
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
@@ -409,10 +418,10 @@ async function handleApi(request, response, url) {
   if (request.method === 'DELETE' && url.pathname === '/api/covers/config') {
     db.setCoverApiKey(user.id, ''); return sendJson(response, 200, { configured: Boolean(process.env.STEAMGRIDDB_API_KEY) });
   }
-  const providerRoute = url.pathname.match(/^\/api\/cover-providers\/(thegamesdb)\/(status|config|bulk)$/);
+  const providerRoute = url.pathname.match(/^\/api\/cover-providers\/(thegamesdb|igdb)\/(status|config|bulk)$/);
   if (providerRoute) {
     const [, provider, action] = providerRoute; const definition = externalCoverProviders[provider];
-    const credentials = providerCredentials(user.id, provider); const manager = externalCoverJobs[provider];
+    const credentials = providerCredentials(user.id, provider); const manager = provider === 'igdb' ? igdbJobs : externalCoverJobs[provider];
     if (request.method === 'GET' && action === 'status') {
       return sendJson(response, 200, { configured: Boolean(credentials), ...manager.status(user.id) });
     }
@@ -459,11 +468,19 @@ async function handleApi(request, response, url) {
     }
     const existing = db.searchGameTitles(user.id, query);
     const publicEntries = query.length >= TITLE_AUTOCOMPLETE_MIN_LENGTH ? katalog.searchPublic(query) : [];
-    if (!key || query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') {
+    if (query.length < TITLE_AUTOCOMPLETE_MIN_LENGTH || url.searchParams.get('local') === '1') {
       return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: [] });
     }
-    try { return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: await covers.searchTitles(key, query) }); }
+    const igdbCredentials = providerCredentials(user.id, 'igdb');
+    try { return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: igdbCredentials
+      ? await igdb.searchGames(igdbCredentials, query) : key ? await covers.searchTitles(key, query) : [] }); }
     catch { return sendJson(response, 200, { existing, catalogue: publicEntries, suggestions: [] }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/igdb/search') {
+    const credentials = providerCredentials(user.id, 'igdb');
+    if (!credentials) return sendJson(response, 409, { error: 'Connect IGDB in Account Settings first.' });
+    try { return sendJson(response, 200, await igdb.searchGames(credentials, url.searchParams.get('q'))); }
+    catch (error) { return sendJson(response, error.status || 502, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/covers/bulk') {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
@@ -505,11 +522,13 @@ async function handleApi(request, response, url) {
     catch (error) { return sendJson(response, 409, { error: error.message, job: hltbJobs.status(user.id).job }); }
   }
   if (request.method === 'GET' && url.pathname === '/api/descriptions/status') {
-    return sendJson(response, 200, { configured: true, thegamesdbConfigured: Boolean(providerCredentials(user.id, 'thegamesdb')), ...descriptionJobs.status(user.id) });
+    return sendJson(response, 200, { configured: true, thegamesdbConfigured: Boolean(providerCredentials(user.id, 'thegamesdb')),
+      ...descriptionJobs.status(user.id) });
   }
   if (request.method === 'GET' && url.pathname === '/api/descriptions/search') {
     const title = url.searchParams.get('q'); const platform = url.searchParams.get('platform'); const credentials = providerCredentials(user.id, 'thegamesdb');
     const searches = [steamStore.searchDescriptions(title)]; if (credentials) searches.push(thegamesdb.searchDescriptions(credentials, title, platform));
+    const igdbCredentials = providerCredentials(user.id, 'igdb'); if (igdbCredentials) searches.push(igdb.searchDescriptions(igdbCredentials, title, platform));
     const settled = await Promise.allSettled(searches); const results = settled.flatMap(result => result.status === 'fulfilled' ? result.value : []);
     if (results.length || settled.some(result => result.status === 'fulfilled')) return sendJson(response, 200, results.slice(0, 20));
     return sendJson(response, 502, { error: settled.find(result => result.status === 'rejected')?.reason?.message || 'Description sources are unavailable.' });

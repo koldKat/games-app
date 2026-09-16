@@ -32,6 +32,9 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.coverProviderCredentials(other.id, 'thegamesdb'), null);
   data.setCoverProviderCredentials(owner.id, 'thegamesdb', null);
   assert.equal(data.coverProviderCredentials(owner.id, 'thegamesdb'), null);
+  data.setCoverProviderCredentials(owner.id, 'igdb', { clientId: 'client-id', clientSecret: 'client-secret' });
+  assert.deepEqual(data.coverProviderCredentials(owner.id, 'igdb'), { clientId: 'client-id', clientSecret: 'client-secret' });
+  assert.equal(data.coverProviderCredentials(other.id, 'igdb'), null);
   assert.equal(data.db.prepare('SELECT COUNT(*) count FROM games WHERE user_id IS NULL').get().count, 1);
 
   const ownerGame = data.createGame(owner.id, { title: 'Owned Game', platform: 'Nintendo Switch' });
@@ -78,6 +81,24 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(data.updateGame(owner.id, created.id, { title: 'No Access', platform: 'Evercade' }), null);
   assert.equal(data.deleteGame(owner.id, created.id), false);
   assert.equal(data.stats(other.id).total, 1);
+
+  const igdbCandidate = data.createGame(other.id, { title: 'IGDB Candidate', platform: 'Nintendo Switch', pegi: 7,
+    pegiUrl: 'https://pegi.info/igdb-candidate', publisher: '', description: '' });
+  assert.ok(data.gamesMissingIgdb(other.id).some(game => game.id === igdbCandidate.id));
+  const igdbGame = data.updateGameIgdb(other.id, igdbCandidate.id, {
+    igdbId: 123, slug: 'igdb-candidate', sourceUrl: 'https://www.igdb.com/games/igdb-candidate',
+    rating: 82.4, ratingCount: 32, criticRating: 77.1, criticRatingCount: 9,
+    genres: ['Adventure'], themes: ['Fantasy'], developers: ['Example Studio'], publisher: 'Example Publisher',
+    releaseYear: 2023, description: 'A description supplied by IGDB.',
+  });
+  assert.equal(igdbGame.igdbId, 123); assert.equal(igdbGame.igdbRating, 82.4); assert.equal(igdbGame.igdbCriticRatingCount, 9);
+  assert.deepEqual(igdbGame.igdbGenres, ['Adventure']); assert.deepEqual(igdbGame.igdbDevelopers, ['Example Studio']);
+  assert.equal(igdbGame.publisher, 'Example Publisher'); assert.equal(igdbGame.descriptionSource, 'IGDB');
+  assert.ok(!data.gamesMissingIgdb(other.id).some(game => game.id === igdbCandidate.id));
+  assert.ok(!data.listGames(other.id, { missing: 'igdb' }).some(game => game.id === igdbCandidate.id));
+  assert.equal(data.listGames(other.id, { sort: 'igdb_user_desc' })[0].id, igdbCandidate.id);
+  assert.equal(data.listGames(other.id, { sort: 'igdb_critic' })[0].id, igdbCandidate.id);
+  assert.equal(data.updateGameIgdb(other.id, igdbCandidate.id, { igdbId: 999 }), null);
 
   assert.throws(() => data.createGame(other.id, { title: 'Bad Rating', platform: 'Nintendo Switch', rating: 4.25 }), /half-star steps/);
 

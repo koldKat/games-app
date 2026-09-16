@@ -64,6 +64,31 @@ test('public projections never expose contributing account or private row identi
   assert.equal('status' in visible, false);
 });
 
+test('public releases retain IGDB identity, user scores, critic scores, and credits', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const source = game({ igdbId: 411, igdbSlug: 'metroid-dread', igdbUrl: 'https://www.igdb.com/games/metroid-dread',
+    igdbRating: 84.2, igdbRatingCount: 900, igdbCriticRating: 88.7, igdbCriticRatingCount: 42,
+    igdbGenres: ['Platform'], igdbThemes: ['Science fiction'], igdbDevelopers: ['MercurySteam'], igdbUpdatedAt: '2026-09-17T00:00:00.000Z' });
+  const created = store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  const visible = store.getPublicBySlug(created.slug);
+  assert.equal(visible.igdbId, 411); assert.equal(visible.igdbRating, 84.2); assert.equal(visible.igdbCriticRating, 88.7);
+  assert.deepEqual(visible.igdbGenres, ['Platform']); assert.deepEqual(visible.igdbDevelopers, ['MercurySteam']);
+});
+
+test('IGDB supplementation updates a public release once without churning its timestamp on unrelated saves', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const created = store.upsertFromGame(1, game(), evaluateKatalogGame(game()), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg').entry;
+  const metadata = { igdbId: 411, igdbSlug: 'metroid-dread', igdbUrl: 'https://www.igdb.com/games/metroid-dread',
+    igdbRating: 84.2, igdbRatingCount: 900, igdbGenres: ['Platform'], igdbThemes: [], igdbDevelopers: ['MercurySteam'],
+    igdbUpdatedAt: '2026-09-17T00:00:00.000Z' };
+  assert.equal(store.addIgdbIfMissing(created.id, metadata).igdbId, 411);
+  database.prepare("UPDATE catalogue_entries SET updated_at='2026-09-17 12:00:00' WHERE id=?").run(created.id);
+  store.addIgdbIfMissing(created.id, metadata);
+  assert.equal(store.getById(created.id).updatedAt, '2026-09-17 12:00:00');
+  store.addIgdbIfMissing(created.id, { ...metadata, igdbId: 999, igdbUpdatedAt: '2026-09-18T00:00:00.000Z' });
+  assert.equal(store.getById(created.id).igdbId, 411);
+});
+
 test('public entries expose only an anonymous aggregate from linked private ratings', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const first = game();

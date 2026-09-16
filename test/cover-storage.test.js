@@ -42,6 +42,7 @@ test('uploaded cover images are normalized into the same durable public storage'
 test('storage rejects arbitrary hosts and non-image responses', async () => {
   await assert.rejects(() => storage.storeRemote('https://example.com/not-allowed.jpg'), /not hosted by a supported/);
   assert.equal(storage.allowedRemoteUrl('https://howlongtobeat.com/games/Portal2cover.jpg'), true);
+  assert.equal(storage.allowedRemoteUrl('https://images.igdb.com/igdb/image/upload/t_cover_big/example.jpg'), true);
   const originalFetch = global.fetch;
   global.fetch = async () => new Response('not an image', { status: 200 });
   try { await assert.rejects(() => storage.storeRemote('https://cdn.thegamesdb.net/fake.jpg'), /supported JPEG, PNG, or WebP/); }

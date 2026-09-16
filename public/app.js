@@ -2,6 +2,7 @@ import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformFr
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
+import { createIgdbLookup, igdbDetailsMarkup } from './js/igdb-ui.js';
 import { createCoverProviderSettings } from './js/cover-provider-settings.js';
 import { createKatalogNavigation } from './js/katalog-navigation.js';
 import { bindCoverResultFallbacks } from './js/cover-result-images.js';
@@ -405,6 +406,7 @@ function badge(text, className = '') { return `<span class="badge ${className}">
 function coverCredit(source) {
   const credits = {
     thegamesdb: ['TheGamesDB art ↗', 'https://thegamesdb.net/'], hltb: ['HLTB art ↗', 'https://howlongtobeat.com/'],
+    igdb: ['IGDB art ↗', 'https://www.igdb.com/'],
   };
   const credit = credits[source];
   if (credit) return `<a class="badge source-credit" href="${credit[1]}" target="_blank" rel="noopener" data-card-link>${credit[0]}</a>`;
@@ -479,13 +481,15 @@ function gameMatchesFilters(game) {
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
-  const missingPegi = isMissingPegiInfo(game); const missingCover = !game.coverUrl; const missingHltb = isMissingHltbInfo(game); const missingDescription = isMissingDescription(game);
+  const missingPegi = isMissingPegiInfo(game); const missingIgdb = !game.igdbId; const missingCover = !game.coverUrl;
+  const missingHltb = isMissingHltbInfo(game); const missingDescription = isMissingDescription(game);
   if (filters.missing.value === 'pegi' && !missingPegi) return false;
+  if (filters.missing.value === 'igdb' && !missingIgdb) return false;
   if (filters.missing.value === 'cover' && !missingCover) return false;
   if (filters.missing.value === 'hltb' && !missingHltb) return false;
   if (filters.missing.value === 'description' && !missingDescription) return false;
-  if (filters.missing.value === 'either' && !missingPegi && !missingCover && !missingHltb && !missingDescription) return false;
-  if (filters.missing.value === 'both' && (!missingPegi || !missingCover || !missingHltb || !missingDescription)) return false;
+  if (filters.missing.value === 'either' && !missingPegi && !missingIgdb && !missingCover && !missingHltb && !missingDescription) return false;
+  if (filters.missing.value === 'both' && (!missingPegi || !missingIgdb || !missingCover || !missingHltb || !missingDescription)) return false;
   if (filters.favorite.value === '1' && !game.favorite) return false;
   return true;
 }
@@ -698,6 +702,7 @@ function detailMarkup(game, { rating, descriptors, times, facts, pegiText, relea
 <div class="game-detail-facts">${facts}</div>
 ${detailSection('HowLongToBeat', hltb)}
 ${detailSection('PEGI details', pegi)}
+${igdbDetailsMarkup(game, escapeHtml)}
 ${detailSection('Notes', notes)}`;
 }
 function mountVersionPicker(host, game, onSelect, anchor) {
@@ -821,7 +826,7 @@ function openForm(game = null) {
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); setRating(formValue(game, 'rating')); $('#game-description').value = formValue(game, 'description'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); renderCoverSelection(); renderPegiDetails();
+  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); igdbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#game-title').focus(), UI_TIMING.formFocusDelayMs);
 }
@@ -872,11 +877,15 @@ const katalogNavigation = createKatalogNavigation({
     if (userId) void loadHeroCovers(() => state.user?.id === userId).catch(() => {});
   },
 });
+const igdbLookup = createIgdbLookup({
+  $, api, escapeHtml, toast, selectedPlatform, setPlatformValue, platformFromReleaseText, isPcStorefront, renderCoverSelection,
+});
 const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
   api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
   openKatalog: slug => katalogNavigation.open(`/game/${encodeURIComponent(slug)}`),
+  onExternalSelect: result => { igdbLookup.apply(result); titleAutocomplete.updateWarning(); },
 });
 const hltbLookup = createHltbLookup({ $, api, escapeHtml, toast });
 function payload() {
@@ -884,7 +893,7 @@ function payload() {
     ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value, rating: $('#game-rating').value,
     notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
-    ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(),
+    ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(), ...igdbLookup.payload(),
     coverUrl: $('#game-form').dataset.coverUrl || '', coverUpload: $('#game-form').dataset.coverUpload || '', coverSource: $('#game-form').dataset.coverSource || '', coverMatchTitle: $('#game-form').dataset.coverMatchTitle || '' };
 }
 $('#game-form').addEventListener('submit', async event => {
@@ -1025,7 +1034,7 @@ $('#game-description').addEventListener('input', () => {
 $('#description-search-button').addEventListener('click', async () => {
   const title = $('#game-title').value.trim(); const box = $('#description-results'); box.hidden = false;
   if (title.length < LOOKUP_MIN_TITLE_LENGTH) { box.innerHTML = '<p class="pegi-message">Type at least two characters of the title first.</p>'; return; }
-  box.innerHTML = '<p class="pegi-message">Searching Steam Store and TheGamesDB…</p>';
+  box.innerHTML = '<p class="pegi-message">Searching Steam Store, IGDB and TheGamesDB…</p>';
   try {
     const results = await api(`/api/descriptions/search?q=${encodeURIComponent(title)}&platform=${encodeURIComponent(selectedPlatform())}`); box._results = results;
     box.innerHTML = results.length ? results.map((result, index) => `<button type="button" class="pegi-result" data-description-index="${index}"><span><strong>${escapeHtml(result.gameTitle)}</strong><small>${escapeHtml(result.source)} · ${escapeHtml(result.description.slice(0, 180))}${result.description.length > 180 ? '…' : ''}</small></span></button>`).join('') : '<p class="pegi-message">No description match found. You can write one manually.</p>';
@@ -1042,7 +1051,7 @@ $('#description-results').addEventListener('click', event => {
 function renderCoverSelection() {
   const url = $('#game-form').dataset.coverPreview || $('#game-form').dataset.coverUrl || ''; const box = $('#cover-selection');
   $('#cover-remove-button').hidden = !url; box.hidden = !url;
-  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat', upload: 'Uploaded' };
+  const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat', igdb: 'IGDB', upload: 'Uploaded' };
   const details = [$('#game-form').dataset.coverMatchTitle || 'Custom match', sourceLabels[source]].filter(Boolean).join(' · ');
   box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
 }
@@ -1100,7 +1109,7 @@ $('#cover-file').addEventListener('change', async event => {
   finally { button.disabled = false; button.textContent = 'Upload cover'; }
 });
 function coverResultMarkup(result, index) {
-  const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat' };
+  const providerLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat', igdb: 'IGDB' };
   const dimensions = result.width && result.height ? `${result.width}×${result.height}` : '';
   const details = [providerLabels[result.source] || result.source, dimensions, result.style].filter(Boolean).join(' · ');
   return `<button type="button" class="cover-result" data-cover-index="${index}">

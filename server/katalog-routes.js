@@ -10,7 +10,7 @@ function securityHeaders(response) {
   response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: https://cdn.thegamesdb.net https://cdn.steamgriddb.com https://cdn2.steamgriddb.com https://howlongtobeat.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+  response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: https://cdn.thegamesdb.net https://cdn.steamgriddb.com https://cdn2.steamgriddb.com https://images.igdb.com https://howlongtobeat.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
 }
 
 function send(response, status, contentType, body, cacheControl = 'no-cache') {

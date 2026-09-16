@@ -12,7 +12,7 @@ const PUBLIC_PREFIX = '/covers/';
 const MAX_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 25_000;
 const MAX_REDIRECTS = 3;
-const ALLOWED_HOST_SUFFIXES = Object.freeze(['.steamgriddb.com', '.thegamesdb.net']);
+const ALLOWED_HOST_SUFFIXES = Object.freeze(['.steamgriddb.com', '.thegamesdb.net', '.igdb.com']);
 const ALLOWED_HOSTS = Object.freeze(['howlongtobeat.com']);
 
 function allowedRemoteUrl(value) {
