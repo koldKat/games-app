@@ -127,6 +127,30 @@ test('public Kat·a·log groups title variants, but a platform filter returns in
   assert.equal(store.sitemapEntries().length, 1);
 });
 
+test('IGDB identity groups differently titled platform releases', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const ps4 = game({ igdbId: 100, title: 'NieR: Automata', platform: 'PS4', hltbTitle: 'NieR: Automata', coverMatchTitle: 'NieR: Automata' });
+  const switchRelease = game({ id: 22, igdbId: 100, title: 'NieR Automata: The End of YoRHa Edition', platform: 'Nintendo Switch',
+    hltbTitle: 'NieR Automata: The End of YoRHa Edition', coverMatchTitle: 'NieR Automata: The End of YoRHa Edition' });
+  store.upsertFromGame(1, ps4, evaluateKatalogGame(ps4), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(2, switchRelease, evaluateKatalogGame(switchRelease), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const result = store.listPublic();
+  assert.equal(result.total, 1);
+  assert.equal(result.entries[0].releaseCount, 2);
+  assert.equal(new Set(result.entries[0].releases.map(entry => entry.canonicalGameId)).size, 1);
+});
+
+test('equal titles with different IGDB identities do not merge across platforms', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const original = game({ igdbId: 1, title: 'Doom', platform: 'DOS', hltbTitle: 'Doom', coverMatchTitle: 'Doom' });
+  const reboot = game({ id: 22, igdbId: 2, title: 'Doom', platform: 'PS4', hltbTitle: 'Doom', coverMatchTitle: 'Doom' });
+  store.upsertFromGame(1, original, evaluateKatalogGame(original), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(2, reboot, evaluateKatalogGame(reboot), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  const result = store.listPublic();
+  assert.equal(result.total, 2);
+  assert.equal(new Set(result.entries.map(entry => entry.canonicalGameId)).size, 2);
+});
+
 test('candidate records remain absent from public pages until reviewed', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game({ coverMatchTitle: 'Metroid Collection' });
@@ -191,4 +215,13 @@ test('editing a linked private row to a different release moves its catalogue li
   const link = database.prepare('SELECT catalogue_id AS catalogueId FROM catalogue_game_links WHERE game_id=11').get();
   assert.notEqual(original.entry.id, replacement.entry.id);
   assert.equal(link.catalogueId, replacement.entry.id);
+});
+
+test('an obsolete public link is detached before a changed IGDB identity is synchronized', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const source = game({ igdbId: 411 });
+  store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  assert.equal(store.unlinkIfMismatched({ ...source, igdbId: 999 }), true);
+  assert.equal(database.prepare('SELECT COUNT(*) count FROM catalogue_game_links WHERE game_id=11').get().count, 0);
+  assert.equal(store.unlinkIfMismatched({ ...source, igdbId: 999 }), false);
 });

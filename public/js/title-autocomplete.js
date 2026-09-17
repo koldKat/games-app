@@ -1,11 +1,12 @@
 import { AUTOCOMPLETE_POLICY, LOOKUP_MIN_TITLE_LENGTH } from './ui-policy.js';
+import { platformDisplayName } from './platforms.js';
 
 const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
   === String(right || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 
 export function createTitleAutocomplete({
   input, suggestionBox, warning, summary, openButton, platformInput, customPlatformInput,
-  api, escapeHtml, labels, getPlatform, getEditingId, openExisting, openKatalog, onExternalSelect = () => {},
+  api, escapeHtml, labels, getPlatform, getEditingId, getIgdbId = () => null, openExisting, openKatalog, onExternalSelect = () => {},
 }) {
   let timer = null;
   let request = null;
@@ -23,14 +24,16 @@ export function createTitleAutocomplete({
 
   function exactDuplicate(matches = existingMatches) {
     const editingId = Number(getEditingId() || 0); const platform = getPlatform();
-    return matches.find(game => game.id !== editingId && sameText(game.title, input.value) && sameText(game.platform, platform)) || null;
+    const igdbId = Number(getIgdbId() || 0);
+    return matches.find(game => game.id !== editingId && sameText(game.platform, platform)
+      && (igdbId ? Number(game.igdbId) === igdbId : sameText(game.title, input.value))) || null;
   }
 
   function updateWarning() {
     const duplicate = exactDuplicate(); warning.hidden = !duplicate;
     if (!duplicate) { delete warning.dataset.gameId; return; }
     warning.dataset.gameId = duplicate.id;
-    summary.textContent = `${duplicate.platform} · ${labels[duplicate.ownership] || duplicate.ownership}`;
+    summary.textContent = `${platformDisplayName(duplicate.platform)} · ${labels[duplicate.ownership] || duplicate.ownership}`;
   }
 
   function reset() {
@@ -76,9 +79,9 @@ export function createTitleAutocomplete({
     ];
     activeSuggestion = -1;
     suggestionBox.innerHTML = suggestions.map((choice, index) => {
-      if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(choice.game.platform)} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
-      if (choice.kind === 'katalog') return `<button type="button" class="katalog" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small>${escapeHtml(choice.entry.platform)}${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
-      if (choice.kind === 'igdb') return `<button type="button" class="igdb" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}<small>${escapeHtml([choice.result.releaseYear, ...(choice.result.platforms || []).slice(0, 2)].filter(Boolean).join(' · '))}</small></span><b>IGDB</b></button>`;
+      if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(platformDisplayName(choice.game.platform))} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
+      if (choice.kind === 'katalog') return `<button type="button" class="katalog" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small>${escapeHtml(platformDisplayName(choice.entry.platform))}${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
+      if (choice.kind === 'igdb') return `<button type="button" class="igdb" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}<small>${escapeHtml([choice.result.releaseYear, ...(choice.result.platforms || []).slice(0, 2).map(platformDisplayName)].filter(Boolean).join(' · '))}</small></span><b>IGDB</b></button>`;
       return `<button type="button" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}</span><small>SteamGridDB</small></button>`;
     }).join('');
     suggestionBox.hidden = suggestions.length === 0;
@@ -128,7 +131,8 @@ export function createTitleAutocomplete({
     const title = input.value.trim();
     if (title.length < LOOKUP_MIN_TITLE_LENGTH) return null;
     try {
-      const result = await api(`/api/titles/autocomplete?exact=1&q=${encodeURIComponent(title)}&platform=${encodeURIComponent(getPlatform())}`);
+      const igdbId = Number(getIgdbId() || 0);
+      const result = await api(`/api/titles/autocomplete?exact=1&q=${encodeURIComponent(title)}&platform=${encodeURIComponent(getPlatform())}${igdbId ? `&igdbId=${igdbId}` : ''}`);
       existingMatches = Array.isArray(result.existing) ? result.existing : [];
       updateWarning(); return exactDuplicate();
     } catch { return null; }

@@ -16,6 +16,7 @@ const STORED_PLAY_STATUS_VALUES = Object.freeze(['backlog', 'playing', 'complete
 const PLAY_STATUS_VALUES = Object.freeze([...STORED_PLAY_STATUS_VALUES, 'hidden']);
 const MEDIA_FORMAT_VALUES = Object.freeze(['physical', 'digital', 'unknown']);
 const OWNERSHIP_FILTER_VALUES = Object.freeze(['owned_physical', 'owned_digital', 'wanted']);
+const MULTIPLATFORM_FILTER_VALUE = '__multiple_platforms__';
 const MISSING_FILTER_VALUES = Object.freeze(['pegi', 'igdb', 'cover', 'hltb', 'description', 'either', 'both']);
 const SORT_VALUES = Object.freeze([
   'title', 'title_desc', 'platform', 'publisher', 'year_desc', 'year', 'pegi', 'pegi_desc',
@@ -38,6 +39,7 @@ module.exports = {
   BULK_JOB,
   MEDIA_FORMAT_VALUES,
   MISSING_FILTER_VALUES,
+  MULTIPLATFORM_FILTER_VALUE,
   OWNERSHIP_FILTER_VALUES,
   OWNERSHIP_VALUES,
   PC_STOREFRONT_VALUES,

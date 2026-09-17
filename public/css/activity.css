@@ -70,6 +70,21 @@
   text-decoration-style: solid;
   outline: none;
 }
+.activity-platform-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: var(--platform-surface) padding-box, var(--platform-frame) border-box;
+  color: var(--platform-text);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
 .activity-preview-trigger {
   position: relative;
 }

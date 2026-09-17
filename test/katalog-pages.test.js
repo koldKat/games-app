@@ -46,6 +46,19 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   assert.match(detail, /portal-2-ps5/);
 });
 
+test('Nintendo Entertainment System names use recognizable display aliases without changing filter values', () => {
+  const nes = { ...entry, platform: 'Nintendo Entertainment System' };
+  const snes = { ...entry, id: 4, slug: 'portal-2-snes', platform: 'Super Nintendo Entertainment System' };
+  const html = renderKatalog({
+    result: { entries: [{ ...nes, releases: [nes, snes], releaseCount: 2 }], total: 1, page: 1, pages: 1 },
+    platforms: [{ platform: nes.platform, count: 1 }, { platform: snes.platform, count: 1 }],
+  });
+  assert.match(html, />NES · SNES</);
+  assert.match(html, /value="Nintendo Entertainment System">NES \(1\)<\/option>/);
+  assert.match(html, /value="Super Nintendo Entertainment System">SNES \(1\)<\/option>/);
+  assert.doesNotMatch(html, />Nintendo Entertainment System · Super Nintendo Entertainment System</);
+});
+
 test('catalogue pagination uses symmetric code-style controls with descriptive labels', () => {
   const html = renderKatalog({ result: { entries: [entry], total: 30, page: 2, pages: 3 }, platforms: [] });
   assert.match(html, /aria-label="Previous page">page\.prev\(\)<\/a>/);

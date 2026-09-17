@@ -13,6 +13,7 @@ test('shared server constants define catalogue domains and batch policy', () => 
   assert.deepEqual(constants.PEGI_RATINGS, [3, 7, 12, 16, 18]);
   assert.deepEqual(constants.OWNERSHIP_VALUES, ['owned', 'wanted']);
   assert.deepEqual(constants.OWNERSHIP_FILTER_VALUES, ['owned_physical', 'owned_digital', 'wanted']);
+  assert.equal(constants.MULTIPLATFORM_FILTER_VALUE, '__multiple_platforms__');
   assert.deepEqual(constants.STORED_PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned']);
   assert.deepEqual(constants.PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned', 'hidden']);
   assert.deepEqual(constants.MEDIA_FORMAT_VALUES, ['physical', 'digital', 'unknown']);
@@ -41,6 +42,7 @@ test('browser policies name pagination, lookup, and timing contracts', () => {
   assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
   assert.doesNotMatch(application, /state\.limit/);
   assert.match(policy, /UI_LOCALE = 'en-US'/);
+  assert.match(policy, /MULTIPLATFORM_FILTER_VALUE = '__multiple_platforms__'/);
   assert.match(read('public/js/game-labels.js'), /wanted: 'Wishlisted'/);
   assert.match(read('public/js/site-config.js'), /GITHUB_URL/);
 });

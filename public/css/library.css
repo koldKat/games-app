@@ -258,6 +258,216 @@ body {
 }
 .platform-tag {
   font-size: 10px;
+  white-space: nowrap;
+}
+:where(.platform-tag,.platform-version-menu button,.game-versions button,.activity-platform-tag) {
+  --platform-accent:#708399;
+  --platform-text:#c4ccd3;
+  --platform-border:color-mix(in srgb,var(--platform-accent) 36%,#29333d);
+  --platform-bg:color-mix(in srgb,var(--platform-accent) 7%,#0d1219);
+  --platform-hover:color-mix(in srgb,var(--platform-accent) 13%,#111821);
+  --platform-mark:var(--platform-accent);
+  --platform-frame:linear-gradient(var(--platform-border),var(--platform-border));
+  --platform-surface:linear-gradient(var(--platform-bg),var(--platform-bg));
+}
+.platform-theme-nintendo-red { --platform-accent:#e60012; }
+.platform-theme-nintendo-multicolor {
+  --platform-accent:#4b72b8;
+  --platform-mark:linear-gradient(90deg,#e60012 0 25%,#f5c518 25% 50%,#37a867 50% 75%,#2878ba 75%);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#e60012 15%,#0d1219),color-mix(in srgb,#f5c518 10%,#0d1219) 34%,color-mix(in srgb,#37a867 10%,#0d1219) 66%,color-mix(in srgb,#2878ba 15%,#0d1219));
+}
+.platform-theme-gamecube { --platform-accent:#6a5fbb; }
+.platform-theme-wii { --platform-accent:#8c8c8c; }
+.platform-theme-wii-u { --platform-accent:#009ac7; }
+.platform-theme-nintendo-3ds { --platform-accent:#d12228; }
+.platform-theme-nintendo-neutral { --platform-accent:#818895; }
+.platform-theme-playstation-original {
+  --platform-accent:#0070d1;
+  --platform-mark:linear-gradient(90deg,#df0024 0 25%,#f3c300 25% 50%,#00aa9e 50% 75%,#2e6db4 75%);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#df0024 14%,#0d1219),color-mix(in srgb,#f3c300 10%,#0d1219) 34%,color-mix(in srgb,#00aa9e 10%,#0d1219) 66%,color-mix(in srgb,#2e6db4 14%,#0d1219));
+}
+.platform-theme-playstation { --platform-accent:#003791; }
+.platform-theme-xbox { --platform-accent:#107c10; }
+.platform-theme-sega { --platform-accent:#0089cf; }
+.platform-theme-atari {
+  --platform-accent:#e4202e;
+  --platform-mark:linear-gradient(90deg,#e4202e,#f47a24,#f4c542,#7dae42,#3188c8,#76539b);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#e4202e 15%,#0d1219),color-mix(in srgb,#f4c542 10%,#0d1219) 40%,color-mix(in srgb,#3188c8 11%,#0d1219) 72%,color-mix(in srgb,#76539b 14%,#0d1219));
+}
+.platform-theme-snk { --platform-accent:#168ac2; }
+.platform-theme-nec { --platform-accent:#1414a0; }
+.platform-theme-wonderswan {
+  --platform-accent:#2876b8;
+  --platform-mark:linear-gradient(90deg,#eb8426,#5da548,#2876b8);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#eb8426 14%,#0d1219),color-mix(in srgb,#5da548 10%,#0d1219) 50%,color-mix(in srgb,#2876b8 15%,#0d1219));
+}
+.platform-theme-neutral { --platform-accent:#708399; }
+.platform-theme-windows { --platform-accent:#0078d4; }
+.platform-theme-apple { --platform-accent:#9ca4ad; }
+.platform-theme-linux { --platform-accent:#fcc624; }
+.platform-theme-commodore { --platform-accent:#1e2a4e; }
+.platform-theme-acorn { --platform-accent:#d4202f; }
+.platform-theme-msx { --platform-accent:#1478ba; }
+.platform-theme-amiga {
+  --platform-accent:#e34b35;
+  --platform-mark:linear-gradient(90deg,#e34b35,#f29b38,#f2cf45,#53a95f,#3482ba);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#e34b35 15%,#0d1219),color-mix(in srgb,#f2cf45 9%,#0d1219) 44%,color-mix(in srgb,#3482ba 15%,#0d1219));
+}
+.platform-theme-spectrum {
+  --platform-accent:#d73a45;
+  --platform-mark:linear-gradient(90deg,#d73a45,#e4bc39,#4ca66b,#46a9c8);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#d73a45 16%,#0d1219),color-mix(in srgb,#e4bc39 10%,#0d1219) 36%,color-mix(in srgb,#4ca66b 11%,#0d1219) 66%,color-mix(in srgb,#46a9c8 16%,#0d1219));
+}
+.platform-theme-amstrad {
+  --platform-accent:#2b77b9;
+  --platform-mark:linear-gradient(90deg,#df3d42 0 33%,#3d9b5f 33% 66%,#2b77b9 66%);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#df3d42 14%,#0d1219),color-mix(in srgb,#3d9b5f 10%,#0d1219) 50%,color-mix(in srgb,#2b77b9 15%,#0d1219));
+}
+.platform-theme-apple-rainbow {
+  --platform-accent:#8b69a8;
+  --platform-mark:linear-gradient(90deg,#61bb46,#fdb827,#f5821f,#e03a3e,#963d97,#009ddc);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#61bb46 12%,#0d1219),color-mix(in srgb,#fdb827 9%,#0d1219) 30%,color-mix(in srgb,#e03a3e 11%,#0d1219) 58%,color-mix(in srgb,#963d97 12%,#0d1219) 78%,color-mix(in srgb,#009ddc 14%,#0d1219));
+}
+.platform-theme-fm-towns {
+  --platform-accent:#d34343;
+  --platform-mark:linear-gradient(90deg,#d34343,#f0ba3b,#3d8fc2);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#d34343 14%,#0d1219),color-mix(in srgb,#f0ba3b 9%,#0d1219) 52%,color-mix(in srgb,#3d8fc2 15%,#0d1219));
+}
+.platform-theme-amico {
+  --platform-accent:#7677b8;
+  --platform-mark:linear-gradient(90deg,#ed6a57,#f0bd3f,#62aa66,#45a5bb,#7677b8);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#ed6a57 14%,#0d1219),color-mix(in srgb,#f0bd3f 8%,#0d1219) 32%,color-mix(in srgb,#62aa66 9%,#0d1219) 58%,color-mix(in srgb,#45a5bb 11%,#0d1219) 76%,color-mix(in srgb,#7677b8 14%,#0d1219));
+}
+.platform-theme-steam { --platform-accent:#9ba7b1; }
+.platform-theme-steam-deck { --platform-accent:#1a9fff; }
+.platform-theme-gog { --platform-accent:#5100dc; }
+.platform-theme-epic { --platform-accent:#8d9298; }
+.platform-theme-ea { --platform-accent:#969da5; }
+.platform-theme-origin { --platform-accent:#f56c2d; }
+.platform-theme-android { --platform-accent:#3ddc84; }
+.platform-theme-ubisoft { --platform-accent:#9ba2aa; }
+.platform-theme-battle-net { --platform-accent:#4381c3; }
+.platform-theme-rockstar { --platform-accent:#fcaf17; }
+.platform-theme-itch { --platform-accent:#fa5c5c; }
+.platform-theme-amazon { --platform-accent:#ff9900; }
+.platform-theme-playdate { --platform-accent:#ffb900; }
+.platform-theme-evercade {
+  --platform-accent:#746482;
+  --platform-mark:linear-gradient(90deg,#9b555a,#75658c,#52758a);
+  --platform-frame:var(--platform-mark);
+  --platform-surface:linear-gradient(105deg,color-mix(in srgb,#9b555a 15%,#0d1219),color-mix(in srgb,#75658c 12%,#0d1219) 52%,color-mix(in srgb,#52758a 15%,#0d1219));
+}
+.platform-theme-meta { --platform-accent:#0467df; }
+.platform-theme-luna { --platform-accent:#9146ff; }
+.platform-theme-nvidia { --platform-accent:#76b900; }
+.platform-theme-stadia { --platform-accent:#cd2640; }
+.platform-theme-custom { --platform-accent:#708399; }
+.platform-tag-label {
+  white-space: nowrap;
+}
+.platform-picker {
+  position: relative;
+  min-width: 0;
+}
+.platform-switch {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: normal;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  cursor: pointer;
+  max-width: none;
+}
+.platform-switch:hover,.platform-switch:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(var(--platform-hover),var(--platform-hover)) padding-box,var(--platform-frame) border-box;
+  color: var(--platform-text);
+  outline: none;
+}
+.platform-switch-indicator {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg);
+  margin: -3px 1px 0 2px;
+}
+.platform-version-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  width: max-content;
+  min-width: max(100%, 190px);
+  max-width: min(310px, calc(100vw - 24px));
+  padding: 4px;
+  border: 1px solid #315047;
+  border-radius: 4px;
+  background: #08110f;
+  box-shadow: 0 12px 28px #000c;
+}
+.platform-version-menu[hidden] {
+  display: none;
+}
+.platform-picker.opens-up .platform-version-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+.platform-version-menu button {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--platform-text);
+  font: 700 10px/1.15 ui-monospace, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+.platform-version-menu button:hover,.platform-version-menu button:focus-visible {
+  background: var(--platform-hover);
+  color: var(--platform-text);
+  outline: none;
+}
+.platform-version-menu button[aria-checked="true"] {
+  border-left-color: var(--platform-accent);
+  background: var(--platform-surface);
+  color: var(--platform-text);
+}
+.platform-version-menu button span,.platform-version-menu button small {
+  white-space: nowrap;
+}
+.platform-version-menu button small {
+  color: color-mix(in srgb, var(--platform-text) 65%, #56616c);
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.game-card.version-menu-open {
+  z-index: 30;
+  overflow: visible;
+}
+.game-card.version-menu-open > .game-cover,.game-card.version-menu-open > .game-cover-shade {
+  border-radius: inherit;
 }
 .game-title {
   font-size: 14px;
@@ -546,25 +756,26 @@ body {
 .game-versions button {
   min-height:22px;
   padding:2px 6px;
-  border:1px solid #315047;
+  border:1px solid transparent;
   border-radius:3px;
-  background:#0a1513cc;
-  color:#81d7c3;
+  background:var(--platform-surface) padding-box,var(--platform-frame) border-box;
+  color:var(--platform-text);
   font:inherit;
   font-size:9px;
   line-height:1.1;
   cursor:pointer;
 }
 .game-versions button:hover,.game-versions button:focus-visible {
-  border-color:#52d9bb;
-  color:#d5fff3;
+  border-color:transparent;
+  background:linear-gradient(var(--platform-hover),var(--platform-hover)) padding-box,var(--platform-frame) border-box;
+  color:var(--platform-text);
   outline:none;
 }
 .game-versions button[aria-pressed="true"] {
-  border-color: #52d9bb;
-  background: #17483e;
-  color: #e0fff7;
-  box-shadow: inset 0 -2px #52d9bb;
+  border-color: transparent;
+  background: var(--platform-surface) padding-box,var(--platform-frame) border-box;
+  color: var(--platform-text);
+  box-shadow: inset 0 -2px var(--platform-accent);
 }
 .card-actions {
   margin-top: auto;
@@ -1234,8 +1445,11 @@ body {
 .game-grid.list-view .favorite-button {
   display: none;
 }
+.game-grid.list-view .platform-tag {
+  max-width: 100%;
+}
 .game-grid.list-view .game-card {
-  grid-template-columns: 135px minmax(180px, 1fr) auto minmax(250px, 310px) auto;
+  grid-template-columns: max-content minmax(180px, 1fr) auto minmax(250px, 310px) auto;
 }
 .game-grid.list-view .badges {
   grid-column: 3;
@@ -1256,7 +1470,7 @@ body {
 }
 @media (max-width: 1050px) {
   .game-grid.list-view .game-card {
-    grid-template-columns: 100px minmax(0, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr);
   }
   .game-grid.list-view .game-title {
     grid-column: 2;
@@ -1280,7 +1494,7 @@ body {
     overflow: visible;
   }
   .game-grid.list-view .game-card {
-    grid-template-columns: 85px minmax(0, 1fr);
+    grid-template-columns: max-content minmax(0, 1fr);
   }
   .pegi-assist {
     display: flex;

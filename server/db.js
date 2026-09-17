@@ -1,8 +1,9 @@
 const path = require('node:path');
 const Database = require('better-sqlite3');
+const { createCanonicalStore } = require('./canonical-store');
 const { createProgressionStore } = require('./progression-store');
 const {
-  MEDIA_FORMAT_VALUES, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES,
+  MEDIA_FORMAT_VALUES, MULTIPLATFORM_FILTER_VALUE, OWNERSHIP_FILTER_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES,
   STORED_PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
 const { GAME_LIMITS } = require('./validation-policy');
@@ -255,6 +256,7 @@ if (!gameColumns.includes('igdb_updated_at')) db.exec('ALTER TABLE games ADD COL
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
+const canonical = createCanonicalStore(db);
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email COLLATE NOCASE) WHERE email IS NOT NULL;
@@ -289,6 +291,7 @@ const selectFields = `id, title, platform, pegi, ownership,
   igdb_critic_rating AS igdbCriticRating, igdb_critic_rating_count AS igdbCriticRatingCount,
   igdb_genres AS igdbGenresJson, igdb_themes AS igdbThemesJson, igdb_developers AS igdbDevelopersJson,
   igdb_updated_at AS igdbUpdatedAt,
+  canonical_game_id AS canonicalGameId, canonical_release_id AS canonicalReleaseId,
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
@@ -327,12 +330,12 @@ const update = db.prepare(`
 `);
 
 const searchTitles = db.prepare(`
-  SELECT id, title, platform, ownership FROM games
+  SELECT id, title, platform, ownership, igdb_id AS igdbId, canonical_game_id AS canonicalGameId FROM games
   WHERE user_id=? AND search_normalize(title) LIKE ? ESCAPE '\\'
   ORDER BY CASE WHEN search_normalize(title) = ? THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
   LIMIT ?
 `);
-const accountTitles = db.prepare('SELECT id, title, platform, ownership FROM games WHERE user_id=?');
+const accountTitles = db.prepare('SELECT id, title, platform, ownership, igdb_id AS igdbId, canonical_game_id AS canonicalGameId FROM games WHERE user_id=?');
 
 function normalizeGame(input = {}) {
   const title = boundedText(input.title, GAME_LIMITS.titleMax, 'Title');
@@ -413,7 +416,16 @@ function listGames(userId, filters = {}) {
       OR search_normalize(description) LIKE @q ESCAPE '\\')`);
     params.q = searchPattern(filters.q);
   }
-  if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
+  if (filters.platform === MULTIPLATFORM_FILTER_VALUE) {
+    clauses.push(`EXISTS (
+      SELECT 1 FROM games AS sibling
+      WHERE sibling.user_id=games.user_id AND sibling.id<>games.id AND sibling.hidden=games.hidden
+        AND sibling.platform<>games.platform COLLATE NOCASE
+        AND ((games.canonical_game_id IS NOT NULL AND sibling.canonical_game_id=games.canonical_game_id)
+          OR (games.canonical_game_id IS NULL AND sibling.canonical_game_id IS NULL
+            AND search_normalize(sibling.title)=search_normalize(games.title)))
+    )`);
+  } else if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
   if (filters.ownership === 'owned_physical' || filters.ownership === 'owned_digital') {
     clauses.push('ownership = \'owned\' AND media_format = @ownedFormat');
     params.ownedFormat = filters.ownership.slice('owned_'.length);
@@ -482,14 +494,31 @@ function searchGameTitles(userId, query, limit = GAME_LIMITS.titleSearchDefault)
   return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(GAME_LIMITS.titleSearchMax, Number(limit) || GAME_LIMITS.titleSearchDefault)));
 }
 const normalizeIdentity = normalizeSearchText;
-function findDuplicateGames(userId, title, platform) {
+function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGameId = null) {
   const wantedTitle = normalizeIdentity(title); const wantedPlatform = normalizeIdentity(platform);
   if (!wantedTitle || !wantedPlatform) return [];
-  return accountTitles.all(userId).filter(game => normalizeIdentity(game.title) === wantedTitle && normalizeIdentity(game.platform) === wantedPlatform);
+  const wantedIgdbId = Number(igdbId) > 0 ? Number(igdbId) : null;
+  const wantedCanonicalId = Number(canonicalGameId) > 0 ? Number(canonicalGameId) : null;
+  return accountTitles.all(userId).filter(game => normalizeIdentity(game.platform) === wantedPlatform
+    && (wantedIgdbId
+      ? Number(game.igdbId) === wantedIgdbId || (wantedCanonicalId && Number(game.canonicalGameId) === wantedCanonicalId)
+      : (wantedCanonicalId && Number(game.canonicalGameId) === wantedCanonicalId) || normalizeIdentity(game.title) === wantedTitle));
 }
-function createGame(userId, input) { const game = normalizeGame(input); return getGame(userId, insert.run({ ...game, userId }).lastInsertRowid); }
-function updateGame(userId, id, input) { const game = normalizeGame(input); const result = update.run({ ...game, id, userId }); return result.changes ? getGame(userId, id) : null; }
-function deleteGame(userId, id) { return db.prepare('DELETE FROM games WHERE id=? AND user_id=?').run(id, userId).changes > 0; }
+function createGame(userId, input) {
+  const game = normalizeGame(input); const id = insert.run({ ...game, userId }).lastInsertRowid;
+  canonical.syncGameById(id); return getGame(userId, id);
+}
+function updateGame(userId, id, input) {
+  const game = normalizeGame(input); const result = update.run({ ...game, id, userId });
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
+}
+function deleteGame(userId, id) {
+  const game = db.prepare('SELECT canonical_game_id AS canonicalGameId FROM games WHERE id=? AND user_id=?').get(id, userId);
+  const deleted = db.prepare('DELETE FROM games WHERE id=? AND user_id=?').run(id, userId).changes > 0;
+  if (deleted && game?.canonicalGameId) canonical.pruneOrphans(game.canonicalGameId);
+  return deleted;
+}
 
 function coverApiKey(userId) { return db.prepare('SELECT steamgriddb_key FROM user_integrations WHERE user_id=?').get(userId)?.steamgriddb_key || ''; }
 function setCoverApiKey(userId, key) {
@@ -562,7 +591,8 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
       pegiAdvice: safeText(metadata.advice), pegiOutline: safeText(metadata.outline),
       pegiContentIssues: safeText(metadata.contentIssues), pegiOtherIssues: safeText(metadata.otherIssues),
     });
-  return result.changes ? getGame(userId, id) : null;
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
 }
 
 function gamesMissingHltb(userId) {
@@ -606,7 +636,8 @@ function updateGameIgdb(userId, id, metadata = {}) {
       igdbUpdatedAt: new Date().toISOString(), publisher: safeText(metadata.publisher, GAME_LIMITS.publisherMax),
       releaseYear: validReleaseYear(metadata.releaseYear) ? Number(metadata.releaseYear) : null, description,
     });
-  return result.changes ? getGame(userId, id) : null;
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
 }
 
 function updateGameDescription(userId, id, metadata = {}) {
@@ -617,7 +648,8 @@ function updateGameDescription(userId, id, metadata = {}) {
     id, userId, description, descriptionSource: safeText(metadata.source, GAME_LIMITS.coverSourceMax),
     descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, GAME_LIMITS.urlMax),
   });
-  return result.changes ? getGame(userId, id) : null;
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
 }
 
 function updateGameHltb(userId, id, metadata = {}) {
@@ -652,7 +684,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

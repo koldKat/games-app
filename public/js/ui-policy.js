@@ -5,6 +5,7 @@ export const SOURCE_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 export const PEGI_RELEASE_PREVIEW_LIMIT = 2;
 export const DECORATIVE_COVER_SLOT_MAX = 64;
 export const UI_LOCALE = 'en-US';
+export const MULTIPLATFORM_FILTER_VALUE = '__multiple_platforms__';
 
 export const UI_TIMING = Object.freeze({
   toastMs: 2_600,
@@ -15,6 +16,7 @@ export const UI_TIMING = Object.freeze({
   preferenceSaveMs: 120,
   searchPreferenceSaveMs: 260,
   librarySearchDebounceMs: 220,
+  libraryGroupRefreshDebounceMs: 120,
   katalogSearchDebounceMs: 250,
   katalogTitleResizeDebounceMs: 120,
   signalCacheMs: 15_000,

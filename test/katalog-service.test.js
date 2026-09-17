@@ -63,7 +63,7 @@ test('safe synchronization never breaks the calling private-library operation', 
   const messages = [];
   const service = createKatalogService({
     data: {},
-    store: { findByIdentity: () => null, counts() {}, getById() {}, getPublicById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
+    store: { findForGame: () => null, counts() {}, getById() {}, getPublicById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
     covers: { copy: () => { throw new Error('disk full'); }, remove() {} },
     logger: { error: message => messages.push(message) },
   });

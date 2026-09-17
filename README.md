@@ -14,14 +14,14 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 - Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB user and critic ratings, cover art, and HowLongToBeat estimates.
 - Grid and compact views, accent-insensitive live search, composable filters, and 27 sorting modes.
 - Ten-row desktop pagination for both private and public collections.
-- Same-title copies grouped into one card when no platform filter is active. Platform chips select the exact private copy being viewed, rated, or edited; applying a platform filter separates the editions again.
+- Copies sharing one canonical game identity are grouped into one card when no platform filter is active. IGDB-backed identities survive title and edition-name differences; records without IGDB data retain a normalized-title fallback. Platform chips select the exact private copy being viewed, rated, or edited, while a platform filter separates the releases again.
 - Clicking a private card opens its read-only details. Editing remains an explicit action.
 
 ### Adding and enriching games
 
 - A broad grouped platform list includes console families, handhelds, computers, operating systems, Steam, GOG, Epic Games Store, other launchers, and a Custom option.
 - Title autocomplete checks the current account first, then the public Kat·a·log, then optional IGDB or SteamGridDB suggestions.
-- Duplicate title/platform copies are blocked while different-platform editions remain valid.
+- Duplicate warnings use IGDB identity plus platform when known and otherwise fall back to normalized title plus platform. Deliberately separate copies and editions can still be confirmed.
 - PEGI lookup can fill ratings, descriptors, releases, publisher, year, consumer advice, outlines, and content details.
 - HowLongToBeat lookup stores Main Story, Main + Sides, Completionist, and All Styles estimates.
 - Cover requests can use SteamGridDB, TheGamesDB, IGDB, and an HLTB match already selected for that game. Users can also upload their own cover.
@@ -52,9 +52,9 @@ Navigation swaps only the content below the header. The account control, collect
 ### Public Kat·a·log
 
 - Crawlable browse pages at `/katalog` and stable factual release pages at `/game/:slug`.
-- Public cards group editions by title until a platform filter is applied.
+- Public cards group releases by canonical game identity until a platform filter is applied.
 - Signed-in members can add an existing public release without re-entering factual metadata.
-- Existing title/platform copies are detected before the add action, with server-side duplicate protection retained for races between tabs.
+- Existing copies of the selected canonical release are detected before the add action, with normalized title/platform fallback and server-side protection retained for races between tabs.
 - Anonymous community ratings appear from the first private rating onward.
 - Public covers are independent durable copies, so private edits or deletion cannot break a public release.
 
@@ -186,6 +186,7 @@ npm run covers:showcase
 
 - [User guide](docs/user-guide.md)
 - [Technical reference](docs/technical.md)
+- [Platform color research](docs/platform-colors.md)
 - Browser documentation index: `http://localhost:3005/docs/`
 
 The Markdown files are the source of truth. `npm run docs:build` regenerates the standalone HTML mirrors, and `npm run docs:check` fails when those mirrors are stale.

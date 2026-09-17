@@ -11,7 +11,7 @@ export function groupGames(games, { splitPlatforms = false } = {}) {
   if (splitPlatforms) return games.map(game => ({ ...game, versions: [game], versionCount: 1 }));
   const groups = new Map();
   for (const game of games) {
-    const key = titleKey(game.title) || `game-${game.id}`;
+    const key = game.canonicalGameId ? `canonical-${game.canonicalGameId}` : titleKey(game.title) || `game-${game.id}`;
     const group = groups.get(key) || []; group.push(game); groups.set(key, group);
   }
   return [...groups.values()].map(versions => {

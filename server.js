@@ -464,7 +464,7 @@ async function handleApi(request, response, url) {
     const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
     const query = String(url.searchParams.get('q') || '').trim();
     if (url.searchParams.get('exact') === '1') {
-      return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform')), suggestions: [] });
+      return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform'), url.searchParams.get('igdbId')), suggestions: [] });
     }
     const existing = db.searchGameTitles(user.id, query);
     const publicEntries = query.length >= TITLE_AUTOCOMPLETE_MIN_LENGTH ? katalog.searchPublic(query) : [];

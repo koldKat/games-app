@@ -56,7 +56,7 @@ test('existing progression history backfills real level crossings with their ori
   assert.equal(entry.createdAt, '2026-08-29 10:00:00');
 });
 
-test('public Kat·a·log contributions can be safely backfilled into Signal with their PEGI rating', async () => {
+test('public Kat·a·log contributions can be safely backfilled into Signal with PEGI and platform identity', async () => {
   const user = await auth.register('signal_curator', 'password-three');
   const game = data.createGame(user.id, { title: 'Signal Public Game', platform: 'PC', pegi: 12 });
   data.db.prepare(`INSERT INTO catalogue_entries(slug,title,title_key,platform,platform_key,pegi,cover_url,status,submitted_by_user_id,source_game_id,published_at)
@@ -66,6 +66,7 @@ test('public Kat·a·log contributions can be safely backfilled into Signal with
   const contribution = activity.list().find(entry => entry.type === 'catalogue_contribution');
   assert.equal(contribution?.gameTitle, 'Signal Public Game');
   assert.equal(contribution?.gamePegi, 12);
+  assert.equal(contribution?.gamePlatform, 'PC');
 });
 
 test('admin announcements stay drafts until published and a pinned notice leads Signal', () => {

@@ -87,14 +87,14 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
     const avgLevel = users ? levels.reduce((sum, level) => sum + level, 0) / users : 0;
     const hltbRows = database.prepare(`SELECT MAX(hltb_main_story) mainStory, MAX(hltb_main_extra) mainExtra,
       MAX(hltb_completionist) completionist, MAX(hltb_all_styles) allStyles
-      FROM games WHERE hltb_id IS NOT NULL GROUP BY lower(trim(title))`).all();
+      FROM games WHERE hltb_id IS NOT NULL GROUP BY COALESCE('canonical:'||canonical_game_id,'title:'||lower(trim(title)))`).all();
     const hltbTotal = key => Math.round(hltbRows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0) * 10) / 10;
     const pageCount = database.pragma('page_count', { simple: true });
     const pageSize = database.pragma('page_size', { simple: true });
     const memory = process.memoryUsage();
     const covers = storedCoverStats(root);
     const publicReleases = scalar("SELECT COUNT(*) n FROM catalogue_entries WHERE status='public'");
-    const publicTitles = scalar("SELECT COUNT(DISTINCT title_key) n FROM catalogue_entries WHERE status='public'");
+    const publicTitles = scalar("SELECT COUNT(DISTINCT COALESCE('canonical:'||canonical_game_id,'title:'||title_key)) n FROM catalogue_entries WHERE status='public'");
 
     return {
       users,
@@ -103,7 +103,7 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       avatarUsers: scalar("SELECT COUNT(*) n FROM users WHERE avatar_path IS NOT NULL AND trim(avatar_path)<>''"),
       contributors: scalar("SELECT COUNT(DISTINCT submitted_by_user_id) n FROM catalogue_entries WHERE status='public' AND submitted_by_user_id IS NOT NULL"),
       libraryRecords,
-      uniqueLibraryTitles: scalar('SELECT COUNT(DISTINCT lower(trim(title))) n FROM games'),
+      uniqueLibraryTitles: scalar("SELECT COUNT(DISTINCT COALESCE('canonical:'||canonical_game_id,'title:'||lower(trim(title)))) n FROM games"),
       averageLibrarySize: users ? libraryRecords / users : 0,
       owned: scalar("SELECT COUNT(*) n FROM games WHERE ownership='owned'"),
       wishlisted: scalar("SELECT COUNT(*) n FROM games WHERE ownership='wanted'"),
@@ -119,7 +119,7 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       publicReleases,
       publicTitles,
       publicPlatforms: scalar("SELECT COUNT(DISTINCT platform_key) n FROM catalogue_entries WHERE status='public'"),
-      multiPlatformTitles: scalar("SELECT COUNT(*) n FROM (SELECT title_key FROM catalogue_entries WHERE status='public' GROUP BY title_key HAVING COUNT(*)>1)"),
+      multiPlatformTitles: scalar("SELECT COUNT(*) n FROM (SELECT COALESCE('canonical:'||canonical_game_id,'title:'||title_key) identity FROM catalogue_entries WHERE status='public' GROUP BY identity HAVING COUNT(*)>1)"),
       catalogueLinks: scalar('SELECT COUNT(*) n FROM catalogue_game_links'),
       candidates: scalar("SELECT COUNT(*) n FROM catalogue_entries WHERE status='candidate'"),
       coverKnown: scalar("SELECT COUNT(*) n FROM games WHERE trim(cover_url)<>''"),

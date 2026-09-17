@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { db } = require('./db');
+const { canonical, db } = require('./db');
 const auth = require('./auth');
 const { readVersion, writeVersion } = require('./version');
 const backup = require('./backup');
@@ -184,7 +184,7 @@ function adminStats() {
     averageRating: db.prepare('SELECT AVG(rating) average FROM games WHERE rating IS NOT NULL').get().average || 0,
     activeSessions: scalar("SELECT COUNT(*) n FROM sessions WHERE expires_at>strftime('%s','now')"),
     favorites: scalar('SELECT COUNT(*) n FROM games WHERE favorite=1'), databaseBytes: pageCount * pageSize,
-    catalogue: catalogue.counts(),
+    catalogue: catalogue.counts(), canonical: catalogue.canonicalCounts(),
     ownership: db.prepare('SELECT ownership label, COUNT(*) count FROM games GROUP BY ownership ORDER BY count DESC').all(),
     formats: db.prepare('SELECT media_format label, COUNT(*) count FROM games GROUP BY media_format ORDER BY count DESC, media_format').all(),
     playStatus: db.prepare(`SELECT CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END label, COUNT(*) count
@@ -213,6 +213,7 @@ function deleteAccount(id) {
   if (auth.isProtectedUsername(account.username)) throw Object.assign(new Error('The protected owner account cannot be deleted.'), { status: 403, code: 'PROTECTED_ACCOUNT' });
   const coverUrls = db.prepare("SELECT cover_url AS coverUrl FROM games WHERE user_id=? AND cover_url LIKE '/covers/%'").all(account.id);
   const result = db.prepare('DELETE FROM users WHERE id=?').run(account.id);
+  if (result.changes) canonical.pruneOrphans();
   if (result.changes && account.avatarPath && path.basename(account.avatarPath) === account.avatarPath) {
     try { fs.unlinkSync(path.join(ROOT, 'public', 'avatars', account.avatarPath)); } catch {}
   }
@@ -333,7 +334,8 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listKatalog(url.searchParams.get('q')));
   if (request.method === 'GET' && pathname === '/api/admin/catalogue') {
-    return sendJson(response, 200, { entries: catalogue.listAdmin({ q: url.searchParams.get('q'), status: url.searchParams.get('status') }), counts: catalogue.counts() });
+    return sendJson(response, 200, { entries: catalogue.listAdmin({ q: url.searchParams.get('q'), status: url.searchParams.get('status') }),
+      counts: catalogue.counts(), canonical: catalogue.canonicalCounts(), conflicts: catalogue.canonicalConflicts() });
   }
   match = pathname.match(/^\/api\/admin\/catalogue\/(\d+)$/);
   if (request.method === 'PATCH' && match) {
@@ -359,6 +361,7 @@ async function handleApi(request, response, url) {
   if (request.method === 'DELETE' && match) {
     const game = db.prepare('SELECT cover_url AS coverUrl FROM games WHERE id=?').get(Number(match[1]));
     const result = db.prepare('DELETE FROM games WHERE id=?').run(Number(match[1]));
+    if (result.changes) canonical.pruneOrphans();
     if (result.changes) coverStorage.removeLocal(game?.coverUrl);
     return result.changes ? sendJson(response, 200, { ok: true }) : sendJson(response, 404, { error: 'Game not found.' });
   }

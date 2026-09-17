@@ -11,6 +11,7 @@ const auth = require('../server/auth');
 const { createKatalogStore } = require('../server/katalog-store');
 createKatalogStore(data.db);
 const { createShowcasePool } = require('../server/showcase-pool');
+const { MULTIPLATFORM_FILTER_VALUE } = require('../server/constants');
 const showcasePool = createShowcasePool(data.db);
 
 test.after(() => {
@@ -98,6 +99,9 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(!data.listGames(other.id, { missing: 'igdb' }).some(game => game.id === igdbCandidate.id));
   assert.equal(data.listGames(other.id, { sort: 'igdb_user_desc' })[0].id, igdbCandidate.id);
   assert.equal(data.listGames(other.id, { sort: 'igdb_critic' })[0].id, igdbCandidate.id);
+  assert.equal(data.findDuplicateGames(other.id, 'Alternate edition name', 'Nintendo Switch', 123).length, 1);
+  assert.equal(data.findDuplicateGames(other.id, 'Alternate edition name', 'Nintendo Switch', null, igdbGame.canonicalGameId).length, 1);
+  assert.equal(data.findDuplicateGames(other.id, 'IGDB Candidate', 'Nintendo Switch', 999).length, 0);
   assert.equal(data.updateGameIgdb(other.id, igdbCandidate.id, { igdbId: 999 }), null);
 
   assert.throws(() => data.createGame(other.id, { title: 'Bad Rating', platform: 'Nintendo Switch', rating: 4.25 }), /half-star steps/);
@@ -170,12 +174,16 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.deepEqual(data.listGames(other.id, { sort: 'hltb_main_long' }).slice(0, 2).map(game => game.title), ['Timed Adventure', 'Short Adventure']);
   assert.deepEqual(data.listGames(other.id, { sort: 'year_desc' }).slice(0, 2).map(game => game.title), ['Needs PEGI', 'Short Adventure']);
   const switchCopy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'Nintendo Switch' });
-  data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
+  const ps5Copy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
+  data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
+  data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
+  assert.deepEqual(new Set(data.listGames(other.id, { platform: MULTIPLATFORM_FILTER_VALUE }).map(game => game.id)), new Set([switchCopy.id, ps5Copy.id]));
   const titleMatches = data.searchGameTitles(other.id, 'shared adventure');
   assert.equal(titleMatches.length, 2);
   assert.ok(titleMatches.some(game => game.id === switchCopy.id && game.platform === 'Nintendo Switch'));
   assert.deepEqual(data.searchGameTitles(owner.id, 'shared adventure'), []);
   assert.equal(data.findDuplicateGames(other.id, '  SHARED   Adventure ', 'nintendo switch').length, 1);
+  assert.equal(data.findDuplicateGames(other.id, 'Shared Adventure', 'Nintendo Switch', null, 999999).length, 1);
   assert.equal(data.findDuplicateGames(other.id, 'Shared Adventure', 'Xbox Series X|S').length, 0);
   assert.equal(data.findDuplicateGames(owner.id, 'Shared Adventure', 'Nintendo Switch').length, 0);
   const accented = data.createGame(other.id, { title: 'Pokémon Pokopia', platform: 'Nintendo Switch 2', publisher: 'Pokémon Company' });

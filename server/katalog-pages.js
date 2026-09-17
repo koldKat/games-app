@@ -3,6 +3,7 @@
 const { readVersion } = require('./version');
 const { UI_LOCALE } = require('./constants');
 const { COPYRIGHT_START_YEAR, PUBLIC_URL: SITE_URL } = require('./site-config');
+const { platformDisplayName } = require('./platform-labels');
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -191,7 +192,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
   const heroTitle = detail ? '<h2>Public Kat·a·log</h2>' : '<h1>Public Kat·a·log</h1>';
   const cards = result.entries.map(entry => {
     const releases = entry.releases || [entry];
-    const platformLabel = platform ? entry.platform : releases.map(release => release.platform).join(' · ');
+    const platformLabel = platform ? platformDisplayName(entry.platform) : releases.map(release => platformDisplayName(release.platform)).join(' · ');
     return `<article class="katalog-card">
     <a class="katalog-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
     <div class="katalog-card-body"><span class="katalog-platform">${escapeHtml(platformLabel)}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
@@ -199,7 +200,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
       <div class="katalog-chips"><span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}${releases.length > 1 ? `<span>${releases.length} platforms</span>` : ''}</div>
     </div></article>`;
   }).join('');
-  const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(item.platform)} (${item.count})</option>`).join('');
+  const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(platformDisplayName(item.platform))} (${item.count})</option>`).join('');
   const pagination = result.pages > 1 ? `<nav class="katalog-pagination" aria-label="Kat·a·log pages">
     ${result.page > 1 ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page - 1 }))}" aria-label="Previous page">page.prev()</a>` : '<span></span>'}
     <span>Page ${result.page} of ${result.pages}</span>
@@ -259,7 +260,7 @@ function communityRating(entry) {
 
 function addToLibraryPanel(entry, user, libraryGame) {
   if (user && libraryGame) {
-    const platform = escapeHtml(libraryGame.platform || entry.platform);
+    const platform = escapeHtml(platformDisplayName(libraryGame.platform || entry.platform));
     const title = escapeHtml(libraryGame.title || entry.title);
     return `<aside class="katalog-add katalog-added">
       <div><strong>Already in your Kat·a·log</strong><span>${platform} · ${title}</span></div>
@@ -293,7 +294,7 @@ function gameReleasePanel(entry) {
   const releaseLinks = releases.map(release => {
     const details = [release.publisher, release.releaseYear].filter(Boolean).join(' · ') || 'Release details pending';
     return `<a class="${release.slug === entry.slug ? 'active' : ''}" href="/game/${encodeURIComponent(release.slug)}">
-      <strong>${escapeHtml(release.platform)}</strong><small>${escapeHtml(details)}</small>
+      <strong>${escapeHtml(platformDisplayName(release.platform))}</strong><small>${escapeHtml(details)}</small>
     </a>`;
   }).join('');
   return `<section class="katalog-release-panel">
@@ -344,7 +345,7 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
       <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div class="game-detail"><article class="game-overview">
         <div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div>
-        <div class="game-summary"><p>${escapeHtml(entry.platform)}</p><h1>${escapeHtml(entry.title)}</h1>
+        <div class="game-summary"><p>${escapeHtml(platformDisplayName(entry.platform))}</p><h1>${escapeHtml(entry.title)}</h1>
           <div class="katalog-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${communityRating(entry)}${releaseYear}${publisher}</div>
           ${gameReleasePanel(entry)}${addToLibraryPanel(entry, user, libraryGame)}${gameDescriptionPanel(entry)}
         </div>
@@ -355,11 +356,12 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
 
 function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1 }, platforms = [], user = null, progress = null, libraryGame = null, coverUrls = [] }) {
   const ratingLabel = entry.pegi ? `PEGI ${entry.pegi}` : 'unrated';
-  const description = entry.description || `${entry.title} for ${entry.platform}: ${ratingLabel} information, cover art, publisher details, and HowLongToBeat estimates.`;
+  const displayPlatform = platformDisplayName(entry.platform);
+  const description = entry.description || `${entry.title} for ${displayPlatform}: ${ratingLabel} information, cover art, publisher details, and HowLongToBeat estimates.`;
   const canonical = `${SITE_URL}/game/${encodeURIComponent(entry.slug)}`;
   const displayCovers = coverUrls.length ? coverUrls : [entry.coverUrl, ...result.entries.map(item => item.coverUrl)];
   return pageShell({
-    title: `${entry.title} (${entry.platform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: displayCovers,
+    title: `${entry.title} (${displayPlatform}) // Game Kat·a·log`, description, canonical, user, progress, coverUrls: displayCovers,
     socialImage: `${SITE_URL}${entry.coverUrl}`, socialImageAlt: `${entry.title} cover`, socialType: 'video.game',
     structuredData: { '@context': 'https://schema.org', '@type': 'VideoGame', name: entry.title, gamePlatform: entry.platform,
       contentRating: entry.pegi ? `PEGI ${entry.pegi}` : undefined, image: `${SITE_URL}${entry.coverUrl}`, url: canonical,

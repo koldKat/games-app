@@ -1,5 +1,6 @@
 import { controllerLoaderMarkup } from './controller-loader.js';
 import { coverage, formatBytes, formatCount, formatDecimal, formatDuration, formatPercent, formatPlaytime } from './stats-format.js';
+import { platformDisplayName } from './platforms.js';
 
 let dialog;
 let returnFocus;
@@ -83,7 +84,7 @@ function sections(stats) {
       ['Signal events', formatCount(stats.signalEvents)], ['Last 30 days', formatCount(stats.signalLast30Days)],
       ['Published announcements', formatCount(stats.announcements)],
     ] },
-    { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [item.platform, formatCount(item.count)]) },
+    { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [platformDisplayName(item.platform), formatCount(item.count)]) },
     { kind: 'server', label: 'Server', rows: [
       ['Processor', stats.cpuModel || 'Unknown'], ['CPU cores', formatCount(stats.cpuCores)],
       ['CPU age', stats.cpuAgeYears == null ? 'N/A' : `${formatCount(stats.cpuAgeYears)}y`],

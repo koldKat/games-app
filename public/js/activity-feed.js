@@ -1,6 +1,7 @@
 import { formatAnnouncementBody } from './announcement-format.js';
 import { controllerLoaderMarkup } from './controller-loader.js';
 import { openPublicProfile } from './public-profile.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 import { UI_LOCALE, UI_TIMING } from './ui-policy.js';
 
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -51,7 +52,8 @@ function phrase(entry) {
   if (entry.type === 'catalogue_contribution') {
     const rating = [3, 7, 12, 16, 18].includes(Number(entry.gamePegi)) ? Number(entry.gamePegi) : null;
     const game = preview(`<a class="activity-game-link${rating ? ` activity-game-link--pegi-${rating}` : ''}"${pegiGameLinkStyle(rating)} href="/game/${encodeURIComponent(entry.gameSlug)}">${escapeHtml(entry.gameTitle)}</a>`, entry.coverUrl, 'cover', `${entry.gameTitle} cover`);
-    return `${user} contributed ${game} to the Kat·a·log.`;
+    const platform = entry.gamePlatform ? `<span class="activity-platform-tag ${platformThemeClass(entry.gamePlatform)}">${escapeHtml(platformDisplayName(entry.gamePlatform))}</span>` : '';
+    return `${user} contributed ${game}${platform} to the Kat·a·log.`;
   }
   const base = escapeHtml(entry.template || '').replaceAll('{name}', user).replaceAll('{level}', escapeHtml(entry.level));
   if (entry.type === 'level_up' && entry.titleGained) return `${base} <em>New title: ${escapeHtml(entry.title)}.</em>`;

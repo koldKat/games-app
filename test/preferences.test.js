@@ -8,6 +8,7 @@ process.env.DB_PATH = dbPath;
 const data = require('../server/db');
 const auth = require('../server/auth');
 const preferences = require('../server/preferences');
+const { MULTIPLATFORM_FILTER_VALUE } = require('../server/constants');
 
 test.after(() => {
   data.db.close();
@@ -24,6 +25,7 @@ test('preferences persist per account and invalid values fall back safely', asyn
   assert.equal(preferences.set(first.id, { filters: { ownership: 'owned_digital' } }).filters.ownership, 'owned_digital');
   assert.equal(preferences.set(first.id, { filters: { playStatus: 'hidden' } }).filters.playStatus, 'hidden');
   assert.equal(preferences.set(first.id, { filters: { missing: 'igdb' } }).filters.missing, 'igdb');
+  assert.equal(preferences.set(first.id, { filters: { platform: MULTIPLATFORM_FILTER_VALUE } }).filters.platform, MULTIPLATFORM_FILTER_VALUE);
   assert.equal(preferences.set(first.id, { filters: { sort: 'igdb_critic_desc' } }).filters.sort, 'igdb_critic_desc');
   assert.deepEqual(preferences.get(second.id), preferences.defaults());
   assert.deepEqual(preferences.set(second.id, { view: 'invalid', filters: { ownership: 'broken', sort: 'DROP TABLE games' } }), preferences.defaults());

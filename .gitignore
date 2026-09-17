@@ -10,6 +10,7 @@ games.db-wal
 *.log
 coverage/
 backups/
+memory/
 .DS_Store
 public/avatars/*
 !public/avatars/.gitkeep

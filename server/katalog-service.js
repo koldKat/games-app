@@ -52,7 +52,8 @@ function createKatalogService({ data, store, covers, logger = console }) {
   function syncGame(userId, game) {
     const evaluation = evaluateKatalogGame(game);
     if (!evaluation.eligible) return { state: 'ineligible', evaluation };
-    const existing = store.findByIdentity(evaluation.identity.titleKey, evaluation.identity.platformKey);
+    store.unlinkIfMismatched?.(game);
+    const existing = store.findForGame(game, evaluation.identity);
     if (existing?.status === 'public') {
       store.link(existing.id, game.id, userId);
       store.addDescriptionIfMissing?.(existing.id, game);
@@ -92,7 +93,7 @@ function createKatalogService({ data, store, covers, logger = console }) {
   function addToLibrary(userId, katalogId, personal = {}) {
     const entry = store.getPublicById(katalogId);
     if (!entry) throw Object.assign(new Error('Katalog game not found.'), { status: 404 });
-    const duplicates = data.findDuplicateGames(userId, entry.title, entry.platform);
+    const duplicates = data.findDuplicateGames(userId, entry.title, entry.platform, entry.igdbId, entry.canonicalGameId);
     if (duplicates.length) throw Object.assign(new Error('This release is already in your library.'), { status: 409, existing: duplicates[0] });
     let libraryCoverUrl = '';
     let game = null;
@@ -111,7 +112,7 @@ function createKatalogService({ data, store, covers, logger = console }) {
   function libraryCopy(userId, katalogId) {
     const entry = store.getPublicById(katalogId);
     if (!entry) return null;
-    return data.findDuplicateGames(userId, entry.title, entry.platform)[0] || null;
+    return data.findDuplicateGames(userId, entry.title, entry.platform, entry.igdbId, entry.canonicalGameId)[0] || null;
   }
 
   function removeEntry(id) {
@@ -132,6 +133,8 @@ function createKatalogService({ data, store, covers, logger = console }) {
 
   return {
     addToLibrary,
+    canonicalCounts: store.canonicalCounts,
+    canonicalConflicts: store.canonicalConflicts,
     contributionSources: store.contributionSources,
     libraryCopy,
     counts: store.counts,

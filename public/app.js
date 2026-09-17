@@ -1,4 +1,4 @@
-import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformFromReleaseText, platformGroups } from './js/platforms.js';
+import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformDisplayName, platformFromReleaseText, platformGroups } from './js/platforms.js';
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
@@ -9,7 +9,10 @@ import { bindCoverResultFallbacks } from './js/cover-result-images.js';
 import { uniqueArtworkUrls } from './js/artwork-url.js';
 import { compareGames } from './js/game-sorting.js';
 import { groupGames, selectedGroupCopy } from './js/game-groups.js';
-import { renderVersionPicker } from './js/version-picker.js';
+import {
+  cardVersionControl, closeCardVersionMenus, handleCardVersionMenuFocusin, handleCardVersionMenuKeydown,
+  renderVersionPicker, toggleCardVersionMenu,
+} from './js/version-picker.js';
 import { createProgressionUi } from './js/progression-ui.js';
 import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
@@ -19,7 +22,7 @@ import { GAME_LABELS } from './js/game-labels.js';
 import { APP_NAME, COPYRIGHT_START_YEAR, GITHUB_URL } from './js/site-config.js';
 import {
   DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
-  SOURCE_IMAGE_MAX_BYTES, UI_LOCALE, UI_TIMING,
+  MULTIPLATFORM_FILTER_VALUE, SOURCE_IMAGE_MAX_BYTES, UI_LOCALE, UI_TIMING,
 } from './js/ui-policy.js';
 
 const $ = selector => document.querySelector(selector);
@@ -57,6 +60,7 @@ let sessionGeneration = 0;
 let preferencesReady = false;
 let preferencesDirty = false;
 let preferenceSaveTimer;
+let groupFilterRefreshTimer;
 const filters = {
   q: $('#search'), platform: $('#platform-filter'), ownership: $('#ownership-filter'),
   pegi: $('#pegi-filter'), playStatus: $('#status-filter'), missing: $('#missing-filter'),
@@ -160,6 +164,7 @@ function showAuth(message = '') {
   state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
+  clearTimeout(groupFilterRefreshTimer);
   state.games = []; state.stats = null; state.platforms = []; state.page = 1;
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -381,11 +386,12 @@ function renderStats() {
 }
 function renderPlatforms() {
   const current = filters.platform.value;
-  filters.platform.innerHTML = '<option value="">All platforms</option>' + state.platforms.map(platform => `<option>${escapeHtml(platform)}</option>`).join('');
+  filters.platform.innerHTML = `<option value="">All platforms</option><option value="${MULTIPLATFORM_FILTER_VALUE}">Multiple platforms</option>`
+    + state.platforms.map(platform => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`).join('');
   filters.platform.value = current;
 }
 function renderPlatformChoices() {
-  $('#game-platform').innerHTML = Object.entries(platformGroups).map(([group, platforms]) => `<optgroup label="${escapeHtml(group)}">${platforms.map(platform => `<option value="${escapeHtml(platform)}">${escapeHtml(platform)}</option>`).join('')}</optgroup>`).join('') + `<optgroup label="Other"><option value="${CUSTOM_PLATFORM}">Custom…</option></optgroup>`;
+  $('#game-platform').innerHTML = Object.entries(platformGroups).map(([group, platforms]) => `<optgroup label="${escapeHtml(group)}">${platforms.map(platform => `<option value="${escapeHtml(platform)}">${escapeHtml(platformDisplayName(platform))}</option>`).join('')}</optgroup>`).join('') + `<optgroup label="Other"><option value="${CUSTOM_PLATFORM}">Custom…</option></optgroup>`;
 }
 function toggleCustomPlatform(focus = true) {
   const custom = $('#game-platform').value === CUSTOM_PLATFORM;
@@ -454,17 +460,15 @@ function cardRatingAtPointer(event) {
   return position - (event.clientX - bounds.left < bounds.width / 2 ? 0.5 : 0);
 }
 function gameCard(game) {
-  const versions = game.versions || [game];
-  const versionStrip = versions.length > 1 ? `<div class="game-versions" aria-label="Choose the copy to rate or edit">${versions.map(version => `<button type="button" data-action="version" data-game-id="${version.id}" aria-pressed="${version.id === game.id}">${escapeHtml(version.platform)}${versions.filter(copy => copy.platform === version.platform).length > 1 ? ` · #${version.id}` : ''}</button>`).join('')}</div>` : '';
+  const platform = cardVersionControl(game, escapeHtml, labels);
   const meta = [game.publisher, game.releaseYear, game.cartridgeNumber != null ? `Cartridge #${game.cartridgeNumber}` : ''].filter(Boolean).join(' · ');
   const pegiClass = game.pegi ? `pegi pegi-${game.pegi}` : '';
   const quick = game.ownership === 'wanted' ? '<button class="quick-button" data-action="own">Mark owned</button>' : '';
   const descriptorBadges = (game.pegiDescriptors || []).map(descriptor => badge(descriptor, /purchases|random items/i.test(descriptor) ? 'descriptor purchase' : 'descriptor')).join('');
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
-    <div class="card-top"><span class="platform-tag">${escapeHtml(game.platform)}</span><button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
+    <div class="card-top">${platform}<button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    ${versionStrip}
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button type="button" class="edit-button" data-action="edit">Edit details</button>${quick}</div>
@@ -473,7 +477,7 @@ function gameCard(game) {
 function gameMatchesFilters(game) {
   const query = filters.q.value.trim().toLocaleLowerCase();
   if (query && ![game.title, game.publisher, game.notes, game.description].some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
-  if (filters.platform.value && game.platform !== filters.platform.value) return false;
+  if (filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE && game.platform !== filters.platform.value) return false;
   if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
   if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
   if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && game.ownership !== filters.ownership.value) return false;
@@ -496,7 +500,10 @@ function gameMatchesFilters(game) {
 function cardNode(game) {
   const template = document.createElement('template'); template.innerHTML = gameCard(game).trim(); return template.content.firstElementChild;
 }
-function displayedGames() { return groupGames(state.games, { splitPlatforms: Boolean(filters.platform.value) }).map(group => selectedGroupCopy(group, selectedCopyIds)); }
+function displayedGames() {
+  const splitPlatforms = Boolean(filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE);
+  return groupGames(state.games, { splitPlatforms }).map(group => selectedGroupCopy(group, selectedCopyIds));
+}
 function pageCount() { return Math.max(1, Math.ceil(displayedGames().length / LIBRARY_PAGE_SIZE)); }
 function pagedGames() {
   state.page = Math.min(Math.max(1, state.page), pageCount());
@@ -511,12 +518,17 @@ function updateCollectionChrome() {
   $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
-  const count = displayedGames().length; const grouped = !filters.platform.value;
+  const count = displayedGames().length; const grouped = !filters.platform.value || filters.platform.value === MULTIPLATFORM_FILTER_VALUE;
   $('#result-count').textContent = `${count.toLocaleString(UI_LOCALE)} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
 }
 function applyGamePatch(game) {
   if (!game?.id) return;
   if (state.loading) { state.pendingGamePatches.set(game.id, game); return; }
+  if (filters.platform.value === MULTIPLATFORM_FILTER_VALUE) {
+    clearTimeout(groupFilterRefreshTimer);
+    groupFilterRefreshTimer = setTimeout(() => { void loadGames(); }, UI_TIMING.libraryGroupRefreshDebounceMs);
+    return;
+  }
   const existingIndex = state.games.findIndex(item => item.id === game.id);
   if (existingIndex !== -1) state.games.splice(existingIndex, 1);
   if (gameMatchesFilters(game)) state.games.push(game);
@@ -525,6 +537,11 @@ function applyGamePatch(game) {
 }
 function flushPendingGamePatches() {
   const pending = [...state.pendingGamePatches.values()]; state.pendingGamePatches.clear();
+  if (pending.length && filters.platform.value === MULTIPLATFORM_FILTER_VALUE) {
+    clearTimeout(groupFilterRefreshTimer);
+    groupFilterRefreshTimer = setTimeout(() => { void loadGames(); }, UI_TIMING.libraryGroupRefreshDebounceMs);
+    return;
+  }
   for (const game of pending) applyGamePatch(game);
 }
 function connectEventStream() {
@@ -588,6 +605,7 @@ function queryString() {
   return params.toString();
 }
 async function loadGames() {
+  clearTimeout(groupFilterRefreshTimer);
   const sequence = ++gameLoadSequence; const userId = state.user?.id;
   state.loading = true; renderGames();
   try {
@@ -697,7 +715,7 @@ function detailMarkup(game, { rating, descriptors, times, facts, pegiText, relea
   const notes = game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>';
   return `<div class="game-detail-hero">
   ${detailCover(game)}
-  <div><p>${escapeHtml(game.platform)}</p><div class="game-detail-chips">${chips}</div>${description}${descriptionSource}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div>
+  <div><p>${escapeHtml(platformDisplayName(game.platform))}</p><div class="game-detail-chips">${chips}</div>${description}${descriptionSource}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div>
 </div>
 <div class="game-detail-facts">${facts}</div>
 ${detailSection('HowLongToBeat', hltb)}
@@ -714,7 +732,7 @@ function openDetails(game) {
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
   const times = detailTimes(game);
-  const facts = detailRows([['Platform', game.platform], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
+  const facts = detailRows([['Platform', platformDisplayName(game.platform)], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
   const pegiText = detailPegiText(game);
   const releases = detailReleases(game);
   $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });
@@ -821,7 +839,8 @@ function openForm(game = null) {
   $('#game-form')._pegiMetadata = pegiMetadata(game);
   $('#form-title').textContent = game ? 'Edit game' : 'Add a game'; $('#form-kicker').textContent = game ? 'Update the shelf' : 'Grow the shelf';
   mountVersionPicker($('#game-form'), game, openForm, $('#game-title').closest('.title-autocomplete'));
-  $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filters.platform.value || 'Nintendo Switch'));
+  const filteredPlatform = filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE ? filters.platform.value : '';
+  $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filteredPlatform || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
   $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
@@ -884,6 +903,7 @@ const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
   api, escapeHtml, labels, getPlatform: selectedPlatform, getEditingId: () => $('#game-id').value, openExisting: openExistingGame,
+  getIgdbId: () => igdbLookup.payload().igdbId,
   openKatalog: slug => katalogNavigation.open(`/game/${encodeURIComponent(slug)}`),
   onExternalSelect: result => { igdbLookup.apply(result); titleAutocomplete.updateWarning(); },
 });
@@ -902,10 +922,10 @@ $('#game-form').addEventListener('submit', async event => {
   const duplicate = await titleAutocomplete.duplicateBeforeSave();
   const original = state.games.find(game => String(game.id) === id);
   const changesIdentity = original && (original.platform !== selectedPlatform() || original.title !== $('#game-title').value);
-  if (changesIdentity && duplicate && !await confirmAction({ title: 'Another copy already exists', message: `You are changing ${original.platform} to ${selectedPlatform()}. Another copy already exists there. Change this copy anyway?`, confirmLabel: 'Change copy', kicker: 'Duplicate // game' })) {
+  if (changesIdentity && duplicate && !await confirmAction({ title: 'Another copy already exists', message: `You are changing ${platformDisplayName(original.platform)} to ${platformDisplayName(selectedPlatform())}. Another copy already exists there. Change this copy anyway?`, confirmLabel: 'Change copy', kicker: 'Duplicate // game' })) {
     save.disabled = false; save.textContent = 'Save game'; return;
   }
-  if (!id && duplicate && !await confirmAction({ title: 'Add another copy?', message: `“${duplicate.title}” is already in your ${duplicate.platform} library. Add another entry anyway?`, confirmLabel: 'Add anyway', kicker: 'Duplicate // game' })) {
+  if (!id && duplicate && !await confirmAction({ title: 'Add another copy?', message: `“${duplicate.title}” is already in your ${platformDisplayName(duplicate.platform)} library. Add another entry anyway?`, confirmLabel: 'Add anyway', kicker: 'Duplicate // game' })) {
     save.disabled = false; save.textContent = 'Save game'; return;
   }
   save.textContent = 'Saving…';
@@ -954,6 +974,10 @@ async function saveCardAction(game, action, event) {
 $('#games').addEventListener('click', async event => {
   const card = event.target.closest('.game-card'); const action = event.target.closest('[data-action]')?.dataset.action;
   if (!card) return; const game = state.games.find(item => item.id === Number(card.dataset.id)); if (!game) return;
+  if (action === 'version-menu') {
+    toggleCardVersionMenu($('#games'), event.target.closest('.platform-picker'));
+    return;
+  }
   if (action === 'version') {
     const version = state.games.find(item => item.id === Number(event.target.closest('[data-game-id]')?.dataset.gameId));
     const group = displayedGames().find(item => item.versions.some(copy => copy.id === version?.id));
@@ -962,7 +986,7 @@ $('#games').addEventListener('click', async event => {
       selectedCopyIds.add(version.id);
       const next = cardNode(selectedGroupCopy(group, selectedCopyIds));
       card.replaceWith(next);
-      next.querySelector(`[data-game-id="${version.id}"]`)?.focus({ preventScroll: true });
+      next.querySelector('.platform-switch')?.focus({ preventScroll: true });
     }
     return;
   }
@@ -970,6 +994,11 @@ $('#games').addEventListener('click', async event => {
   if (action === 'view') return openDetails(game);
   if (action === 'edit') return openForm(game);
   await saveCardAction(game, action, event);
+});
+$('#games').addEventListener('keydown', event => handleCardVersionMenuKeydown(event, $('#games')));
+document.addEventListener('focusin', event => handleCardVersionMenuFocusin(event, $('#games')));
+document.addEventListener('pointerdown', event => {
+  if (!event.target.closest('.platform-picker')) closeCardVersionMenus($('#games'));
 });
 $('#games').addEventListener('pointermove', event => {
   const rating = cardRatingAtPointer(event); const picker = event.target.closest('.card-rating-picker');
@@ -1155,8 +1184,8 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
+  accountDialog.querySelector('[data-account-close]')?.focus({ preventScroll: true });
   Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
-  setTimeout(() => $('#account-username').focus(), UI_TIMING.focusDelayMs);
 });
 function setBulkStatus(element, shortStatus, detail) {
   element.textContent = shortStatus; element.dataset.tooltip = detail; element.removeAttribute('title'); element.setAttribute('aria-label', `${shortStatus}. ${detail}`);

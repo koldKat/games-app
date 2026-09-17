@@ -1,4 +1,5 @@
 import { UI_LOCALE } from './ui-policy.js';
+import { platformDisplayName } from './platforms.js';
 
 const STAT_LABELS = Object.freeze([
   ['total', 'Games'], ['owned', 'Owned'], ['physical', 'Physical'], ['digital', 'Digital'], ['wishlisted', 'Wishlisted'],
@@ -81,7 +82,7 @@ function render(profile) {
   const list = element('div');
   for (const item of profile.topPlatforms || []) {
     const row = element('span');
-    row.append(element('b', '', item.platform), element('small', '', Number(item.count || 0).toLocaleString(UI_LOCALE)));
+    row.append(element('b', '', platformDisplayName(item.platform)), element('small', '', Number(item.count || 0).toLocaleString(UI_LOCALE)));
     list.append(row);
   }
   if (!list.childElementCount) list.append(element('p', '', 'No platforms cataloged yet.'));

@@ -161,7 +161,8 @@ function list(limit = null) {
       u.username, u.avatar_path AS avatarPath,
       CASE WHEN u.public_profile=1 AND u.admin_locked=0 THEN 1 ELSE 0 END AS publicProfile,
       COALESCE(up.xp, 0) AS userXp,
-      t.template, c.title AS gameTitle, c.slug AS gameSlug, c.pegi AS gamePegi, c.cover_url AS coverUrl
+      t.template, c.title AS gameTitle, c.slug AS gameSlug, c.platform AS gamePlatform,
+      c.pegi AS gamePegi, c.cover_url AS coverUrl
     FROM activity_events a
     LEFT JOIN users u ON u.id=a.user_id
     LEFT JOIN user_progression up ON up.user_id=a.user_id
@@ -175,7 +176,7 @@ function list(limit = null) {
     const progression = progressForXp(row.userXp);
     return { id: row.id, type: row.type, username: row.username || 'Unknown curator', avatarUrl: row.avatarPath ? `/avatars/${row.avatarPath}` : null,
       publicProfile: Boolean(row.publicProfile),
-      userLevel: progression.level, userTitle: progression.title, template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', gamePegi: row.gamePegi == null ? null : Number(row.gamePegi), coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) };
+      userLevel: progression.level, userTitle: progression.title, template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', gamePlatform: row.gamePlatform || '', gamePegi: row.gamePegi == null ? null : Number(row.gamePegi), coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) };
   });
 }
 

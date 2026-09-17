@@ -1,5 +1,6 @@
 import { api, button, busy, cell, confirmAction, emptyRow, formatDate, toast } from './core.js';
 import { ADMIN_TIMING } from './admin-policy.js';
+import { platformDisplayName } from '/js/platforms.js';
 
 const stateLabel = value => value === 'public' ? 'PUBLIC' : value === 'candidate' ? 'REVIEW' : 'REJECTED';
 const editDialog = document.getElementById('katalog-edit-dialog');
@@ -8,7 +9,7 @@ const coverStatus = document.getElementById('katalog-cover-status');
 
 function formValue(name, value) { editForm.elements[name].value = value ?? ''; }
 function openEditor(entry) {
-  editForm.dataset.id = entry.id; document.getElementById('katalog-edit-heading').textContent = `${entry.title} // ${entry.platform}`;
+  editForm.dataset.id = entry.id; document.getElementById('katalog-edit-heading').textContent = `${entry.title} // ${platformDisplayName(entry.platform)}`;
   for (const name of ['title', 'platform', 'publisher', 'pegi', 'releaseYear', 'pegiUrl', 'hltbId', 'hltbTitle', 'hltbUrl', 'hltbMainStory', 'hltbMainExtra', 'hltbCompletionist', 'hltbAllStyles', 'coverSource', 'coverMatchTitle', 'pegiAdvice', 'pegiOutline', 'pegiContentIssues', 'pegiOtherIssues']) formValue(name, entry[name]);
   formValue('pegiDescriptors', entry.pegiDescriptors?.join(', ')); formValue('pegiReleases', entry.pegiReleases?.join(', ')); formValue('coverRemoteUrl', '');
   coverStatus.textContent = entry.coverUrl ? `Current stored cover: ${entry.coverUrl}` : 'No cover is stored.';
@@ -30,7 +31,7 @@ function actionsFor(row, entry) {
   if (entry.status !== 'candidate') actions.append(button('Review', '', event => changeStatus(entry, 'candidate', event.currentTarget)));
   if (entry.status !== 'rejected') actions.append(button('Reject', '', event => changeStatus(entry, 'rejected', event.currentTarget)));
   const remove = button('Delete', 'danger', async () => {
-    if (!await confirmAction({ title: 'Delete public Kat·a·log entry?', message: `Delete “${entry.title}” (${entry.platform}) and its Kat·a·log cover? Private library copies are unaffected.`, confirmLabel: 'Delete entry', kicker: 'DESTRUCTIVE // PUBLIC' })) return;
+    if (!await confirmAction({ title: 'Delete public Kat·a·log entry?', message: `Delete “${entry.title}” (${platformDisplayName(entry.platform)}) and its Kat·a·log cover? Private library copies are unaffected.`, confirmLabel: 'Delete entry', kicker: 'DESTRUCTIVE // PUBLIC' })) return;
     await busy(remove, async () => { await api('DELETE', `/api/admin/catalogue/${entry.id}`); toast('Kat·a·log entry deleted.'); await loadPublicKatalog(); });
   });
   actions.append(remove);
@@ -66,7 +67,8 @@ export async function loadPublicKatalog() {
   try {
     const result = await api('GET', `/api/admin/catalogue?q=${encodeURIComponent(query)}&status=${encodeURIComponent(status)}`);
     const { public: published = 0, candidate = 0, rejected = 0 } = result.counts;
-    document.getElementById('public-katalog-count').textContent = `${published} public · ${candidate} review · ${rejected} rejected`;
+    const identity = result.canonical || {}; const conflicts = Array.isArray(result.conflicts) ? result.conflicts.length : 0;
+    document.getElementById('public-katalog-count').textContent = `${published} public · ${candidate} review · ${rejected} rejected // ${identity.games || 0} canonical titles · ${conflicts} identity conflicts`;
     if (!result.entries.length) return emptyRow(body, 8, 'No matching Kat·a·log entries.');
     result.entries.forEach(entry => {
       const row = body.insertRow();
@@ -74,7 +76,7 @@ export async function loadPublicKatalog() {
       if (entry.status === 'public') {
         const link = document.createElement('a'); link.href = `/game/${encodeURIComponent(entry.slug)}`; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = entry.title; title.append(link);
       } else title.textContent = entry.title;
-      cell(row, entry.platform); cell(row, stateLabel(entry.status), `state ${entry.status === 'public' ? 'good' : entry.status}`);
+      cell(row, platformDisplayName(entry.platform)); cell(row, stateLabel(entry.status), `state ${entry.status === 'public' ? 'good' : entry.status}`);
       cell(row, `${entry.confidence}%`); cell(row, entry.reasons.length ? entry.reasons.join(', ') : 'exact', 'review-reasons'); cell(row, formatDate(entry.updatedAt));
       actionsFor(row, entry);
     });

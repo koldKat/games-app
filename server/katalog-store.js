@@ -1,6 +1,7 @@
 'use strict';
 
 const { evaluateKatalogGame, normalizeKatalogText } = require('./katalog-policy');
+const { createCanonicalStore } = require('./canonical-store');
 const { GAME_LIMITS, KATALOG_LIMITS } = require('./validation-policy');
 
 const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
@@ -8,6 +9,7 @@ const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
 const PEGI_RATINGS = new Set(require('./constants').PEGI_RATINGS);
 
 const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
+  canonical_game_id AS canonicalGameId, canonical_release_id AS canonicalReleaseId,
   pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
@@ -57,7 +59,7 @@ function publicEntry(entry) {
 function groupedPublicEntries(entries) {
   const groups = new Map();
   for (const entry of entries) {
-    const key = entry.titleKey || normalizeKatalogText(entry.title);
+    const key = entry.canonicalGameId ? `canonical:${entry.canonicalGameId}` : `title:${entry.titleKey || normalizeKatalogText(entry.title)}`;
     const group = groups.get(key) || []; group.push(entry); groups.set(key, group);
   }
   return [...groups.values()].map(releases => {
@@ -84,7 +86,8 @@ function optionalNumber(value, { min = 0, max = Number.MAX_SAFE_INTEGER, integer
   return integer ? number : Math.round(number * 100) / 100;
 }
 
-function createKatalogStore(database) {
+function createKatalogStore(database, { canonical: suppliedCanonical = null } = {}) {
+  const canonical = suppliedCanonical || createCanonicalStore(database);
   database.exec(`
     CREATE TABLE IF NOT EXISTS catalogue_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +96,8 @@ function createKatalogStore(database) {
       title_key TEXT NOT NULL,
       platform TEXT NOT NULL COLLATE NOCASE,
       platform_key TEXT NOT NULL,
+      canonical_game_id INTEGER REFERENCES canonical_games(id) ON DELETE SET NULL,
+      canonical_release_id INTEGER REFERENCES canonical_releases(id) ON DELETE SET NULL,
       pegi INTEGER,
       publisher TEXT NOT NULL DEFAULT '',
       release_year INTEGER,
@@ -149,6 +154,7 @@ function createKatalogStore(database) {
     CREATE INDEX IF NOT EXISTS idx_catalogue_submitter_status ON catalogue_entries(submitted_by_user_id, status);
     CREATE INDEX IF NOT EXISTS idx_catalogue_links_user ON catalogue_game_links(user_id);
   `);
+  canonical.ensureCatalogueSchema();
   const catalogueColumns = database.pragma('table_info(catalogue_entries)').map(column => column.name);
   if (!catalogueColumns.includes('description')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description TEXT NOT NULL DEFAULT ''");
   if (!catalogueColumns.includes('description_source')) database.exec("ALTER TABLE catalogue_entries ADD COLUMN description_source TEXT NOT NULL DEFAULT ''");
@@ -167,6 +173,7 @@ function createKatalogStore(database) {
   }
 
   const findIdentityStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE title_key=? AND platform_key=?`);
+  const findReleaseStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE canonical_release_id=?`);
   const findSlugStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE slug=?`);
   const findIdStatement = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE id=?`);
 
@@ -179,14 +186,29 @@ function createKatalogStore(database) {
   function findByIdentity(titleKey, platformKey) {
     return hydrateEntry(findIdentityStatement.get(titleKey, platformKey));
   }
+  function findForGame(game = {}, identity = {}) {
+    const platformKey = identity.platformKey || normalizeKatalogText(game.platform);
+    if (Number(game.igdbId) > 0) {
+      const matched = hydrateEntry(database.prepare(`SELECT ${storedFields} FROM catalogue_entries
+        WHERE igdb_id=? AND platform_key=? ORDER BY id LIMIT 1`).get(Number(game.igdbId), platformKey));
+      if (matched) return matched;
+      const legacy = findByIdentity(identity.titleKey || normalizeKatalogText(game.title), platformKey);
+      return legacy && !legacy.igdbId ? legacy : null;
+    }
+    return findByIdentity(identity.titleKey || normalizeKatalogText(game.title), platformKey);
+  }
+  function findByCanonicalRelease(releaseId) { return releaseId ? hydrateEntry(findReleaseStatement.get(Number(releaseId))) : null; }
   function getById(id) { return hydrateEntry(findIdStatement.get(Number(id))); }
   function getBySlug(slug) { return hydrateEntry(findSlugStatement.get(String(slug || ''))); }
   function getPublicById(id) { const entry = getById(id); return entry?.status === 'public' ? publicEntry(entry) : null; }
   function getPublicBySlug(slug) {
     const entry = getBySlug(slug);
     if (entry?.status !== 'public') return null;
-    const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE status='public' AND title_key=? ORDER BY platform COLLATE NOCASE`).all(entry.titleKey).map(hydrateEntry).map(publicEntry);
-    return { ...publicEntry(entry), releases, releaseCount: releases.length };
+    const releases = entry.canonicalGameId
+      ? database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE status='public' AND canonical_game_id=? ORDER BY platform COLLATE NOCASE`).all(entry.canonicalGameId)
+      : database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE status='public' AND title_key=? ORDER BY platform COLLATE NOCASE`).all(entry.titleKey);
+    const visibleReleases = releases.map(hydrateEntry).map(publicEntry);
+    return { ...publicEntry(entry), releases: visibleReleases, releaseCount: visibleReleases.length };
   }
 
   function values(game, evaluation, coverUrl) {
@@ -217,15 +239,34 @@ function createKatalogStore(database) {
     const existing = database.prepare('SELECT game_id AS gameId FROM catalogue_game_links WHERE catalogue_id=? AND user_id=?').get(entryId, accountId);
     if (existing) {
       database.prepare('DELETE FROM catalogue_game_links WHERE game_id=? AND catalogue_id<>?').run(privateGameId, entryId);
-      return existing;
+      canonical.linkCatalogueGame(entryId, privateGameId); return existing;
     }
     database.prepare('DELETE FROM catalogue_game_links WHERE game_id=?').run(privateGameId);
     database.prepare('INSERT INTO catalogue_game_links (catalogue_id, game_id, user_id) VALUES (?, ?, ?)').run(entryId, privateGameId, accountId);
+    canonical.linkCatalogueGame(entryId, privateGameId);
     return { gameId: privateGameId };
   }
 
+  function unlinkIfMismatched(game = {}) {
+    const linked = database.prepare(`SELECT ce.igdb_id AS igdbId,ce.canonical_release_id AS canonicalReleaseId,
+      ce.title_key AS titleKey,ce.platform_key AS platformKey FROM catalogue_game_links l
+      JOIN catalogue_entries ce ON ce.id=l.catalogue_id WHERE l.game_id=?`).get(Number(game.id));
+    if (!linked) return false;
+    const gameIgdbId = Number(game.igdbId) || null; const linkedIgdbId = Number(linked.igdbId) || null;
+    const gameReleaseId = Number(game.canonicalReleaseId) || null; const linkedReleaseId = Number(linked.canonicalReleaseId) || null;
+    const platformKey = normalizeKatalogText(game.platform); const titleKey = normalizeKatalogText(game.title);
+    const mismatch = gameIgdbId && linkedIgdbId ? gameIgdbId !== linkedIgdbId || platformKey !== linked.platformKey
+      : gameIgdbId && gameReleaseId && linkedReleaseId ? gameReleaseId !== linkedReleaseId
+        : titleKey !== linked.titleKey || platformKey !== linked.platformKey;
+    if (!mismatch) return false;
+    database.prepare('DELETE FROM catalogue_game_links WHERE game_id=?').run(Number(game.id));
+    return true;
+  }
+
   const upsertTransaction = database.transaction((userId, game, evaluation, coverUrl) => {
-    const existing = findByIdentity(evaluation.identity.titleKey, evaluation.identity.platformKey);
+    const canonicalGame = canonical.upsertGame(game, { allowLocal: true });
+    const canonicalRelease = canonical.ensureRelease(canonicalGame?.id, game);
+    const existing = findByCanonicalRelease(canonicalRelease?.id) || findForGame(game, evaluation.identity);
     if (existing) {
       const shouldReplace = existing.status === 'candidate' && evaluation.confidence >= existing.confidence;
       if (shouldReplace) {
@@ -246,30 +287,35 @@ function createKatalogStore(database) {
           status=@status, confidence=@confidence, reasons=@reasons,
           submitted_by_user_id=@userId, source_game_id=@gameId,
           published_at=CASE WHEN @status='public' THEN COALESCE(published_at,CURRENT_TIMESTAMP) ELSE published_at END,
-          updated_at=CURRENT_TIMESTAMP WHERE id=@id`).run({ ...next, userId, gameId: game.id, id: existing.id });
+          canonical_game_id=@canonicalGameId, canonical_release_id=@canonicalReleaseId,
+          updated_at=CURRENT_TIMESTAMP WHERE id=@id`).run({ ...next, userId, gameId: game.id, id: existing.id,
+          canonicalGameId: canonicalGame?.id || null, canonicalReleaseId: canonicalRelease?.id || null });
       }
       link(existing.id, game.id, userId);
+      canonical.syncCatalogueById(existing.id);
       return { entry: getById(existing.id), created: false, previousCoverUrl: shouldReplace ? existing.coverUrl : '', usedCover: shouldReplace };
     }
     const next = values(game, evaluation, coverUrl);
     const result = database.prepare(`INSERT INTO catalogue_entries (
-      slug, title, title_key, platform, platform_key, pegi, publisher, release_year,
+      slug, title, title_key, platform, platform_key, canonical_game_id, canonical_release_id, pegi, publisher, release_year,
       pegi_url, pegi_descriptors, pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
       hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles,
       cover_url, cover_source, cover_match_title, description, description_source, description_source_url,
       igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
       igdb_genres, igdb_themes, igdb_developers, igdb_updated_at, status, confidence, reasons,
       submitted_by_user_id, source_game_id, published_at)
-      VALUES (@slug,@title,@titleKey,@platform,@platformKey,@pegi,@publisher,@releaseYear,
+      VALUES (@slug,@title,@titleKey,@platform,@platformKey,@canonicalGameId,@canonicalReleaseId,@pegi,@publisher,@releaseYear,
       @pegiUrl,@pegiDescriptors,@pegiReleases,@pegiAdvice,@pegiOutline,@pegiContentIssues,@pegiOtherIssues,
       @hltbId,@hltbTitle,@hltbUrl,@hltbMainStory,@hltbMainExtra,@hltbCompletionist,@hltbAllStyles,
       @coverUrl,@coverSource,@coverMatchTitle,@description,@descriptionSource,@descriptionSourceUrl,
       @igdbId,@igdbSlug,@igdbUrl,@igdbRating,@igdbRatingCount,@igdbCriticRating,@igdbCriticRatingCount,
       @igdbGenres,@igdbThemes,@igdbDevelopers,@igdbUpdatedAt,@status,@confidence,@reasons,@userId,@gameId,
       CASE WHEN @status='public' THEN CURRENT_TIMESTAMP ELSE NULL END)`).run({
-        ...next, slug: uniqueSlug(game.title, game.platform), userId, gameId: game.id,
+        ...next, slug: uniqueSlug(game.title, game.platform), canonicalGameId: canonicalGame?.id || null,
+        canonicalReleaseId: canonicalRelease?.id || null, userId, gameId: game.id,
       });
     link(result.lastInsertRowid, game.id, userId);
+    canonical.syncCatalogueById(result.lastInsertRowid);
     return { entry: getById(result.lastInsertRowid), created: true, previousCoverUrl: '', usedCover: true };
   });
 
@@ -362,6 +408,7 @@ function createKatalogStore(database) {
       coverSource: adminText(input.coverSource, GAME_LIMITS.coverSourceMax), coverMatchTitle: adminText(input.coverMatchTitle, GAME_LIMITS.coverMatchTitleMax),
       confidence: evaluation.confidence, reasons: JSON.stringify(evaluation.reasons),
     });
+    canonical.syncCatalogueById(existing.id);
     return getById(existing.id);
   }
 
@@ -375,7 +422,8 @@ function createKatalogStore(database) {
     if (!description) return getById(id);
     const result = database.prepare(`UPDATE catalogue_entries SET description=?, description_source=?, description_source_url=?,
       updated_at=CURRENT_TIMESTAMP WHERE id=? AND description=''`).run(description, String(game.descriptionSource || ''), String(game.descriptionSourceUrl || ''), Number(id));
-    return result.changes ? getById(id) : getById(id);
+    if (result.changes) canonical.syncCatalogueById(id);
+    return getById(id);
   }
 
   function addIgdbIfMissing(id, game = {}) {
@@ -390,6 +438,7 @@ function createKatalogStore(database) {
       game.igdbCriticRating ?? null, game.igdbCriticRatingCount || 0, JSON.stringify(game.igdbGenres || []),
       JSON.stringify(game.igdbThemes || []), JSON.stringify(game.igdbDevelopers || []), game.igdbUpdatedAt || null, Number(id), game.igdbId,
     );
+    canonical.syncCatalogueById(id);
     return getById(id);
   }
 
@@ -397,6 +446,7 @@ function createKatalogStore(database) {
     const entry = getById(id);
     if (!entry) return null;
     database.prepare('DELETE FROM catalogue_entries WHERE id=?').run(Number(id));
+    if (entry.canonicalGameId) canonical.pruneOrphans(entry.canonicalGameId);
     return entry;
   }
 
@@ -415,9 +465,12 @@ function createKatalogStore(database) {
       .map(entry => ({ slug: entry.slug, title: entry.title, coverUrl: entry.coverUrl, updatedAt: entry.updatedAt }));
   }
 
+  canonical.backfill();
+
   return {
-    addDescriptionIfMissing, addIgdbIfMissing, contributionSources, counts, findByIdentity, getById, getBySlug, getPublicById, getPublicBySlug,
-    link, listAdmin, listPublic, publicPlatforms, remove, replaceCover, searchPublic, setStatus, sitemapEntries, updateAdmin, upsertFromGame,
+    addDescriptionIfMissing, addIgdbIfMissing, contributionSources, counts, findByIdentity, findForGame, getById, getBySlug, getPublicById, getPublicBySlug,
+    findByCanonicalRelease, link, listAdmin, listPublic, publicPlatforms, remove, replaceCover, searchPublic, setStatus, sitemapEntries, unlinkIfMismatched, updateAdmin, upsertFromGame,
+    canonicalCounts: canonical.counts, canonicalConflicts: canonical.unresolvedConflicts,
   };
 }
 

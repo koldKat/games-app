@@ -3,7 +3,7 @@
   background: var(--rating-color, #526170);
 }
 .platform-tag:before {
-  background: #708399;
+  background: var(--platform-mark, var(--platform-accent, #708399));
 }
 .brand strong em {
   margin-left: 5px;
@@ -17,9 +17,9 @@
 }
 .platform-tag {
   padding: 3px 5px;
-  border: 1px solid #2b3946;
-  background: #111923;
-  color: #9eacba;
+  border: 1px solid transparent;
+  background: var(--platform-surface, linear-gradient(#111923,#111923)) padding-box,var(--platform-frame, linear-gradient(#2b3946,#2b3946)) border-box;
+  color: var(--platform-text, #9eacba);
 }
 /*Major collection filters: dense on desktop, two rows on smaller screens. */
 .stats {

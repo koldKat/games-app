@@ -1,4 +1,5 @@
 import { api, formatBytes, formatDuration, formatNumber, toast } from './core.js';
+import { platformDisplayName } from '/js/platforms.js';
 
 function bars(id, rows) {
   const target = document.getElementById(id); target.replaceChildren();
@@ -37,7 +38,8 @@ export async function loadDashboard() {
     document.getElementById('metric-public').textContent = formatNumber(data.catalogue.public);
     document.getElementById('metric-public-sub').textContent = `${formatNumber(data.catalogue.candidate)} to review`;
     document.getElementById('header-version').textContent = data.version;
-    bars('ownership-bars', data.ownership); bars('format-bars', data.formats); bars('play-status-bars', data.playStatus); bars('pegi-bars', data.pegi); bars('platform-bars', data.platforms);
+    bars('ownership-bars', data.ownership); bars('format-bars', data.formats); bars('play-status-bars', data.playStatus); bars('pegi-bars', data.pegi);
+    bars('platform-bars', data.platforms.map(item => ({ ...item, label: platformDisplayName(item.label) })));
   } catch (error) { toast(error.message, true); }
 }
 

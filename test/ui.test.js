@@ -16,13 +16,57 @@ test('browser modules do not assign through an optional chain', () => {
 });
 
 test('private Kat·a·log groups multi-platform titles unless a platform filter is active', () => {
-  const application = read('public/app.js'); const groups = read('public/js/game-groups.js');
+  const application = read('public/app.js'); const groups = read('public/js/game-groups.js'); const library = readCss('public/css/library.css');
   assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/js\/game-groups\.js'/);
-  assert.match(application, /groupGames\(state\.games, \{ splitPlatforms: Boolean\(filters\.platform\.value\) \}\)/);
-  assert.match(application, /data-action="version" data-game-id=/);
+  assert.match(application, /filters\.platform\.value !== MULTIPLATFORM_FILTER_VALUE/);
+  assert.match(application, /groupGames\(state\.games, \{ splitPlatforms \}\)/);
+  assert.match(application, />Multiple platforms<\/option>/);
+  const picker = read('public/js/version-picker.js');
+  assert.match(application, /cardVersionControl\(game, escapeHtml, labels\)/);
+  assert.match(application, /action === 'version-menu'/);
+  assert.match(application, /action === 'version'/);
+  assert.match(picker, /class="platform-tag platform-switch \$\{currentTheme\}" data-action="version-menu"/);
+  assert.match(picker, /platformThemeClass\(version\.platform\)/);
+  assert.match(picker, /role="menuitemradio"[^>]*data-action="version" data-game-id=/);
+  assert.match(picker, /handleCardVersionMenuKeydown/);
+  assert.match(picker, /handleCardVersionMenuFocusin/);
+  assert.doesNotMatch(picker, /queueMicrotask/);
+  assert.doesNotMatch(application, /version-next/);
+  assert.doesNotMatch(application, /const versionStrip =/);
+  assert.match(library, /\.platform-tag-label\{white-space:nowrap}/);
+  assert.match(library, /:where\(\.platform-tag,\.platform-version-menu button,\.game-versions button,\.activity-platform-tag\)\{--platform-accent:#708399/);
+  assert.match(library, /\.platform-theme-nintendo-red\{--platform-accent:#e60012/);
+  assert.match(library, /\.platform-theme-nintendo-multicolor\{--platform-accent:#4b72b8;--platform-mark:linear-gradient/);
+  assert.match(library, /\.platform-theme-gamecube\{--platform-accent:#6a5fbb/);
+  assert.match(library, /\.platform-theme-wii-u\{--platform-accent:#009ac7/);
+  assert.match(library, /\.platform-theme-playstation\{--platform-accent:#003791/);
+  assert.match(library, /\.platform-theme-xbox\{--platform-accent:#107c10/);
+  assert.match(library, /\.platform-theme-atari\{--platform-accent:#e4202e;--platform-mark:linear-gradient/);
+  assert.match(library, /\.platform-theme-evercade\{--platform-accent:#746482;--platform-mark:linear-gradient/);
+  assert.match(library, /\.platform-theme-spectrum\{--platform-accent:#d73a45;--platform-mark:linear-gradient[^}]+--platform-frame:var\(--platform-mark\)[^}]+--platform-surface:linear-gradient/);
+  assert.match(library, /background:var\(--platform-surface\) padding-box,var\(--platform-frame\) border-box/);
+  assert.doesNotMatch(library, /\.platform-tag-label\{[^}]*text-overflow:ellipsis/);
+  assert.match(library, /\.game-grid\.list-view \.platform-tag\{max-width:100%}/);
   assert.match(application, /mountVersionPicker\(\$\('#game-form'\), game, openForm, \$\('#game-title'\)\.closest\('\.title-autocomplete'\)\)/);
   assert.doesNotMatch(application, /\$\('#game-title'\)\.closest\('label'\)/);
   assert.match(groups, /export function groupGames/);
+});
+
+test('NES and SNES display aliases cover interactive, lookup, statistics, and admin surfaces', () => {
+  const application = read('public/app.js');
+  const autocomplete = read('public/js/title-autocomplete.js');
+  const igdb = read('public/js/igdb-ui.js');
+  const stats = read('public/js/stats-ui.js');
+  const adminKatalog = read('admin/js/katalog.js');
+  const adminPublicKatalog = read('admin/js/public-katalog.js');
+  const adminDashboard = read('admin/js/dashboard.js');
+  for (const source of [application, autocomplete, igdb, stats, adminKatalog, adminPublicKatalog, adminDashboard]) {
+    assert.match(source, /platformDisplayName/);
+  }
+  assert.match(autocomplete, /summary\.textContent = `\$\{platformDisplayName\(duplicate\.platform\)\}/);
+  assert.match(igdb, /\.map\(platformDisplayName\)\.join\(', '\)/);
+  assert.match(stats, /platformDisplayName\(item\.platform\)/);
+  assert.match(adminDashboard, /platformDisplayName\(item\.label\)/);
 });
 
 test('top-level views share one hero geometry and branded section headings', () => {
@@ -146,8 +190,12 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(read('public/js/activity-feed.js'), /const PEGI_ACTIVITY_COLORS = Object\.freeze/);
   assert.match(read('public/js/activity-feed.js'), /function pegiGameLinkStyle\(rating\)/);
   assert.match(read('public/js/activity-feed.js'), /style="color:\$\{color\};text-decoration-color:\$\{color\}"/);
+  assert.match(read('public/js/activity-feed.js'), /platformThemeClass\(entry\.gamePlatform\)/);
+  assert.match(read('public/js/activity-feed.js'), /platformDisplayName\(entry\.gamePlatform\)/);
   assert.match(read('public/css/activity.css'), /activity-game-link--pegi-18/);
   assert.match(read('public/css/activity.css'), /activity-game-link--pegi-3:visited/);
+  assert.match(readCss('public/css/activity.css'), /\.activity-platform-tag\{[^}]*background:var\(--platform-surface\) padding-box,var\(--platform-frame\) border-box/);
+  assert.match(readCss('public/css/katalog.css'), /\.signal-feed \.activity-entry--catalogue_contribution\{border-left:2px solid #3f9d87/);
   assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
   assert.match(read('public/js/activity-feed.js'), /typeof link\.blur === 'function'/);
   assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerleave'/);
@@ -209,6 +257,13 @@ test('desktop header actions use below-control themed tooltips without mobile ov
   assert.match(features, /@media \(min-width:761px\)[\s\S]*\.top-actions \.header-tooltip::after\{top:calc\(100% \+ 6px\);bottom:auto/);
   assert.match(features, /@media \(max-width:760px\)[\s\S]*\.top-actions \.header-tooltip::after\{display:none}/);
   assert.match(siteHeader, /closest\('\.top-actions a\.active'\)[\s\S]*event\.preventDefault\(\)/);
+});
+
+test('opening account settings focuses a non-text control instead of summoning the mobile keyboard', () => {
+  const application = read('public/app.js');
+  const opener = application.match(/\$\('#account-button'\)\.addEventListener\('click',[\s\S]*?\n}\);/)?.[0] || '';
+  assert.match(opener, /\[data-account-close\][\s\S]*focus\(\{ preventScroll: true \}\)/);
+  assert.doesNotMatch(opener, /account-username['"]?\)\.focus/);
 });
 
 test('maintained markup does not hardcode decorative placeholder clusters', () => {
