@@ -102,12 +102,14 @@ test('public entries expose only an anonymous aggregate from linked private rati
   assert.deepEqual([store.getPublicBySlug(entry.slug).ratingAverage, store.getPublicBySlug(entry.slug).ratingCount], [4.5, 1]);
 });
 
-test('public search filters by title, publisher, and platform', t => {
+test('public search filters by title, publisher, platform, genre, and theme', t => {
   const { database, store } = fixture(); t.after(() => database.close());
-  const source = game();
+  const source = game({ igdbId: 411, igdbGenres: ['Platform'], igdbThemes: ['Science fiction'] });
   store.upsertFromGame(1, source, evaluateKatalogGame(source), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   assert.equal(store.listPublic({ q: 'metroid' }).total, 1);
   assert.equal(store.listPublic({ q: 'nintendo' }).total, 1);
+  assert.equal(store.listPublic({ q: 'platform' }).total, 1);
+  assert.equal(store.listPublic({ q: 'science fiction' }).total, 1);
   assert.equal(store.listPublic({ platform: 'Nintendo Switch' }).total, 1);
   assert.equal(store.listPublic({ q: 'playstation' }).total, 0);
 });

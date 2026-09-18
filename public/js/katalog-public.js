@@ -1,4 +1,4 @@
-import { mountThemedSearchClears } from './search-clears.js';
+import { mountThemedSearchClears, syncSearchClears } from './search-clears.js';
 import { UI_TIMING } from './ui-policy.js';
 import { APP_NAME } from './site-config.js';
 
@@ -86,7 +86,10 @@ export function bindKatalogGameDialog(root = document, { onClose = null } = {}) 
   const close = () => dialog.close();
   dialog.querySelector('[data-katalog-game-close]')?.addEventListener('click', close);
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
-  dialog.addEventListener('click', event => { if (event.target === dialog) close(); });
+  dialog.addEventListener('click', event => {
+    if (event.target.closest('[data-katalog-metadata-search]')) close();
+    else if (event.target === dialog) close();
+  });
   dialog.addEventListener('close', () => {
     if (dialog.dataset.skipCloseNavigation === 'true') { delete dialog.dataset.skipCloseNavigation; return; }
     if (onClose) onClose();
@@ -155,8 +158,14 @@ export function bindKatalogSearch(root = document, { navigate } = {}) {
     if (target.pathname.startsWith('/game/')) {
       event.preventDefault(); event.stopPropagation(); void openKatalogGameDialog(root, `${target.pathname}${target.search}`); return;
     }
-    if (!link.closest('.katalog-results') || target.pathname !== '/katalog') return;
+    const metadataSearch = link.hasAttribute('data-katalog-metadata-search');
+    if ((!metadataSearch && !link.closest('.katalog-results')) || target.pathname !== '/katalog') return;
     event.preventDefault(); event.stopPropagation(); clearTimeout(timer);
+    if (metadataSearch) {
+      const search = form.querySelector('input[name="q"]');
+      if (search) search.value = target.searchParams.get('q') || '';
+      syncSearchClears(root);
+    }
     if (navigate) navigate(`${target.pathname}${target.search}`); else void navigateKatalog(`${target.pathname}${target.search}`);
   });
 }

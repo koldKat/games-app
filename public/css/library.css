@@ -1323,10 +1323,63 @@ body {
   font-size: 12px;
 }
 .game-igdb-tags {
+  display: grid;
+  gap: 5px;
   margin: 0 0 8px;
   color: #90a9a2;
   font-size: 10px;
   line-height: 1.5;
+}
+.game-igdb-tags p {
+  display: grid;
+  grid-template-columns: 54px minmax(0,1fr);
+  gap: 7px;
+  margin: 0;
+}
+.game-igdb-tags b,.igdb-tag-group>b,.igdb-tag-group>strong {
+  color:#75998f;
+  font-size:9px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.igdb-tag-group {
+  display:grid;
+  gap:3px;
+  margin:6px 0;
+}
+.metadata-filter-chip {
+  appearance:none;
+  min-height:19px;
+  padding:3px 6px;
+  border:1px solid #2a4b43;
+  border-radius:3px;
+  background:#0b1815;
+  color:#a9c2ba;
+  font:600 10px/1.1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  letter-spacing:.015em;
+  text-transform:none;
+  cursor:pointer;
+}
+.metadata-filter-chip--genre {
+  border-color:#285a53;
+  background:#0b1c19;
+  color:#74cdb9;
+}
+.metadata-filter-chip--theme {
+  border-color:#493d68;
+  background:#171426;
+  color:#b6a3e8;
+}
+.metadata-filter-chip:hover,.metadata-filter-chip:focus-visible {
+  border-color:#55c9ad;
+  background:#10231f;
+  color:#d9eee8;
+  outline:none;
+}
+.metadata-filter-chip--theme:hover,.metadata-filter-chip--theme:focus-visible {
+  border-color:#8e78ca;
+  background:#211b35;
+  color:#d5c8f5;
 }
 .igdb-result img {
   width: 34px;

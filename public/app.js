@@ -476,7 +476,8 @@ function gameCard(game) {
 }
 function gameMatchesFilters(game) {
   const query = filters.q.value.trim().toLocaleLowerCase();
-  if (query && ![game.title, game.publisher, game.notes, game.description].some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
+  if (query && ![game.title, game.publisher, game.notes, game.description, ...(game.igdbGenres || []), ...(game.igdbThemes || [])]
+    .some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
   if (filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE && game.platform !== filters.platform.value) return false;
   if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
   if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
@@ -744,6 +745,13 @@ function closeDetails() { detailsDialog.close(); detailGame = null; }
 $$('[data-details-close]').forEach(button => button.addEventListener('click', closeDetails));
 detailsDialog.addEventListener('close', () => { detailGame = null; });
 closeOnTrueBackdrop(detailsDialog, closeDetails);
+detailsDialog.addEventListener('click', event => {
+  const chip = event.target.closest('[data-metadata-search]');
+  if (!chip) return;
+  filters.q.value = chip.dataset.metadataSearch || '';
+  closeDetails(); renderQuickFilter(); schedulePreferenceSave(UI_TIMING.searchPreferenceSaveMs); void loadGames();
+  filters.q.focus({ preventScroll: true });
+});
 $('#game-details-edit').addEventListener('click', () => { const game = detailGame; closeDetails(); if (game) openForm(game); });
 const ratingPicker = $('#game-rating-picker');
 function ratingValue(value) {

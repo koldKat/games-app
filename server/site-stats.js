@@ -95,6 +95,12 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
     const covers = storedCoverStats(root);
     const publicReleases = scalar("SELECT COUNT(*) n FROM catalogue_entries WHERE status='public'");
     const publicTitles = scalar("SELECT COUNT(DISTINCT COALESCE('canonical:'||canonical_game_id,'title:'||title_key)) n FROM catalogue_entries WHERE status='public'");
+    const genres = database.prepare(`SELECT genre.value AS genre,
+      COUNT(DISTINCT COALESCE('canonical:'||entry.canonical_game_id,'title:'||entry.title_key)) AS count
+      FROM catalogue_entries AS entry,
+        json_each(CASE WHEN json_valid(entry.igdb_genres) THEN entry.igdb_genres ELSE '[]' END) AS genre
+      WHERE entry.status='public' AND trim(genre.value)<>''
+      GROUP BY lower(genre.value) ORDER BY count DESC, genre.value COLLATE NOCASE LIMIT 8`).all();
 
     return {
       users,
@@ -151,6 +157,7 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       signalLast30Days: scalar("SELECT COUNT(*) n FROM activity_events WHERE created_at>=datetime('now','-30 days')"),
       announcements: scalar('SELECT COUNT(*) n FROM announcements WHERE is_draft=0'),
       platforms: database.prepare("SELECT platform, COUNT(*) count FROM catalogue_entries WHERE status='public' GROUP BY platform_key ORDER BY count DESC, platform COLLATE NOCASE LIMIT 8").all(),
+      genres,
       ...cpuInfo(currentMs),
       ...resourceAverages(),
       ...trafficStats(),

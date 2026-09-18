@@ -41,6 +41,7 @@ test('public site stats aggregate game-focused facts without exposing private re
   const catalogueId = Number(data.db.prepare("SELECT id FROM catalogue_entries WHERE slug='shared-adventure-switch'").get().id);
   data.db.prepare(`INSERT INTO catalogue_entries(slug,title,title_key,platform,platform_key,pegi,cover_url,status,submitted_by_user_id,source_game_id,published_at)
     VALUES ('shared-adventure-steam','Shared Adventure','shared adventure','Steam','steam',7,'/covers/b.jpg','public',?,?,CURRENT_TIMESTAMP)`).run(second.id, duplicate.id);
+  data.db.prepare(`UPDATE catalogue_entries SET igdb_genres='["Adventure","Role-playing (RPG)"]' WHERE title_key='shared adventure'`).run();
   data.db.prepare('INSERT INTO catalogue_game_links(catalogue_id,game_id,user_id) VALUES (?,?,?)').run(catalogueId, enriched.id, collector.id);
   forum.createThread(collector.id, { categoryId: forum.categories()[0].id, title: 'Stats thread', body: 'Counting things.' });
   data.db.prepare("INSERT INTO activity_events(type,user_id,event_ref) VALUES ('join',?,'joined')").run(collector.id);
@@ -58,6 +59,7 @@ test('public site stats aggregate game-focused facts without exposing private re
   assert.equal(stats.publicTitles, 1);
   assert.equal(stats.multiPlatformTitles, 1);
   assert.deepEqual(stats.platforms.map(item => item.platform).sort(), ['Nintendo Switch', 'Steam']);
+  assert.deepEqual(stats.genres, [{ genre: 'Adventure', count: 1 }, { genre: 'Role-playing (RPG)', count: 1 }]);
   assert.ok(!stats.platforms.some(item => item.platform === 'PlayStation 5'));
   assert.equal(stats.fullyEnriched, 1);
   assert.equal(stats.hltbMainHours, 10);
@@ -103,6 +105,7 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(ui, /CPU age/);
   assert.match(ui, /Traffic in/);
   assert.match(ui, /Traffic out/);
+  assert.match(ui, /Top public genres/);
   assert.match(read('server.js'), /trafficMetrics\.trackRequest\(request, response\)/);
   assert.match(read('server.js'), /trafficMetrics\.flush\(\);[\s\S]*server\.close/);
   assert.match(read('admin/index.html'), /id="metric-traffic-in"/);

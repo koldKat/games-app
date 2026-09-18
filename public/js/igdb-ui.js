@@ -27,13 +27,13 @@ function safeHttpsUrl(value) {
 
 export function igdbDetailsMarkup(game, escapeHtml) {
   if (!game?.igdbId) return '';
-  const tags = [...(game.igdbGenres || []), ...(game.igdbThemes || [])].slice(0, 12);
+  const tagGroup = (label, values, kind) => values?.length ? `<div class="igdb-tag-group igdb-tag-group--${kind}"><b>${label}</b><div class="game-detail-chips">${values.slice(0, 12).map(tag => `<button type="button" class="metadata-filter-chip metadata-filter-chip--${kind}" data-metadata-search="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div></div>` : '';
   const sourceUrl = safeHttpsUrl(game.igdbUrl);
   const link = sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">View source on IGDB ↗</a>` : '';
   return `<section class="game-detail-section game-detail-igdb"><header><span>DATABASE // IGDB</span><h3>IGDB information</h3></header>
     <div class="igdb-score-grid"><div><span>IGDB users</span><strong>${escapeHtml(score(game.igdbRating, game.igdbRatingCount))}</strong></div><div><span>Critics</span><strong>${escapeHtml(score(game.igdbCriticRating, game.igdbCriticRatingCount))}</strong></div></div>
     ${game.igdbDevelopers?.length ? `<p><b>Developer</b> ${escapeHtml(game.igdbDevelopers.join(' · '))}</p>` : ''}
-    ${tags.length ? `<div class="game-detail-chips">${tags.map(tag => `<span class="badge descriptor">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}${link}</section>`;
+    ${tagGroup('Genres', game.igdbGenres, 'genre')}${tagGroup('Themes', game.igdbThemes, 'theme')}${link}</section>`;
 }
 
 export function createIgdbLookup({ $, api, escapeHtml, toast, selectedPlatform, setPlatformValue, platformFromReleaseText, isPcStorefront, renderCoverSelection }) {
@@ -45,7 +45,8 @@ export function createIgdbLookup({ $, api, escapeHtml, toast, selectedPlatform, 
     $('#game-igdb-match-title').textContent = form.dataset.igdbTitle || $('#game-title').value || `IGDB #${metadata.igdbId}`;
     $('#game-igdb-user-score').textContent = score(metadata.igdbRating, metadata.igdbRatingCount);
     $('#game-igdb-critic-score').textContent = score(metadata.igdbCriticRating, metadata.igdbCriticRatingCount);
-    $('#game-igdb-tags').textContent = [...(metadata.igdbGenres || []), ...(metadata.igdbThemes || [])].join(' · ') || 'No genres or themes supplied.';
+    $('#game-igdb-genres').textContent = (metadata.igdbGenres || []).join(' · ') || 'None supplied';
+    $('#game-igdb-themes').textContent = (metadata.igdbThemes || []).join(' · ') || 'None supplied';
     $('#game-igdb-source').href = safeHttpsUrl(metadata.igdbUrl) || 'https://www.igdb.com/';
   }
   function load(game = null) {

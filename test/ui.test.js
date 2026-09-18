@@ -840,12 +840,18 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
 test('IGDB integration stays modular and keeps external ratings in details', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const client = read('server/igdb.js'); const batch = read('server/igdb-bulk.js'); const ui = read('public/js/igdb-ui.js'); const css = readPublicCss();
+  const katalogClient = read('public/js/katalog-public.js');
   assert.match(html, /data-cover-provider="igdb"/); assert.match(html, /data-credential="clientId"/); assert.match(html, /data-credential="clientSecret"/);
   assert.match(html, /<span>Client ID<\/span>[\s\S]*<span>Client Secret<\/span>/);
   assert.match(css, /\.provider-fields \.provider-credential-pair input\{width:100%/);
   assert.match(application, /import \{ createIgdbLookup, igdbDetailsMarkup \} from '\.\/js\/igdb-ui\.js'/);
   assert.match(application, /igdbDetailsMarkup\(game, escapeHtml\)/); assert.doesNotMatch(application, /card[\s\S]{0,120}igdbRating/);
   assert.match(ui, /IGDB users/); assert.match(ui, /Critics/); assert.match(ui, /onExternalSelect|export function createIgdbLookup/);
+  assert.match(ui, /tagGroup\('Genres', game\.igdbGenres, 'genre'\)/); assert.match(ui, /tagGroup\('Themes', game\.igdbThemes, 'theme'\)/);
+  assert.match(ui, /data-metadata-search/); assert.match(application, /filters\.q\.value = chip\.dataset\.metadataSearch/);
+  assert.match(html, /id="game-igdb-genres"/); assert.match(html, /id="game-igdb-themes"/);
+  assert.match(katalogClient, /data-katalog-metadata-search/); assert.match(katalogClient, /syncSearchClears\(root\)/);
+  assert.match(css, /metadata-filter-chip--genre/); assert.match(css, /metadata-filter-chip--theme/);
   assert.match(client, /id\.twitch\.tv\/oauth2\/token/); assert.match(client, /'Client-ID'/); assert.match(client, /aggregated_rating/);
   assert.match(batch, /game-updated/); assert.match(batch, /gamesMissingIgdb/);
 });

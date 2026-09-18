@@ -331,7 +331,8 @@ function createKatalogStore(database, { canonical: suppliedCanonical = null } = 
     const params = {
       q: `%${cleanQuery}%`, rawQ: `%${String(q).trim().slice(0, KATALOG_LIMITS.searchMax)}%`, platform: cleanPlatform,
     };
-    const where = `status='public' AND (@q='%%' OR title_key LIKE @q OR platform_key LIKE @q OR publisher LIKE @rawQ COLLATE NOCASE)
+    const where = `status='public' AND (@q='%%' OR title_key LIKE @q OR platform_key LIKE @q OR publisher LIKE @rawQ COLLATE NOCASE
+      OR igdb_genres LIKE @rawQ COLLATE NOCASE OR igdb_themes LIKE @rawQ COLLATE NOCASE)
       AND (@platform='' OR platform_key=@platform)`;
     const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE ${where}
       ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE`).all(params).map(hydrateEntry);

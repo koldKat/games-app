@@ -413,7 +413,9 @@ function listGames(userId, filters = {}) {
     clauses.push(`(search_normalize(title) LIKE @q ESCAPE '\\'
       OR search_normalize(publisher) LIKE @q ESCAPE '\\'
       OR search_normalize(notes) LIKE @q ESCAPE '\\'
-      OR search_normalize(description) LIKE @q ESCAPE '\\')`);
+      OR search_normalize(description) LIKE @q ESCAPE '\\'
+      OR search_normalize(igdb_genres) LIKE @q ESCAPE '\\'
+      OR search_normalize(igdb_themes) LIKE @q ESCAPE '\\')`);
     params.q = searchPattern(filters.q);
   }
   if (filters.platform === MULTIPLATFORM_FILTER_VALUE) {

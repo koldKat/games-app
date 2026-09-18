@@ -207,7 +207,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
     ${result.page < result.pages ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page + 1 }))}" aria-label="Next page">page.next()</a>` : '<span></span>'}
   </nav>` : '';
   return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">PUBLIC // SHARED</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl))}</section>
-      <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
+      <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, genre, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
       <div class="katalog-results"><div class="katalog-result-head"><strong>${result.total.toLocaleString(UI_LOCALE)} public release${result.total === 1 ? '' : 's'}</strong>${query || platform ? `<a href="/katalog">Clear search</a>` : ''}</div>
       <section class="katalog-grid">${cards || '<div class="katalog-empty"><strong>No matching releases.</strong><span>The Kat·a·log grows as members enrich their private libraries.</span></div>'}</section>${pagination}</div>${detail}</main>`;
 }
@@ -321,11 +321,11 @@ function gameMetadata(entry) {
     : '';
   const igdbUrl = safeExternalUrl(entry.igdbUrl);
   const score = (value, count) => value == null ? 'Not rated' : `${Number(value).toFixed(1)} / 100 · ${Number(count || 0).toLocaleString(UI_LOCALE)}`;
-  const igdbTags = [...(entry.igdbGenres || []), ...(entry.igdbThemes || [])];
+  const igdbTagGroup = (label, values, kind) => values?.length ? `<div class="igdb-tag-group igdb-tag-group--${kind}"><strong>${label}</strong><div class="descriptor-list">${values.slice(0, 12).map(item => `<a class="metadata-filter-chip metadata-filter-chip--${kind}" href="${escapeHtml(queryHref({ q: item }))}" data-katalog-metadata-search>${escapeHtml(item)}</a>`).join('')}</div></div>` : '';
   const igdb = entry.igdbId ? `<article class="igdb-metadata"><header><span>DATABASE // IGDB</span><h2>IGDB information</h2></header>
       <div class="igdb-score-grid"><div><span>IGDB users</span><strong>${escapeHtml(score(entry.igdbRating, entry.igdbRatingCount))}</strong></div><div><span>Critics</span><strong>${escapeHtml(score(entry.igdbCriticRating, entry.igdbCriticRatingCount))}</strong></div></div>
       ${entry.igdbDevelopers?.length ? `<p><strong>Developer</strong> ${escapeHtml(entry.igdbDevelopers.join(' · '))}</p>` : ''}
-      ${igdbTags.length ? `<div class="descriptor-list">${igdbTags.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div>` : ''}
+      ${igdbTagGroup('Genres', entry.igdbGenres, 'genre')}${igdbTagGroup('Themes', entry.igdbThemes, 'theme')}
       ${igdbUrl ? `<a href="${escapeHtml(igdbUrl)}" target="_blank" rel="noopener noreferrer">View source on IGDB ↗</a>` : ''}</article>` : '';
   return `<section class="game-metadata">
     <article><header><span>PLAYTIME // HLTB</span><h2>How long it takes</h2></header>
@@ -365,6 +365,7 @@ function renderGame({ entry, result = { entries: [], total: 0, page: 1, pages: 1
     socialImage: `${SITE_URL}${entry.coverUrl}`, socialImageAlt: `${entry.title} cover`, socialType: 'video.game',
     structuredData: { '@context': 'https://schema.org', '@type': 'VideoGame', name: entry.title, gamePlatform: entry.platform,
       contentRating: entry.pegi ? `PEGI ${entry.pegi}` : undefined, image: `${SITE_URL}${entry.coverUrl}`, url: canonical,
+      genre: entry.igdbGenres?.length ? entry.igdbGenres : undefined,
       description: entry.description || undefined, datePublished: entry.releaseYear ? `${entry.releaseYear}-01-01` : undefined,
       aggregateRating: Number(entry.ratingCount) >= 1 ? { '@type': 'AggregateRating', ratingValue: Number(entry.ratingAverage).toFixed(1), ratingCount: Number(entry.ratingCount), bestRating: 5, worstRating: 0.5 } : undefined,
       publisher: entry.publisher ? { '@type': 'Organization', name: entry.publisher } : undefined },

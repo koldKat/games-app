@@ -95,6 +95,8 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.equal(igdbGame.igdbId, 123); assert.equal(igdbGame.igdbRating, 82.4); assert.equal(igdbGame.igdbCriticRatingCount, 9);
   assert.deepEqual(igdbGame.igdbGenres, ['Adventure']); assert.deepEqual(igdbGame.igdbDevelopers, ['Example Studio']);
   assert.equal(igdbGame.publisher, 'Example Publisher'); assert.equal(igdbGame.descriptionSource, 'IGDB');
+  assert.equal(data.listGames(other.id, { q: 'adventure' }).some(game => game.id === igdbCandidate.id), true);
+  assert.equal(data.listGames(other.id, { q: 'fantasy' }).some(game => game.id === igdbCandidate.id), true);
   assert.ok(!data.gamesMissingIgdb(other.id).some(game => game.id === igdbCandidate.id));
   assert.ok(!data.listGames(other.id, { missing: 'igdb' }).some(game => game.id === igdbCandidate.id));
   assert.equal(data.listGames(other.id, { sort: 'igdb_user_desc' })[0].id, igdbCandidate.id);

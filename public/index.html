@@ -231,7 +231,7 @@
 
         <div class="filter-panel">
           <input id="favorite-filter" type="hidden">
-          <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, publisher, or notes…" autocomplete="off"></label>
+          <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Search title, genre, publisher, or notes…" autocomplete="off"></label>
           <div class="filters">
             <label><span>Platform</span><select id="platform-filter"><option value="">All platforms</option></select></label>
             <label><span>Collection</span><select id="ownership-filter"><option value="">Everything</option><option value="owned_physical">Owned · physical</option><option value="owned_digital">Owned · digital</option><option value="wanted">Wishlisted</option></select></label>
@@ -356,7 +356,7 @@
       <section id="game-igdb-details" class="game-igdb-details" hidden>
         <header><span><small>IGDB match</small><strong id="game-igdb-match-title"></strong></span><a id="game-igdb-source" href="https://www.igdb.com/" target="_blank" rel="noopener noreferrer">View source ↗</a></header>
         <div class="igdb-score-grid"><div><span>IGDB users</span><strong id="game-igdb-user-score">Not rated</strong></div><div><span>Critics</span><strong id="game-igdb-critic-score">Not rated</strong></div></div>
-        <p id="game-igdb-tags" class="game-igdb-tags"></p>
+        <div class="game-igdb-tags"><p><b>Genres</b><span id="game-igdb-genres"></span></p><p><b>Themes</b><span id="game-igdb-themes"></span></p></div>
         <button type="button" class="button ghost" id="game-igdb-remove">Unlink IGDB match</button>
       </section>
       <details id="game-pegi-details" class="game-pegi-details" hidden>

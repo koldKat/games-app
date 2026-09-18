@@ -84,6 +84,7 @@ function sections(stats) {
       ['Signal events', formatCount(stats.signalEvents)], ['Last 30 days', formatCount(stats.signalLast30Days)],
       ['Published announcements', formatCount(stats.announcements)],
     ] },
+    { kind: 'genres', label: 'Top public genres', rows: (stats.genres || []).map(item => [item.genre, formatCount(item.count)]) },
     { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [platformDisplayName(item.platform), formatCount(item.count)]) },
     { kind: 'server', label: 'Server', rows: [
       ['Processor', stats.cpuModel || 'Unknown'], ['CPU cores', formatCount(stats.cpuCores)],

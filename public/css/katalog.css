@@ -499,7 +499,7 @@
   flex-wrap: wrap;
   gap: 5px;
 }
-.katalog-chips span,.descriptor-list span {
+.katalog-chips span,.descriptor-list span,.descriptor-list a {
   display: inline-flex;
   align-items: center;
   min-height: 22px;
@@ -510,6 +510,37 @@
   color: #9eacb4;
   font-size: 11px;
   line-height: 1;
+}
+.descriptor-list a.metadata-filter-chip {
+  min-height:19px;
+  padding:3px 6px;
+  border-radius:3px;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.015em;
+  text-transform:none;
+  text-decoration:none;
+}
+.descriptor-list a.metadata-filter-chip--genre {
+  border-color:#285a53;
+  background:#0b1c19;
+  color:#74cdb9;
+}
+.descriptor-list a.metadata-filter-chip--theme {
+  border-color:#493d68;
+  background:#171426;
+  color:#b6a3e8;
+}
+.descriptor-list a.metadata-filter-chip:hover,.descriptor-list a.metadata-filter-chip:focus-visible {
+  border-color:var(--green);
+  background:#10231f;
+  color:#dcebe6;
+  outline:none;
+}
+.descriptor-list a.metadata-filter-chip--theme:hover,.descriptor-list a.metadata-filter-chip--theme:focus-visible {
+  border-color:#8e78ca;
+  background:#211b35;
+  color:#d5c8f5;
 }
 .katalog-chips .pegi {
   border-color: rgba(53,214,178,.4);

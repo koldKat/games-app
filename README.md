@@ -11,8 +11,8 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 - Separate SQLite-backed libraries for every account, with settings synchronized across devices.
 - Owned physical, owned digital, and wishlisted collection states.
 - Backlog, playing, completed, paused, abandoned, and dropdown-only hidden play states.
-- Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB user and critic ratings, cover art, and HowLongToBeat estimates.
-- Grid and compact views, accent-insensitive live search, composable filters, and 27 sorting modes.
+- Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB genres, themes, user and critic ratings, cover art, and HowLongToBeat estimates.
+- Grid and compact views, accent-insensitive live search across titles, publishers, notes, descriptions, genres, and themes, composable filters, and 27 sorting modes.
 - Ten-row desktop pagination for both private and public collections.
 - Copies sharing one canonical game identity are grouped into one card when no platform filter is active. IGDB-backed identities survive title and edition-name differences; records without IGDB data retain a normalized-title fallback. Platform chips select the exact private copy being viewed, rated, or edited, while a platform filter separates the releases again.
 - Clicking a private card opens its read-only details. Editing remains an explicit action.

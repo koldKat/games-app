@@ -46,6 +46,13 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   assert.match(detail, /portal-2-ps5/);
 });
 
+test('public game details separate searchable IGDB genres and themes', () => {
+  const html = renderGame({ entry: { ...entry, igdbId: 411, igdbGenres: ['Puzzle'], igdbThemes: ['Science fiction'] } });
+  assert.match(html, /<strong>Genres<\/strong>[\s\S]*metadata-filter-chip--genre[^>]*href="\/katalog\?q=Puzzle"[^>]*>Puzzle<\/a>/);
+  assert.match(html, /<strong>Themes<\/strong>[\s\S]*metadata-filter-chip--theme[^>]*href="\/katalog\?q=Science\+fiction"[^>]*>Science fiction<\/a>/);
+  assert.match(html, /"genre":\["Puzzle"\]/);
+});
+
 test('Nintendo Entertainment System names use recognizable display aliases without changing filter values', () => {
   const nes = { ...entry, platform: 'Nintendo Entertainment System' };
   const snes = { ...entry, id: 4, slug: 'portal-2-snes', platform: 'Super Nintendo Entertainment System' };
