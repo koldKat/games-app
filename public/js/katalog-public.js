@@ -8,10 +8,11 @@ export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpen
   form.dataset.katalogBound = 'true';
   const button = form.querySelector('button[type="submit"]');
   const message = form.querySelector('[data-add-message]');
+  let addedGame = null;
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (form.dataset.added === 'true') {
-      onOpenLibrary();
+      onOpenLibrary(addedGame);
       return;
     }
     button.disabled = true;
@@ -31,7 +32,8 @@ export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpen
       form.dataset.added = 'true';
       button.textContent = 'Open my Kat·a·log';
       button.disabled = false;
-      onAdded(existing || body.game);
+      addedGame = existing || body.game;
+      onAdded(addedGame);
     } catch (error) {
       message.textContent = error.message;
       message.classList.add('error');
@@ -103,7 +105,11 @@ export function bindKatalogGameDialog(root = document, { onClose = null } = {}) 
 }
 
 let katalogGameSequence = 0;
-export async function openKatalogGameDialog(root = document, url, { returnUrl = window.location.pathname === '/signal' ? '/signal' : '/katalog' } = {}) {
+export async function openKatalogGameDialog(root = document, url, {
+  returnUrl = window.location.pathname === '/signal' ? '/signal' : '/katalog',
+  onAdded = () => {},
+  onOpenLibrary = () => window.location.assign('/'),
+} = {}) {
   const target = new URL(url, window.location.origin);
   if (target.origin !== window.location.origin || !target.pathname.startsWith('/game/')) return;
   const sequence = ++katalogGameSequence;
@@ -121,7 +127,7 @@ export async function openKatalogGameDialog(root = document, url, { returnUrl = 
       window.history.replaceState({ katalog: true }, '', returnUrl);
       document.title = returnUrl === '/signal' ? `Kat·a·log Signal // ${APP_NAME}` : `Public Kat·a·log // ${APP_NAME}`;
     } });
-    bindKatalogAddForm(root);
+    bindKatalogAddForm(root, { onAdded, onOpenLibrary });
   } catch {
     window.location.assign(`${target.pathname}${target.search}`);
   }

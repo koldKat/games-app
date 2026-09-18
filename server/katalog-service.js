@@ -115,6 +115,18 @@ function createKatalogService({ data, store, covers, logger = console }) {
     return data.findDuplicateGames(userId, entry.title, entry.platform, entry.igdbId, entry.canonicalGameId)[0] || null;
   }
 
+  function libraryCopies(userId, entries = []) {
+    const copies = new Map();
+    const candidates = data.accountGameIdentities?.(userId);
+    for (const groupedEntry of entries) {
+      for (const entry of groupedEntry.releases || [groupedEntry]) {
+        const game = data.findDuplicateGames(userId, entry.title, entry.platform, entry.igdbId, entry.canonicalGameId, candidates)[0];
+        if (game) copies.set(Number(entry.id), game);
+      }
+    }
+    return copies;
+  }
+
   function removeEntry(id) {
     const entry = store.remove(id);
     if (entry?.coverUrl) covers.remove(entry.coverUrl);
@@ -137,6 +149,7 @@ function createKatalogService({ data, store, covers, logger = console }) {
     canonicalConflicts: store.canonicalConflicts,
     contributionSources: store.contributionSources,
     libraryCopy,
+    libraryCopies,
     counts: store.counts,
     getById: store.getById,
     getPublicById: store.getPublicById,

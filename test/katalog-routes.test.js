@@ -23,6 +23,7 @@ function fixture({ user = null, libraryGame = null, eventHandlers = {}, showcase
       listPublic: () => ({ entries: [entry], total: 1, page: 1, pages: 1 }), publicPlatforms: () => [],
       getPublicBySlug: slug => slug === entry.slug ? entry : null,
       libraryCopy: () => libraryGame,
+      libraryCopies: () => libraryGame ? new Map([[entry.id, libraryGame]]) : new Map(),
       sitemapEntries: () => [{ slug: entry.slug, updatedAt: '2026-08-28' }],
       searchPublic: () => [entry],
     },
@@ -88,13 +89,14 @@ test('the former catalogue path is not a public route', async () => {
 test('a signed-in release page hides the add form for an existing library copy', async () => {
   const routes = fixture({
     user: { id: 7, username: 'koldKat' },
-    libraryGame: { id: 9, title: 'Portal 2', platform: 'Steam' },
+    libraryGame: { id: 9, title: 'Portal 2', platform: 'Steam', ownership: 'owned' },
   });
   const output = response();
   await routes.handle({ method: 'GET' }, output, new URL('https://gamekat.net/game/portal-2-steam'));
   assert.match(output.body, /data-katalog-game-dialog open/);
   assert.match(output.body, /<h2>Public Kat·a·log<\/h2>/);
-  assert.match(output.body, /Already in your Kat·a·log/);
+  assert.match(output.body, /Owned in your Kat·a·log/);
+  assert.match(output.body, /data-katalog-destination="library-game" data-library-game-id="9"/);
   assert.doesNotMatch(output.body, /data-katalog-add/);
 });
 

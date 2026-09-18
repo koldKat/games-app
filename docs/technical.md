@@ -446,7 +446,7 @@ Opening the account dialog deliberately transfers focus to its Close button rath
 | GET | `/api/catalogue/game/:slug` | Public factual release projection without contributor/private identifiers |
 | POST | `/api/catalogue/:id/library` | Authenticated one-click private copy with duplicate protection |
 
-The add route accepts only collection and media-format choices. The server supplies all factual fields from the public entry, initializes remaining personal fields to safe defaults, creates an independent cover copy, and links the new row transactionally at the service level. If creation or linking fails, the partial private row and copied cover are removed.
+The add route accepts only collection and media-format choices. The server supplies all factual fields from the public entry, initializes remaining personal fields to safe defaults, creates an independent cover copy, and links the new row transactionally at the service level. If creation or linking fails, the partial private row and copied cover are removed. Authenticated browse rendering loads the account's lightweight game identities once, matches every release on the current page, and passes only an in-memory account-specific map to the page renderer. It adds an **Owned** pill without changing the shared public projection or guest HTML. The detail action carries the matched private row ID through client navigation, preserves the current library filters, and opens the existing read-only private details dialog; a `/?game=` fallback provides the same result after a full navigation.
 
 ### Local administrator API
 

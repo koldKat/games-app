@@ -469,10 +469,13 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.doesNotMatch(navigation, /controllerLoaderMarkup\('Loading public Kat·a·log…'\)/);
   assert.match(navigation, /const \{ main, title \} = pageFromResponse[\s\S]*const nextView = target\.pathname === '\/signal' \? 'signal' : target\.pathname\.startsWith\('\/forum'\) \? 'forum' : 'katalog';[\s\S]*view = nextView; library\.hidden = true; katalog\.hidden = false;/);
   assert.match(navigation, /link\.dataset\.katalogDestination === 'library'[\s\S]*showLibrary\(\)/);
-  assert.match(navigation, /onOpenLibrary: \(\) => showLibrary\(\)/);
+  assert.match(navigation, /link\.dataset\.katalogDestination === 'library-game'[\s\S]*showLibrary\(\{ gameId: link\.dataset\.libraryGameId \}\)/);
+  assert.match(navigation, /onOpenLibrary: game => showLibrary\(\{ gameId: game\?\.id \}\)/);
+  assert.match(application, /onLibraryGameOpen: async id => \{[\s\S]*openDetails\(await api\(`\/api\/games\/\$\{id\}`\)\)/);
   assert.match(navigation, /function showLibrary[\s\S]*\[data-katalog-game-dialog\]\[open\][\s\S]*skipCloseNavigation = 'true'[\s\S]*dialog\.close\(\)[\s\S]*library\.hidden = false/);
   const publicKatalog = read('public/js/katalog-public.js');
   assert.match(publicKatalog, /response\.status === 409 && body\.existing/);
+  assert.match(publicKatalog, /bindKatalogAddForm\(root, \{ onAdded, onOpenLibrary \}\)/);
   assert.match(publicKatalog, /if \(dialog\.dataset\.skipCloseNavigation === 'true'\) \{ delete dialog\.dataset\.skipCloseNavigation; return; \}/);
   assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
   const themeCss = readCss('public/css/theme.css');

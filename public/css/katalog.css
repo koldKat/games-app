@@ -546,6 +546,14 @@
   border-color: rgba(53,214,178,.4);
   color: var(--green);
 }
+.katalog-chips .katalog-library-pill {
+  border-color:rgba(53,214,178,.55);
+  background:rgba(53,214,178,.1);
+  color:#78e9cf;
+  font-weight:700;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+}
 .katalog-chips .pegi-12 {
   border-color: rgba(227,182,78,.45);
   color: #e3b64e;

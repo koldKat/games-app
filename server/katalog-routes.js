@@ -68,8 +68,9 @@ function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null
       const query = String(url.searchParams.get('q') || '').trim().slice(0, 120);
       const platform = String(url.searchParams.get('platform') || '').trim().slice(0, 120);
       const result = katalog.listPublic({ q: query, platform, page: url.searchParams.get('page') });
+      const libraryGames = user ? katalog.libraryCopies?.(user.id, result.entries) || new Map() : new Map();
       send(response, 200, 'text/html; charset=utf-8', renderKatalog({
-        result, platforms: katalog.publicPlatforms(), query, platform, user, progress, coverUrls: pageCovers(user?.id),
+        result, platforms: katalog.publicPlatforms(), query, platform, user, progress, libraryGames, coverUrls: pageCovers(user?.id),
       }));
       return true;
     }
@@ -81,9 +82,12 @@ function createKatalogRoutes({ katalog = null, catalogue: legacyCatalogue = null
       if (refreshed) response.setHeader('Set-Cookie', refreshed);
       const entry = katalog.getPublicBySlug(gamePage[1]);
       const libraryGame = entry && user ? katalog.libraryCopy?.(user.id, entry.id) || null : null;
+      const result = katalog.listPublic({});
+      const libraryGames = user ? katalog.libraryCopies?.(user.id, result.entries) || new Map() : new Map();
+      if (entry && libraryGame) libraryGames.set(Number(entry.id), libraryGame);
       send(response, entry ? 200 : 404, 'text/html; charset=utf-8', entry
-        ? renderGame({ entry, result: katalog.listPublic({}), platforms: katalog.publicPlatforms(), user, progress,
-          libraryGame, coverUrls: pageCovers(user?.id) }) : renderNotFound());
+        ? renderGame({ entry, result, platforms: katalog.publicPlatforms(), user, progress,
+          libraryGame, libraryGames, coverUrls: pageCovers(user?.id) }) : renderNotFound());
       return true;
     }
     if (request.method === 'GET' && url.pathname === '/sitemap.xml') {

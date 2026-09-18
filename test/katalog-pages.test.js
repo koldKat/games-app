@@ -46,6 +46,17 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   assert.match(detail, /portal-2-ps5/);
 });
 
+test('signed-in catalogue cards mark grouped titles with an owned release', () => {
+  const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
+  const html = renderKatalog({
+    result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 },
+    platforms: [], user: { username: 'collector' },
+    libraryGames: new Map([[4, { id: 19, ownership: 'owned', platform: 'PlayStation 5' }]]),
+  });
+  assert.match(html, /class="katalog-library-pill">Owned<\/span>/);
+  assert.equal((html.match(/katalog-library-pill/g) || []).length, 1);
+});
+
 test('public game details separate searchable IGDB genres and themes', () => {
   const html = renderGame({ entry: { ...entry, igdbId: 411, igdbGenres: ['Puzzle'], igdbThemes: ['Science fiction'] } });
   assert.match(html, /<strong>Genres<\/strong>[\s\S]*metadata-filter-chip--genre[^>]*href="\/katalog\?q=Puzzle"[^>]*>Puzzle<\/a>/);
@@ -136,10 +147,10 @@ test('public release pages show a community aggregate but never offer a public v
 });
 
 test('a signed-in user with the release already in their library cannot add it again', () => {
-  const html = renderGame({ entry, user: { username: 'koldKat' }, libraryGame: { id: 9, title: entry.title, platform: entry.platform } });
-  assert.match(html, /Already in your Kat·a·log/);
+  const html = renderGame({ entry, user: { username: 'koldKat' }, libraryGame: { id: 9, title: entry.title, platform: entry.platform, ownership: 'owned' } });
+  assert.match(html, /Owned in your Kat·a·log/);
   assert.match(html, /Open my Kat·a·log/);
-  assert.match(html, /data-katalog-destination="library"/);
+  assert.match(html, /data-katalog-destination="library-game" data-library-game-id="9" href="\/\?game=9"/);
   assert.doesNotMatch(html, /data-katalog-add/);
 });
 

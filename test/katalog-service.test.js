@@ -59,6 +59,26 @@ test('library-copy lookup exposes an existing private duplicate for public-page 
   assert.equal(service.libraryCopy(20, 4), existing);
 });
 
+test('library-copy lookup marks a page of grouped releases with one account scan', () => {
+  const steam = publicEntry();
+  const playstation = publicEntry({ id: 5, platform: 'PlayStation 5' });
+  const existing = { id: 13, title: 'Portal 2', platform: 'PlayStation 5', ownership: 'owned' };
+  let identityReads = 0;
+  const candidates = [existing];
+  const service = createKatalogService({
+    data: {
+      accountGameIdentities: () => { identityReads++; return candidates; },
+      findDuplicateGames: (userId, title, platform, igdbId, canonicalGameId, supplied) => supplied.filter(game => game.platform === platform),
+    },
+    store: { counts() {}, getById() {}, getPublicById() {}, getPublicBySlug() {}, listAdmin() {}, listPublic() {}, publicPlatforms() {}, remove() {}, searchPublic() {}, setStatus() {}, sitemapEntries() {} },
+    covers: { copy() {}, remove() {} },
+  });
+  const copies = service.libraryCopies(20, [{ ...steam, releases: [steam, playstation] }]);
+  assert.equal(identityReads, 1);
+  assert.equal(copies.get(5), existing);
+  assert.equal(copies.has(4), false);
+});
+
 test('safe synchronization never breaks the calling private-library operation', () => {
   const messages = [];
   const service = createKatalogService({

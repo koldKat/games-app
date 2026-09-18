@@ -26,7 +26,7 @@ function pageFromResponse(html) {
   return { main, title: parsed.title };
 }
 
-export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdded = () => {}, onSignalVisible = () => {} } = {}) {
+export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibraryGameOpen = () => {}, onGameAdded = () => {}, onSignalVisible = () => {} } = {}) {
   const library = document.querySelector('#library-view');
   const katalog = document.querySelector('#katalog-view');
   const libraryButton = document.querySelector('.library-button');
@@ -67,7 +67,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
 
   setHeader(view);
 
-  function showLibrary({ push = true } = {}) {
+  function showLibrary({ push = true, gameId = null } = {}) {
     request?.abort(); request = null;
     stopForumLive();
     katalog.querySelectorAll('[data-katalog-game-dialog][open]').forEach(dialog => {
@@ -78,6 +78,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
     setHeader(view); document.title = libraryTitle;
     if (push && window.location.pathname !== '/') window.history.pushState({ appView: 'library' }, '', '/');
     onLibraryVisible();
+    if (Number(gameId) > 0) void onLibraryGameOpen(Number(gameId));
   }
 
   async function open(url = '/katalog', { push = true, focusSearch = false } = {}) {
@@ -100,7 +101,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
       if (push && `${window.location.pathname}${window.location.search}${window.location.hash}` !== destination) {
         window.history.pushState({ appView: 'katalog' }, '', destination);
       }
-      bindKatalogAddForm(katalog, { onAdded: game => onGameAdded(game), onOpenLibrary: () => showLibrary() });
+      bindKatalogAddForm(katalog, { onAdded: game => onGameAdded(game), onOpenLibrary: game => showLibrary({ gameId: game?.id }) });
       bindKatalogGameDialog(katalog, { onClose: () => {
         if (window.location.pathname.startsWith('/game/')) window.history.replaceState({ appView: 'katalog' }, '', '/katalog');
         document.title = `Public Kat·a·log // ${APP_NAME}`;
@@ -172,6 +173,9 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
     const link = event.target.closest('a[href]');
     if (!link || !isPrimaryNavigation(event) || link.target || link.hasAttribute('download')) return;
     const target = new URL(link.href, window.location.origin);
+    if (target.origin === window.location.origin && link.dataset.katalogDestination === 'library-game') {
+      event.preventDefault(); showLibrary({ gameId: link.dataset.libraryGameId }); return;
+    }
     if (target.origin === window.location.origin && link.dataset.katalogDestination === 'library') {
       event.preventDefault(); showLibrary(); return;
     }
@@ -179,7 +183,10 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onGameAdd
     event.preventDefault();
     if (target.pathname.startsWith('/game/')) {
       dismissActivityPreview(link);
-      return void openKatalogGameDialog(katalog, `${target.pathname}${target.search}`);
+      return void openKatalogGameDialog(katalog, `${target.pathname}${target.search}`, {
+        onAdded: game => onGameAdded(game),
+        onOpenLibrary: game => showLibrary({ gameId: game?.id }),
+      });
     }
     if (target.pathname === '/katalog' && view === 'katalog') void refreshResults(`${target.pathname}${target.search}`);
     else void open(`${target.pathname}${target.search}${target.hash}`);

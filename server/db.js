@@ -497,12 +497,14 @@ function searchGameTitles(userId, query, limit = GAME_LIMITS.titleSearchDefault)
   return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(GAME_LIMITS.titleSearchMax, Number(limit) || GAME_LIMITS.titleSearchDefault)));
 }
 const normalizeIdentity = normalizeSearchText;
-function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGameId = null) {
+function accountGameIdentities(userId) { return accountTitles.all(userId); }
+function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGameId = null, candidates = null) {
   const wantedTitle = normalizeIdentity(title); const wantedPlatform = normalizeIdentity(platform);
   if (!wantedTitle || !wantedPlatform) return [];
   const wantedIgdbId = Number(igdbId) > 0 ? Number(igdbId) : null;
   const wantedCanonicalId = Number(canonicalGameId) > 0 ? Number(canonicalGameId) : null;
-  return accountTitles.all(userId).filter(game => normalizeIdentity(game.platform) === wantedPlatform
+  const accountGames = Array.isArray(candidates) ? candidates : accountGameIdentities(userId);
+  return accountGames.filter(game => normalizeIdentity(game.platform) === wantedPlatform
     && (wantedIgdbId
       ? Number(game.igdbId) === wantedIgdbId || (wantedCanonicalId && Number(game.canonicalGameId) === wantedCanonicalId)
       : (wantedCanonicalId && Number(game.canonicalGameId) === wantedCanonicalId) || normalizeIdentity(game.title) === wantedTitle));
@@ -687,7 +689,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
   coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

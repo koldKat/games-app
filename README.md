@@ -53,8 +53,8 @@ Navigation swaps only the content below the header. The account control, collect
 
 - Crawlable browse pages at `/katalog` and stable factual release pages at `/game/:slug`.
 - Public cards group releases by canonical game identity until a platform filter is applied.
-- Signed-in members can add an existing public release without re-entering factual metadata.
-- Existing copies of the selected canonical release are detected before the add action, with normalized title/platform fallback and server-side protection retained for races between tabs.
+- Signed-in members can add an existing public release without re-entering factual metadata; public cards mark titles with an owned release.
+- Existing copies of the selected canonical release are detected before the add action, with normalized title/platform fallback and server-side protection retained for races between tabs. Opening the private copy preserves the current My Kat·a·log filters and opens that game's details directly.
 - Anonymous community ratings appear from the first private rating onward.
 - Public covers are independent durable copies, so private edits or deletion cannot break a public release.
 
