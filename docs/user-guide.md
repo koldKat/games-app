@@ -101,15 +101,15 @@ Search matches the game title, publisher, notes, description, IGDB genres, and I
 | Filter | Options |
 |---|---|
 | **Platform** | Platforms currently present in the account, plus **Multiple platforms** for titles recorded on two or more distinct platforms |
-| **Collection** | Owned physical, Owned digital, or Wishlisted |
+| **Library** | Owned physical, Owned digital, Wishlisted, or Hidden |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
-| **Play status** | Backlog, Playing, Completed, Paused, Abandoned, or Hidden |
+| **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no IGDB info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |
 | **Sort by** | Title in either direction; platform; publisher; release year; PEGI in either direction; collection state; play status; favorites; added/updated date; cartridge number; shortest/longest HLTB Main, Main + Sides, Completionist, and All Styles time; or lowest/highest IGDB user and critic scores |
 
 Select **Clear filters** to return to the complete library. Results are paginated in ten desktop rows.
 
-Set a game's play status to **Hidden** to remove it from the normal library, summary totals, decorative cover pool, public profile statistics, and automatic metadata scans. Hidden games have no dashboard card and appear only when **Hidden** is selected from the Play status filter. Choose any regular play status in the edit form to return a hidden game to the normal library.
+Set a game's play status to **Hidden** in the editor to remove it from the normal library, summary totals, decorative cover pool, public profile statistics, and automatic metadata scans. Hidden games have no dashboard card and appear only when **Hidden** is selected from the **Library** filter. Because hidden records do not expose their preserved underlying play state, selecting Hidden clears the Play status filter; selecting a play status while viewing Hidden returns Library to Everything. Choose any regular play status in the editor to return a hidden game to the normal library.
 
 HLTB duration and IGDB score sorts always place games without that particular value after games with known data. This keeps missing data from appearing as a zero-hour game or a zero rating. Live batch updates use the same selected order as a full library reload.
 

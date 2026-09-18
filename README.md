@@ -10,7 +10,7 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 
 - Separate SQLite-backed libraries for every account, with settings synchronized across devices.
 - Owned physical, owned digital, and wishlisted collection states.
-- Backlog, playing, completed, paused, abandoned, and dropdown-only hidden play states.
+- Backlog, playing, completed, paused, and abandoned play states, plus a recoverable hidden-library state.
 - Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB genres, themes, user and critic ratings, cover art, and HowLongToBeat estimates.
 - Grid and compact views, accent-insensitive live search across titles, publishers, notes, descriptions, genres, and themes, composable filters, and 27 sorting modes.
 - Ten-row desktop pagination for both private and public collections.

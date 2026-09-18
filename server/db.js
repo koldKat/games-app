@@ -428,13 +428,14 @@ function listGames(userId, filters = {}) {
             AND search_normalize(sibling.title)=search_normalize(games.title)))
     )`);
   } else if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
+  const hiddenFilter = filters.ownership === 'hidden' || filters.playStatus === 'hidden';
   if (filters.ownership === 'owned_physical' || filters.ownership === 'owned_digital') {
     clauses.push('ownership = \'owned\' AND media_format = @ownedFormat');
     params.ownedFormat = filters.ownership.slice('owned_'.length);
-  } else if (OWNERSHIP_FILTER_VALUES.includes(filters.ownership)) {
+  } else if (filters.ownership !== 'hidden' && OWNERSHIP_FILTER_VALUES.includes(filters.ownership)) {
     clauses.push('ownership = @ownership'); params.ownership = filters.ownership;
   }
-  if (filters.playStatus === 'hidden') clauses.push('hidden = 1');
+  if (hiddenFilter) clauses.push('hidden = 1');
   else {
     clauses.push('hidden = 0');
     if (filters.playStatus) { clauses.push('play_status = @playStatus'); params.playStatus = filters.playStatus; }

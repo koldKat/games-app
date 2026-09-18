@@ -54,6 +54,7 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.deepEqual(data.db.prepare('SELECT play_status AS playStatus, hidden FROM games WHERE id=?').get(hiddenGame.id), { playStatus: 'playing', hidden: 1 });
   assert.ok(!data.listGames(owner.id).some(game => game.id === hiddenGame.id));
   assert.deepEqual(data.listGames(owner.id, { playStatus: 'hidden' }).map(game => game.id), [hiddenGame.id]);
+  assert.deepEqual(data.listGames(owner.id, { ownership: 'hidden' }).map(game => game.id), [hiddenGame.id]);
   assert.equal(data.stats(owner.id).total, 2);
   assert.ok(!data.stats(owner.id).platforms.some(row => row.label === 'Obscure Console'));
   assert.ok(data.platformNames(owner.id).includes('Obscure Console'));

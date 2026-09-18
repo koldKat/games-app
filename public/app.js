@@ -479,10 +479,12 @@ function gameMatchesFilters(game) {
   if (query && ![game.title, game.publisher, game.notes, game.description, ...(game.igdbGenres || []), ...(game.igdbThemes || [])]
     .some(value => String(value || '').toLocaleLowerCase().includes(query))) return false;
   if (filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE && game.platform !== filters.platform.value) return false;
+  const hiddenFilter = filters.ownership.value === 'hidden';
+  if (hiddenFilter && game.playStatus !== 'hidden') return false;
+  if (!hiddenFilter && game.playStatus === 'hidden') return false;
   if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
   if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
-  if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && game.ownership !== filters.ownership.value) return false;
-  if (!filters.playStatus.value && game.playStatus === 'hidden') return false;
+  if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && !hiddenFilter && game.ownership !== filters.ownership.value) return false;
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
   if (filters.pegi.value && filters.pegi.value !== 'none' && Number(game.pegi) !== Number(filters.pegi.value)) return false;
@@ -628,7 +630,13 @@ async function loadStatsAndMeta() {
 }
 let searchTimer;
 filters.q.addEventListener('input', () => { renderQuickFilter(); schedulePreferenceSave(UI_TIMING.searchPreferenceSaveMs); clearTimeout(searchTimer); searchTimer = setTimeout(loadGames, UI_TIMING.librarySearchDebounceMs); });
-Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([, element]) => element.addEventListener('change', () => { renderQuickFilter(); schedulePreferenceSave(); loadGames(); }));
+function reconcileLibraryFilters(changedKey) {
+  if (changedKey === 'ownership' && filters.ownership.value === 'hidden') filters.playStatus.value = '';
+  if (changedKey === 'playStatus' && filters.playStatus.value && filters.ownership.value === 'hidden') filters.ownership.value = '';
+}
+Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forEach(([key, element]) => element.addEventListener('change', () => {
+  reconcileLibraryFilters(key); renderQuickFilter(); schedulePreferenceSave(); loadGames();
+}));
 $('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); schedulePreferenceSave(); loadGames(); });
 $('#library-pagination').addEventListener('click', event => {
   const direction = event.target.closest('[data-library-page]')?.dataset.libraryPage;

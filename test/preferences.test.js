@@ -23,7 +23,10 @@ test('preferences persist per account and invalid values fall back safely', asyn
     ownership: 'wanted', pegi: '7', playStatus: 'backlog', missing: 'hltb', favorite: '1', sort: 'hltb_main_short' } });
   assert.deepEqual(preferences.get(first.id), saved);
   assert.equal(preferences.set(first.id, { filters: { ownership: 'owned_digital' } }).filters.ownership, 'owned_digital');
-  assert.equal(preferences.set(first.id, { filters: { playStatus: 'hidden' } }).filters.playStatus, 'hidden');
+  assert.deepEqual(preferences.set(first.id, { filters: { playStatus: 'hidden' } }).filters,
+    { ...preferences.defaults().filters, ownership: 'hidden' });
+  assert.equal(preferences.set(first.id, { filters: { ownership: 'hidden' } }).filters.ownership, 'hidden');
+  assert.equal(preferences.set(first.id, { filters: { ownership: 'hidden', playStatus: 'playing' } }).filters.playStatus, '');
   assert.equal(preferences.set(first.id, { filters: { missing: 'igdb' } }).filters.missing, 'igdb');
   assert.equal(preferences.set(first.id, { filters: { platform: MULTIPLATFORM_FILTER_VALUE } }).filters.platform, MULTIPLATFORM_FILTER_VALUE);
   assert.equal(preferences.set(first.id, { filters: { sort: 'igdb_critic_desc' } }).filters.sort, 'igdb_critic_desc');

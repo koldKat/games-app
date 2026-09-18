@@ -502,14 +502,17 @@ test('collection filtering separates owned physical and digital games', () => {
   assert.match(constants, /'owned_physical', 'owned_digital'/);
 });
 
-test('hidden games use only the existing status dropdowns and never add a dashboard card', () => {
+test('hidden games use the existing Library dropdown and never add a dashboard card', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const sorting = read('public/js/game-sorting.js'); const icons = read('public/assets/stat-icons.svg'); const css = readPublicCss();
   assert.equal((html.match(/class="stat-card /g) || []).length, 10);
-  assert.match(html, /id="status-filter"[\s\S]*?<option value="hidden">Hidden<\/option>/);
+  assert.match(html, /<span>Library<\/span><select id="ownership-filter"[\s\S]*?<option value="hidden">Hidden<\/option>/);
+  assert.doesNotMatch(html, /id="status-filter"[^<]*(?:<option[^>]*>[^<]*<\/option>)*<option value="hidden">/);
   assert.match(html, /id="game-status"[\s\S]*?<option value="hidden">Hidden<\/option>/);
   assert.doesNotMatch(html, /data-stat-value="hidden"/);
-  assert.match(application, /!filters\.playStatus\.value && game\.playStatus === 'hidden'/);
+  assert.match(application, /filters\.ownership\.value === 'hidden'/);
+  assert.match(application, /changedKey === 'ownership'[\s\S]*filters\.playStatus\.value = ''/);
+  assert.match(application, /changedKey === 'playStatus'[\s\S]*filters\.ownership\.value = ''/);
   assert.match(sorting, /hidden: 5/);
   assert.doesNotMatch(html, /data-stat-value="unavailable"|value="unavailable"|>Unavailable</);
   assert.doesNotMatch(application, /stat-unavailable|unavailable: 'Unavailable'/);

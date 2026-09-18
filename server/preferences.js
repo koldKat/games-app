@@ -2,14 +2,14 @@
 
 const { db } = require('./db');
 const {
-  MISSING_FILTER_VALUES, OWNERSHIP_FILTER_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, SORT_VALUES,
+  MISSING_FILTER_VALUES, OWNERSHIP_FILTER_VALUES, PEGI_RATINGS, SORT_VALUES, STORED_PLAY_STATUS_VALUES,
 } = require('./constants');
 const { GAME_LIMITS } = require('./validation-policy');
 
 const SORTS = new Set(SORT_VALUES);
 const OWNERSHIP = new Set(['', ...OWNERSHIP_FILTER_VALUES]);
 const PEGI = new Set(['', ...PEGI_RATINGS.map(String), 'none']);
-const STATUS = new Set(['', ...PLAY_STATUS_VALUES]);
+const STATUS = new Set(['', ...STORED_PLAY_STATUS_VALUES]);
 const MISSING = new Set(['', ...MISSING_FILTER_VALUES]);
 
 const defaults = () => ({ view: 'grid', filters: { q: '', platform: '', ownership: '', pegi: '', playStatus: '', missing: '', favorite: '', sort: 'title' } });
@@ -18,12 +18,13 @@ const choice = (value, allowed, fallback = '') => allowed.has(String(value || ''
 
 function normalize(input = {}) {
   const filters = input.filters || {};
+  const hidden = filters.ownership === 'hidden' || filters.playStatus === 'hidden';
   return {
     view: input.view === 'list' ? 'list' : 'grid',
     filters: {
       q: text(filters.q, GAME_LIMITS.titleMax), platform: text(filters.platform, GAME_LIMITS.platformMax),
-      ownership: choice(filters.ownership, OWNERSHIP), pegi: choice(filters.pegi, PEGI),
-      playStatus: choice(filters.playStatus, STATUS), missing: choice(filters.missing, MISSING),
+      ownership: hidden ? 'hidden' : choice(filters.ownership, OWNERSHIP), pegi: choice(filters.pegi, PEGI),
+      playStatus: hidden ? '' : choice(filters.playStatus, STATUS), missing: choice(filters.missing, MISSING),
       favorite: filters.favorite === '1' ? '1' : '', sort: choice(filters.sort, SORTS, 'title'),
     },
   };

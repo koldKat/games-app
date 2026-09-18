@@ -12,7 +12,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('shared server constants define catalogue domains and batch policy', () => {
   assert.deepEqual(constants.PEGI_RATINGS, [3, 7, 12, 16, 18]);
   assert.deepEqual(constants.OWNERSHIP_VALUES, ['owned', 'wanted']);
-  assert.deepEqual(constants.OWNERSHIP_FILTER_VALUES, ['owned_physical', 'owned_digital', 'wanted']);
+  assert.deepEqual(constants.OWNERSHIP_FILTER_VALUES, ['owned_physical', 'owned_digital', 'wanted', 'hidden']);
   assert.equal(constants.MULTIPLATFORM_FILTER_VALUE, '__multiple_platforms__');
   assert.deepEqual(constants.STORED_PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned']);
   assert.deepEqual(constants.PLAY_STATUS_VALUES, ['backlog', 'playing', 'completed', 'paused', 'abandoned', 'hidden']);
