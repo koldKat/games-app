@@ -4,6 +4,7 @@ import { loadKatalog } from './katalog.js';
 import { loadPublicKatalog } from './public-katalog.js';
 import { loadVersion, loadBackups } from './tools.js';
 import { loadMailSettings } from './mail.js';
+import { loadIntegrations } from './integrations.js';
 import { loadProgression } from './progression.js';
 import { loadAnnouncements } from './announcements.js';
 import { loadForum } from './forum.js';
@@ -21,7 +22,7 @@ const loaders = {
   announcements: loadAnnouncements,
   forum: loadForum,
   patch: loadPatch,
-  tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings()]); },
+  tools: async () => { await Promise.all([loadVersion(), loadBackups(), loadMailSettings(), loadIntegrations()]); },
 };
 
 document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {

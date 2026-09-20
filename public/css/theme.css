@@ -326,7 +326,7 @@ input[type="checkbox"]:focus-visible {
   text-decoration: none;
   box-shadow: none !important;
 }
-.button:hover {
+.button:hover:not(:disabled) {
   transform: none;
   border-color: #3b4b5d;
 }
@@ -336,7 +336,7 @@ input[type="checkbox"]:focus-visible {
   border-color: #287b6c;
   box-shadow: none;
 }
-.button.primary:hover {
+.button.primary:hover:not(:disabled) {
   background: #205148;
 }
 .button.secondary {
@@ -346,6 +346,13 @@ input[type="checkbox"]:focus-visible {
 .button.ghost {
   background: #10161e;
   border-color: #26313e;
+}
+.button:disabled {
+  border-color:#222d38;
+  background:#0d131a;
+  color:#65717c;
+  opacity:.72;
+  filter:saturate(.3);
 }
 .button.danger-text {
   background: transparent;

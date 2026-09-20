@@ -525,11 +525,6 @@ function deleteGame(userId, id) {
   return deleted;
 }
 
-function coverApiKey(userId) { return db.prepare('SELECT steamgriddb_key FROM user_integrations WHERE user_id=?').get(userId)?.steamgriddb_key || ''; }
-function setCoverApiKey(userId, key) {
-  if (key) db.prepare(`INSERT INTO user_integrations (user_id, steamgriddb_key) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET steamgriddb_key=excluded.steamgriddb_key, updated_at=CURRENT_TIMESTAMP`).run(userId, key);
-  else db.prepare('DELETE FROM user_integrations WHERE user_id=?').run(userId);
-}
 function coverProviderCredentials(userId, provider) {
   const row = db.prepare('SELECT credentials_json FROM cover_provider_credentials WHERE user_id=? AND provider=?').get(userId, provider);
   if (!row) return null;
@@ -690,7 +685,7 @@ function platformNames(userId) {
 }
 
 module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
-  coverApiKey, setCoverApiKey, coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
+  coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,
   gamesMissingIgdb, updateGameIgdb, platformNames, stats };

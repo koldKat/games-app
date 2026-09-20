@@ -218,15 +218,17 @@ The longer material stays collapsed when a saved game is opened, keeping routine
 
 ### Cover-assisted entry
 
-1. Open **Account Settings** and connect one or more data or artwork sources: SteamGridDB, TheGamesDB, or IGDB. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts. IGDB uses the Client ID and Client Secret from a Twitch developer application.
+Account Settings keeps each artwork and metadata service collapsed into a compact status row. Select a row to reveal its source links, scan action, matching policy, and any account-specific connection controls.
+
+1. Open **Account Settings** to inspect the shared SteamGridDB and IGDB availability or connect your own TheGamesDB key. For TheGamesDB, select **Sign in / register** first, then return and select **View API key**; its key page is available only to signed-in site accounts. The server operator manages SteamGridDB and IGDB once through the localhost admin panel, and both become available to every account when connected.
 2. Type a title in the game form and select **Request cover**.
 3. Review the portrait artwork and game names, then select the correct edition.
 4. Or select **Upload cover** to choose your own JPEG, PNG, or WebP image. The preview is local until you save; the server then normalizes it to the same durable cover format used by provider artwork.
 5. Save the game. Select **Remove cover** before saving if the match is wrong.
 
-After validation, that provider's disabled field shows **Connected** in green. Secrets are deliberately never returned to the browser. Select **Replace key** or **Replace credentials** to open empty replacement fields.
+After TheGamesDB validation, its disabled field shows **Connected** in green. Secrets are deliberately never returned to the browser. Select **Replace key** to open an empty replacement field. Shared SteamGridDB and IGDB credentials never appear in Account Settings.
 
-If a provider cannot be reached while Account Settings loads, its scan action stays disabled and its credential fields remain available instead of displaying a stale connection from an earlier session.
+Scan actions stay disabled while Account Settings checks the current account and if a status request fails, rather than reusing an earlier connection or missing-game count. TheGamesDB keeps its account-specific connection field available if its status request fails.
 
 **Request cover** searches every connected source plus HowLongToBeat and labels each result with its provider. This includes IGDB when it is connected. HLTB is available only in this deliberate per-game request flow // it is never used for a bulk cover scan. When the game is saved, Game Kat·a·log downloads the selected JPEG, PNG, or WebP into `public/covers/` and stores its public `/covers/...` path, provider, and match title. The card therefore remains independent of the provider CDN and the image is directly accessible through `https://gamekat.net/covers/...`. Provider artwork carries a source-credit link.
 
@@ -243,13 +245,13 @@ The selected result stores Main Story, Main + Sides, Completionist, and All Styl
 
 ### Fill existing games
 
-After connecting SteamGridDB, select **Fill missing covers** in Account Settings. The scanner runs in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.
+When the server operator has connected SteamGridDB, select **Fill missing covers** in Account Settings. The scanner runs for your account in the background and reports its progress. It only auto-selects artwork when exactly one normalized, exact-title game match exists. Ambiguous editions and non-exact matches remain blank for manual review rather than receiving a likely-wrong cover.
 
 TheGamesDB has its own **Fill with TheGamesDB** action. Its scan is platform-aware and requires exactly one normalized title record for the saved platform. Run it after SteamGridDB to fill remaining gaps; it touches only games that still have no cover.
 
 ### IGDB information
 
-Connect IGDB in Account Settings with a Twitch developer application's Client ID and Client Secret. Create the Twitch application as **Confidential**, using `http://localhost` as its otherwise-unused OAuth redirect URL; Public clients cannot generate the secret required by IGDB. Credentials stay on the server. The app obtains and refreshes the short-lived access token itself.
+The server operator connects IGDB from the localhost-only admin panel with the Game Kat·a·log Twitch application's Client ID and Client Secret. Create that Twitch application as **Confidential**, using `http://localhost` as its otherwise-unused OAuth redirect URL; Public clients cannot generate the secret required by IGDB. The credentials stay on the server and become available to every Game Kat·a·log account without being exposed to them. Account Settings shows only availability and the per-account scan action. The app obtains and refreshes the short-lived access token itself. When IGDB is unavailable, its manual lookup and scan controls are disabled while ordinary entry continues to work.
 
 While adding or editing a game, select **Look up on IGDB** to inspect matches. Applying one stores the IGDB identity, user score and vote count, critic score and review count, developer, genres, themes, source link, and any blank publisher, release-year, description, or cover fields. Existing personal and provider data is not blindly overwritten. Game details display genres and themes as distinct compact groups rather than mixing both taxonomies: genre chips use teal and theme chips use violet. Selecting one of those chips searches the current private or public Kat·a·log without adding another permanent filter control. The existing search fields also match genre and theme text directly. IGDB ratings and classifications appear in the read-only game details dialog and public release details, not on library cards.
 
@@ -394,4 +396,4 @@ Confirm port 3005 is free and that the device can reach the host machine.
 
 Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
-The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // SteamGridDB, TheGamesDB, and/or IGDB // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. A connected IGDB account sends the text currently being typed after the third character; SteamGridDB is used as the remote fallback. Failed remote autocomplete remains invisible.
+The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // shared SteamGridDB and IGDB application connections plus the account's optional TheGamesDB connection // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. When the IGDB application is connected, typed text is sent after the third character; the shared SteamGridDB connection is the remote fallback. Failed remote autocomplete remains invisible.

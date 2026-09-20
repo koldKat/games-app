@@ -92,3 +92,23 @@ test('admin refuses to delete the protected koldKat account', async () => {
   const protectedUser = await auth.register('koldKat', 'protected-password');
   assert.throws(() => admin.deleteAccount(protectedUser.id), error => error.code === 'PROTECTED_ACCOUNT' && error.status === 403);
 });
+
+test('admin integration status migrates legacy owner credentials without exposing or deleting them', async () => {
+  const owner = data.db.prepare("SELECT id FROM users WHERE username='koldKat'").get();
+  data.db.prepare('INSERT INTO user_integrations(user_id,steamgriddb_key) VALUES (?,?)').run(owner.id, 'legacy-steam-secret');
+  const igdbCredentials = JSON.stringify({ clientId: 'legacy-client-id', clientSecret: 'legacy-client-secret' });
+  data.db.prepare('INSERT INTO cover_provider_credentials(user_id,provider,credentials_json) VALUES (?,?,?)').run(owner.id, 'igdb', igdbCredentials);
+  let status; let body = '';
+  const response = {
+    setHeader() {},
+    writeHead(value) { status = value; },
+    end(value) { body = String(value || ''); },
+  };
+  const handled = await admin.handle({ method: 'GET', socket: { remoteAddress: '127.0.0.1' }, headers: {} }, response,
+    new URL('http://localhost/api/admin/integrations'));
+  assert.equal(handled, true); assert.equal(status, 200);
+  assert.deepEqual(JSON.parse(body), { steamgriddb: { configured: true }, igdb: { configured: true } });
+  assert.doesNotMatch(body, /legacy|secret|client-id/);
+  assert.equal(data.db.prepare('SELECT steamgriddb_key FROM user_integrations WHERE user_id=?').get(owner.id).steamgriddb_key, 'legacy-steam-secret');
+  assert.equal(data.db.prepare("SELECT credentials_json FROM cover_provider_credentials WHERE user_id=? AND provider='igdb'").get(owner.id).credentials_json, igdbCredentials);
+});

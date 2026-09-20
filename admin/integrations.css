@@ -1,0 +1,77 @@
+.app-integration-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px
+}
+.app-integration-grid>form {
+  display:grid;
+  gap:7px;
+  padding:10px;
+  border:1px solid #263542;
+  border-radius:6px;
+  background:#080d13
+}
+.app-integration-grid form>header {
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.app-integration-grid form>header span {
+  color:#70808e;
+  font-size:9px;
+  letter-spacing:.1em
+}
+.app-integration-grid form>header em {
+  margin-left:auto;
+  color:#788692;
+  font-size:10px;
+  font-style:normal
+}
+.app-integration-grid form>header em.connected {
+  color:var(--green)
+}
+.app-integration-grid form>p {
+  margin:0
+}
+.app-integration-fields {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr)) auto;
+  gap:7px;
+  align-items:end
+}
+.app-integration-fields.single {
+  grid-template-columns:minmax(0,1fr) auto
+}
+.app-integration-fields label {
+  display:grid;
+  gap:4px;
+  min-width:0;
+  color:#8998a5;
+  font-size:10px
+}
+.app-integration-fields input {
+  width:100%;
+  height:34px;
+  border:1px solid #2c3b48;
+  border-radius:4px;
+  background:#060a0f;
+  padding:0 9px;
+  color:#dce6ed;
+  outline:0
+}
+.app-integration-fields input:focus {
+  border-color:var(--green);
+  box-shadow:0 0 0 1px #47ddbb44
+}
+.app-integration-fields button {
+  height:34px
+}
+@media(max-width:760px) {
+  .app-integration-grid,.app-integration-fields,.app-integration-fields.single {
+    grid-template-columns:1fr
+  }
+  .app-integration-fields button {
+    justify-self:start
+  }
+}

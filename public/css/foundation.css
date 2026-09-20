@@ -105,16 +105,23 @@ button {
   justify-content: center;
   gap: 7px;
 }
-.button:hover {
+.button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px #26201b17;
+}
+.button:disabled {
+  cursor: default;
+  opacity: .42;
+  filter: saturate(.35);
+  transform: none;
+  box-shadow: none;
 }
 .button.primary {
   background: var(--coral);
   color: white;
   box-shadow: 0 8px 18px #e9664933;
 }
-.button.primary:hover {
+.button.primary:hover:not(:disabled) {
   background: var(--coral-dark);
 }
 .button.secondary {

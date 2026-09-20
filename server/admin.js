@@ -14,6 +14,9 @@ const forum = require('./forum-data');
 const patch = require('./patch-data');
 const { KATALOG_LIMITS } = require('./validation-policy');
 const trafficMetrics = require('./traffic-metrics');
+const covers = require('./covers');
+const igdb = require('./igdb');
+const appIntegrations = require('./app-integrations');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -28,6 +31,7 @@ const adminFiles = new Map([
   ['/admin/style.css', ['style.css', 'text/css; charset=utf-8']],
   ['/admin/announcements.css', ['announcements.css', 'text/css; charset=utf-8']],
   ['/admin/patch.css', ['patch.css', 'text/css; charset=utf-8']],
+  ['/admin/integrations.css', ['integrations.css', 'text/css; charset=utf-8']],
   ['/admin/js/forum.js', ['js/forum.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/patch.js', ['js/patch.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
@@ -38,6 +42,7 @@ const adminFiles = new Map([
   ['/admin/js/public-katalog.js', ['js/public-katalog.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/tools.js', ['js/tools.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/mail.js', ['js/mail.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/integrations.js', ['js/integrations.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/progression.js', ['js/progression.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/announcements.js', ['js/announcements.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/boot.js', ['js/boot.js', 'application/javascript; charset=utf-8']],
@@ -312,6 +317,27 @@ async function handleApi(request, response, url) {
       await mailer.sendSmtpTest(String(input.to || settings.sender || ''));
       return sendJson(response, 200, { ok: true });
     } catch (error) { return sendJson(response, 400, { error: error.message }); }
+  }
+  if (request.method === 'GET' && pathname === '/api/admin/integrations') {
+    return sendJson(response, 200, {
+      steamgriddb: { configured: appIntegrations.configured('steamgriddb') },
+      igdb: { configured: appIntegrations.configured('igdb') },
+    });
+  }
+  const integrationMatch = pathname.match(/^\/api\/admin\/integrations\/(steamgriddb|igdb)$/);
+  if (request.method === 'PUT' && integrationMatch) {
+    const provider = integrationMatch[1];
+    try {
+      const input = await readJson(request);
+      if (provider === 'steamgriddb') {
+        const credentials = { apiKey: String(input.apiKey || '').trim() };
+        await covers.verifyKey(credentials.apiKey); appIntegrations.save(provider, credentials);
+      } else {
+        const credentials = igdb.cleanCredentials(input);
+        await igdb.verify(credentials); appIntegrations.save(provider, credentials);
+      }
+      return sendJson(response, 200, { configured: true });
+    } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
   let match = pathname.match(/^\/api\/admin\/accounts\/(\d+)\/sessions$/);
   if (request.method === 'DELETE' && match) {

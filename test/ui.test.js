@@ -814,18 +814,28 @@ test('private and public Kat·a·log searches share the compact field scale', ()
   assert.doesNotMatch(read('server/katalog-pages.js'), /<button type="submit">Search<\/button>/);
 });
 
-test('SteamGridDB configuration uses a disabled connected field and explicit replacement mode', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const server = read('server.js'); const css = readPublicCss();
-  assert.doesNotMatch(html, /cover-connection-state/);
-  assert.match(application, /input\.type = 'text'; input\.value = 'Connected'; input\.disabled = true/);
-  assert.match(application, /setCoverKeyMode\(true, true\); input\.focus\(\); return/);
-  assert.match(application, /replacing \? 'Save key' : 'Connect'/);
-  assert.match(application, /const saving = input\.dataset\.saving === 'true'/);
-  assert.match(application, /input\.disabled = saving/);
-  assert.doesNotMatch(application, /Personal API key saved securely/);
-  assert.match(css, /input\.is-connected:disabled/);
-  assert.match(server, /configured: Boolean\(accountKey \|\| serverKey\)/);
-  assert.doesNotMatch(server, /steamgriddb_key[^\n]*sendJson/);
+test('SteamGridDB is a shared admin integration while account scans remain available', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const server = read('server.js');
+  const adminHtml = read('admin/index.html'); const adminClient = read('admin/js/integrations.js');
+  assert.match(html, /id="cover-bulk-start">Fill missing covers/);
+  assert.doesNotMatch(html, /id="cover-api-key"|id="cover-api-save"/);
+  assert.doesNotMatch(application, /\/api\/covers\/config|setCoverKeyMode/);
+  assert.match(server, /appIntegrations\.credentials\('steamgriddb'\)/);
+  assert.match(server, /configured: Boolean\(steamGridKey\(\)\), shared: true/);
+  assert.match(adminHtml, /data-app-integration="steamgriddb"/);
+  assert.match(adminClient, /\/api\/admin\/integrations\/\$\{provider\}/);
+});
+
+test('account metadata services use compact themed disclosures', () => {
+  const html = read('public/index.html'); const css = readCss('public/css/library.css'); const application = read('public/app.js');
+  assert.match(html, /<details class="integration-panel">[\s\S]*<summary class="integration-summary">/);
+  assert.match(html, /<details class="integration-panel external-cover-integration" data-cover-provider="thegamesdb">/);
+  assert.doesNotMatch(html, /<details class="integration-panel[^>]* open/);
+  assert.match(css, /\.integration-summary::-webkit-details-marker[\s\S]*display:none/);
+  assert.match(css, /\.integration-summary:after[\s\S]*border-right:1px solid #54dbbd/);
+  assert.match(application, /querySelectorAll\('\.integration-panel\[open\]'\)/);
+  assert.match(application, /state\.coverStatus = null; state\.pegiStatus = null; state\.hltbStatus = null; state\.descriptionStatus = null/);
+  assert.match(application, /\$\(`#\$\{buttonId\}`\)\.disabled = true/);
 });
 
 test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
@@ -834,7 +844,7 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
   assert.match(html, /thegamesdb\.net\/login\.php[^>]*>Sign in \/ register ↗/);
   assert.match(html, /api\.thegamesdb\.net\/key\.php[^>]*>View API key ↗/);
   assert.match(settings, /\/api\/cover-providers\/\$\{provider\}\/config/);
-  assert.match(settings, /connectedInput\.value = 'Connected'; connectedInput\.disabled = true/);
+  assert.match(settings, /connectedInput\.value = status\.shared \? 'App connected' : 'Connected'; connectedInput\.disabled = true/);
   assert.match(application, /coverProviderSettings\.handleEvent/);
   assert.match(application, /TheGamesDB art ↗/);
   assert.match(server, /db\.coverProviderCredentials\(userId, provider\)/);
@@ -846,10 +856,9 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
 test('IGDB integration stays modular and keeps external ratings in details', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const client = read('server/igdb.js'); const batch = read('server/igdb-bulk.js'); const ui = read('public/js/igdb-ui.js'); const css = readPublicCss();
-  const katalogClient = read('public/js/katalog-public.js');
-  assert.match(html, /data-cover-provider="igdb"/); assert.match(html, /data-credential="clientId"/); assert.match(html, /data-credential="clientSecret"/);
-  assert.match(html, /<span>Client ID<\/span>[\s\S]*<span>Client Secret<\/span>/);
-  assert.match(css, /\.provider-fields \.provider-credential-pair input\{width:100%/);
+  const katalogClient = read('public/js/katalog-public.js'); const adminHtml = read('admin/index.html');
+  assert.match(html, /data-cover-provider="igdb"/); assert.doesNotMatch(html, /data-credential="clientId"|data-credential="clientSecret"/);
+  assert.match(adminHtml, /data-app-integration="igdb"[\s\S]*name="clientId"[\s\S]*name="clientSecret"/);
   assert.match(application, /import \{ createIgdbLookup, igdbDetailsMarkup \} from '\.\/js\/igdb-ui\.js'/);
   assert.match(application, /igdbDetailsMarkup\(game, escapeHtml\)/); assert.doesNotMatch(application, /card[\s\S]{0,120}igdbRating/);
   assert.match(ui, /IGDB users/); assert.match(ui, /Critics/); assert.match(ui, /onExternalSelect|export function createIgdbLookup/);
@@ -860,6 +869,10 @@ test('IGDB integration stays modular and keeps external ratings in details', () 
   assert.match(css, /metadata-filter-chip--genre/); assert.match(css, /metadata-filter-chip--theme/);
   assert.match(client, /id\.twitch\.tv\/oauth2\/token/); assert.match(client, /'Client-ID'/); assert.match(client, /aggregated_rating/);
   assert.match(batch, /game-updated/); assert.match(batch, /gamesMissingIgdb/);
+  assert.match(html, /id="igdb-search-button" disabled/);
+  assert.match(application, /setIgdbAvailability\(Boolean\(state\.integrations\.igdb\)\)/);
+  assert.match(read('server/app-integrations.js'), /createAppIntegrationStore/);
+  assert.match(read('server/app-integration-store.js'), /app_integrations/);
 });
 
 test('durable public covers stream from disk instead of buffering whole images', () => {

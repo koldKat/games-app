@@ -116,12 +116,14 @@ HOST=0.0.0.0 \
 DB_PATH=/path/to/games.db \
 PUBLIC_URL=https://gamekat.net \
 OWNER_USERNAME=your_name \
+STEAMGRIDDB_API_KEY=optional_server_wide_key \
+THEGAMESDB_API_KEY=optional_thegamesdb_fallback_key \
 IGDB_CLIENT_ID=optional_server_wide_client_id \
 IGDB_CLIENT_SECRET=optional_server_wide_client_secret \
 npm start
 ```
 
-`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. IGDB credentials can instead be connected per account in Account Settings and are never sent back to the browser. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
+`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. SteamGridDB and IGDB are application integrations configured once in the localhost admin panel and shared by every account without exposing their credentials. TheGamesDB remains an optional per-account connection. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
 
 The current arbitrary release string lives in `VERSION`. It can be edited through the localhost admin panel and is broadcast immediately to open headers.
 
@@ -140,6 +142,7 @@ The terminal-style admin provides:
 - Forum channel and thread moderation.
 - Private Patch queue triage and Ping replies.
 - SMTP configuration and test email.
+- Shared SteamGridDB and IGDB application-credential management.
 - SQLite maintenance, release-string editing, and backup controls.
 
 ## Backups and durable files

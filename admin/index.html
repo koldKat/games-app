@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/admin/style.css">
   <link rel="stylesheet" href="/admin/announcements.css">
   <link rel="stylesheet" href="/admin/patch.css">
+  <link rel="stylesheet" href="/admin/integrations.css">
 </head>
 <body>
   <header class="admin-head">
@@ -159,6 +160,29 @@
             <label><span>Sender address</span><input name="sender" type="email" required placeholder="games@example.com"></label>
             <footer class="wide"><button id="mail-test" class="button" type="button">Send test email</button><button class="button primary" type="submit">Save mail settings</button></footer>
           </form>
+        </article>
+        <article class="block tool-block wide app-integrations-admin">
+          <header><span>APPLICATION SERVICES</span><b>SHARED DATA PROVIDERS</b></header>
+          <p>These application credentials serve every account. Existing secrets are never returned; replacement fields always start empty.</p>
+          <div class="app-integration-grid">
+            <form data-app-integration="steamgriddb">
+              <header><span>ARTWORK + TITLES</span><b>SteamGridDB</b><em data-integration-state>Checking…</em></header>
+              <p>Shared cover search, title suggestions, and missing-cover scans.</p>
+              <div class="app-integration-fields single">
+                <label><span>API key</span><input type="password" name="apiKey" autocomplete="new-password" maxlength="512" placeholder="Paste replacement API key"></label>
+                <button class="button primary" type="submit">Save key</button>
+              </div>
+            </form>
+            <form data-app-integration="igdb">
+              <header><span>GAME DATABASE</span><b>IGDB</b><em data-integration-state>Checking…</em></header>
+              <p>Shared metadata, autocomplete, descriptions, covers, and per-account scans.</p>
+              <div class="app-integration-fields">
+                <label><span>Client ID</span><input name="clientId" autocomplete="off" maxlength="128" placeholder="Paste Client ID"></label>
+                <label><span>Client Secret</span><input type="password" name="clientSecret" autocomplete="new-password" maxlength="256" placeholder="Paste Client Secret"></label>
+                <button class="button primary" type="submit">Save credentials</button>
+              </div>
+            </form>
+          </div>
         </article>
       </div>
     </section>

@@ -51,7 +51,7 @@ function mountDecorativeCoverSlots() {
 mountDecorativeCoverSlots();
 mountThemedNumberSteppers();
 mountThemedSearchClears();
-const state = { games: [], stats: null, platforms: [], page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], stats: null, platforms: [], integrations: {}, page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -86,7 +86,13 @@ function toast(message) {
   clearTimeout(toast.timer); toast.timer = setTimeout(() => element.classList.remove('show'), UI_TIMING.toastMs);
 }
 function showAccountError(message) { $('#account-error').textContent = message; $('#account-error').hidden = false; }
-const coverProviderSettings = createCoverProviderSettings({ api, toast, showError: showAccountError });
+const coverProviderSettings = createCoverProviderSettings({
+  api, toast, showError: showAccountError,
+  onStatus: (provider, status) => {
+    if (provider !== 'igdb') return;
+    state.integrations.igdb = Boolean(status.configured); setIgdbAvailability(state.integrations.igdb);
+  },
+});
 const progressionUi = createProgressionUi({ api });
 const activityFeed = createActivityFeed();
 const patchUi = createPatchUi({ api, toast, getUser: () => state.user });
@@ -165,7 +171,8 @@ function showAuth(message = '') {
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   clearTimeout(groupFilterRefreshTimer);
-  state.games = []; state.stats = null; state.platforms = []; state.page = 1;
+  state.games = []; state.stats = null; state.platforms = []; state.integrations = {}; state.page = 1;
+  setIgdbAvailability(false);
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
   state.user = null;
@@ -631,7 +638,8 @@ async function loadStatsAndMeta() {
   try {
     const [stats, meta] = await Promise.all([api('/api/stats'), api('/api/meta')]);
     if (sequence !== metaLoadSequence || state.user?.id !== userId) return;
-    state.stats = stats; state.platforms = meta.platforms; renderStats(); renderPlatforms();
+    state.stats = stats; state.platforms = meta.platforms; state.integrations = meta.integrations || {};
+    setIgdbAvailability(Boolean(state.integrations.igdb)); renderStats(); renderPlatforms();
   } catch (error) { if (sequence === metaLoadSequence && state.user?.id === userId) toast(error.message); }
 }
 let searchTimer;
@@ -925,6 +933,13 @@ const katalogNavigation = createKatalogNavigation({
 const igdbLookup = createIgdbLookup({
   $, api, escapeHtml, toast, selectedPlatform, setPlatformValue, platformFromReleaseText, isPcStorefront, renderCoverSelection,
 });
+function setIgdbAvailability(available) {
+  const button = $('#igdb-search-button');
+  button.disabled = !available;
+  $('#igdb-assist-status').textContent = available
+    ? 'Match a title to add IGDB ratings, credits, genres, description, and artwork.'
+    : 'IGDB is not connected for this server. Continue entering the game manually.';
+}
 const titleAutocomplete = createTitleAutocomplete({
   input: $('#game-title'), suggestionBox: $('#title-suggestions'), warning: $('#duplicate-warning'), summary: $('#duplicate-summary'),
   openButton: $('#open-duplicate'), platformInput: $('#game-platform'), customPlatformInput: $('#game-platform-custom'),
@@ -1200,6 +1215,16 @@ $('#cover-remove-button').addEventListener('click', () => {
 
 const accountDialog = $('#account-dialog');
 $('#account-button').addEventListener('click', () => {
+  accountDialog.querySelectorAll('.integration-panel[open]').forEach(panel => { panel.open = false; });
+  state.coverStatus = null; state.pegiStatus = null; state.hltbStatus = null; state.descriptionStatus = null;
+  coverProviderSettings.reset();
+  for (const [statusId, buttonId] of [
+    ['cover-provider-status', 'cover-bulk-start'], ['pegi-provider-status', 'pegi-bulk-start'],
+    ['hltb-provider-status', 'hltb-bulk-start'], ['description-provider-status', 'description-bulk-start'],
+  ]) {
+    $(`#${statusId}`).textContent = 'Checking library…';
+    $(`#${buttonId}`).disabled = true;
+  }
   $('#account-username').value = state.user?.username || '';
   $('#account-email').value = state.user?.email || '';
   $('#account-current-password').value = '';
@@ -1208,7 +1233,6 @@ $('#account-button').addEventListener('click', () => {
   $('#account-hide-from-activity').checked = Boolean(state.user?.hideFromActivity);
   $('#account-public-profile').checked = Boolean(state.user?.publicProfile);
   $('#account-error').hidden = true;
-  setCoverKeyMode(Boolean(state.coverStatus?.configured));
   accountDialog.showModal();
   accountDialog.querySelector('[data-account-close]')?.focus({ preventScroll: true });
   Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
@@ -1216,25 +1240,11 @@ $('#account-button').addEventListener('click', () => {
 function setBulkStatus(element, shortStatus, detail) {
   element.textContent = shortStatus; element.dataset.tooltip = detail; element.removeAttribute('title'); element.setAttribute('aria-label', `${shortStatus}. ${detail}`);
 }
-function setCoverKeyMode(configured, replacing = false) {
-  const input = $('#cover-api-key'); const button = $('#cover-api-save');
-  const saving = input.dataset.saving === 'true';
-  input.dataset.replacing = replacing ? 'true' : 'false';
-  if (configured && !replacing) {
-    input.type = 'text'; input.value = 'Connected'; input.disabled = true; input.placeholder = '';
-    input.classList.add('is-connected'); button.textContent = 'Replace key'; button.disabled = saving;
-    return;
-  }
-  if (input.classList.contains('is-connected') || input.type === 'text') input.value = '';
-  input.type = 'password'; input.disabled = saving; input.classList.remove('is-connected');
-  input.placeholder = replacing ? 'Paste replacement API key' : 'Paste personal API key';
-  button.textContent = saving ? 'Checking…' : replacing ? 'Save key' : 'Connect'; button.disabled = saving;
-}
 function renderCoverStatus() {
   const status = state.coverStatus; if (!status) return;
-  const replacing = $('#cover-api-key').dataset.replacing === 'true';
-  $('#cover-provider-status').textContent = status.configured ? `${status.missing.toLocaleString(UI_LOCALE)} games still need covers.` : 'Add a personal API key to enable cover lookup.';
-  setCoverKeyMode(status.configured, status.configured && replacing);
+  $('#cover-provider-status').textContent = status.configured
+    ? `${status.missing.toLocaleString(UI_LOCALE)} games need covers · shared`
+    : 'SteamGridDB is not configured for this server.';
   $('#cover-bulk-start').disabled = !status.configured || status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Exact-title matches only.'; let detail = 'Only exact normalized title matches receive covers automatically.';
   if (job?.state === 'running') {
@@ -1252,13 +1262,14 @@ async function loadCoverStatus() {
   try {
     state.coverStatus = await api('/api/covers/status'); renderCoverStatus();
   } catch (error) {
+    state.coverStatus = null;
     $('#cover-provider-status').textContent = error.message;
-    setCoverKeyMode(Boolean(state.coverStatus?.configured));
+    $('#cover-bulk-start').disabled = true;
   }
 }
 function renderPegiBulkStatus() {
   const status = state.pegiStatus; if (!status) return;
-  $('#pegi-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need PEGI details.`;
+  $('#pegi-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games need PEGI details.`;
   $('#pegi-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Exact-title and platform-aware.'; let detail = 'Unique exact titles are accepted; ambiguous editions require one platform-specific match.';
   if (job?.state === 'running') {
@@ -1274,11 +1285,11 @@ function renderPegiBulkStatus() {
 }
 async function loadPegiStatus() {
   try { state.pegiStatus = await api('/api/pegi/status'); renderPegiBulkStatus(); }
-  catch (error) { $('#pegi-provider-status').textContent = error.message; }
+  catch (error) { state.pegiStatus = null; $('#pegi-provider-status').textContent = error.message; $('#pegi-bulk-start').disabled = true; }
 }
 function renderHltbBulkStatus() {
   const status = state.hltbStatus; if (!status) return;
-  $('#hltb-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need HLTB estimates.`;
+  $('#hltb-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games need HLTB estimates.`;
   $('#hltb-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Unique exact-title matches only.'; let detail = 'Ambiguous editions stay blank for manual review.';
   if (job?.state === 'running') {
@@ -1294,11 +1305,11 @@ function renderHltbBulkStatus() {
 }
 async function loadHltbStatus() {
   try { state.hltbStatus = await api('/api/hltb/status'); renderHltbBulkStatus(); }
-  catch (error) { $('#hltb-provider-status').textContent = error.message; }
+  catch (error) { state.hltbStatus = null; $('#hltb-provider-status').textContent = error.message; $('#hltb-bulk-start').disabled = true; }
 }
 function renderDescriptionBulkStatus() {
   const status = state.descriptionStatus; if (!status) return;
-  $('#description-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games still need descriptions.${status.thegamesdbConfigured ? ' TheGamesDB fallback connected.' : ' Steam Store only until TheGamesDB is connected.'}`;
+  $('#description-provider-status').textContent = `${status.missing.toLocaleString(UI_LOCALE)} games need descriptions · ${status.thegamesdbConfigured ? 'TheGamesDB connected' : 'Steam only'}`;
   $('#description-bulk-start').disabled = status.job?.state === 'running' || status.missing === 0;
   const job = status.job; let shortStatus = 'Steam Store first; exact titles only.'; let detail = 'TheGamesDB is used only when Steam Store has no unique exact-title match.';
   if (job?.state === 'running') {
@@ -1312,23 +1323,8 @@ function renderDescriptionBulkStatus() {
 }
 async function loadDescriptionStatus() {
   try { state.descriptionStatus = await api('/api/descriptions/status'); renderDescriptionBulkStatus(); }
-  catch (error) { $('#description-provider-status').textContent = error.message; }
+  catch (error) { state.descriptionStatus = null; $('#description-provider-status').textContent = error.message; $('#description-bulk-start').disabled = true; }
 }
-$('#cover-api-save').addEventListener('click', async () => {
-  const input = $('#cover-api-key');
-  if (state.coverStatus?.configured && input.dataset.replacing !== 'true') {
-    setCoverKeyMode(true, true); input.focus(); return;
-  }
-  const key = input.value.trim(); if (!key) { $('#account-error').textContent = 'Paste your SteamGridDB API key first.'; $('#account-error').hidden = false; return; }
-  input.dataset.saving = 'true'; setCoverKeyMode(Boolean(state.coverStatus?.configured), input.dataset.replacing === 'true');
-  try {
-    await api('/api/covers/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey: key }) });
-    input.value = ''; input.dataset.saving = 'false'; $('#account-error').hidden = true; toast('SteamGridDB connected.'); await loadCoverStatus();
-  } catch (error) {
-    input.dataset.saving = 'false'; $('#account-error').textContent = error.message; $('#account-error').hidden = false;
-    setCoverKeyMode(Boolean(state.coverStatus?.configured), true); input.focus();
-  }
-});
 $('#cover-bulk-start').addEventListener('click', async () => {
   const button = $('#cover-bulk-start'); button.disabled = true;
   try { await api('/api/covers/bulk', { method: 'POST' }); toast('Background cover scan started.'); await loadCoverStatus(); }

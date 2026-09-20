@@ -42,6 +42,7 @@ const backup = require('./server/backup');
 const mailer = require('./server/mailer');
 const { createProgressionService } = require('./server/progression-service');
 const { BULK_JOB, TITLE_AUTOCOMPLETE_MIN_LENGTH } = require('./server/constants');
+const appIntegrations = require('./server/app-integrations');
 
 const PORT = Number(process.env.PORT || 3005);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -77,11 +78,11 @@ const externalCoverProviders = Object.freeze({
   },
   igdb: {
     label: 'IGDB', client: igdb,
-    environment: () => process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET
-      ? { clientId: process.env.IGDB_CLIENT_ID, clientSecret: process.env.IGDB_CLIENT_SECRET } : null,
   },
 });
-const providerCredentials = (userId, provider) => db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment() || null;
+const providerCredentials = (userId, provider) => provider === 'igdb' ? appIntegrations.credentials('igdb')
+  : db.coverProviderCredentials(userId, provider) || externalCoverProviders[provider]?.environment?.() || null;
+const steamGridKey = () => appIntegrations.credentials('steamgriddb')?.apiKey || '';
 function isKatalogContribution(userId, game, result) {
   const entry = result?.entry;
   return entry?.status === 'public' && Number(entry.submittedByUserId) === Number(userId) && Number(entry.sourceGameId) === Number(game?.id);
@@ -405,45 +406,38 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { avatarUrl: null });
   }
   if (request.method === 'GET' && url.pathname === '/api/covers/status') {
-    const accountKey = Boolean(db.coverApiKey(user.id)); const serverKey = Boolean(process.env.STEAMGRIDDB_API_KEY);
-    return sendJson(response, 200, { configured: Boolean(accountKey || serverKey), missing: db.gamesMissingCovers(user.id).length, job: coverJobs.get(user.id) || null });
+    return sendJson(response, 200, { configured: Boolean(steamGridKey()), shared: true,
+      missing: db.gamesMissingCovers(user.id).length, job: coverJobs.get(user.id) || null });
   }
-  if (request.method === 'PUT' && url.pathname === '/api/covers/config') {
-    try {
-      const input = await readJson(request); const key = String(input.apiKey || '').trim();
-      await covers.verifyKey(key); db.setCoverApiKey(user.id, key);
-      return sendJson(response, 200, { configured: true });
-    } catch (error) { return sendJson(response, 400, { error: error.message }); }
-  }
-  if (request.method === 'DELETE' && url.pathname === '/api/covers/config') {
-    db.setCoverApiKey(user.id, ''); return sendJson(response, 200, { configured: Boolean(process.env.STEAMGRIDDB_API_KEY) });
-  }
-  const providerRoute = url.pathname.match(/^\/api\/cover-providers\/(thegamesdb|igdb)\/(status|config|bulk)$/);
+  const providerRoute = url.pathname.match(/^\/api\/cover-providers\/(thegamesdb|igdb)\/(status|bulk)$/);
   if (providerRoute) {
     const [, provider, action] = providerRoute; const definition = externalCoverProviders[provider];
     const credentials = providerCredentials(user.id, provider); const manager = provider === 'igdb' ? igdbJobs : externalCoverJobs[provider];
     if (request.method === 'GET' && action === 'status') {
-      return sendJson(response, 200, { configured: Boolean(credentials), ...manager.status(user.id) });
-    }
-    if (request.method === 'PUT' && action === 'config') {
-      try {
-        const input = await readJson(request); const clean = definition.client.cleanCredentials(input);
-        await definition.client.verify(clean); db.setCoverProviderCredentials(user.id, provider, clean);
-        return sendJson(response, 200, { configured: true });
-      } catch (error) { return sendJson(response, 400, { error: error.message }); }
-    }
-    if (request.method === 'DELETE' && action === 'config') {
-      db.setCoverProviderCredentials(user.id, provider, null);
-      return sendJson(response, 200, { configured: Boolean(definition.environment()) });
+      return sendJson(response, 200, { configured: Boolean(credentials), shared: provider === 'igdb', canConfigure: provider === 'thegamesdb', ...manager.status(user.id) });
     }
     if (request.method === 'POST' && action === 'bulk') {
-      if (!credentials) return sendJson(response, 409, { error: `Configure ${definition.label} in Account Settings first.` });
+      if (!credentials) return sendJson(response, 409, { error: `${definition.label} is not available on this server.` });
       try { return sendJson(response, 202, manager.start(user.id, credentials)); }
       catch (error) { return sendJson(response, 409, { error: error.message }); }
     }
   }
+  if (url.pathname === '/api/cover-providers/thegamesdb/config') {
+    const definition = externalCoverProviders.thegamesdb;
+    if (request.method === 'PUT') {
+      try {
+        const input = await readJson(request); const clean = definition.client.cleanCredentials(input);
+        await definition.client.verify(clean); db.setCoverProviderCredentials(user.id, 'thegamesdb', clean);
+        return sendJson(response, 200, { configured: true });
+      } catch (error) { return sendJson(response, 400, { error: error.message }); }
+    }
+    if (request.method === 'DELETE') {
+      db.setCoverProviderCredentials(user.id, 'thegamesdb', null);
+      return sendJson(response, 200, { configured: Boolean(definition.environment()) });
+    }
+  }
   if (request.method === 'GET' && url.pathname === '/api/covers/search') {
-    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY; const title = url.searchParams.get('q'); const platform = url.searchParams.get('platform');
+    const key = steamGridKey(); const title = url.searchParams.get('q'); const platform = url.searchParams.get('platform');
     const searches = [];
     if (key) searches.push(covers.searchCovers(key, title));
     for (const [provider, definition] of Object.entries(externalCoverProviders)) {
@@ -461,7 +455,7 @@ async function handleApi(request, response, url) {
     catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
   if (request.method === 'GET' && url.pathname === '/api/titles/autocomplete') {
-    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
+    const key = steamGridKey();
     const query = String(url.searchParams.get('q') || '').trim();
     if (url.searchParams.get('exact') === '1') {
       return sendJson(response, 200, { existing: db.findDuplicateGames(user.id, query, url.searchParams.get('platform'), url.searchParams.get('igdbId')), suggestions: [] });
@@ -478,13 +472,13 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/igdb/search') {
     const credentials = providerCredentials(user.id, 'igdb');
-    if (!credentials) return sendJson(response, 409, { error: 'Connect IGDB in Account Settings first.' });
+    if (!credentials) return sendJson(response, 409, { error: 'IGDB is not available on this server.' });
     try { return sendJson(response, 200, await igdb.searchGames(credentials, url.searchParams.get('q'))); }
     catch (error) { return sendJson(response, error.status || 502, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/covers/bulk') {
-    const key = db.coverApiKey(user.id) || process.env.STEAMGRIDDB_API_KEY;
-    if (!key) return sendJson(response, 409, { error: 'Configure a SteamGridDB API key in Account Settings first.' });
+    const key = steamGridKey();
+    if (!key) return sendJson(response, 409, { error: 'SteamGridDB is not available on this server.' });
     const active = coverJobs.get(user.id);
     if (active?.state === 'running') return sendJson(response, 409, { error: 'A cover scan is already running.', job: active });
     runCoverJob(user.id, key).catch(error => {
@@ -501,7 +495,8 @@ async function handleApi(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/stats') return sendJson(response, 200, db.stats(user.id));
   if (request.method === 'GET' && url.pathname === '/api/meta') {
-    return sendJson(response, 200, { platforms: db.platformNames(user.id), version: readVersion(), pegiLookup: true, user });
+    return sendJson(response, 200, { platforms: db.platformNames(user.id), version: readVersion(), pegiLookup: true,
+      integrations: { igdb: Boolean(providerCredentials(user.id, 'igdb')) }, user });
   }
   if (request.method === 'GET' && url.pathname === '/api/pegi/search') {
     try { return sendJson(response, 200, await searchPegi(url.searchParams.get('q'))); }

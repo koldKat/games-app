@@ -39,6 +39,8 @@ games-app/
     showcase-covers.js      atomic public decorative-cover Kat·a·log writer
     showcase-pool.js        account-scoped owned and shared decorative-cover selectors
     thegamesdb.js           TheGamesDB boxart search, CDN URL parsing and credential checks
+    app-integration-store.js shared application-credential storage and legacy migration
+    app-integrations.js     configured SteamGridDB and IGDB application credentials
     igdb.js                 IGDB OAuth token lifecycle, search, ratings, metadata and artwork mapping
     igdb-bulk.js            conservative account-scoped IGDB enrichment jobs
     steam-store.js          Steam Store description lookup
@@ -58,7 +60,8 @@ games-app/
     style.css               dense terminal-style admin theme
     announcements.css       isolated Signal announcement panel styling
     patch.css               isolated private Patch queue styling
-    js/                     dashboard, accounts, announcements, private rows, public review, tools and shared ES modules
+    integrations.css        isolated shared-provider management styling
+    js/                     dashboard, accounts, integrations, announcements, private rows, public review, tools and shared ES modules
   scripts/
     generate-docs.js        Markdown-to-HTML documentation generator/checker
     normalize-covers.js     idempotent existing-cover normalization command
@@ -79,7 +82,7 @@ games-app/
     js/katalog-public.js    release-detail dialog and one-click private-library add bindings
     js/katalog-navigation.js persistent authenticated-shell Kat·a·log navigation
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
-    js/cover-provider-settings.js TheGamesDB and IGDB connection and scan controls
+    js/cover-provider-settings.js per-account TheGamesDB connection and shared IGDB scan controls
     js/igdb-ui.js           IGDB match selection, form metadata and detail presentation
     js/cover-result-images.js failed-thumbnail fallback to provider originals
     js/artwork-url.js       accepted remote and durable-local artwork URL policy
@@ -190,7 +193,7 @@ Environment variables:
 | `OWNER_USERNAME` | oldest account | Optional protected operator account override used by Patch/Ping; matching is case-insensitive |
 | `VERSION_FILE` | `./VERSION` | Release-string file; primarily useful for isolated tests or custom deployments |
 | `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
-| `STEAMGRIDDB_API_KEY` | blank | Optional server-wide cover API key; per-account keys can instead be configured in the UI |
+| `STEAMGRIDDB_API_KEY` | blank | Optional shared SteamGridDB application-key fallback |
 | `THEGAMESDB_API_KEY` | blank | Optional server-wide TheGamesDB key |
 | `IGDB_CLIENT_ID` | blank | Optional server-wide IGDB/Twitch application Client ID |
 | `IGDB_CLIENT_SECRET` | blank | Optional server-wide IGDB/Twitch application Client Secret |
@@ -303,7 +306,9 @@ This join table records which private game rows are represented by a shared rele
 
 Automatic publication requires a durable `/covers/<random>.<ext>` asset, substantive PEGI data, an HLTB record with a reported duration, and exact normalized title matches for both cover and HLTB provenance. Complete ambiguous records become candidates. Rejected records are sticky and cannot be republished by a later background synchronization without administrator action.
 
-`cover_provider_credentials` stores account-scoped JSON credential sets keyed by `(user_id, provider)` for TheGamesDB and IGDB. Rows cascade when an account is deleted. Status endpoints expose only a boolean connection state; stored secrets and IGDB access tokens are never returned to the browser. IGDB access tokens remain process-memory cache entries and are refreshed before expiry.
+`cover_provider_credentials` stores per-account TheGamesDB credentials keyed by `(user_id, provider)`. `user_integrations` retains legacy per-account SteamGridDB rows for compatibility, but new configuration no longer writes them.
+
+`app_integrations` stores one JSON credential set per application provider. SteamGridDB and IGDB are configured through the loopback-only admin panel and resolved for every account. On first access, an additive migration copies the protected owner's existing SteamGridDB and IGDB values into this table; the legacy rows are deliberately left untouched. Existing application rows always win, so later startups cannot overwrite an administrator's replacement credentials. Environment variables remain fallbacks when no stored application connection exists. Status endpoints expose booleans and job state only; stored secrets and IGDB access tokens are never returned to a browser. IGDB access tokens remain process-memory cache entries and are refreshed before expiry.
 
 Username comparison is case-insensitive. Renaming an account later does not alter ownership because all collection queries use the immutable numeric user ID.
 
@@ -392,7 +397,7 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | PUT | `/api/games/:id` | Replace editable metadata on owned game |
 | DELETE | `/api/games/:id` | Delete owned game |
 | GET | `/api/stats` | Account-scoped aggregates |
-| GET | `/api/meta` | Platforms, version, PEGI capability, current user |
+| GET | `/api/meta` | Platforms, version, PEGI capability, shared integration availability, current user |
 | GET | `/api/events` | Authenticated SSE stream for job progress and changed games |
 | POST | `/api/patch` | Create a private operator-support Patch, anonymously or as the signed-in account |
 | GET | `/api/ping` | Signed-in account's private Patch conversations and unread count; operator sees the admin queue |
@@ -412,15 +417,13 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/descriptions/search?q=...&platform=...` | Search Steam Store plus connected IGDB and TheGamesDB descriptions |
 | POST | `/api/descriptions/bulk` | Start an account-scoped Steam-first missing-description scan |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
-| PUT | `/api/covers/config` | Validate and store the account's SteamGridDB key |
-| DELETE | `/api/covers/config` | Remove the account-specific provider key |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
 | GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and IGDB suggestions when connected, otherwise SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
-| GET | `/api/igdb/search?q=...` | Search IGDB through the server using the account's stored application credentials |
+| GET | `/api/igdb/search?q=...` | Search IGDB through the server-wide application connection |
 | POST | `/api/covers/bulk` | Start an account-scoped exact-title scan for missing covers |
 | GET | `/api/cover-providers/:provider/status` | TheGamesDB or IGDB connection state, missing count, and job progress |
-| PUT | `/api/cover-providers/:provider/config` | Validate and store an account's provider credentials |
-| DELETE | `/api/cover-providers/:provider/config` | Remove account credentials and fall back to server configuration, if present |
+| PUT | `/api/cover-providers/thegamesdb/config` | Validate and store the signed-in account's TheGamesDB credentials |
+| DELETE | `/api/cover-providers/thegamesdb/config` | Remove the signed-in account's TheGamesDB credentials and fall back to deployment configuration, if present |
 | POST | `/api/cover-providers/:provider/bulk` | Start a conservative TheGamesDB cover scan or IGDB metadata scan |
 
 Signal returns the full 30-day public-safe activity window and groups it by the browser's local calendar day. Contribution rows include only the linked public release's PEGI value; `public/js/activity-feed.js` accepts the five valid ratings and applies the matching PEGI link color, leaving absent or invalid values on the existing muted fallback. On desktop, the reusable renderer projects that one ordered payload into a 55/45 newspaper layout: **KAT·A·LOG // UPDATES** occupies the wider left lane, **COLLECTORS // SIGNAL** occupies the right lane, and announcements span both above them. The desktop newspaper renderer is retained for an empty payload so both lane mastheads and their quiet states remain visible. The grid stretches both lane containers to the taller track so the separating rule reaches the bottom of the feed. At 760 pixels and below, the renderer selects one unified chronological stream. A media-query listener rerenders from the cached payload when that breakpoint changes, retaining stable day/account expansion keys without keeping a hidden duplicate feed that would fetch every cover and avatar twice. The landing-page preview continues using the original compact renderer rather than the newspaper layout. Six or more Kat·a·log contributions from the same account within one day become a single themed summary with an accessible inline expander; runs of up to five, joins, level-ups, and announcements remain individual entries. Before an SSE refresh replaces feed markup, the client snapshots expanded groups by local day and account, then restores the matching groups. New activity therefore does not collapse a contribution list the visitor is already reading.
@@ -463,6 +466,8 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET/POST/DELETE | `/api/admin/patch` and `/api/admin/patch/:id/*` | Localhost-only Patch queue, read state, replies, and removal |
 | GET, PUT | `/api/admin/mail` | Read non-secret SMTP status or save SMTP settings |
 | POST | `/api/admin/mail/test` | Send a test message to the configured sender |
+| GET | `/api/admin/integrations` | Read non-secret SteamGridDB and IGDB application connection states |
+| PUT | `/api/admin/integrations/:provider` | Validate and replace the shared `steamgriddb` or `igdb` application credentials |
 | DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
 | PATCH | `/api/admin/accounts/:id/lock` | Manually lock or unlock an account; locking revokes sessions |
 | DELETE | `/api/admin/accounts/:id` | Delete an account, its avatar, and cascaded games, sessions, integration settings, and preferences |
@@ -507,7 +512,7 @@ This integration is deliberately nonessential. Parsing or network failure return
 
 ## IGDB integration
 
-IGDB is optional and server-side. Each account can store a Twitch application Client ID and Client Secret, or the operator can provide `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` as a server-wide fallback. The Twitch application must use the **Confidential** client type because Public clients cannot issue a secret; IGDB recommends `http://localhost` for the otherwise-unused redirect URL. `server/igdb.js` exchanges those credentials at Twitch's client-credentials endpoint, keeps the access token only in memory, refreshes it before expiry, and sends the required Client ID and bearer headers to IGDB. Browser code never receives either credential or token.
+IGDB is optional and server-side. Its Client ID and Client Secret are application credentials rather than collector credentials, so one localhost-admin connection serves every account. `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` remain a deployment-level fallback. The Twitch application must use the **Confidential** client type because Public clients cannot issue a secret; IGDB recommends `http://localhost` for the otherwise-unused redirect URL. `server/igdb.js` exchanges those credentials at Twitch's client-credentials endpoint, keeps the access token only in memory, refreshes it before expiry, and sends the required Client ID and bearer headers to IGDB. Browser code never receives either credential or token. The metadata response tells the editor only whether IGDB is available, keeping its lookup control disabled when it is not.
 
 IGDB calls pass through one serialized request lane, keeping concurrent autocomplete, cover, description, and batch work below the published four-request-per-second limit. Concurrent requests for the same credentials share one in-flight token exchange, and identical searches share one in-flight game request. Requests are capped by a timeout, retried once after an authorization or rate-limit response, and cached for 30 minutes by normalized query and credential fingerprint. Expired entries are pruned and the cache is capped at 500 searches. Results map the IGDB identity, source URL, description, release year, publisher and developer credits, genres, themes, platforms, cover image, community rating/count, and aggregated critic rating/count. Manual autocomplete failures are deliberately silent; the user can continue typing normally.
 
@@ -533,9 +538,9 @@ The game form owns HLTB state in the focused `public/js/hltb-ui.js` module. Look
 
 The artwork layer supports SteamGridDB, TheGamesDB, and IGDB. SteamGridDB supplies portrait grids and fallback title autocomplete. TheGamesDB supplies front boxart and platform metadata from its CDN. IGDB supplies cover art alongside its game metadata. Manual lookup runs configured sources concurrently, preserves provider provenance, and returns successful results even when another source is unavailable.
 
-SteamGridDB requires a personal bearer API key stored in `user_integrations`. TheGamesDB requires an API key stored in `cover_provider_credentials`; its key page requires an authenticated TheGamesDB site account, so Account Settings links to sign-in/registration separately from the key page. IGDB stores its Client ID and Client Secret in the same account-scoped credential table. `STEAMGRIDDB_API_KEY`, `THEGAMESDB_API_KEY`, `IGDB_CLIENT_ID`, and `IGDB_CLIENT_SECRET` provide optional server-wide fallbacks. Secrets are validated before storage and never returned to the browser.
+SteamGridDB and IGDB use shared application credentials stored in `app_integrations` and managed from the localhost-only admin panel. TheGamesDB requires an account-scoped API key stored in `cover_provider_credentials`; its key page requires an authenticated TheGamesDB site account, so Account Settings links to sign-in/registration separately from the key page. `STEAMGRIDDB_API_KEY`, `THEGAMESDB_API_KEY`, `IGDB_CLIENT_ID`, and `IGDB_CLIENT_SECRET` provide optional deployment fallbacks. Secrets are validated before storage and never returned to the browser.
 
-Cover-status responses expose only whether lookup is configured. When connected, Account Settings renders a disabled field as a green **Connected** state; secrets are never returned to the browser. Selecting **Replace key** or **Replace credentials** explicitly enters replacement mode with empty fields.
+Cover-status responses expose only whether lookup is configured. Account Settings shows shared SteamGridDB and IGDB availability plus their account-scoped scan controls, but no shared credential fields. TheGamesDB retains its disabled green **Connected** field and explicit empty replacement mode. The admin panel likewise reports only **Connected** or **Not connected** and always leaves replacement fields empty.
 
 The add/edit title field searches the authenticated account's own titles, the public Kat·a·log, and IGDB after three characters when connected; SteamGridDB remains the remote fallback. Browser requests are delayed by 100 ms, stale requests are aborted, remote results are capped at ten, and provider results are cached server-side for 30 minutes. Existing entries appear first with platform and ownership context. Local collection search, title suggestions, and duplicate identity checks normalize Unicode combining marks before comparison, making accented and unaccented spellings equivalent. SQL `LIKE` wildcards supplied by the user are escaped.
 
