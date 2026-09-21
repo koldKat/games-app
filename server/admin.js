@@ -17,6 +17,7 @@ const trafficMetrics = require('./traffic-metrics');
 const covers = require('./covers');
 const igdb = require('./igdb');
 const appIntegrations = require('./app-integrations');
+const steamLibrary = require('./steam-library');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
@@ -322,9 +323,10 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, {
       steamgriddb: { configured: appIntegrations.configured('steamgriddb') },
       igdb: { configured: appIntegrations.configured('igdb') },
+      steam: { configured: appIntegrations.configured('steam') },
     });
   }
-  const integrationMatch = pathname.match(/^\/api\/admin\/integrations\/(steamgriddb|igdb)$/);
+  const integrationMatch = pathname.match(/^\/api\/admin\/integrations\/(steamgriddb|igdb|steam)$/);
   if (request.method === 'PUT' && integrationMatch) {
     const provider = integrationMatch[1];
     try {
@@ -332,9 +334,12 @@ async function handleApi(request, response, url) {
       if (provider === 'steamgriddb') {
         const credentials = { apiKey: String(input.apiKey || '').trim() };
         await covers.verifyKey(credentials.apiKey); appIntegrations.save(provider, credentials);
-      } else {
+      } else if (provider === 'igdb') {
         const credentials = igdb.cleanCredentials(input);
         await igdb.verify(credentials); appIntegrations.save(provider, credentials);
+      } else {
+        const credentials = await steamLibrary.verify(input.apiKey);
+        appIntegrations.save(provider, credentials);
       }
       return sendJson(response, 200, { configured: true });
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }

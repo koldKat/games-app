@@ -673,6 +673,8 @@
   color: #c3cdd6;
   font-size: 12px;
   line-height: 1.65;
+  text-align: justify;
+  text-justify: inter-word;
   white-space: pre-line;
 }
 .pegi-detail-body ul {

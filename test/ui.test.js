@@ -667,6 +667,15 @@ test('public game details keep long titles at a compact dialog scale', () => {
   assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:clamp\(17px,5vw,21px\)}/);
 });
 
+test('game descriptions, PEGI prose, and personal notes use justified long-form text', () => {
+  const privateCss = readCss('public/css/library.css'); const featureCss = readCss('public/css/features.css'); const publicCss = readCss('public/css/katalog.css');
+  assert.match(privateCss, /\.game-detail-description\s*\{[^}]*text-align:\s*justify/);
+  assert.match(privateCss, /\.game-detail-section p\s*\{[^}]*text-align:\s*justify/);
+  assert.match(featureCss, /\.pegi-detail-body p\s*\{[^}]*text-align:\s*justify/);
+  assert.match(publicCss, /\.game-description>p\s*\{[^}]*text-align:\s*justify/);
+  assert.match(publicCss, /\.game-metadata p\s*\{[^}]*text-align:\s*justify/);
+});
+
 test('public Kat·a·log cards overlay community ratings on their covers', () => {
   const pages = read('server/katalog-pages.js'); const css = readCss('public/css/katalog.css');
   assert.match(pages, /class="katalog-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
@@ -824,6 +833,33 @@ test('SteamGridDB is a shared admin integration while account scans remain avail
   assert.match(server, /configured: Boolean\(steamGridKey\(\)\), shared: true/);
   assert.match(adminHtml, /data-app-integration="steamgriddb"/);
   assert.match(adminClient, /\/api\/admin\/integrations\/\$\{provider\}/);
+});
+
+test('Steam library import stays modular, reviewed, and server-keyed', () => {
+  const html = read('public/index.html'); const application = read('public/app.js'); const importer = read('public/js/steam-import.js');
+  const server = read('server.js'); const adminHtml = read('admin/index.html'); const adminClient = read('admin/js/integrations.js');
+  assert.match(application, /import \{ createSteamImporter \} from '\.\/js\/steam-import\.js'/);
+  assert.match(html, /id="steam-import-review"[^>]*>Review library/);
+  assert.match(html, /id="steam-import-dialog"/);
+  assert.match(html, /id="steam-import-progress"[\s\S]*id="steam-import-progress-fill"/);
+  assert.match(importer, /\/api\/steam\/import-preview/);
+  assert.match(importer, /selected\.add\(item\.appId\)/);
+  assert.match(importer, /REVIEW_RENDER_LIMIT = 250/);
+  assert.match(importer, /syncSearchClears\(dialog\)/);
+  assert.match(importer, /profileInput\.classList\.toggle\('is-connected', showingConnected\)/);
+  assert.match(importer, /showingConnected \? 'Replace profile' : 'Connect'/);
+  assert.match(importer, /event\.key !== 'Enter'[\s\S]*event\.preventDefault\(\)[\s\S]*connectButton\.click\(\)/);
+  assert.match(importer, /try \{ await onImported\(result\); \}[\s\S]*Steam import complete \/\/ refresh the Kat·a·log/);
+  assert.match(importer, /fetching: 'Refreshing owned games from Steam/);
+  assert.match(importer, /pressedBackdrop && event\.target === dialog/);
+  assert.match(server, /url\.pathname === '\/api\/steam\/import'/);
+  assert.match(server, /'steam-import-progress'/);
+  assert.match(server, /events\.publish\(user\.id, 'games-imported'/);
+  assert.match(adminHtml, /data-app-integration="steam"[\s\S]*name="apiKey"/);
+  assert.match(adminClient, /steam: 'Steam Web API'/);
+  const importerCss = read('public/css/steam-import.css');
+  assert.match(importerCss, /\.steam-import-card\s*\{[^}]*overflow:hidden/);
+  assert.match(importerCss, /\.steam-import-list\s*\{[^}]*overflow:auto/);
 });
 
 test('account metadata services use compact themed disclosures', () => {

@@ -44,6 +44,7 @@
   <link rel="stylesheet" href="/css/public-profile.css">
   <link rel="stylesheet" href="/css/patch.css">
   <link rel="stylesheet" href="/css/stats.css">
+  <link rel="stylesheet" href="/css/steam-import.css">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -396,6 +397,22 @@
         <div class="progression-meter"><span data-progress-meter></span></div>
         <small data-progress-next>Loading collector progress…</small>
       </section>
+      <details class="integration-panel steam-library-integration">
+        <summary class="integration-summary"><span><strong>Steam library import</strong><small id="steam-import-status">Checking application connection…</small></span></summary>
+        <div class="integration-body">
+          <div class="integration-resources"><a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener noreferrer">Steam privacy settings ↗</a></div>
+          <div class="integration-key steam-connect-row">
+            <input id="steam-profile-reference" type="text" maxlength="200" autocomplete="off" spellcheck="false" aria-label="Steam profile URL, custom name, or SteamID64" placeholder="Steam URL, name, or ID">
+            <button type="button" class="button secondary" id="steam-connect">Connect</button>
+          </div>
+          <div class="integration-bulk steam-import-actions">
+            <span id="steam-connection-detail" class="bulk-status">No Steam profile connected.</span>
+            <button type="button" class="button ghost" id="steam-import-review" disabled>Review library</button>
+            <button type="button" class="text-button" id="steam-disconnect" hidden>Disconnect</button>
+          </div>
+          <small class="integration-note">Imports are reviewed before saving. Steam requires your Game details privacy setting to be Public.</small>
+        </div>
+      </details>
       <details class="integration-panel">
         <summary class="integration-summary"><span><strong>SteamGridDB covers</strong><small id="cover-provider-status">Checking application connection…</small></span></summary>
         <div class="integration-body">
@@ -455,6 +472,26 @@
       <p id="account-error" class="form-error" hidden></p>
       <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
     </form>
+  </dialog>
+  <dialog id="steam-import-dialog" class="steam-import-dialog">
+    <section class="modal-card steam-import-card" role="document">
+      <header class="modal-head"><div><p class="kicker">Steam // reviewed import</p><h2>Choose library records</h2></div><button type="button" class="close-button" data-steam-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <div id="steam-import-loading" class="steam-import-loading" role="status">Reading your Steam library…</div>
+      <div id="steam-import-content" hidden>
+        <div id="steam-import-summary" class="steam-import-summary"></div>
+        <div class="steam-import-toolbar">
+          <div><button type="button" class="text-button" id="steam-select-importable">Select importable</button><button type="button" class="text-button" id="steam-clear-selection">Clear</button></div>
+          <input id="steam-import-search" type="search" maxlength="220" autocomplete="off" spellcheck="false" placeholder="Filter Steam titles" aria-label="Filter Steam import titles">
+        </div>
+        <div id="steam-import-list" class="steam-import-list"></div>
+      </div>
+      <section id="steam-import-progress" class="steam-import-progress" role="status" aria-live="polite" hidden>
+        <div><span id="steam-import-progress-label">Preparing import…</span><b id="steam-import-progress-count"></b></div>
+        <div class="steam-import-meter"><span id="steam-import-progress-fill"></span></div>
+      </section>
+      <p id="steam-import-error" class="form-error" hidden></p>
+      <footer class="modal-actions"><span id="steam-selected-count">0 selected</span><button type="button" class="button ghost" data-steam-close>Cancel</button><button type="button" class="button primary" id="steam-import-confirm" disabled>Import selected</button></footer>
+    </section>
   </dialog>
   <dialog id="action-dialog" class="action-dialog">
     <section class="modal-card action-modal" role="document">

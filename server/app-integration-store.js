@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_INTEGRATION_PROVIDERS = Object.freeze(['steamgriddb', 'igdb']);
+const APP_INTEGRATION_PROVIDERS = Object.freeze(['steamgriddb', 'igdb', 'steam']);
 
 function createAppIntegrationStore(database, { operatorUserId, environmentCredentials = () => null } = {}) {
   database.exec(`CREATE TABLE IF NOT EXISTS app_integrations (

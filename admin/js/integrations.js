@@ -23,6 +23,7 @@ for (const form of forms) form.addEventListener('submit', async event => {
     const payload = Object.fromEntries(new FormData(form));
     if (Object.values(payload).some(value => !String(value).trim())) throw new Error('Complete every credential field first.');
     const status = await api('PUT', `/api/admin/integrations/${provider}`, payload);
-    form.reset(); render(form, status); toast(`${provider === 'igdb' ? 'IGDB' : 'SteamGridDB'} connected for every account.`);
+    const labels = { igdb: 'IGDB', steamgriddb: 'SteamGridDB', steam: 'Steam Web API' };
+    form.reset(); render(form, status); toast(`${labels[provider] || provider} connected for every account.`);
   });
 });

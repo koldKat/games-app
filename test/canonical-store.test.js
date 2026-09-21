@@ -27,6 +27,7 @@ function fixture() {
       igdb_genres TEXT NOT NULL DEFAULT '[]',
       igdb_themes TEXT NOT NULL DEFAULT '[]',
       igdb_developers TEXT NOT NULL DEFAULT '[]'
+      ,steam_app_id INTEGER
     );
     CREATE TABLE catalogue_entries (
       id INTEGER PRIMARY KEY,

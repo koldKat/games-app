@@ -253,6 +253,9 @@ if (!gameColumns.includes('igdb_genres')) db.exec("ALTER TABLE games ADD COLUMN 
 if (!gameColumns.includes('igdb_themes')) db.exec("ALTER TABLE games ADD COLUMN igdb_themes TEXT NOT NULL DEFAULT '[]'");
 if (!gameColumns.includes('igdb_developers')) db.exec("ALTER TABLE games ADD COLUMN igdb_developers TEXT NOT NULL DEFAULT '[]'");
 if (!gameColumns.includes('igdb_updated_at')) db.exec('ALTER TABLE games ADD COLUMN igdb_updated_at TEXT');
+if (!gameColumns.includes('steam_app_id')) db.exec('ALTER TABLE games ADD COLUMN steam_app_id INTEGER');
+if (!gameColumns.includes('steam_playtime_minutes')) db.exec('ALTER TABLE games ADD COLUMN steam_playtime_minutes INTEGER NOT NULL DEFAULT 0');
+if (!gameColumns.includes('steam_last_played_at')) db.exec('ALTER TABLE games ADD COLUMN steam_last_played_at TEXT');
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
@@ -266,6 +269,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_games_ownership ON games(ownership);
   CREATE INDEX IF NOT EXISTS idx_games_pegi ON games(pegi);
   CREATE INDEX IF NOT EXISTS idx_games_title ON games(title COLLATE NOCASE);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_steam_app ON games(user_id, steam_app_id) WHERE steam_app_id IS NOT NULL;
   CREATE INDEX IF NOT EXISTS idx_forum_threads_category ON forum_threads(category_id, is_pinned DESC, last_post_at DESC);
   CREATE INDEX IF NOT EXISTS idx_forum_posts_thread ON forum_posts(thread_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_patch_threads_user ON patch_threads(user_id, deleted_by_user, user_unread);
@@ -291,6 +295,8 @@ const selectFields = `id, title, platform, pegi, ownership,
   igdb_critic_rating AS igdbCriticRating, igdb_critic_rating_count AS igdbCriticRatingCount,
   igdb_genres AS igdbGenresJson, igdb_themes AS igdbThemesJson, igdb_developers AS igdbDevelopersJson,
   igdb_updated_at AS igdbUpdatedAt,
+  steam_app_id AS steamAppId, steam_playtime_minutes AS steamPlaytimeMinutes,
+  steam_last_played_at AS steamLastPlayedAt,
   canonical_game_id AS canonicalGameId, canonical_release_id AS canonicalReleaseId,
   created_at AS createdAt, updated_at AS updatedAt`;
 
@@ -301,14 +307,16 @@ const insert = db.prepare(`
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
     cover_url, cover_source, cover_match_title, description, description_source, description_source_url,
     igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
-    igdb_genres, igdb_themes, igdb_developers, igdb_updated_at)
+    igdb_genres, igdb_themes, igdb_developers, igdb_updated_at,
+    steam_app_id, steam_playtime_minutes, steam_last_played_at)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
     @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl,
     @igdbId, @igdbSlug, @igdbUrl, @igdbRating, @igdbRatingCount, @igdbCriticRating, @igdbCriticRatingCount,
-    @igdbGenresJson, @igdbThemesJson, @igdbDevelopersJson, @igdbUpdatedAt)
+    @igdbGenresJson, @igdbThemesJson, @igdbDevelopersJson, @igdbUpdatedAt,
+    @steamAppId, @steamPlaytimeMinutes, @steamLastPlayedAt)
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
@@ -326,7 +334,9 @@ const update = db.prepare(`
     igdb_rating=@igdbRating, igdb_rating_count=@igdbRatingCount,
     igdb_critic_rating=@igdbCriticRating, igdb_critic_rating_count=@igdbCriticRatingCount,
     igdb_genres=@igdbGenresJson, igdb_themes=@igdbThemesJson, igdb_developers=@igdbDevelopersJson,
-    igdb_updated_at=@igdbUpdatedAt, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
+    igdb_updated_at=@igdbUpdatedAt, steam_app_id=@steamAppId,
+    steam_playtime_minutes=@steamPlaytimeMinutes, steam_last_played_at=@steamLastPlayedAt,
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
 const searchTitles = db.prepare(`
@@ -392,6 +402,9 @@ function normalizeGame(input = {}) {
     igdbThemesJson: JSON.stringify(igdbId ? safeList(input.igdbThemes) : []),
     igdbDevelopersJson: JSON.stringify(igdbId ? safeList(input.igdbDevelopers) : []),
     igdbUpdatedAt: igdbId ? safeText(input.igdbUpdatedAt, GAME_LIMITS.hltbTimestampMax) || new Date().toISOString() : null,
+    steamAppId: Number.isInteger(Number(input.steamAppId)) && Number(input.steamAppId) > 0 ? Number(input.steamAppId) : null,
+    steamPlaytimeMinutes: Math.max(0, Number.parseInt(input.steamPlaytimeMinutes, 10) || 0),
+    steamLastPlayedAt: input.steamLastPlayedAt ? safeText(input.steamLastPlayedAt, GAME_LIMITS.hltbTimestampMax) : null,
   };
 }
 
@@ -514,7 +527,21 @@ function createGame(userId, input) {
   canonical.syncGameById(id); return getGame(userId, id);
 }
 function updateGame(userId, id, input) {
-  const game = normalizeGame(input); const result = update.run({ ...game, id, userId });
+  const existing = db.prepare('SELECT steam_app_id AS steamAppId,steam_playtime_minutes AS steamPlaytimeMinutes,steam_last_played_at AS steamLastPlayedAt FROM games WHERE id=? AND user_id=?').get(id, userId);
+  const game = normalizeGame({ ...input,
+    steamAppId: input.steamAppId === undefined ? existing?.steamAppId : input.steamAppId,
+    steamPlaytimeMinutes: input.steamPlaytimeMinutes === undefined ? existing?.steamPlaytimeMinutes : input.steamPlaytimeMinutes,
+    steamLastPlayedAt: input.steamLastPlayedAt === undefined ? existing?.steamLastPlayedAt : input.steamLastPlayedAt,
+  }); const result = update.run({ ...game, id, userId });
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
+}
+
+function linkSteamGame(userId, id, steamGame = {}) {
+  const appId = Number(steamGame.appId); if (!Number.isInteger(appId) || appId <= 0) return null;
+  const result = db.prepare(`UPDATE games SET steam_app_id=?,steam_playtime_minutes=?,steam_last_played_at=?,updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND user_id=? AND steam_app_id IS NULL`).run(appId, Math.max(0, Number.parseInt(steamGame.playtimeMinutes, 10) || 0),
+      steamGame.lastPlayedAt || null, id, userId);
   if (!result.changes) return null;
   canonical.syncGameById(id); return getGame(userId, id);
 }
@@ -684,7 +711,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame,
   coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

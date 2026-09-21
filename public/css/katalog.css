@@ -892,6 +892,8 @@
   color: var(--muted);
   font-size: 13px;
   line-height: 1.28;
+  text-align: justify;
+  text-justify: inter-word;
   white-space: pre-line;
 }
 .game-metadata article>a {
@@ -929,6 +931,8 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.7;
+  text-align: justify;
+  text-justify: inter-word;
   white-space: pre-line;
 }
 .game-description>a {

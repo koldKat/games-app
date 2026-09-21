@@ -655,6 +655,8 @@ body {
   color: #c4d0d9;
   font-size: 12px;
   line-height: 1.6;
+  text-align: justify;
+  text-justify: inter-word;
   white-space: pre-line;
 }
 .game-detail-facts {
@@ -700,6 +702,8 @@ body {
   color: #b7c4cd;
   font-size: 11px;
   line-height: 1.55;
+  text-align: justify;
+  text-justify: inter-word;
   white-space: pre-line;
 }
 .game-detail-section ul {

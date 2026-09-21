@@ -40,7 +40,9 @@ games-app/
     showcase-pool.js        account-scoped owned and shared decorative-cover selectors
     thegamesdb.js           TheGamesDB boxart search, CDN URL parsing and credential checks
     app-integration-store.js shared application-credential storage and legacy migration
-    app-integrations.js     configured SteamGridDB and IGDB application credentials
+    app-integrations.js     configured SteamGridDB, IGDB and Steam application credentials
+    steam-library.js        official Steam Web API profile resolution and owned-game client
+    steam-import.js         account connection, dry-run classification and restart-safe batched import
     igdb.js                 IGDB OAuth token lifecycle, search, ratings, metadata and artwork mapping
     igdb-bulk.js            conservative account-scoped IGDB enrichment jobs
     steam-store.js          Steam Store description lookup
@@ -84,6 +86,7 @@ games-app/
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
     js/cover-provider-settings.js per-account TheGamesDB connection and shared IGDB scan controls
     js/igdb-ui.js           IGDB match selection, form metadata and detail presentation
+    js/steam-import.js      Steam connection, review selection and import dialog controller
     js/cover-result-images.js failed-thumbnail fallback to provider originals
     js/artwork-url.js       accepted remote and durable-local artwork URL policy
     js/ui-policy.js         browser pagination, lookup limits and interaction timing
@@ -97,6 +100,7 @@ games-app/
       patch.css            private Patch and Ping dialogs, unread alert state
       katalog.css          standalone public Kat·a·log and detail-page theme
       forum.css            public forum surfaces and responsive composer theme
+      steam-import.css     compact Steam review dialog and connection controls
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
     icon-192.png            installable-app icon
@@ -116,6 +120,8 @@ games-app/
     cover-providers.test.js provider parsing, image URLs and platform aliases
     cover-provider-bulk.test.js reusable cover-job updates and race protection
     igdb.test.js            IGDB mapping, server-side authentication and batch updates
+    steam-library.test.js   Steam reference resolution, API mapping and privacy failures
+    steam-import.test.js    import classification, linking, creation and repeat safety
     cover-storage.test.js   provider allow-list, image validation and local migration
     image-policy.test.js    cover/avatar dimensions, format and byte ceilings
     cover-result-images.test.js browser thumbnail fallback contract
@@ -197,6 +203,7 @@ Environment variables:
 | `THEGAMESDB_API_KEY` | blank | Optional server-wide TheGamesDB key |
 | `IGDB_CLIENT_ID` | blank | Optional server-wide IGDB/Twitch application Client ID |
 | `IGDB_CLIENT_SECRET` | blank | Optional server-wide IGDB/Twitch application Client Secret |
+| `STEAM_WEB_API_KEY` | blank | Optional server-wide Steam Web API key fallback |
 
 Start the server with `npm start`. Development watch mode is available through `npm run dev`.
 
@@ -279,10 +286,18 @@ Missing rows produce safe defaults. `server/preferences.js` validates every enum
 | `igdb_critic_rating`, `igdb_critic_rating_count` | IGDB aggregated critic score and review count |
 | `igdb_genres`, `igdb_themes`, `igdb_developers` | Validated JSON metadata lists from IGDB |
 | `igdb_updated_at` | Last accepted IGDB metadata timestamp |
+| `steam_app_id` | Stable Steam application identity; unique within one account when present |
+| `steam_playtime_minutes`, `steam_last_played_at` | Playtime and last-played snapshot from the latest import |
 | `description`, `description_source`, `description_source_url` | Selected game description and its required source attribution |
 | `created_at`, `updated_at` | SQLite timestamps |
 
-Indexes cover owner, platform, ownership, PEGI, case-insensitive title, and canonical identity.
+Indexes cover owner, platform, ownership, PEGI, case-insensitive title, canonical identity, and non-null per-account Steam AppIDs.
+
+### `steam_connections` and `canonical_external_ids`
+
+`steam_connections` stores one resolved SteamID64, public persona name, profile URL, and last successful import timestamp per account. It never stores the application API key. Disconnecting removes this pointer without deleting imported games or their Steam identities.
+
+`canonical_external_ids` maps a provider identity such as `steam:<AppID>` to one canonical game. This lets imported records share a stable title identity immediately, before richer IGDB metadata exists. A later high-confidence IGDB enrichment can move that local provider mapping to the IGDB-backed canonical identity without copying personal collection data into the shared tables.
 
 ### `canonical_games`, `canonical_releases`, and identity audit
 
@@ -308,7 +323,7 @@ Automatic publication requires a durable `/covers/<random>.<ext>` asset, substan
 
 `cover_provider_credentials` stores per-account TheGamesDB credentials keyed by `(user_id, provider)`. `user_integrations` retains legacy per-account SteamGridDB rows for compatibility, but new configuration no longer writes them.
 
-`app_integrations` stores one JSON credential set per application provider. SteamGridDB and IGDB are configured through the loopback-only admin panel and resolved for every account. On first access, an additive migration copies the protected owner's existing SteamGridDB and IGDB values into this table; the legacy rows are deliberately left untouched. Existing application rows always win, so later startups cannot overwrite an administrator's replacement credentials. Environment variables remain fallbacks when no stored application connection exists. Status endpoints expose booleans and job state only; stored secrets and IGDB access tokens are never returned to a browser. IGDB access tokens remain process-memory cache entries and are refreshed before expiry.
+`app_integrations` stores one JSON credential set per application provider. SteamGridDB, IGDB, and Steam Web API access are configured through the loopback-only admin panel and resolved for every account. On first access, an additive migration copies the protected owner's existing SteamGridDB and IGDB values into this table; the legacy rows are deliberately left untouched. Existing application rows always win, so later startups cannot overwrite an administrator's replacement credentials. Environment variables remain fallbacks when no stored application connection exists. Status endpoints expose booleans and job state only; stored secrets and IGDB access tokens are never returned to a browser. IGDB access tokens remain process-memory cache entries and are refreshed before expiry.
 
 Username comparison is case-insensitive. Renaming an account later does not alter ownership because all collection queries use the immutable numeric user ID.
 
@@ -416,6 +431,10 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | GET | `/api/descriptions/status` | Missing-description count, source availability, and job state |
 | GET | `/api/descriptions/search?q=...&platform=...` | Search Steam Store plus connected IGDB and TheGamesDB descriptions |
 | POST | `/api/descriptions/bulk` | Start an account-scoped Steam-first missing-description scan |
+| GET | `/api/steam/status` | Read shared-key availability and the current account's non-secret Steam connection |
+| PUT, DELETE | `/api/steam/connection` | Resolve and connect a Steam profile reference, or disconnect it without deleting games |
+| GET | `/api/steam/import-preview` | Fetch and classify the connected profile's owned library without writing games |
+| POST | `/api/steam/import` | Re-fetch, validate and restart-safely batch-import selected owned AppIDs |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
 | GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and IGDB suggestions when connected, otherwise SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
@@ -466,8 +485,8 @@ The admin interface is available at `http://127.0.0.1:3005/admin/`. It is intent
 | GET/POST/DELETE | `/api/admin/patch` and `/api/admin/patch/:id/*` | Localhost-only Patch queue, read state, replies, and removal |
 | GET, PUT | `/api/admin/mail` | Read non-secret SMTP status or save SMTP settings |
 | POST | `/api/admin/mail/test` | Send a test message to the configured sender |
-| GET | `/api/admin/integrations` | Read non-secret SteamGridDB and IGDB application connection states |
-| PUT | `/api/admin/integrations/:provider` | Validate and replace the shared `steamgriddb` or `igdb` application credentials |
+| GET | `/api/admin/integrations` | Read non-secret SteamGridDB, IGDB, and Steam application connection states |
+| PUT | `/api/admin/integrations/:provider` | Validate and replace shared `steamgriddb`, `igdb`, or `steam` application credentials |
 | DELETE | `/api/admin/accounts/:id/sessions` | Revoke every active session for one account |
 | PATCH | `/api/admin/accounts/:id/lock` | Manually lock or unlock an account; locking revokes sessions |
 | DELETE | `/api/admin/accounts/:id` | Delete an account, its avatar, and cascaded games, sessions, integration settings, and preferences |
@@ -521,6 +540,14 @@ IGDB calls pass through one serialized request lane, keeping concurrent autocomp
 `server/igdb-bulk.js` scans only visible games without an IGDB identity. It accepts one normalized exact-title result on the saved platform, reloads each row before writing, and skips records changed during the run. Successful writes preserve personal fields and existing factual values, may fill blank publisher/year/description/cover data, synchronize eligible public Kat·a·log facts, and publish `igdb-job` plus `game-updated` SSE events. Job state is process-local; stored metadata is durable.
 
 Genres and themes remain separate labeled groups in private and public detail views. Compact teal genre chips and violet theme chips feed the existing Kat·a·log search instead of adding another filter dropdown. They use a dedicated metadata-chip component rather than inheriting the larger uppercase card-badge treatment. Private and public SQL search both inspect the validated IGDB genre and theme JSON, while public release structured data exposes genres to search engines. Stats for Nerds expands genres only from public releases and deduplicates platform releases by canonical game identity, so no private title or account data enters that aggregate.
+
+## Steam library import
+
+Steam import uses the official `IPlayerService/GetOwnedGames`, `ISteamUser/GetPlayerSummaries`, and `ISteamUser/ResolveVanityURL` Web API methods. The application API key is stored once in `app_integrations` by the loopback-only administrator, with `STEAM_WEB_API_KEY` as an optional deployment fallback. Collectors provide only a SteamID64, vanity name, or Steam Community profile URL. Credential validation and every Steam request remain server-side.
+
+The preview is a strict dry run. `server/steam-import.js` compares each AppID against the account first, then uses normalized exact title matching. An existing AppID is already imported; one same-title Steam row without an AppID is safe to link; any already-linked or multiple Steam match is ambiguous; a title found only on another platform becomes a new Steam copy; everything else is new. Only new records, other-platform copies, and single safe links are selected by default. Import re-fetches the remote library, accepts at most 5,000 distinct positive integer AppIDs, and rejects any ID absent from that response. The browser retains the complete result and selection state but mounts no more than 250 matching review rows; filtering exposes records outside that slice without creating a multi-thousand-node dialog.
+
+Matching builds AppID and normalized-title indexes once, avoiding a collection scan for every remote title. Writes and canonical identity updates run in five-record SQLite transactions and yield to Node's event loop after every batch. Collector XP is recorded in the same small batches, followed by one collection-wide milestone scan instead of reloading and filtering the complete library once per imported game. Imported rows are known to be ineligible for publication, so the import does not run the public eligibility pipeline thousands of times; later enrichment uses the ordinary synchronization path. This keeps unrelated HTTP requests and SSE heartbeats responsive during a large import. A process failure can leave completed batches in place, but the AppID uniqueness rule and fresh server-side classification make a retry safely continue rather than duplicate them. Already-written rows in the submitted retry are also passed through idempotent import-XP recovery, closing the gap where a process could stop after a database batch but before progression processing. New games use owned, digital, Steam, and backlog defaults while retaining the imported playtime and last-played snapshot. Linking changes only Steam identity and snapshot fields on the existing row. `steam-import-progress` SSE events report the fetching, importing, processing, and completion phases. Progression is published once with only level-crossing details in the SSE payload, avoiding thousands of redundant XP animations, while one final `games-imported` event makes other open sessions reload collection counts and cards. The service rejects profile replacement or disconnection while its import phase is active, and both the service and HTTP boundary reject a second concurrent import for the same account.
 
 ## HowLongToBeat integration
 
@@ -713,5 +740,6 @@ The database and generated cover files are excluded from Git. Source code, gener
 - PEGI parsing depends on public page structure and can require maintenance; running batch jobs are not resumed after a process restart.
 - HLTB lookup depends on an undocumented private search route that can change and may require maintenance. Running batch jobs are not resumed after a process restart.
 - Cover lookup depends on whichever of SteamGridDB or TheGamesDB the account or server has configured; external quotas and availability apply, and unfinished bulk jobs must be restarted after a process restart.
+- Steam import requires a server-wide Web API key and a profile whose Game details privacy permits owned-game access. It imports an explicit snapshot and does not continuously synchronize later playtime or newly purchased games.
 - Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
 - The public client retains one orchestration entry point, with stable data registries split into focused modules. The admin client is divided by panel plus shared utilities.

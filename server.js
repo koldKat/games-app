@@ -14,6 +14,8 @@ const covers = require('./server/covers');
 const thegamesdb = require('./server/thegamesdb');
 const igdb = require('./server/igdb');
 const steamStore = require('./server/steam-store');
+const steamLibrary = require('./server/steam-library');
+const { createSteamImportService } = require('./server/steam-import');
 const { createDescriptionBulkManager } = require('./server/description-bulk');
 const { createCoverProviderBulkManager } = require('./server/cover-provider-bulk');
 const { createIgdbBulkManager } = require('./server/igdb-bulk');
@@ -95,9 +97,10 @@ function publishAppEvent(userId, event, payload) {
   if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game);
   events.publish(userId, event, payload);
 }
-function publishProgression(userId, result) {
+function publishProgression(userId, result, { compact = false } = {}) {
   if (!result?.awards?.length) return;
-  events.publish(userId, 'progression-updated', { progress: result.progress, awards: result.awards });
+  const eventAwards = compact ? result.awards.filter(award => award.levels?.length || award.event === 'catalogue_contribution') : result.awards;
+  events.publish(userId, 'progression-updated', { progress: result.progress, awards: eventAwards });
   let changed = false;
   for (const award of result.awards) {
     for (const level of award.levels || []) changed = activity.recordLevelUp(userId, level.level, level.title, level.previousTitle) || changed;
@@ -124,6 +127,9 @@ const igdbJobs = createIgdbBulkManager({ data: db, lookup: igdb.exactGame, saveC
 const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: publishAppEvent });
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
+const steamImports = createSteamImportService({ database: db.db, data: db, integrations: appIntegrations, steam: steamLibrary });
+const activeSteamImportRequests = new Set();
+const STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE = 5;
 const katalogRoutes = createKatalogRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
 const forumRoutes = createForumRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onProgression: publishProgression });
 const patchRoutes = createPatchRoutes({ auth, events });
@@ -404,6 +410,50 @@ async function handleApi(request, response, url) {
     removeAvatarFile(old);
     events.publishPublicActivity();
     return sendJson(response, 200, { avatarUrl: null });
+  }
+  if (request.method === 'GET' && url.pathname === '/api/steam/status') {
+    return sendJson(response, 200, steamImports.status(user.id));
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/steam/connection') {
+    try { return sendJson(response, 200, await steamImports.connect(user.id, (await readJson(request)).profile)); }
+    catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+  }
+  if (request.method === 'DELETE' && url.pathname === '/api/steam/connection') {
+    try { return sendJson(response, 200, steamImports.disconnect(user.id)); }
+    catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/steam/import-preview') {
+    try { return sendJson(response, 200, await steamImports.preview(user.id)); }
+    catch (error) { return sendJson(response, error.status || 502, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/steam/import') {
+    if (activeSteamImportRequests.has(user.id)) return sendJson(response, 409, { error: 'A Steam import is already running for this account.' });
+    activeSteamImportRequests.add(user.id);
+    try {
+      const publishProgress = progress => events.publish(user.id, 'steam-import-progress', progress);
+      const result = await steamImports.importSelection(user.id, (await readJson(request)).appIds, publishProgress);
+      publishProgress({ phase: 'processing', current: 0, total: result.xpGames.length });
+      const progressionAwards = []; let importedProgress = progression.info(user.id);
+      for (let offset = 0; offset < result.xpGames.length; offset += STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE) {
+        const chunk = result.xpGames.slice(offset, offset + STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE);
+        const recorded = progression.recordImportedGames(user.id, chunk, { milestones: false });
+        progressionAwards.push(...recorded.awards); importedProgress = recorded.progress;
+        publishProgress({ phase: 'processing', current: Math.min(offset + chunk.length, result.xpGames.length), total: result.xpGames.length });
+        await new Promise(resolve => setImmediate(resolve));
+      }
+      const milestones = progression.recordImportedGames(user.id, [], { milestones: true });
+      progressionAwards.push(...milestones.awards); importedProgress = milestones.progress;
+      publishProgression(user.id, { progress: importedProgress, awards: progressionAwards }, { compact: true });
+      publishProgress({ phase: 'complete', current: result.xpGames.length, total: result.xpGames.length });
+      events.publish(user.id, 'games-imported', { created: result.created.length, linked: result.linked.length });
+      const { xpGames, ...responseResult } = result;
+      return sendJson(response, 200, {
+        ...responseResult,
+        created: result.created.map(game => ({ id: game.id, title: game.title })),
+        linked: result.linked.map(game => ({ id: game.id, title: game.title })),
+      });
+    } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+    finally { activeSteamImportRequests.delete(user.id); }
   }
   if (request.method === 'GET' && url.pathname === '/api/covers/status') {
     return sendJson(response, 200, { configured: Boolean(steamGridKey()), shared: true,

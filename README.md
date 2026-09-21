@@ -26,6 +26,7 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 - HowLongToBeat lookup stores Main Story, Main + Sides, Completionist, and All Styles estimates.
 - Cover requests can use SteamGridDB, TheGamesDB, IGDB, and an HLTB match already selected for that game. Users can also upload their own cover.
 - Description lookup checks Steam Store and can use IGDB and TheGamesDB as additional sources.
+- Steam library import connects a collector's public Steam profile, previews every owned title, and separates new records, other-platform copies, safe links, ambiguous matches, and already imported games before anything is written. Live phased progress keeps large imports visible without blocking the rest of the app.
 - Account-scoped background scans can fill missing covers, PEGI, HLTB, descriptions, and conservative exact-match IGDB metadata.
 - Live updates patch affected cards without reloading the full grid or moving the viewport.
 - Stored covers are durable local JPEGs capped at 900 pixels and 256 KiB. Avatars are center-cropped 512×512 JPEGs capped at 256 KiB.
@@ -120,10 +121,11 @@ STEAMGRIDDB_API_KEY=optional_server_wide_key \
 THEGAMESDB_API_KEY=optional_thegamesdb_fallback_key \
 IGDB_CLIENT_ID=optional_server_wide_client_id \
 IGDB_CLIENT_SECRET=optional_server_wide_client_secret \
+STEAM_WEB_API_KEY=optional_server_wide_steam_key \
 npm start
 ```
 
-`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. SteamGridDB and IGDB are application integrations configured once in the localhost admin panel and shared by every account without exposing their credentials. TheGamesDB remains an optional per-account connection. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
+`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. SteamGridDB, IGDB, and Steam Web API access are application integrations configured once in the localhost admin panel and shared by every account without exposing their credentials. Each collector connects only their own Steam profile reference. TheGamesDB remains an optional per-account connection. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
 
 The current arbitrary release string lives in `VERSION`. It can be edited through the localhost admin panel and is broadcast immediately to open headers.
 
@@ -142,7 +144,7 @@ The terminal-style admin provides:
 - Forum channel and thread moderation.
 - Private Patch queue triage and Ping replies.
 - SMTP configuration and test email.
-- Shared SteamGridDB and IGDB application-credential management.
+- Shared SteamGridDB, IGDB, and Steam Web API application-credential management.
 - SQLite maintenance, release-string editing, and backup controls.
 
 ## Backups and durable files

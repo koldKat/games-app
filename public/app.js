@@ -18,6 +18,7 @@ import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
 import { mountThemedNumberSteppers } from './js/number-steppers.js';
 import { mountThemedSearchClears, syncSearchClears } from './js/search-clears.js';
+import { createSteamImporter } from './js/steam-import.js';
 import { GAME_LABELS } from './js/game-labels.js';
 import { APP_NAME, COPYRIGHT_START_YEAR, GITHUB_URL } from './js/site-config.js';
 import {
@@ -96,6 +97,18 @@ const coverProviderSettings = createCoverProviderSettings({
 const progressionUi = createProgressionUi({ api });
 const activityFeed = createActivityFeed();
 const patchUi = createPatchUi({ api, toast, getUser: () => state.user });
+let steamImportRefresh = null;
+function refreshAfterSteamImport() {
+  if (!steamImportRefresh) {
+    steamImportRefresh = Promise.all([loadGames(), loadStatsAndMeta(), progressionUi.load()])
+      .finally(() => { steamImportRefresh = null; });
+  }
+  return steamImportRefresh;
+}
+const steamImporter = createSteamImporter({
+  api, toast,
+  onImported: refreshAfterSteamImport,
+});
 function applySaveProgress(result) {
   if (result?.progression?.awards?.length) progressionUi.handleEvent({ progress: result.progression.progress });
 }
@@ -565,12 +578,14 @@ function connectEventStream() {
   const generation = sessionGeneration;
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'games-imported') { void refreshAfterSteamImport(); }
     else if (event === 'version-updated') $('#app-version').textContent = data.version || 'dev';
     else if (event === 'progression-updated') progressionUi.handleEvent(data);
     else if (event === 'cover-job') { state.coverStatus = mergeLiveJobStatus(state.coverStatus, data.job); renderCoverStatus(); }
     else if (event === 'pegi-job') { state.pegiStatus = mergeLiveJobStatus(state.pegiStatus, data.job); renderPegiBulkStatus(); }
     else if (event === 'hltb-job') { state.hltbStatus = mergeLiveJobStatus(state.hltbStatus, data.job); renderHltbBulkStatus(); }
     else if (event === 'description-job') { state.descriptionStatus = mergeLiveJobStatus(state.descriptionStatus, data.job); renderDescriptionBulkStatus(); }
+    else if (event === 'steam-import-progress') steamImporter.handleEvent(data);
     else if (event === 'ping-updated') patchUi.handleEvent(event, data);
     else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
     else coverProviderSettings.handleEvent(event, data);
@@ -1235,7 +1250,7 @@ $('#account-button').addEventListener('click', () => {
   $('#account-error').hidden = true;
   accountDialog.showModal();
   accountDialog.querySelector('[data-account-close]')?.focus({ preventScroll: true });
-  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), progressionUi.load()]);
+  Promise.all([loadCoverStatus(), coverProviderSettings.load(), loadPegiStatus(), loadHltbStatus(), loadDescriptionStatus(), steamImporter.load(), progressionUi.load()]);
 });
 function setBulkStatus(element, shortStatus, detail) {
   element.textContent = shortStatus; element.dataset.tooltip = detail; element.removeAttribute('title'); element.setAttribute('aria-label', `${shortStatus}. ${detail}`);

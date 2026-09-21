@@ -10,6 +10,14 @@ function isEnriched(game) { return hasDurableCover(game) && hasPegiMetadata(game
 
 function createProgressionService({ store, data }) {
   function award(userId, event, ref, awarded) { const result = store.award(userId, event, ref); if (result.awarded) awarded.push({ event, ref, amount: result.amount, levels: result.levels }); return result; }
+  function awardCollectionMilestones(userId, give) {
+    const games = data.listGames(userId, {});
+    const enriched = games.filter(isEnriched).length;
+    const completed = games.filter(item => item.playStatus === 'completed').length;
+    for (const count of GAME_MILESTONES) if (games.length >= count) give(`game_count_${count}`, count);
+    for (const count of ENRICHED_MILESTONES) if (enriched >= count) give(`enriched_count_${count}`, count);
+    for (const count of COMPLETED_MILESTONES) if (completed >= count) give(`completed_count_${count}`, count);
+  }
   function recordGame(userId, game, { created = false, previous = null, katalogContribution = false } = {}) {
     if (!game?.id) return { progress: store.info(userId), awards: [] };
     const awards = []; let latest = { progress: store.info(userId) };
@@ -30,10 +38,18 @@ function createProgressionService({ store, data }) {
     if (game.playStatus === 'completed') give('game_completed', game.id);
     if (katalogContribution) give('catalogue_contribution', game.id);
     if (platformKey(game.platform)) give('platform_first', platformKey(game.platform));
-    const games = data.listGames(userId, {}); const enriched = games.filter(isEnriched).length; const completed = games.filter(item => item.playStatus === 'completed').length;
-    for (const count of GAME_MILESTONES) if (games.length >= count) give(`game_count_${count}`, count);
-    for (const count of ENRICHED_MILESTONES) if (enriched >= count) give(`enriched_count_${count}`, count);
-    for (const count of COMPLETED_MILESTONES) if (completed >= count) give(`completed_count_${count}`, count);
+    awardCollectionMilestones(userId, give);
+    return { progress: latest.progress, awards };
+  }
+  function recordImportedGames(userId, games = [], { milestones = true } = {}) {
+    const awards = []; let latest = { progress: store.info(userId) };
+    const give = (event, ref) => { latest = award(userId, event, ref, awards); };
+    for (const game of games) {
+      if (!game?.id) continue;
+      give('game_added', game.id);
+      if (platformKey(game.platform)) give('platform_first', platformKey(game.platform));
+    }
+    if (milestones) awardCollectionMilestones(userId, give);
     return { progress: latest.progress, awards };
   }
   function recordAvatar(userId) { const awards = []; const result = award(userId, 'avatar_added', 'first-avatar', awards); return { progress: result.progress, awards }; }
@@ -47,6 +63,6 @@ function createProgressionService({ store, data }) {
     return { progress, awards };
   }
   function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {})) { const next = recordGame(userId, game, { created: true }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
-  return { backfill, backfillKatalogContributions, info: store.info, recordAvatar, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame };
+  return { backfill, backfillKatalogContributions, info: store.info, recordAvatar, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame, recordImportedGames };
 }
 module.exports = { createProgressionService, isEnriched };

@@ -28,9 +28,11 @@ test('saved app credentials take precedence and are never overwritten by legacy 
   const database = fixture();
   const store = createAppIntegrationStore(database, { operatorUserId: () => 7 });
   store.save('steamgriddb', { apiKey: 'replacement' });
+  store.save('steam', { apiKey: 'steam-web-api-key' });
   store.migrateLegacy();
   assert.deepEqual(store.credentials('steamgriddb'), { apiKey: 'replacement' });
   assert.deepEqual(store.credentials('igdb'), { clientId: 'app-id', clientSecret: 'app-secret' });
+  assert.deepEqual(store.credentials('steam'), { apiKey: 'steam-web-api-key' });
 });
 
 test('deployment credentials remain a fallback when no owner exists', () => {

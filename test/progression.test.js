@@ -74,3 +74,13 @@ test('awards report each crossed collector level for Signal to record', async ()
   assert.deepEqual(award.levels, [{ level: 1, title: 'Shelf Scout', previousTitle: 'Uncatalogued' }]);
   data.progression.setConfig({ game_added: 50 });
 });
+
+test('Steam imports record per-game XP with one final collection milestone scan', async () => {
+  const user = await auth.register('xp_steam_batch', 'password-eight');
+  const games = ['One', 'Two', 'Three'].map(title => data.createGame(user.id, { title, platform: 'Steam', ownership: 'owned', mediaFormat: 'digital' }));
+  const service = createProgressionService({ store: data.progression, data });
+  const first = service.recordImportedGames(user.id, games);
+  assert.equal(first.awards.filter(item => item.event === 'game_added').length, 3);
+  assert.equal(first.awards.filter(item => item.event === 'platform_first').length, 1);
+  assert.equal(service.recordImportedGames(user.id, games).awards.length, 0);
+});

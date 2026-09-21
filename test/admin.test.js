@@ -107,7 +107,7 @@ test('admin integration status migrates legacy owner credentials without exposin
   const handled = await admin.handle({ method: 'GET', socket: { remoteAddress: '127.0.0.1' }, headers: {} }, response,
     new URL('http://localhost/api/admin/integrations'));
   assert.equal(handled, true); assert.equal(status, 200);
-  assert.deepEqual(JSON.parse(body), { steamgriddb: { configured: true }, igdb: { configured: true } });
+  assert.deepEqual(JSON.parse(body), { steamgriddb: { configured: true }, igdb: { configured: true }, steam: { configured: false } });
   assert.doesNotMatch(body, /legacy|secret|client-id/);
   assert.equal(data.db.prepare('SELECT steamgriddb_key FROM user_integrations WHERE user_id=?').get(owner.id).steamgriddb_key, 'legacy-steam-secret');
   assert.equal(data.db.prepare("SELECT credentials_json FROM cover_provider_credentials WHERE user_id=? AND provider='igdb'").get(owner.id).credentials_json, igdbCredentials);
