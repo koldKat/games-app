@@ -387,7 +387,8 @@ main {
   padding-top:10px
 }
 .bars.columns {
-  grid-template-columns:repeat(3,minmax(0,1fr))
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  column-gap:24px
 }
 .bar {
   display:grid;
@@ -413,7 +414,14 @@ main {
 }
 .bar b {
   font-size:10px;
-  color:#81909f
+  color:#81909f;
+  font-variant-numeric:tabular-nums
+}
+.bars.columns .bar {
+  grid-template-columns:minmax(80px,140px) minmax(40px,1fr) 48px
+}
+.bars.columns .bar b {
+  text-align:right
 }
 .table-shell {
   overflow:auto;

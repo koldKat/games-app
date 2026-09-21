@@ -124,6 +124,13 @@ test('admin accounts use a fitted desktop table with aligned actions and locatio
   assert.match(accounts, /STALE_AFTER_DAYS = 30/);
 });
 
+test('admin platform bars reserve aligned label and count columns', () => {
+  const css = read('admin/style.css');
+  assert.match(css, /\.bars\.columns\s*\{[^}]*column-gap:24px/);
+  assert.match(css, /\.bars\.columns \.bar\s*\{[^}]*grid-template-columns:minmax\(80px,140px\) minmax\(40px,1fr\) 48px/);
+  assert.match(css, /\.bars\.columns \.bar b\s*\{[^}]*text-align:right/);
+});
+
 test('public and admin interfaces include themed confirmation dialogs', () => {
   assert.match(read('public/index.html'), /id="action-dialog" class="action-dialog"/);
   assert.match(read('admin/index.html'), /id="confirm-dialog" class="confirm-dialog"/);
