@@ -1541,3 +1541,13 @@ dialog::backdrop {
     color:#72efd1;
   }
 }
+@media (max-width: 480px) {
+  .hero {
+    min-height:0;
+    margin-top:4px;
+    padding:9px 12px
+  }
+  .hero .kicker {
+    margin-bottom:3px
+  }
+}

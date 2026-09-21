@@ -85,6 +85,11 @@ test('top-level views share one hero geometry and branded section headings', () 
   assert.doesNotMatch(katalog, /\.signal-hero\{min-height:/);
 });
 
+test('phone heroes do not reserve space for hidden subtitles or cover fans', () => {
+  const theme = readCss('public/css/theme.css');
+  assert.match(theme, /@media \(max-width:480px\)\{\.hero\{min-height:0;margin-top:4px;padding:9px 12px\}/);
+});
+
 test('view navigation keeps independent randomized cover fans and restores the private fan', () => {
   const application = read('public/app.js'); const navigation = read('public/js/katalog-navigation.js'); const server = read('server.js');
   assert.match(application, /const slots = \$\$\('#library-view \.hero-cover'\)/);
