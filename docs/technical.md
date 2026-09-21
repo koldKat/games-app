@@ -43,6 +43,8 @@ games-app/
     app-integrations.js     configured SteamGridDB, IGDB and Steam application credentials
     steam-library.js        official Steam Web API profile resolution and owned-game client
     steam-import.js         account connection, dry-run classification and restart-safe batched import
+    gog-library.js          GOG authorization, token refresh and complete paginated library client
+    gog-import.js           GOG connection, dry-run classification and restart-safe batched import
     igdb.js                 IGDB OAuth token lifecycle, search, ratings, metadata and artwork mapping
     igdb-bulk.js            conservative account-scoped IGDB enrichment jobs
     steam-store.js          Steam Store description lookup
@@ -86,7 +88,9 @@ games-app/
     js/hltb-ui.js           manual HLTB selection, card estimates, form state
     js/cover-provider-settings.js per-account TheGamesDB connection and shared IGDB scan controls
     js/igdb-ui.js           IGDB match selection, form metadata and detail presentation
-    js/steam-import.js      Steam connection, review selection and import dialog controller
+    js/library-import.js    shared connection, review selection and live import dialog controller
+    js/steam-import.js      Steam-specific import adapter
+    js/gog-import.js        GOG-specific import adapter
     js/cover-result-images.js failed-thumbnail fallback to provider originals
     js/artwork-url.js       accepted remote and durable-local artwork URL policy
     js/ui-policy.js         browser pagination, lookup limits and interaction timing
@@ -100,7 +104,7 @@ games-app/
       patch.css            private Patch and Ping dialogs, unread alert state
       katalog.css          standalone public Kat·a·log and detail-page theme
       forum.css            public forum surfaces and responsive composer theme
-      steam-import.css     compact Steam review dialog and connection controls
+      library-import.css   compact shared library-import dialogs and connection controls
     manifest.webmanifest    installable-app metadata
     favicon.svg             application icon
     icon-192.png            installable-app icon
@@ -122,6 +126,8 @@ games-app/
     igdb.test.js            IGDB mapping, server-side authentication and batch updates
     steam-library.test.js   Steam reference resolution, API mapping and privacy failures
     steam-import.test.js    import classification, linking, creation and repeat safety
+    gog-library.test.js     GOG authorization, visible/hidden pagination and token failures
+    gog-import.test.js      GOG classification, linking, selection validation and repeat safety
     cover-storage.test.js   provider allow-list, image validation and local migration
     image-policy.test.js    cover/avatar dimensions, format and byte ceilings
     cover-result-images.test.js browser thumbnail fallback contract
@@ -204,6 +210,9 @@ Environment variables:
 | `IGDB_CLIENT_ID` | blank | Optional server-wide IGDB/Twitch application Client ID |
 | `IGDB_CLIENT_SECRET` | blank | Optional server-wide IGDB/Twitch application Client Secret |
 | `STEAM_WEB_API_KEY` | blank | Optional server-wide Steam Web API key fallback |
+| `GOG_CLIENT_ID` | Galaxy client | Optional GOG authorization-client override |
+| `GOG_CLIENT_SECRET` | Galaxy client | Optional GOG authorization-secret override |
+| `GOG_REDIRECT_URI` | Galaxy success page | Optional GOG authorization redirect override |
 
 Start the server with `npm start`. Development watch mode is available through `npm run dev`.
 
@@ -212,6 +221,8 @@ Start the server with `npm start`. Development watch mode is available through `
 ## Database
 
 SQLite runs in WAL mode with foreign keys enabled.
+
+The main database and generated ZIP snapshots are forced to owner-only mode `0600`. This matters because the database contains password hashes, sessions, account-scoped provider credentials, and GOG refresh tokens. GOG tokens remain server-side and are removed when the collector disconnects GOG or deletes the account.
 
 ### `users`
 
@@ -288,16 +299,19 @@ Missing rows produce safe defaults. `server/preferences.js` validates every enum
 | `igdb_updated_at` | Last accepted IGDB metadata timestamp |
 | `steam_app_id` | Stable Steam application identity; unique within one account when present |
 | `steam_playtime_minutes`, `steam_last_played_at` | Playtime and last-played snapshot from the latest import |
+| `gog_product_id` | Stable GOG product identity; unique within one account when present |
 | `description`, `description_source`, `description_source_url` | Selected game description and its required source attribution |
 | `created_at`, `updated_at` | SQLite timestamps |
 
-Indexes cover owner, platform, ownership, PEGI, case-insensitive title, canonical identity, and non-null per-account Steam AppIDs.
+Indexes cover owner, platform, ownership, PEGI, case-insensitive title, canonical identity, non-null per-account Steam AppIDs, and non-null per-account GOG product IDs.
 
-### `steam_connections` and `canonical_external_ids`
+### Library connections and `canonical_external_ids`
 
 `steam_connections` stores one resolved SteamID64, public persona name, profile URL, and last successful import timestamp per account. It never stores the application API key. Disconnecting removes this pointer without deleting imported games or their Steam identities.
 
-`canonical_external_ids` maps a provider identity such as `steam:<AppID>` to one canonical game. This lets imported records share a stable title identity immediately, before richer IGDB metadata exists. A later high-confidence IGDB enrichment can move that local provider mapping to the IGDB-backed canonical identity without copying personal collection data into the shared tables.
+`gog_connections` stores one GOG user identity, display profile URL, access token, refresh token, token expiry, and last successful import timestamp per account. The password and GOG browser cookie never enter the application. Tokens remain server-side, are omitted from every status and import response, and are deleted on disconnect or account deletion. Existing public-profile-only rows migrate additively and are reported as requiring one new authorization rather than being mistaken for a complete connection.
+
+`canonical_external_ids` maps a provider identity such as `steam:<AppID>` or `gog:<product ID>` to one canonical game. This lets imported records share a stable title identity immediately, before richer IGDB metadata exists. A later high-confidence IGDB enrichment can move that local provider mapping to the IGDB-backed canonical identity without copying personal collection data into the shared tables.
 
 ### `canonical_games`, `canonical_releases`, and identity audit
 
@@ -435,6 +449,10 @@ All JSON responses use `Cache-Control: no-store`. Registration, login, public co
 | PUT, DELETE | `/api/steam/connection` | Resolve and connect a Steam profile reference, or disconnect it without deleting games |
 | GET | `/api/steam/import-preview` | Fetch and classify the connected profile's owned library without writing games |
 | POST | `/api/steam/import` | Re-fetch, validate and restart-safely batch-import selected owned AppIDs |
+| GET | `/api/gog/status` | Read the current account's non-secret GOG connection |
+| PUT, DELETE | `/api/gog/connection` | Exchange a one-time GOG authorization result, or delete its server-side tokens without deleting games |
+| GET | `/api/gog/import-preview` | Fetch and classify ordinary plus GOG-hidden library pages without writing games |
+| POST | `/api/gog/import` | Re-fetch, validate and restart-safely batch-import selected GOG product IDs |
 | GET | `/api/covers/status` | Provider configuration, missing count, and bulk progress |
 | GET | `/api/covers/search?q=...` | Search portrait covers for manual selection |
 | GET | `/api/titles/autocomplete?q=...` | Return account-local matches, public Kat·a·log releases, and IGDB suggestions when connected, otherwise SteamGridDB suggestions; `local=1` skips the remote provider and `exact=1&platform=...` performs the save-time duplicate check |
@@ -548,6 +566,16 @@ Steam import uses the official `IPlayerService/GetOwnedGames`, `ISteamUser/GetPl
 The preview is a strict dry run. `server/steam-import.js` compares each AppID against the account first, then uses normalized exact title matching. An existing AppID is already imported; one same-title Steam row without an AppID is safe to link; any already-linked or multiple Steam match is ambiguous; a title found only on another platform becomes a new Steam copy; everything else is new. Only new records, other-platform copies, and single safe links are selected by default. Import re-fetches the remote library, accepts at most 5,000 distinct positive integer AppIDs, and rejects any ID absent from that response. The browser retains the complete result and selection state but mounts no more than 250 matching review rows; filtering exposes records outside that slice without creating a multi-thousand-node dialog.
 
 Matching builds AppID and normalized-title indexes once, avoiding a collection scan for every remote title. Writes and canonical identity updates run in five-record SQLite transactions and yield to Node's event loop after every batch. Collector XP is recorded in the same small batches, followed by one collection-wide milestone scan instead of reloading and filtering the complete library once per imported game. Imported rows are known to be ineligible for publication, so the import does not run the public eligibility pipeline thousands of times; later enrichment uses the ordinary synchronization path. This keeps unrelated HTTP requests and SSE heartbeats responsive during a large import. A process failure can leave completed batches in place, but the AppID uniqueness rule and fresh server-side classification make a retry safely continue rather than duplicate them. Already-written rows in the submitted retry are also passed through idempotent import-XP recovery, closing the gap where a process could stop after a database batch but before progression processing. New games use owned, digital, Steam, and backlog defaults while retaining the imported playtime and last-played snapshot. Linking changes only Steam identity and snapshot fields on the existing row. `steam-import-progress` SSE events report the fetching, importing, processing, and completion phases. Progression is published once with only level-crossing details in the SSE payload, avoiding thousands of redundant XP animations, while one final `games-imported` event makes other open sessions reload collection counts and cards. The service rejects profile replacement or disconnection while its import phase is active, and both the service and HTTP boundary reject a second concurrent import for the same account.
+
+## GOG library import
+
+GOG does not document a general consumer-library API for third-party collection managers. `server/gog-library.js` uses the long-standing Galaxy-client authorization flow used by open-source GOG clients. The browser opens GOG's own authorization page and submits only the resulting one-time success URL to this server. The server strictly accepts the expected `embed.gog.com/on_login_success` redirect or a bounded bare code, exchanges it server-side, validates the authenticated account through `userData.json`, and stores the returned tokens without exposing them in an API response. Expired access tokens are refreshed before a library read.
+
+The library client calls the authenticated `account/getFilteredProducts` endpoint separately with `hiddenFlag=0` and `hiddenFlag=1`, follows both pagination sets under one combined 200-page ceiling, validates response shape, deduplicates stable numeric product IDs, and applies a 20-second timeout to each request. When a product appears in both sets, the ordinary result wins. The source hidden flag is displayed only during review; every created private row receives Backlog, never Hidden. These endpoints remain unofficial and can change without notice.
+
+`server/gog-import.js` mirrors Steam's conservative workflow without sharing provider state. Preview and import index the account once by GOG product ID and normalized exact title. One unlinked same-title GOG row is linkable; multiple GOG matches are ambiguous; other-platform matches create a new GOG copy. The initial preview publishes page counts over `gog-import-progress`, so large libraries have determinate progress before the review list exists. The server then re-fetches all pages and rejects selected IDs absent from that fresh result. Five-record transactions, event-loop yields, idempotent import XP recovery, and SSE updates keep a large library observable without blocking unrelated requests. New games use owned, digital, GOG, and backlog defaults. GOG product IDs also enter `canonical_external_ids`, allowing stable grouping before optional IGDB enrichment.
+
+`public/js/library-import.js` owns the provider-neutral connection, bounded review rendering, selection, themed progress, and safe dialog behavior. The Steam and GOG browser modules provide only identities, labels, connection summaries, and provider-specific row metadata.
 
 ## HowLongToBeat integration
 
@@ -741,5 +769,6 @@ The database and generated cover files are excluded from Git. Source code, gener
 - HLTB lookup depends on an undocumented private search route that can change and may require maintenance. Running batch jobs are not resumed after a process restart.
 - Cover lookup depends on whichever of SteamGridDB or TheGamesDB the account or server has configured; external quotas and availability apply, and unfinished bulk jobs must be restarted after a process restart.
 - Steam import requires a server-wide Web API key and a profile whose Game details privacy permits owned-game access. It imports an explicit snapshot and does not continuously synchronize later playtime or newly purchased games.
+- GOG import depends on undocumented Galaxy-client endpoints. It stores revocable account tokens server-side, imports an explicit snapshot from both ordinary and GOG-hidden collections, and does not continuously synchronize later purchases.
 - Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
 - The public client retains one orchestration entry point, with stable data registries split into focused modules. The admin client is divided by panel plus shared utilities.

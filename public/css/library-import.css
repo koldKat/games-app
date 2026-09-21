@@ -1,10 +1,10 @@
-.steam-connect-row {
+.library-connect-row {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   gap:6px;
   margin-top:7px
 }
-.steam-connect-row input,.steam-import-toolbar input {
+.library-connect-row input,.library-import-toolbar input {
   min-width:0;
   height:32px;
   border:1px solid #293746;
@@ -14,21 +14,21 @@
   color:#dce5ef;
   outline:0
 }
-.steam-connect-row input:focus,.steam-import-toolbar input:focus {
+.library-connect-row input:focus,.library-import-toolbar input:focus {
   border-color:#54dbbd;
   box-shadow:0 0 0 1px #54dbbd33
 }
-.steam-import-actions {
+.library-import-actions {
   flex-wrap:wrap
 }
-.steam-import-actions .bulk-status {
+.library-import-actions .bulk-status {
   flex:1 1 180px
 }
-.steam-import-dialog {
+.library-import-dialog {
   width:min(820px,calc(100vw - 16px));
   max-height:min(80dvh,760px)
 }
-.steam-import-card {
+.library-import-card {
   width:100%;
   height:min(80dvh,760px);
   max-height:min(80dvh,760px);
@@ -36,18 +36,18 @@
   flex-direction:column;
   overflow:hidden
 }
-#steam-import-content:not([hidden]) {
+.library-import-content:not([hidden]) {
   display:flex;
   flex:1 1 auto;
   min-height:0;
   flex-direction:column
 }
-.steam-import-loading,.steam-import-empty {
+.library-import-loading,.library-import-empty {
   padding:28px 12px;
   color:#82918f;
   text-align:center
 }
-.steam-import-limit {
+.library-import-limit {
   position:sticky;
   bottom:0;
   margin:0;
@@ -58,7 +58,7 @@
   font-size:10px;
   text-align:center
 }
-.steam-import-summary {
+.library-import-summary {
   display:flex;
   align-items:center;
   flex-wrap:wrap;
@@ -67,18 +67,18 @@
   border:1px solid #263a38;
   background:#091513
 }
-.steam-import-summary strong {
+.library-import-summary strong {
   margin-right:auto;
   color:#dffdf5;
   font-size:12px
 }
-.steam-import-summary span {
+.library-import-summary span {
   padding:3px 5px;
   border:1px solid #2b423e;
   color:#91a8a2;
   font-size:10px
 }
-.steam-import-toolbar {
+.library-import-toolbar {
   display:grid;
   grid-template-columns:auto minmax(180px,280px);
   align-items:center;
@@ -86,11 +86,11 @@
   gap:8px;
   padding:7px 0
 }
-.steam-import-toolbar>div {
+.library-import-toolbar>div {
   display:flex;
   gap:10px
 }
-.steam-import-list {
+.library-import-list {
   flex:1 1 auto;
   min-height:90px;
   max-height:none;
@@ -99,7 +99,7 @@
   scrollbar-color:#347d6e #080d12;
   scrollbar-width:thin
 }
-.steam-import-row {
+.library-import-row {
   display:grid;
   grid-template-columns:16px minmax(0,1fr) 132px;
   align-items:center;
@@ -110,30 +110,30 @@
   background:#090f15;
   cursor:pointer
 }
-.steam-import-row:last-child {
+.library-import-row:last-child {
   border-bottom:0
 }
-.steam-import-row:hover {
+.library-import-row:hover {
   background:#0c171b
 }
-.steam-import-row.is-already {
+.library-import-row.is-already {
   cursor:default;
   opacity:.58
 }
-.steam-import-copy,.steam-import-state {
+.library-import-copy,.library-import-state {
   min-width:0
 }
-.steam-import-copy strong,.steam-import-copy small,.steam-import-state b,.steam-import-state small {
+.library-import-copy strong,.library-import-copy small,.library-import-state b,.library-import-state small {
   display:block
 }
-.steam-import-copy strong {
+.library-import-copy strong {
   overflow:hidden;
   color:#d9e8e4;
   font-size:11px;
   text-overflow:ellipsis;
   white-space:nowrap
 }
-.steam-import-copy small {
+.library-import-copy small {
   margin-top:2px;
   overflow:hidden;
   color:#738984;
@@ -141,15 +141,15 @@
   text-overflow:ellipsis;
   white-space:nowrap
 }
-.steam-import-state {
+.library-import-state {
   text-align:right
 }
-.steam-import-state b {
+.library-import-state b {
   color:#5be0bf;
   font-size:10px;
   letter-spacing:.08em
 }
-.steam-import-state small {
+.library-import-state small {
   margin-top:2px;
   color:#72857f;
   font-size:10px
@@ -160,15 +160,15 @@
 .state-already b {
   color:#80918d
 }
-.steam-import-card>.modal-actions>span {
+.library-import-card>.modal-actions>span {
   margin-right:auto;
   color:#81958f;
   font-size:10px
 }
-.steam-import-progress {
+.library-import-progress {
   padding:8px 0 2px
 }
-.steam-import-progress>div:first-child {
+.library-import-progress>div:first-child {
   display:flex;
   justify-content:space-between;
   gap:12px;
@@ -176,12 +176,12 @@
   color:#9fb8b1;
   font-size:11px
 }
-.steam-import-progress b {
+.library-import-progress b {
   color:#67e7c5;
   font-size:10px;
   font-weight:700
 }
-.steam-import-meter {
+.library-import-meter {
   position:relative;
   height:6px;
   overflow:hidden;
@@ -189,7 +189,7 @@
   border-radius:3px;
   background:#07110f
 }
-.steam-import-meter span {
+.library-import-meter span {
   display:block;
   width:0;
   height:100%;
@@ -197,34 +197,34 @@
   box-shadow:0 0 8px #54dbbd66;
   transition:width .16s ease
 }
-.steam-import-progress.is-indeterminate .steam-import-meter span {
+.library-import-progress.is-indeterminate .library-import-meter span {
   width:32%;
-  animation:steam-import-scan 1.1s ease-in-out infinite
+  animation:library-import-scan 1.1s ease-in-out infinite
 }
-@keyframes steam-import-scan {
+@keyframes library-import-scan {
   0% {transform:translateX(-110%)}
   100% {transform:translateX(320%)}
 }
 @media(prefers-reduced-motion:reduce) {
-  .steam-import-progress.is-indeterminate .steam-import-meter span {animation:none;transform:none}
+  .library-import-progress.is-indeterminate .library-import-meter span {animation:none;transform:none}
 }
 @media(max-width:620px) {
-  .steam-connect-row,.steam-import-toolbar {
+  .library-connect-row,.library-import-toolbar {
     grid-template-columns:1fr
   }
-  .steam-import-dialog,.steam-import-card {
+  .library-import-dialog,.library-import-card {
     width:100vw;
     height:100dvh;
     max-height:100dvh;
     border-radius:0
   }
-  .steam-import-list {
+  .library-import-list {
     max-height:none
   }
-  .steam-import-row {
+  .library-import-row {
     grid-template-columns:16px minmax(0,1fr) 84px
   }
-  .steam-import-state small {
+  .library-import-state small {
     display:none
   }
 }

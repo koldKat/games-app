@@ -16,6 +16,8 @@ const igdb = require('./server/igdb');
 const steamStore = require('./server/steam-store');
 const steamLibrary = require('./server/steam-library');
 const { createSteamImportService } = require('./server/steam-import');
+const gogLibrary = require('./server/gog-library');
+const { createGogImportService } = require('./server/gog-import');
 const { createDescriptionBulkManager } = require('./server/description-bulk');
 const { createCoverProviderBulkManager } = require('./server/cover-provider-bulk');
 const { createIgdbBulkManager } = require('./server/igdb-bulk');
@@ -128,11 +130,48 @@ const pegiJobs = createPegiBulkManager({ data: db, lookup: searchPegi, notify: p
 const hltbJobs = createHltbBulkManager({ data: db, lookup: hltb.search, notify: publishAppEvent });
 const descriptionJobs = createDescriptionBulkManager({ data: db, lookups: { steam: steamStore.bestExactDescription, thegamesdb: thegamesdb.bestExactDescription }, notify: publishAppEvent });
 const steamImports = createSteamImportService({ database: db.db, data: db, integrations: appIntegrations, steam: steamLibrary });
-const activeSteamImportRequests = new Set();
-const STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE = 5;
+const gogImports = createGogImportService({ database: db.db, data: db, gog: gogLibrary });
+const activeLibraryImportRequests = new Set();
+const LIBRARY_IMPORT_POSTPROCESS_CHUNK_SIZE = 5;
 const katalogRoutes = createKatalogRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onGameCreated: (userId, game) => recordGameProgress(userId, game, { created: true }) });
 const forumRoutes = createForumRoutes({ katalog, auth, events, progression, showcaseCovers: showcasePool.shared, onProgression: publishProgression });
 const patchRoutes = createPatchRoutes({ auth, events });
+
+async function completeLibraryImport(userId, provider, result, publishProgress) {
+  publishProgress({ phase: 'processing', current: 0, total: result.xpGames.length });
+  const progressionAwards = []; let importedProgress = progression.info(userId);
+  for (let offset = 0; offset < result.xpGames.length; offset += LIBRARY_IMPORT_POSTPROCESS_CHUNK_SIZE) {
+    const chunk = result.xpGames.slice(offset, offset + LIBRARY_IMPORT_POSTPROCESS_CHUNK_SIZE);
+    const recorded = progression.recordImportedGames(userId, chunk, { milestones: false });
+    progressionAwards.push(...recorded.awards); importedProgress = recorded.progress;
+    publishProgress({ phase: 'processing', current: Math.min(offset + chunk.length, result.xpGames.length), total: result.xpGames.length });
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  const milestones = progression.recordImportedGames(userId, [], { milestones: true });
+  progressionAwards.push(...milestones.awards); importedProgress = milestones.progress;
+  publishProgression(userId, { progress: importedProgress, awards: progressionAwards }, { compact: true });
+  publishProgress({ phase: 'complete', current: result.xpGames.length, total: result.xpGames.length });
+  events.publish(userId, 'games-imported', { provider, created: result.created.length, linked: result.linked.length });
+  const { xpGames, ...responseResult } = result;
+  return {
+    ...responseResult,
+    created: result.created.map(game => ({ id: game.id, title: game.title })),
+    linked: result.linked.map(game => ({ id: game.id, title: game.title })),
+  };
+}
+
+async function runLibraryImport({ userId, provider, service, ids, progressEvent }) {
+  const requestKey = `${provider}:${userId}`;
+  if (activeLibraryImportRequests.has(requestKey)) {
+    throw Object.assign(new Error(`A ${provider} import is already running for this account.`), { status: 409 });
+  }
+  activeLibraryImportRequests.add(requestKey);
+  try {
+    const publishProgress = progress => events.publish(userId, progressEvent, progress);
+    const result = await service.importSelection(userId, ids, publishProgress);
+    return await completeLibraryImport(userId, provider, result, publishProgress);
+  } finally { activeLibraryImportRequests.delete(requestKey); }
+}
 
 async function runCoverJob(userId, key) {
   const games = db.gamesMissingCovers(userId);
@@ -427,33 +466,36 @@ async function handleApi(request, response, url) {
     catch (error) { return sendJson(response, error.status || 502, { error: error.message }); }
   }
   if (request.method === 'POST' && url.pathname === '/api/steam/import') {
-    if (activeSteamImportRequests.has(user.id)) return sendJson(response, 409, { error: 'A Steam import is already running for this account.' });
-    activeSteamImportRequests.add(user.id);
     try {
-      const publishProgress = progress => events.publish(user.id, 'steam-import-progress', progress);
-      const result = await steamImports.importSelection(user.id, (await readJson(request)).appIds, publishProgress);
-      publishProgress({ phase: 'processing', current: 0, total: result.xpGames.length });
-      const progressionAwards = []; let importedProgress = progression.info(user.id);
-      for (let offset = 0; offset < result.xpGames.length; offset += STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE) {
-        const chunk = result.xpGames.slice(offset, offset + STEAM_IMPORT_POSTPROCESS_CHUNK_SIZE);
-        const recorded = progression.recordImportedGames(user.id, chunk, { milestones: false });
-        progressionAwards.push(...recorded.awards); importedProgress = recorded.progress;
-        publishProgress({ phase: 'processing', current: Math.min(offset + chunk.length, result.xpGames.length), total: result.xpGames.length });
-        await new Promise(resolve => setImmediate(resolve));
-      }
-      const milestones = progression.recordImportedGames(user.id, [], { milestones: true });
-      progressionAwards.push(...milestones.awards); importedProgress = milestones.progress;
-      publishProgression(user.id, { progress: importedProgress, awards: progressionAwards }, { compact: true });
-      publishProgress({ phase: 'complete', current: result.xpGames.length, total: result.xpGames.length });
-      events.publish(user.id, 'games-imported', { created: result.created.length, linked: result.linked.length });
-      const { xpGames, ...responseResult } = result;
-      return sendJson(response, 200, {
-        ...responseResult,
-        created: result.created.map(game => ({ id: game.id, title: game.title })),
-        linked: result.linked.map(game => ({ id: game.id, title: game.title })),
-      });
+      const body = await readJson(request);
+      return sendJson(response, 200, await runLibraryImport({ userId: user.id, provider: 'Steam', service: steamImports,
+        ids: body.appIds, progressEvent: 'steam-import-progress' }));
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
-    finally { activeSteamImportRequests.delete(user.id); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/gog/status') {
+    return sendJson(response, 200, gogImports.status(user.id));
+  }
+  if (request.method === 'PUT' && url.pathname === '/api/gog/connection') {
+    try { return sendJson(response, 200, await gogImports.connect(user.id, (await readJson(request)).authorization)); }
+    catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+  }
+  if (request.method === 'DELETE' && url.pathname === '/api/gog/connection') {
+    try { return sendJson(response, 200, gogImports.disconnect(user.id)); }
+    catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+  }
+  if (request.method === 'GET' && url.pathname === '/api/gog/import-preview') {
+    try {
+      const publishProgress = progress => events.publish(user.id, 'gog-import-progress', progress);
+      return sendJson(response, 200, await gogImports.preview(user.id, publishProgress));
+    }
+    catch (error) { return sendJson(response, error.status || 502, { error: error.message }); }
+  }
+  if (request.method === 'POST' && url.pathname === '/api/gog/import') {
+    try {
+      const body = await readJson(request);
+      return sendJson(response, 200, await runLibraryImport({ userId: user.id, provider: 'GOG', service: gogImports,
+        ids: body.productIds, progressEvent: 'gog-import-progress' }));
+    } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
   }
   if (request.method === 'GET' && url.pathname === '/api/covers/status') {
     return sendJson(response, 200, { configured: Boolean(steamGridKey()), shared: true,

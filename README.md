@@ -26,7 +26,7 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 - HowLongToBeat lookup stores Main Story, Main + Sides, Completionist, and All Styles estimates.
 - Cover requests can use SteamGridDB, TheGamesDB, IGDB, and an HLTB match already selected for that game. Users can also upload their own cover.
 - Description lookup checks Steam Store and can use IGDB and TheGamesDB as additional sources.
-- Steam library import connects a collector's public Steam profile, previews every owned title, and separates new records, other-platform copies, safe links, ambiguous matches, and already imported games before anything is written. Live phased progress keeps large imports visible without blocking the rest of the app.
+- Steam imports connect a collector's public profile, while GOG uses account authorization to include both ordinary and GOG-hidden purchases. Both preview owned titles and separate new records, other-platform copies, safe links, ambiguous matches, and already imported games before anything is written. Live phased progress keeps large imports visible without blocking the rest of the app.
 - Account-scoped background scans can fill missing covers, PEGI, HLTB, descriptions, and conservative exact-match IGDB metadata.
 - Live updates patch affected cards without reloading the full grid or moving the viewport.
 - Stored covers are durable local JPEGs capped at 900 pixels and 256 KiB. Avatars are center-cropped 512×512 JPEGs capped at 256 KiB.
@@ -95,6 +95,7 @@ The public Stats for Nerds panel provides an anonymous aggregate view of the col
 - The browser stores no authentication or account preferences in local storage or session storage.
 - A configured owner account is protected from admin deletion, locking, and renaming. No username is hardcoded in the application.
 - The public surface uses restrictive CSP, content-type, referrer, framing, and permissions headers.
+- The SQLite database and its database-only ZIP backups are restricted to the server account with mode `0600`; provider tokens and account records are never returned by status APIs.
 
 ## Requirements and startup
 
@@ -122,10 +123,13 @@ THEGAMESDB_API_KEY=optional_thegamesdb_fallback_key \
 IGDB_CLIENT_ID=optional_server_wide_client_id \
 IGDB_CLIENT_SECRET=optional_server_wide_client_secret \
 STEAM_WEB_API_KEY=optional_server_wide_steam_key \
+GOG_CLIENT_ID=optional_override \
+GOG_CLIENT_SECRET=optional_override \
+GOG_REDIRECT_URI=optional_override \
 npm start
 ```
 
-`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. SteamGridDB, IGDB, and Steam Web API access are application integrations configured once in the localhost admin panel and shared by every account without exposing their credentials. Each collector connects only their own Steam profile reference. TheGamesDB remains an optional per-account connection. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
+`PUBLIC_URL` controls canonical URLs, server-rendered links, email actions, and the SMTP greeting host. If `OWNER_USERNAME` is omitted, the oldest account is treated as the protected owner. SteamGridDB, IGDB, and Steam Web API access are application integrations configured once in the localhost admin panel and shared by every account without exposing their credentials. Each collector connects only their own Steam profile and GOG account. GOG authorization happens on GOG's site and lets the importer read both ordinary and GOG-hidden purchases without receiving the collector's password. The three `GOG_*` values are optional overrides for the built-in Galaxy-client authorization flow and normally remain unset. TheGamesDB remains an optional per-account connection. IGDB requires a Twitch developer application created with the **Confidential** client type; a Public client cannot generate the required secret.
 
 The current arbitrary release string lives in `VERSION`. It can be edited through the localhost admin panel and is broadcast immediately to open headers.
 

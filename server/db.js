@@ -1,3 +1,4 @@
+const fs = require('node:fs');
 const path = require('node:path');
 const Database = require('better-sqlite3');
 const { createCanonicalStore } = require('./canonical-store');
@@ -10,8 +11,15 @@ const { GAME_LIMITS } = require('./validation-policy');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
 const db = new Database(DB_PATH);
+function restrictDatabaseFile(filename) {
+  if (DB_PATH === ':memory:') return;
+  try { fs.chmodSync(filename, 0o600); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+}
+restrictDatabaseFile(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+for (const suffix of ['', '-wal', '-shm']) restrictDatabaseFile(`${DB_PATH}${suffix}`);
 const normalizeSearchText = value => String(value || '').normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
 const searchPattern = value => `%${normalizeSearchText(value).replace(/[\\%_]/g, character => `\\${character}`)}%`;
@@ -193,6 +201,10 @@ db.exec(`
     igdb_themes TEXT NOT NULL DEFAULT '[]',
     igdb_developers TEXT NOT NULL DEFAULT '[]',
     igdb_updated_at TEXT,
+    steam_app_id INTEGER,
+    steam_playtime_minutes INTEGER NOT NULL DEFAULT 0,
+    steam_last_played_at TEXT,
+    gog_product_id TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -256,6 +268,7 @@ if (!gameColumns.includes('igdb_updated_at')) db.exec('ALTER TABLE games ADD COL
 if (!gameColumns.includes('steam_app_id')) db.exec('ALTER TABLE games ADD COLUMN steam_app_id INTEGER');
 if (!gameColumns.includes('steam_playtime_minutes')) db.exec('ALTER TABLE games ADD COLUMN steam_playtime_minutes INTEGER NOT NULL DEFAULT 0');
 if (!gameColumns.includes('steam_last_played_at')) db.exec('ALTER TABLE games ADD COLUMN steam_last_played_at TEXT');
+if (!gameColumns.includes('gog_product_id')) db.exec('ALTER TABLE games ADD COLUMN gog_product_id TEXT');
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
@@ -270,6 +283,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_games_pegi ON games(pegi);
   CREATE INDEX IF NOT EXISTS idx_games_title ON games(title COLLATE NOCASE);
   CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_steam_app ON games(user_id, steam_app_id) WHERE steam_app_id IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_games_user_gog_product ON games(user_id, gog_product_id) WHERE gog_product_id IS NOT NULL;
   CREATE INDEX IF NOT EXISTS idx_forum_threads_category ON forum_threads(category_id, is_pinned DESC, last_post_at DESC);
   CREATE INDEX IF NOT EXISTS idx_forum_posts_thread ON forum_posts(thread_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_patch_threads_user ON patch_threads(user_id, deleted_by_user, user_unread);
@@ -297,6 +311,7 @@ const selectFields = `id, title, platform, pegi, ownership,
   igdb_updated_at AS igdbUpdatedAt,
   steam_app_id AS steamAppId, steam_playtime_minutes AS steamPlaytimeMinutes,
   steam_last_played_at AS steamLastPlayedAt,
+  gog_product_id AS gogProductId,
   canonical_game_id AS canonicalGameId, canonical_release_id AS canonicalReleaseId,
   created_at AS createdAt, updated_at AS updatedAt`;
 
@@ -308,7 +323,7 @@ const insert = db.prepare(`
     cover_url, cover_source, cover_match_title, description, description_source, description_source_url,
     igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
     igdb_genres, igdb_themes, igdb_developers, igdb_updated_at,
-    steam_app_id, steam_playtime_minutes, steam_last_played_at)
+    steam_app_id, steam_playtime_minutes, steam_last_played_at, gog_product_id)
   VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
@@ -316,7 +331,7 @@ const insert = db.prepare(`
     @coverUrl, @coverSource, @coverMatchTitle, @description, @descriptionSource, @descriptionSourceUrl,
     @igdbId, @igdbSlug, @igdbUrl, @igdbRating, @igdbRatingCount, @igdbCriticRating, @igdbCriticRatingCount,
     @igdbGenresJson, @igdbThemesJson, @igdbDevelopersJson, @igdbUpdatedAt,
-    @steamAppId, @steamPlaytimeMinutes, @steamLastPlayedAt)
+    @steamAppId, @steamPlaytimeMinutes, @steamLastPlayedAt, @gogProductId)
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
@@ -336,6 +351,7 @@ const update = db.prepare(`
     igdb_genres=@igdbGenresJson, igdb_themes=@igdbThemesJson, igdb_developers=@igdbDevelopersJson,
     igdb_updated_at=@igdbUpdatedAt, steam_app_id=@steamAppId,
     steam_playtime_minutes=@steamPlaytimeMinutes, steam_last_played_at=@steamLastPlayedAt,
+    gog_product_id=@gogProductId,
     updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
 `);
 
@@ -405,6 +421,7 @@ function normalizeGame(input = {}) {
     steamAppId: Number.isInteger(Number(input.steamAppId)) && Number(input.steamAppId) > 0 ? Number(input.steamAppId) : null,
     steamPlaytimeMinutes: Math.max(0, Number.parseInt(input.steamPlaytimeMinutes, 10) || 0),
     steamLastPlayedAt: input.steamLastPlayedAt ? safeText(input.steamLastPlayedAt, GAME_LIMITS.hltbTimestampMax) : null,
+    gogProductId: /^\d+$/.test(String(input.gogProductId || '')) ? String(input.gogProductId) : null,
   };
 }
 
@@ -527,11 +544,13 @@ function createGame(userId, input) {
   canonical.syncGameById(id); return getGame(userId, id);
 }
 function updateGame(userId, id, input) {
-  const existing = db.prepare('SELECT steam_app_id AS steamAppId,steam_playtime_minutes AS steamPlaytimeMinutes,steam_last_played_at AS steamLastPlayedAt FROM games WHERE id=? AND user_id=?').get(id, userId);
+  const existing = db.prepare(`SELECT steam_app_id AS steamAppId,steam_playtime_minutes AS steamPlaytimeMinutes,
+    steam_last_played_at AS steamLastPlayedAt,gog_product_id AS gogProductId FROM games WHERE id=? AND user_id=?`).get(id, userId);
   const game = normalizeGame({ ...input,
     steamAppId: input.steamAppId === undefined ? existing?.steamAppId : input.steamAppId,
     steamPlaytimeMinutes: input.steamPlaytimeMinutes === undefined ? existing?.steamPlaytimeMinutes : input.steamPlaytimeMinutes,
     steamLastPlayedAt: input.steamLastPlayedAt === undefined ? existing?.steamLastPlayedAt : input.steamLastPlayedAt,
+    gogProductId: input.gogProductId === undefined ? existing?.gogProductId : input.gogProductId,
   }); const result = update.run({ ...game, id, userId });
   if (!result.changes) return null;
   canonical.syncGameById(id); return getGame(userId, id);
@@ -542,6 +561,13 @@ function linkSteamGame(userId, id, steamGame = {}) {
   const result = db.prepare(`UPDATE games SET steam_app_id=?,steam_playtime_minutes=?,steam_last_played_at=?,updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND user_id=? AND steam_app_id IS NULL`).run(appId, Math.max(0, Number.parseInt(steamGame.playtimeMinutes, 10) || 0),
       steamGame.lastPlayedAt || null, id, userId);
+  if (!result.changes) return null;
+  canonical.syncGameById(id); return getGame(userId, id);
+}
+function linkGogGame(userId, id, gogGame = {}) {
+  const productId = String(gogGame.productId || '').trim(); if (!/^\d+$/.test(productId)) return null;
+  const result = db.prepare(`UPDATE games SET gog_product_id=?,updated_at=CURRENT_TIMESTAMP
+    WHERE id=? AND user_id=? AND gog_product_id IS NULL`).run(productId, id, userId);
   if (!result.changes) return null;
   canonical.syncGameById(id); return getGame(userId, id);
 }
@@ -711,7 +737,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
   coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

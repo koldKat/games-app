@@ -847,31 +847,46 @@ test('SteamGridDB is a shared admin integration while account scans remain avail
   assert.match(adminClient, /\/api\/admin\/integrations\/\$\{provider\}/);
 });
 
-test('Steam library import stays modular, reviewed, and server-keyed', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const importer = read('public/js/steam-import.js');
+test('Steam and GOG library imports stay modular, reviewed, and identity-safe', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const importer = read('public/js/library-import.js'); const steamImporter = read('public/js/steam-import.js'); const gogImporter = read('public/js/gog-import.js');
   const server = read('server.js'); const adminHtml = read('admin/index.html'); const adminClient = read('admin/js/integrations.js');
   assert.match(application, /import \{ createSteamImporter \} from '\.\/js\/steam-import\.js'/);
+  assert.match(application, /import \{ createGogImporter \} from '\.\/js\/gog-import\.js'/);
   assert.match(html, /id="steam-import-review"[^>]*>Review library/);
+  assert.match(html, /id="gog-import-review"[^>]*>Review library/);
   assert.match(html, /id="steam-import-dialog"/);
+  assert.match(html, /id="gog-import-dialog"/);
   assert.match(html, /id="steam-import-progress"[\s\S]*id="steam-import-progress-fill"/);
-  assert.match(importer, /\/api\/steam\/import-preview/);
-  assert.match(importer, /selected\.add\(item\.appId\)/);
+  assert.match(importer, /`\/api\/\$\{id\}\/import-preview`/);
+  assert.match(importer, /selected\.add\(String\(item\[identityKey\]\)\)/);
   assert.match(importer, /REVIEW_RENDER_LIMIT = 250/);
   assert.match(importer, /syncSearchClears\(dialog\)/);
   assert.match(importer, /profileInput\.classList\.toggle\('is-connected', showingConnected\)/);
-  assert.match(importer, /showingConnected \? 'Replace profile' : 'Connect'/);
+  assert.match(importer, /provider\.replaceLabel \|\| 'Replace profile'/);
+  assert.match(importer, /provider\.connectionBodyKey \|\| 'profile'/);
+  assert.match(importer, /!connected && !connectionStatus\?\.requiresReconnect/);
   assert.match(importer, /event\.key !== 'Enter'[\s\S]*event\.preventDefault\(\)[\s\S]*connectButton\.click\(\)/);
-  assert.match(importer, /try \{ await onImported\(result\); \}[\s\S]*Steam import complete \/\/ refresh the Kat·a·log/);
-  assert.match(importer, /fetching: 'Refreshing owned games from Steam/);
+  assert.match(importer, /try \{ await onImported\(result\); \}[\s\S]*refresh the Kat·a·log/);
+  assert.match(importer, /fetching: `Refreshing owned games from \$\{label\}/);
+  assert.match(importer, /previewing: `Reading \$\{label\} library pages/);
+  assert.match(importer, /previewSequence/);
   assert.match(importer, /pressedBackdrop && event\.target === dialog/);
+  assert.match(steamImporter, /identityKey: 'appId'/);
+  assert.match(gogImporter, /identityKey: 'productId'/);
+  assert.match(gogImporter, /connectionBodyKey: 'authorization'/);
+  assert.match(html, /id="gog-authorization-link"[^>]*auth\.gog\.com[^>]*hidden/);
+  assert.match(html, /Normal and GOG-hidden games are reviewed together/);
   assert.match(server, /url\.pathname === '\/api\/steam\/import'/);
+  assert.match(server, /url\.pathname === '\/api\/gog\/import'/);
   assert.match(server, /'steam-import-progress'/);
-  assert.match(server, /events\.publish\(user\.id, 'games-imported'/);
+  assert.match(server, /'gog-import-progress'/);
+  assert.match(server, /events\.publish\(userId, 'games-imported'/);
   assert.match(adminHtml, /data-app-integration="steam"[\s\S]*name="apiKey"/);
   assert.match(adminClient, /steam: 'Steam Web API'/);
-  const importerCss = read('public/css/steam-import.css');
-  assert.match(importerCss, /\.steam-import-card\s*\{[^}]*overflow:hidden/);
-  assert.match(importerCss, /\.steam-import-list\s*\{[^}]*overflow:auto/);
+  const importerCss = read('public/css/library-import.css');
+  assert.match(importerCss, /\.library-import-card\s*\{[^}]*overflow:hidden/);
+  assert.match(importerCss, /\.library-import-list\s*\{[^}]*overflow:auto/);
 });
 
 test('account metadata services use compact themed disclosures', () => {

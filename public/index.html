@@ -44,7 +44,7 @@
   <link rel="stylesheet" href="/css/public-profile.css">
   <link rel="stylesheet" href="/css/patch.css">
   <link rel="stylesheet" href="/css/stats.css">
-  <link rel="stylesheet" href="/css/steam-import.css">
+  <link rel="stylesheet" href="/css/library-import.css">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -63,6 +63,7 @@
       "featureList": [
         "Multi-platform and custom-platform game tracking",
         "Physical and digital collection tracking",
+        "Reviewed Steam and GOG library imports",
         "Wishlist, backlog, and play-status management",
         "PEGI-assisted ratings and metadata",
         "IGDB title discovery, ratings, credits, genres, descriptions, and cover art",
@@ -93,7 +94,7 @@
         <article class="auth-promo promo-library" data-cover-decoration="promo-loose-cover">
           <span class="promo-code">LIBRARY // 01</span>
           <h2>One library.<br>Every system.</h2>
-          <p>Track owned and wishlisted games // physical or digital // across built-in and custom platforms.</p>
+          <p>Track owned and wishlisted games // physical or digital // across built-in and custom platforms, with reviewed Steam and GOG imports.</p>
           <div class="promo-platforms"><span>NINTENDO</span><span>PLAYSTATION</span><span>XBOX</span><span>PC + CUSTOM</span></div>
         </article>
         <article class="auth-promo promo-signal" aria-label="Kat·a·log Signal activity feed">
@@ -401,16 +402,32 @@
         <summary class="integration-summary"><span><strong>Steam library import</strong><small id="steam-import-status">Checking application connection…</small></span></summary>
         <div class="integration-body">
           <div class="integration-resources"><a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener noreferrer">Steam privacy settings ↗</a></div>
-          <div class="integration-key steam-connect-row">
+          <div class="integration-key library-connect-row">
             <input id="steam-profile-reference" type="text" maxlength="200" autocomplete="off" spellcheck="false" aria-label="Steam profile URL, custom name, or SteamID64" placeholder="Steam URL, name, or ID">
             <button type="button" class="button secondary" id="steam-connect">Connect</button>
           </div>
-          <div class="integration-bulk steam-import-actions">
+          <div class="integration-bulk library-import-actions">
             <span id="steam-connection-detail" class="bulk-status">No Steam profile connected.</span>
             <button type="button" class="button ghost" id="steam-import-review" disabled>Review library</button>
             <button type="button" class="text-button" id="steam-disconnect" hidden>Disconnect</button>
           </div>
           <small class="integration-note">Imports are reviewed before saving. Steam requires your Game details privacy setting to be Public.</small>
+        </div>
+      </details>
+      <details class="integration-panel gog-library-integration">
+        <summary class="integration-summary"><span><strong>GOG library import</strong><small id="gog-import-status">Checking connection…</small></span></summary>
+        <div class="integration-body">
+          <div class="integration-resources"><a id="gog-authorization-link" href="https://auth.gog.com/" target="_blank" rel="noopener noreferrer" hidden>Authorize with GOG ↗</a></div>
+          <div class="integration-key library-connect-row">
+            <input id="gog-profile-reference" type="text" maxlength="2000" autocomplete="off" spellcheck="false" aria-label="GOG authorization result URL" placeholder="Paste the final GOG authorization URL">
+            <button type="button" class="button secondary" id="gog-connect">Authorize</button>
+          </div>
+          <div class="integration-bulk library-import-actions">
+            <span id="gog-connection-detail" class="bulk-status">No GOG account authorized.</span>
+            <button type="button" class="button ghost" id="gog-import-review" disabled>Review library</button>
+            <button type="button" class="text-button" id="gog-disconnect" hidden>Disconnect</button>
+          </div>
+          <small class="integration-note">Log in only on GOG, then paste the final blank-page URL here. Normal and GOG-hidden games are reviewed together. Your password never enters this app.</small>
         </div>
       </details>
       <details class="integration-panel">
@@ -473,24 +490,44 @@
       <footer class="modal-actions"><button type="button" class="button danger-text" id="logout-button">Log out</button><button type="button" class="button ghost" data-account-close>Cancel</button><button type="submit" class="button primary" id="account-save">Save account</button></footer>
     </form>
   </dialog>
-  <dialog id="steam-import-dialog" class="steam-import-dialog">
-    <section class="modal-card steam-import-card" role="document">
+  <dialog id="steam-import-dialog" class="library-import-dialog">
+    <section class="modal-card library-import-card" role="document">
       <header class="modal-head"><div><p class="kicker">Steam // reviewed import</p><h2>Choose library records</h2></div><button type="button" class="close-button" data-steam-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
-      <div id="steam-import-loading" class="steam-import-loading" role="status">Reading your Steam library…</div>
-      <div id="steam-import-content" hidden>
-        <div id="steam-import-summary" class="steam-import-summary"></div>
-        <div class="steam-import-toolbar">
+      <div id="steam-import-loading" class="library-import-loading" role="status">Reading your Steam library…</div>
+      <div id="steam-import-content" class="library-import-content" hidden>
+        <div id="steam-import-summary" class="library-import-summary"></div>
+        <div class="library-import-toolbar">
           <div><button type="button" class="text-button" id="steam-select-importable">Select importable</button><button type="button" class="text-button" id="steam-clear-selection">Clear</button></div>
           <input id="steam-import-search" type="search" maxlength="220" autocomplete="off" spellcheck="false" placeholder="Filter Steam titles" aria-label="Filter Steam import titles">
         </div>
-        <div id="steam-import-list" class="steam-import-list"></div>
+        <div id="steam-import-list" class="library-import-list"></div>
       </div>
-      <section id="steam-import-progress" class="steam-import-progress" role="status" aria-live="polite" hidden>
+      <section id="steam-import-progress" class="library-import-progress" role="status" aria-live="polite" hidden>
         <div><span id="steam-import-progress-label">Preparing import…</span><b id="steam-import-progress-count"></b></div>
-        <div class="steam-import-meter"><span id="steam-import-progress-fill"></span></div>
+        <div class="library-import-meter"><span id="steam-import-progress-fill"></span></div>
       </section>
       <p id="steam-import-error" class="form-error" hidden></p>
       <footer class="modal-actions"><span id="steam-selected-count">0 selected</span><button type="button" class="button ghost" data-steam-close>Cancel</button><button type="button" class="button primary" id="steam-import-confirm" disabled>Import selected</button></footer>
+    </section>
+  </dialog>
+  <dialog id="gog-import-dialog" class="library-import-dialog">
+    <section class="modal-card library-import-card" role="document">
+      <header class="modal-head"><div><p class="kicker">GOG // reviewed import</p><h2>Choose library records</h2></div><button type="button" class="close-button" data-gog-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <div id="gog-import-loading" class="library-import-loading" role="status">Reading your GOG library…</div>
+      <div id="gog-import-content" class="library-import-content" hidden>
+        <div id="gog-import-summary" class="library-import-summary"></div>
+        <div class="library-import-toolbar">
+          <div><button type="button" class="text-button" id="gog-select-importable">Select importable</button><button type="button" class="text-button" id="gog-clear-selection">Clear</button></div>
+          <input id="gog-import-search" type="search" maxlength="220" autocomplete="off" spellcheck="false" placeholder="Filter GOG titles" aria-label="Filter GOG import titles">
+        </div>
+        <div id="gog-import-list" class="library-import-list"></div>
+      </div>
+      <section id="gog-import-progress" class="library-import-progress" role="status" aria-live="polite" hidden>
+        <div><span id="gog-import-progress-label">Preparing import…</span><b id="gog-import-progress-count"></b></div>
+        <div class="library-import-meter"><span id="gog-import-progress-fill"></span></div>
+      </section>
+      <p id="gog-import-error" class="form-error" hidden></p>
+      <footer class="modal-actions"><span id="gog-selected-count">0 selected</span><button type="button" class="button ghost" data-gog-close>Cancel</button><button type="button" class="button primary" id="gog-import-confirm" disabled>Import selected</button></footer>
     </section>
   </dialog>
   <dialog id="action-dialog" class="action-dialog">

@@ -31,6 +31,7 @@ function prune(now = Date.now()) {
     if (!validName(filename)) continue;
     const fullPath = path.join(BACKUP_DIR, filename);
     try {
+      fs.chmodSync(fullPath, 0o600);
       if (fs.statSync(fullPath).mtimeMs < cutoff) { fs.unlinkSync(fullPath); deleted++; }
     } catch {}
   }
@@ -53,6 +54,7 @@ async function performBackup(now = new Date()) {
     await db.backup(snapshotPath);
     await zipFile(snapshotPath, temporaryArchive);
     fs.renameSync(temporaryArchive, archivePath);
+    fs.chmodSync(archivePath, 0o600);
   } catch (error) {
     try { fs.unlinkSync(temporaryArchive); } catch {}
     throw error;
@@ -72,7 +74,8 @@ function runBackup(now = new Date()) {
 function listBackups() {
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
   return fs.readdirSync(BACKUP_DIR).filter(validName).map(name => {
-    const stat = fs.statSync(path.join(BACKUP_DIR, name));
+    const fullPath = path.join(BACKUP_DIR, name); fs.chmodSync(fullPath, 0o600);
+    const stat = fs.statSync(fullPath);
     return { name, bytes: stat.size, createdAt: stat.mtime.toISOString() };
   }).sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }

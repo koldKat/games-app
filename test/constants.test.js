@@ -64,6 +64,7 @@ test('site identity and input limits have explicit small policy modules', () => 
 test('user-facing dates and numbers never inherit a device locale', () => {
   const sources = [
     'public/app.js', 'public/js/activity-feed.js', 'public/js/cover-provider-settings.js',
+    'public/js/library-import.js', 'public/js/steam-import.js', 'public/js/gog-import.js',
     'public/js/patch-ui.js', 'public/js/progression-ui.js', 'public/js/public-profile.js',
     'admin/js/core.js', 'admin/js/patch.js', 'admin/js/announcements.js',
     'server/activity.js', 'server/forum-pages.js', 'server/katalog-pages.js',

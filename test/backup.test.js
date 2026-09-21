@@ -25,6 +25,8 @@ test('hourly backups are ZIP archives, deduplicated per hour, and removable', as
   const archiveBytes = fs.readFileSync(archive);
   assert.equal(archiveBytes.subarray(0, 2).toString(), 'PK');
   assert.ok(archiveBytes.includes(Buffer.from('games.db')), 'archive stores the SQLite snapshot entry');
+  assert.equal(fs.statSync(archive).mode & 0o777, 0o600);
+  assert.equal(fs.statSync(dbPath).mode & 0o777, 0o600);
   assert.equal(fs.readdirSync(backupDir).some(name => name.endsWith('.sqlite')), false);
 
   const duplicate = await backup.runBackup(new Date(2026, 7, 12, 3, 59, 59));

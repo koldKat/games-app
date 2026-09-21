@@ -91,6 +91,16 @@ test('equal display titles with different IGDB IDs remain distinct identities', 
   assert.equal(canonical.counts().games, 2);
 });
 
+test('a GOG product identity creates a stable canonical mapping before IGDB enrichment', t => {
+  const { database, canonical } = fixture(); t.after(() => database.close());
+  database.prepare(`INSERT INTO games(id,user_id,title,platform,gog_product_id) VALUES (11,1,'GOG Gem','GOG','123456')`).run();
+  const first = canonical.syncGameById(11);
+  const mapping = database.prepare("SELECT canonical_game_id AS gameId FROM canonical_external_ids WHERE provider='gog' AND external_id='123456'").get();
+  const second = canonical.syncGameById(11);
+  assert.equal(mapping.gameId, first.canonical.id);
+  assert.equal(second.canonical.id, first.canonical.id);
+});
+
 test('backfill links public releases and private copies and is repeatable', t => {
   const { database, canonical } = fixture(); t.after(() => database.close());
   database.exec(`

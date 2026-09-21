@@ -96,6 +96,7 @@ function createCanonicalStore(database) {
 
   const gameColumns = columns(database, 'games');
   addColumn(database, 'games', gameColumns, 'igdb_id', 'INTEGER');
+  addColumn(database, 'games', gameColumns, 'gog_product_id', 'TEXT');
   addColumn(database, 'games', gameColumns, 'canonical_game_id', 'INTEGER REFERENCES canonical_games(id) ON DELETE SET NULL');
   addColumn(database, 'games', gameColumns, 'canonical_release_id', 'INTEGER REFERENCES canonical_releases(id) ON DELETE SET NULL');
   database.exec('CREATE INDEX IF NOT EXISTS idx_games_canonical ON games(canonical_game_id, canonical_release_id)');
@@ -200,19 +201,23 @@ function createCanonicalStore(database) {
       igdb_rating_count AS igdbRatingCount,igdb_critic_rating AS igdbCriticRating,
       igdb_critic_rating_count AS igdbCriticRatingCount,igdb_genres AS igdbGenres,
       igdb_themes AS igdbThemes,igdb_developers AS igdbDevelopers,description,
-      steam_app_id AS steamAppId, canonical_game_id AS canonicalGameId FROM games WHERE id=?`).get(Number(id));
+      steam_app_id AS steamAppId,gog_product_id AS gogProductId,
+      canonical_game_id AS canonicalGameId FROM games WHERE id=?`).get(Number(id));
     if (!game) return null;
     for (const field of ['igdbGenres', 'igdbThemes', 'igdbDevelopers']) {
       try { game[field] = JSON.parse(game[field] || '[]'); } catch { game[field] = []; }
     }
     if (!game.igdbId) {
-      if (game.steamAppId) {
+      const externalIdentity = game.steamAppId ? ['steam', String(game.steamAppId)]
+        : game.gogProductId ? ['gog', String(game.gogProductId)] : null;
+      if (externalIdentity) {
+        const [provider, externalId] = externalIdentity;
         const external = database.prepare(`SELECT cg.* FROM canonical_external_ids cei
-          JOIN canonical_games cg ON cg.id=cei.canonical_game_id WHERE cei.provider='steam' AND cei.external_id=?`).get(String(game.steamAppId));
+          JOIN canonical_games cg ON cg.id=cei.canonical_game_id WHERE cei.provider=? AND cei.external_id=?`).get(provider, externalId);
         const canonical = external || upsertGame(game, { allowLocal: true });
         const release = ensureRelease(canonical.id, game);
-        database.prepare(`INSERT OR IGNORE INTO canonical_external_ids(provider,external_id,canonical_game_id) VALUES ('steam',?,?)`)
-          .run(String(game.steamAppId), canonical.id);
+        database.prepare('INSERT OR IGNORE INTO canonical_external_ids(provider,external_id,canonical_game_id) VALUES (?,?,?)')
+          .run(provider, externalId, canonical.id);
         database.prepare('UPDATE games SET canonical_game_id=?, canonical_release_id=? WHERE id=?').run(canonical.id, release?.id || null, game.id);
         if (game.canonicalGameId && Number(game.canonicalGameId) !== Number(canonical.id)) pruneOrphans(game.canonicalGameId);
         return { canonical, release };
@@ -225,13 +230,14 @@ function createCanonicalStore(database) {
       return linked || null;
     }
     const canonical = upsertGame(game); const release = ensureRelease(canonical.id, game);
-    if (game.steamAppId) {
+    const externalIdentities = [game.steamAppId && ['steam', String(game.steamAppId)], game.gogProductId && ['gog', String(game.gogProductId)]].filter(Boolean);
+    for (const [provider, externalId] of externalIdentities) {
       const previous = database.prepare(`SELECT cei.canonical_game_id AS canonicalGameId,cg.source FROM canonical_external_ids cei
-        JOIN canonical_games cg ON cg.id=cei.canonical_game_id WHERE cei.provider='steam' AND cei.external_id=?`).get(String(game.steamAppId));
+        JOIN canonical_games cg ON cg.id=cei.canonical_game_id WHERE cei.provider=? AND cei.external_id=?`).get(provider, externalId);
       if (!previous || previous.source === 'local' || Number(previous.canonicalGameId) === Number(canonical.id)) {
-        database.prepare(`INSERT INTO canonical_external_ids(provider,external_id,canonical_game_id) VALUES ('steam',?,?)
+        database.prepare(`INSERT INTO canonical_external_ids(provider,external_id,canonical_game_id) VALUES (?,?,?)
           ON CONFLICT(provider,external_id) DO UPDATE SET canonical_game_id=excluded.canonical_game_id`)
-          .run(String(game.steamAppId), canonical.id);
+          .run(provider, externalId, canonical.id);
         if (previous?.canonicalGameId && Number(previous.canonicalGameId) !== Number(canonical.id)) pruneOrphans(previous.canonicalGameId);
       }
     }
