@@ -1,5 +1,5 @@
 import { UI_LOCALE } from './ui-policy.js';
-import { platformDisplayName } from './platforms.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 
 const STAT_LABELS = Object.freeze([
   ['total', 'Games'], ['owned', 'Owned'], ['physical', 'Physical'], ['digital', 'Digital'], ['wishlisted', 'Wishlisted'],
@@ -81,7 +81,7 @@ function render(profile) {
   platforms.append(element('h3', '', 'Top platforms'));
   const list = element('div');
   for (const item of profile.topPlatforms || []) {
-    const row = element('span');
+    const row = element('span', `public-profile-platform platform-tag ${platformThemeClass(item.platform)}`);
     row.append(element('b', '', platformDisplayName(item.platform)), element('small', '', Number(item.count || 0).toLocaleString(UI_LOCALE)));
     list.append(row);
   }

@@ -39,7 +39,7 @@ test('catalogue page is crawlable server-rendered HTML', () => {
 test('catalogue cards summarize platform variants and release dialogs expose each edition', () => {
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
   const catalogue = renderKatalog({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
-  assert.match(catalogue, /Steam · PlayStation 5/);
+  assert.match(catalogue, /data-platform-theme="Steam">Steam<\/span><i>·<\/i><span[^>]*data-platform-theme="PlayStation 5">PlayStation 5<\/span>/);
   assert.match(catalogue, /2 platforms/);
   const detail = renderGame({ entry: { ...entry, releases, releaseCount: 2 } });
   assert.match(detail, /PLATFORM RELEASES/);
@@ -71,7 +71,7 @@ test('Nintendo Entertainment System names use recognizable display aliases witho
     result: { entries: [{ ...nes, releases: [nes, snes], releaseCount: 2 }], total: 1, page: 1, pages: 1 },
     platforms: [{ platform: nes.platform, count: 1 }, { platform: snes.platform, count: 1 }],
   });
-  assert.match(html, />NES · SNES</);
+  assert.match(html, /data-platform-theme="Nintendo Entertainment System">NES<\/span><i>·<\/i><span[^>]*data-platform-theme="Super Nintendo Entertainment System">SNES<\/span>/);
   assert.match(html, /value="Nintendo Entertainment System">NES \(1\)<\/option>/);
   assert.match(html, /value="Super Nintendo Entertainment System">SNES \(1\)<\/option>/);
   assert.doesNotMatch(html, />Nintendo Entertainment System · Super Nintendo Entertainment System</);

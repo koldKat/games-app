@@ -39,7 +39,7 @@ test('browser policies name pagination, lookup, and timing contracts', () => {
   const application = read('public/app.js');
   assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
   assert.match(policy, /debounceMs: 100/);
-  assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
+  assert.match(application, /loadGames\(state\.page \+ \(direction === 'next' \? 1 : -1\)\)/);
   assert.doesNotMatch(application, /state\.limit/);
   assert.match(policy, /UI_LOCALE = 'en-US'/);
   assert.match(policy, /MULTIPLATFORM_FILTER_VALUE = '__multiple_platforms__'/);

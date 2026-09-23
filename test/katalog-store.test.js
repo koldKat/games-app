@@ -17,8 +17,8 @@ function fixture() {
   database.exec(`
     CREATE TABLE users (id INTEGER PRIMARY KEY);
     CREATE TABLE games (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, rating REAL);
-    INSERT INTO users (id) VALUES (1),(2);
-    INSERT INTO games (id,user_id,rating) VALUES (11,1,4.5),(22,2,3.5);
+    INSERT INTO users (id) VALUES (1),(2),(3);
+    INSERT INTO games (id,user_id,rating) VALUES (11,1,4.5),(22,2,3.5),(33,3,NULL);
   `);
   return { database, store: createKatalogStore(database) };
 }
@@ -127,6 +127,23 @@ test('public Kat·a·log groups title variants, but a platform filter returns in
   assert.equal(store.listPublic({ platform: 'Steam' }).entries[0].releases, undefined);
   assert.equal(store.getPublicBySlug(grouped.entries[0].slug).releases.length, 2);
   assert.equal(store.sitemapEntries().length, 1);
+});
+
+test('public pagination keeps every release in a group while hydrating only the requested groups', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const switchRelease = game();
+  const steamRelease = game({ id: 22, platform: 'Steam' });
+  const otherTitle = game({ id: 33, title: 'Zelda Echoes', platform: 'Nintendo Switch', igdbId: 900,
+    hltbTitle: 'Zelda Echoes', coverMatchTitle: 'Zelda Echoes' });
+  store.upsertFromGame(1, switchRelease, evaluateKatalogGame(switchRelease), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  store.upsertFromGame(2, steamRelease, evaluateKatalogGame(steamRelease), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+  store.upsertFromGame(3, otherTitle, evaluateKatalogGame(otherTitle), '/covers/dddddddddddddddddddddddddddddddd.jpg');
+  const first = store.listPublic({ limit: 1 });
+  assert.deepEqual([first.total, first.pages, first.entries.length, first.entries[0].releaseCount], [2, 2, 1, 2]);
+  const second = store.listPublic({ limit: 1, page: 2 });
+  assert.deepEqual([second.page, second.entries.length, second.entries[0].title], [2, 1, 'Zelda Echoes']);
+  const bounded = store.listPublic({ limit: 1, page: 999 });
+  assert.deepEqual([bounded.page, bounded.pages, bounded.entries[0].title], [2, 2, 'Zelda Echoes']);
 });
 
 test('IGDB identity groups differently titled platform releases', t => {

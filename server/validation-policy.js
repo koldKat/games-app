@@ -27,6 +27,8 @@ const GAME_LIMITS = Object.freeze({
   releaseYearMax: 2100,
   titleSearchDefault: 10,
   titleSearchMax: 20,
+  libraryPageSize: 50,
+  libraryPageSizeMax: 50,
 });
 
 const KATALOG_LIMITS = Object.freeze({

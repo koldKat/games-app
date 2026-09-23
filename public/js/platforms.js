@@ -145,6 +145,12 @@ export function platformThemeClass(platform) {
   return `platform-theme-${platformTheme(platform)}`;
 }
 
+export function hydratePlatformThemes(root = document) {
+  root.querySelectorAll('[data-platform-theme]').forEach(node => {
+    node.classList.add('platform-coded', platformThemeClass(node.dataset.platformTheme));
+  });
+}
+
 export function platformFromReleaseText(releases) {
   const haystack = String(releases || '').toLocaleLowerCase();
   const exact = [...knownPlatforms]

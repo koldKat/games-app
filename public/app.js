@@ -1,4 +1,4 @@
-import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformDisplayName, platformFromReleaseText, platformGroups } from './js/platforms.js';
+import { CUSTOM_PLATFORM, isPcStorefront, knownPlatforms, pegiColors, platformDisplayName, platformFromReleaseText, platformGroups, platformThemeClass } from './js/platforms.js';
 import { openEventStream } from './js/events.js';
 import { createTitleAutocomplete } from './js/title-autocomplete.js';
 import { cardTimes, createHltbLookup } from './js/hltb-ui.js';
@@ -18,6 +18,7 @@ import { createActivityFeed } from './js/activity-feed.js';
 import { createPatchUi } from './js/patch-ui.js';
 import { mountThemedNumberSteppers } from './js/number-steppers.js';
 import { mountThemedSearchClears, syncSearchClears } from './js/search-clears.js';
+import { bindFilterSelectStates, syncFilterSelectStates } from './js/filter-state.js';
 import { createSteamImporter } from './js/steam-import.js';
 import { createGogImporter } from './js/gog-import.js';
 import { GAME_LABELS } from './js/game-labels.js';
@@ -53,7 +54,7 @@ function mountDecorativeCoverSlots() {
 mountDecorativeCoverSlots();
 mountThemedNumberSteppers();
 mountThemedSearchClears();
-const state = { games: [], stats: null, platforms: [], integrations: {}, page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
+const state = { games: [], gameTotal: 0, gamePages: 1, stats: null, platforms: [], integrations: {}, page: 1, view: 'grid', loading: false, user: null, authMode: 'login', coverStatus: null, pegiStatus: null, hltbStatus: null, descriptionStatus: null, stopEvents: null, pendingGamePatches: new Map() };
 let gameLoadSequence = 0;
 let metaLoadSequence = 0;
 let decorationSequence = 0;
@@ -186,7 +187,7 @@ function showAuth(message = '') {
   coverProviderSettings.reset();
   preferencesReady = false; preferencesDirty = false; clearTimeout(preferenceSaveTimer);
   clearTimeout(groupFilterRefreshTimer);
-  state.games = []; state.stats = null; state.platforms = []; state.integrations = {}; state.page = 1;
+  state.games = []; state.gameTotal = 0; state.gamePages = 1; state.stats = null; state.platforms = []; state.integrations = {}; state.page = 1;
   setIgdbAvailability(false);
   for (const [key, element] of Object.entries(filters)) element.value = key === 'sort' ? 'title' : '';
   for (const slot of $$('.hero-cover, .app-cover-field i')) { slot.style.backgroundImage = ''; slot.classList.remove('has-art'); }
@@ -497,7 +498,7 @@ function gameCard(game) {
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top">${platform}<button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
-    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${personalRating(game.rating)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
+    <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button type="button" class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
@@ -535,11 +536,10 @@ function displayedGames() {
   const splitPlatforms = Boolean(filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE);
   return groupGames(state.games, { splitPlatforms }).map(group => selectedGroupCopy(group, selectedCopyIds));
 }
-function pageCount() { return Math.max(1, Math.ceil(displayedGames().length / LIBRARY_PAGE_SIZE)); }
+function pageCount() { return Math.max(1, state.gamePages); }
 function pagedGames() {
   state.page = Math.min(Math.max(1, state.page), pageCount());
-  const offset = (state.page - 1) * LIBRARY_PAGE_SIZE;
-  return displayedGames().slice(offset, offset + LIBRARY_PAGE_SIZE);
+  return displayedGames();
 }
 function updateCollectionChrome() {
   const shown = pagedGames(); const pages = pageCount(); const pagination = $('#library-pagination');
@@ -549,31 +549,28 @@ function updateCollectionChrome() {
   $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
-  const count = displayedGames().length; const grouped = !filters.platform.value || filters.platform.value === MULTIPLATFORM_FILTER_VALUE;
+  const count = state.gameTotal; const grouped = !filters.platform.value || filters.platform.value === MULTIPLATFORM_FILTER_VALUE;
   $('#result-count').textContent = `${count.toLocaleString(UI_LOCALE)} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
 }
 function applyGamePatch(game) {
   if (!game?.id) return;
   if (state.loading) { state.pendingGamePatches.set(game.id, game); return; }
-  if (filters.platform.value === MULTIPLATFORM_FILTER_VALUE) {
-    clearTimeout(groupFilterRefreshTimer);
-    groupFilterRefreshTimer = setTimeout(() => { void loadGames(); }, UI_TIMING.libraryGroupRefreshDebounceMs);
-    return;
-  }
   const existingIndex = state.games.findIndex(item => item.id === game.id);
-  if (existingIndex !== -1) state.games.splice(existingIndex, 1);
-  if (gameMatchesFilters(game)) state.games.push(game);
-  state.games.sort((left, right) => compareGames(left, right, filters.sort.value));
-  renderGames();
+  if (existingIndex !== -1) {
+    state.games.splice(existingIndex, 1);
+    if (gameMatchesFilters(game)) state.games.push(game);
+    state.games.sort((left, right) => compareGames(left, right, filters.sort.value));
+    renderGames();
+  }
+  clearTimeout(groupFilterRefreshTimer);
+  groupFilterRefreshTimer = setTimeout(() => { void loadGames(state.page); }, UI_TIMING.libraryGroupRefreshDebounceMs);
 }
 function flushPendingGamePatches() {
   const pending = [...state.pendingGamePatches.values()]; state.pendingGamePatches.clear();
-  if (pending.length && filters.platform.value === MULTIPLATFORM_FILTER_VALUE) {
+  if (pending.length) {
     clearTimeout(groupFilterRefreshTimer);
-    groupFilterRefreshTimer = setTimeout(() => { void loadGames(); }, UI_TIMING.libraryGroupRefreshDebounceMs);
-    return;
+    groupFilterRefreshTimer = setTimeout(() => { void loadGames(state.page); }, UI_TIMING.libraryGroupRefreshDebounceMs);
   }
-  for (const game of pending) applyGamePatch(game);
 }
 function connectEventStream() {
   state.stopEvents?.();
@@ -636,17 +633,26 @@ async function stageAppDecorations(userId) {
 function queryString() {
   const params = new URLSearchParams();
   for (const [key, element] of Object.entries(filters)) if (element.value) params.set(key, element.value);
+  params.set('page', String(state.page));
+  params.set('limit', String(LIBRARY_PAGE_SIZE));
   return params.toString();
 }
-async function loadGames() {
+async function loadGames(page = 1) {
   clearTimeout(groupFilterRefreshTimer);
   const sequence = ++gameLoadSequence; const userId = state.user?.id;
+  const previousPage = state.page;
+  state.page = Math.max(1, Number(page) || 1);
   state.loading = true; renderGames();
   try {
-    const games = await api(`/api/games?${queryString()}`);
+    const result = await api(`/api/games?${queryString()}`);
     if (sequence !== gameLoadSequence || state.user?.id !== userId) return;
-    state.games = games; state.page = 1;
-  } catch (error) { if (sequence === gameLoadSequence && state.user?.id === userId) toast(error.message); }
+    state.games = result.games || [];
+    state.gameTotal = Number(result.total) || 0;
+    state.gamePages = Math.max(1, Number(result.pages) || 1);
+    state.page = Math.min(Math.max(1, Number(result.page) || 1), state.gamePages);
+  } catch (error) {
+    if (sequence === gameLoadSequence && state.user?.id === userId) { state.page = previousPage; toast(error.message); }
+  }
   finally {
     if (sequence === gameLoadSequence && state.user?.id === userId) { state.loading = false; renderGames(); flushPendingGamePatches(); }
   }
@@ -673,11 +679,11 @@ $('#clear-filters').addEventListener('click', () => { Object.entries(filters).fo
 $('#library-pagination').addEventListener('click', event => {
   const direction = event.target.closest('[data-library-page]')?.dataset.libraryPage;
   if (!direction) return;
-  state.page += direction === 'next' ? 1 : -1;
-  renderGames();
+  void loadGames(state.page + (direction === 'next' ? 1 : -1));
 });
 function renderQuickFilter() {
   syncSearchClears();
+  syncFilterSelectStates();
   $$('[data-stat-kind]').forEach(button => {
     const { statKind: kind, statValue: value = '' } = button.dataset;
     const active = kind === 'all'
@@ -696,6 +702,7 @@ $$('[data-stat-kind]').forEach(button => button.addEventListener('click', () => 
   loadGames();
 }));
 renderQuickFilter();
+bindFilterSelectStates();
 const compactViewMedia = window.matchMedia('(max-width: 680px)');
 function syncViewControls() {
   const compact = state.view === 'list' && !compactViewMedia.matches;
@@ -724,7 +731,7 @@ function detailSection(title, content) {
 function detailRows(rows) {
   return rows
     .filter(([, value]) => value !== '' && value != null)
-    .map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`)
+    .map(([label, value, valueClass = '']) => `<div><span>${escapeHtml(label)}</span><strong${valueClass ? ` class="${escapeHtml(valueClass)}"` : ''}>${escapeHtml(String(value))}</strong></div>`)
     .join('');
 }
 function detailTimes(game) {
@@ -756,7 +763,7 @@ function detailMarkup(game, { rating, descriptors, times, facts, pegiText, relea
   const notes = game.notes ? `<p>${escapeHtml(game.notes)}</p>` : '<p class="empty-detail">No personal notes.</p>';
   return `<div class="game-detail-hero">
   ${detailCover(game)}
-  <div><p>${escapeHtml(platformDisplayName(game.platform))}</p><div class="game-detail-chips">${chips}</div>${description}${descriptionSource}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div>
+  <div><p class="game-detail-platform platform-coded ${platformThemeClass(game.platform)}">${escapeHtml(platformDisplayName(game.platform))}</p><div class="game-detail-chips">${chips}</div>${description}${descriptionSource}${safeDetailLink(game.descriptionSourceUrl, 'View description source')}</div>
 </div>
 <div class="game-detail-facts">${facts}</div>
 ${detailSection('HowLongToBeat', hltb)}
@@ -773,7 +780,7 @@ function openDetails(game) {
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
   const times = detailTimes(game);
-  const facts = detailRows([['Platform', platformDisplayName(game.platform)], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
+  const facts = detailRows([['Platform', platformDisplayName(game.platform), `platform-coded game-detail-platform-value ${platformThemeClass(game.platform)}`], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
   const pegiText = detailPegiText(game);
   const releases = detailReleases(game);
   $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });

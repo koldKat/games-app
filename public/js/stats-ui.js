@@ -1,6 +1,6 @@
 import { controllerLoaderMarkup } from './controller-loader.js';
 import { coverage, formatBytes, formatCount, formatDecimal, formatDuration, formatPercent, formatPlaytime } from './stats-format.js';
-import { platformDisplayName } from './platforms.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 
 let dialog;
 let returnFocus;
@@ -15,8 +15,16 @@ function element(tag, className = '', text = '') {
 
 function row(label, value) {
   const item = element('tr');
-  item.append(element('td', 'stats-key', label), element('td', 'stats-value', value));
+  const labelCell = element('td', 'stats-key');
+  const valueCell = element('td', 'stats-value');
+  labelCell.append(label instanceof Node ? label : document.createTextNode(label));
+  valueCell.append(value instanceof Node ? value : document.createTextNode(value));
+  item.append(labelCell, valueCell);
   return item;
+}
+
+function platformLabel(platform) {
+  return element('span', `stats-platform platform-coded ${platformThemeClass(platform)}`, platformDisplayName(platform));
 }
 
 function section(definition) {
@@ -85,7 +93,7 @@ function sections(stats) {
       ['Published announcements', formatCount(stats.announcements)],
     ] },
     { kind: 'genres', label: 'Top public genres', rows: (stats.genres || []).map(item => [item.genre, formatCount(item.count)]) },
-    { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [platformDisplayName(item.platform), formatCount(item.count)]) },
+    { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [platformLabel(item.platform), formatCount(item.count)]) },
     { kind: 'server', label: 'Server', rows: [
       ['Processor', stats.cpuModel || 'Unknown'], ['CPU cores', formatCount(stats.cpuCores)],
       ['CPU age', stats.cpuAgeYears == null ? 'N/A' : `${formatCount(stats.cpuAgeYears)}y`],

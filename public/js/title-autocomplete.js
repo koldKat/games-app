@@ -1,5 +1,5 @@
 import { AUTOCOMPLETE_POLICY, LOOKUP_MIN_TITLE_LENGTH } from './ui-policy.js';
-import { platformDisplayName } from './platforms.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 
 const sameText = (left, right) => String(left || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
   === String(right || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
@@ -33,7 +33,10 @@ export function createTitleAutocomplete({
     const duplicate = exactDuplicate(); warning.hidden = !duplicate;
     if (!duplicate) { delete warning.dataset.gameId; return; }
     warning.dataset.gameId = duplicate.id;
-    summary.textContent = `${platformDisplayName(duplicate.platform)} · ${labels[duplicate.ownership] || duplicate.ownership}`;
+    const platform = document.createElement('span');
+    platform.className = `autocomplete-platform platform-coded ${platformThemeClass(duplicate.platform)}`;
+    platform.textContent = platformDisplayName(duplicate.platform);
+    summary.replaceChildren(platform, document.createTextNode(` · ${labels[duplicate.ownership] || duplicate.ownership}`));
   }
 
   function reset() {
@@ -79,9 +82,13 @@ export function createTitleAutocomplete({
     ];
     activeSuggestion = -1;
     suggestionBox.innerHTML = suggestions.map((choice, index) => {
-      if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small>${escapeHtml(platformDisplayName(choice.game.platform))} · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
-      if (choice.kind === 'katalog') return `<button type="button" class="katalog" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small>${escapeHtml(platformDisplayName(choice.entry.platform))}${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
-      if (choice.kind === 'igdb') return `<button type="button" class="igdb" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}<small>${escapeHtml([choice.result.releaseYear, ...(choice.result.platforms || []).slice(0, 2).map(platformDisplayName)].filter(Boolean).join(' · '))}</small></span><b>IGDB</b></button>`;
+      if (choice.kind === 'existing') return `<button type="button" class="existing" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.game.title)}<small><em class="autocomplete-platform platform-coded ${platformThemeClass(choice.game.platform)}">${escapeHtml(platformDisplayName(choice.game.platform))}</em> · ${escapeHtml(labels[choice.game.ownership] || choice.game.ownership)}</small></span><b>In library</b></button>`;
+      if (choice.kind === 'katalog') return `<button type="button" class="katalog" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.entry.title)}<small><em class="autocomplete-platform platform-coded ${platformThemeClass(choice.entry.platform)}">${escapeHtml(platformDisplayName(choice.entry.platform))}</em>${choice.entry.pegi ? ` · PEGI ${escapeHtml(choice.entry.pegi)}` : ''}</small></span><b>Public</b></button>`;
+      if (choice.kind === 'igdb') {
+        const platforms = (choice.result.platforms || []).slice(0, 2).map(platform => `<em class="autocomplete-platform platform-coded ${platformThemeClass(platform)}">${escapeHtml(platformDisplayName(platform))}</em>`).join(' · ');
+        const details = [choice.result.releaseYear ? escapeHtml(choice.result.releaseYear) : '', platforms].filter(Boolean).join(' · ');
+        return `<button type="button" class="igdb" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}<small>${details}</small></span><b>IGDB</b></button>`;
+      }
       return `<button type="button" id="title-suggestion-${index}" role="option" aria-selected="false" data-title-suggestion="${index}"><span>${escapeHtml(choice.title)}</span><small>SteamGridDB</small></button>`;
     }).join('');
     suggestionBox.hidden = suggestions.length === 0;

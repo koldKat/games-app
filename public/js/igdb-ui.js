@@ -1,5 +1,5 @@
 import { LOOKUP_MIN_TITLE_LENGTH, UI_LOCALE } from './ui-policy.js';
-import { platformDisplayName } from './platforms.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 
 const fields = Object.freeze(['igdbId', 'igdbSlug', 'igdbUrl', 'igdbRating', 'igdbRatingCount', 'igdbCriticRating',
   'igdbCriticRatingCount', 'igdbGenres', 'igdbThemes', 'igdbDevelopers', 'igdbUpdatedAt']);
@@ -75,9 +75,10 @@ export function createIgdbLookup({ $, api, escapeHtml, toast, selectedPlatform, 
     resultsBox.hidden = true; renderMatch(); toast('IGDB information applied. Save the game to keep it.');
   }
   function resultMarkup(result, index) {
-    const details = [result.releaseYear, (result.platforms || []).slice(0, 3).map(platformDisplayName).join(', '), result.gameType].filter(Boolean).join(' · ');
+    const platforms = (result.platforms || []).slice(0, 3).map(platform => `<em class="autocomplete-platform platform-coded ${platformThemeClass(platform)}">${escapeHtml(platformDisplayName(platform))}</em>`).join(', ');
+    const details = [result.releaseYear ? escapeHtml(result.releaseYear) : '', platforms, result.gameType ? escapeHtml(result.gameType) : ''].filter(Boolean).join(' · ');
     const cover = result.thumbnailUrl ? `<img src="${escapeHtml(result.thumbnailUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
-    return `<button type="button" class="pegi-result igdb-result" data-igdb-index="${index}">${cover}<span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(details || 'IGDB')}</small></span></button>`;
+    return `<button type="button" class="pegi-result igdb-result" data-igdb-index="${index}">${cover}<span><strong>${escapeHtml(result.title)}</strong><small>${details || 'IGDB'}</small></span></button>`;
   }
   async function search() {
     const title = $('#game-title').value.trim(); resultsBox.hidden = false;

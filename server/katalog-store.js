@@ -334,13 +334,36 @@ function createKatalogStore(database, { canonical: suppliedCanonical = null } = 
     const where = `status='public' AND (@q='%%' OR title_key LIKE @q OR platform_key LIKE @q OR publisher LIKE @rawQ COLLATE NOCASE
       OR igdb_genres LIKE @rawQ COLLATE NOCASE OR igdb_themes LIKE @rawQ COLLATE NOCASE)
       AND (@platform='' OR platform_key=@platform)`;
-    const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE ${where}
-      ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE`).all(params).map(hydrateEntry);
-    const entries = cleanPlatform ? releases.map(publicEntry) : groupedPublicEntries(releases);
-    const total = entries.length;
+    if (cleanPlatform) {
+      const total = database.prepare(`SELECT COUNT(*) count FROM catalogue_entries WHERE ${where}`).get(params).count;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      const safePage = Math.min(currentPage, pages);
+      const releases = database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE ${where}
+        ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE LIMIT @limit OFFSET @offset`)
+        .all({ ...params, limit: pageSize, offset: (safePage - 1) * pageSize }).map(hydrateEntry).map(publicEntry);
+      return { entries: releases, total, page: safePage, pageSize, pages };
+    }
+    // Grouping can span platforms, so first scan only the small identity columns.
+    // Hydrate descriptions and metadata solely for the groups shown on this page.
+    const identities = database.prepare(`SELECT id, title, title_key AS titleKey, canonical_game_id AS canonicalGameId
+      FROM catalogue_entries WHERE ${where} ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE`).all(params);
+    const groupedIds = new Map(); const groups = [];
+    for (const entry of identities) {
+      const key = entry.canonicalGameId ? `canonical:${entry.canonicalGameId}` : `title:${entry.titleKey || normalizeKatalogText(entry.title)}`;
+      const ids = groupedIds.get(key);
+      if (ids) ids.push(entry.id);
+      else { const first = [entry.id]; groupedIds.set(key, first); groups.push(first); }
+    }
+    const total = groups.length;
     const pages = Math.max(1, Math.ceil(total / pageSize));
     const safePage = Math.min(currentPage, pages);
-    return { entries: entries.slice((safePage - 1) * pageSize, safePage * pageSize), total, page: safePage, pageSize, pages };
+    const ids = groups.slice((safePage - 1) * pageSize, safePage * pageSize).flat();
+    if (!ids.length) return { entries: [], total, page: safePage, pageSize, pages };
+    const placeholders = ids.map(() => '?').join(',');
+    const byId = new Map(database.prepare(`SELECT ${storedFields} FROM catalogue_entries WHERE id IN (${placeholders})`)
+      .all(...ids).map(hydrateEntry).map(entry => [entry.id, entry]));
+    const releases = ids.map(id => byId.get(id)).filter(Boolean);
+    return { entries: groupedPublicEntries(releases), total, page: safePage, pageSize, pages };
   }
 
   function searchPublic(query, limit = 8) {

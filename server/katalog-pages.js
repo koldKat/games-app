@@ -192,12 +192,13 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
   const heroTitle = detail ? '<h2>Public Kat·a·log</h2>' : '<h1>Public Kat·a·log</h1>';
   const cards = result.entries.map(entry => {
     const releases = entry.releases || [entry];
-    const platformLabel = platform ? platformDisplayName(entry.platform) : releases.map(release => platformDisplayName(release.platform)).join(' · ');
+    const visibleReleases = platform ? [entry] : releases;
+    const platformLabel = visibleReleases.map(release => `<span class="katalog-platform-token" data-platform-theme="${escapeHtml(release.platform)}">${escapeHtml(platformDisplayName(release.platform))}</span>`).join('<i>·</i>');
     const owned = releases.some(release => libraryGames.get(Number(release.id))?.ownership === 'owned');
     const libraryPill = owned ? '<span class="katalog-library-pill">Owned</span>' : '';
     return `<article class="katalog-card">
     <a class="katalog-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
-    <div class="katalog-card-body"><span class="katalog-platform">${escapeHtml(platformLabel)}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
+    <div class="katalog-card-body"><span class="katalog-platform">${platformLabel}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
       <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
       <div class="katalog-chips">${libraryPill}<span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}${releases.length > 1 ? `<span>${releases.length} platforms</span>` : ''}</div>
     </div></article>`;
@@ -209,7 +210,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
     ${result.page < result.pages ? `<a href="${escapeHtml(queryHref({ q: query, platform, page: result.page + 1 }))}" aria-label="Next page">page.next()</a>` : '<span></span>'}
   </nav>` : '';
   return `<main class="katalog-main"><section class="hero katalog-hero"><div><p class="kicker">PUBLIC // SHARED</p>${heroTitle}<p class="hero-copy">Discover enriched releases and add them to your private library.</p></div>${heroCoverDeck(coverUrls.length ? coverUrls : result.entries.map(entry => entry.coverUrl))}</section>
-      <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, genre, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform"><option value="">All platforms</option>${platformOptions}</select></label></div></form>
+      <form class="filter-panel katalog-search" action="/katalog" method="get"><label class="search-wrap"><span aria-hidden="true">⌕</span><input type="search" name="q" value="${escapeHtml(query)}" placeholder="Title, genre, publisher, or platform" maxlength="120" aria-label="Search Kat·a·log"></label><div class="filters katalog-search-filters"><label><select name="platform" aria-label="Platform" data-content-filter><option value="">All platforms</option>${platformOptions}</select></label></div></form>
       <div class="katalog-results"><div class="katalog-result-head"><strong>${result.total.toLocaleString(UI_LOCALE)} public release${result.total === 1 ? '' : 's'}</strong>${query || platform ? `<a href="/katalog">Clear search</a>` : ''}</div>
       <section class="katalog-grid">${cards || '<div class="katalog-empty"><strong>No matching releases.</strong><span>The Kat·a·log grows as members enrich their private libraries.</span></div>'}</section>${pagination}</div>${detail}</main>`;
 }
@@ -267,7 +268,7 @@ function addToLibraryPanel(entry, user, libraryGame) {
     const owned = libraryGame.ownership === 'owned';
     const state = owned ? 'Owned' : libraryGame.ownership === 'wanted' ? 'Wishlisted' : 'Saved';
     return `<aside class="katalog-add katalog-added">
-      <div><strong>${state} in your Kat·a·log</strong><span>${platform} · ${title}</span></div>
+      <div><strong>${state} in your Kat·a·log</strong><span><b class="katalog-owned-platform" data-platform-theme="${escapeHtml(libraryGame.platform || entry.platform)}">${platform}</b> · ${title}</span></div>
       <a data-katalog-destination="library-game" data-library-game-id="${Number(libraryGame.id)}" href="/?game=${Number(libraryGame.id)}">Open my Kat·a·log</a>
     </aside>`;
   }
@@ -297,7 +298,7 @@ function gameReleasePanel(entry) {
   if (releases.length < 2) return '';
   const releaseLinks = releases.map(release => {
     const details = [release.publisher, release.releaseYear].filter(Boolean).join(' · ') || 'Release details pending';
-    return `<a class="${release.slug === entry.slug ? 'active' : ''}" href="/game/${encodeURIComponent(release.slug)}">
+    return `<a class="${release.slug === entry.slug ? 'active' : ''}" data-platform-theme="${escapeHtml(release.platform)}" href="/game/${encodeURIComponent(release.slug)}">
       <strong>${escapeHtml(platformDisplayName(release.platform))}</strong><small>${escapeHtml(details)}</small>
     </a>`;
   }).join('');
@@ -349,7 +350,7 @@ function gameDetailDialog(entry, { ratingLabel, user, libraryGame }) {
       <header><span>PUBLIC RELEASE</span><button type="button" class="close-button" data-katalog-game-close aria-label="Close game details"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div class="game-detail"><article class="game-overview">
         <div class="game-cover"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}"></div>
-        <div class="game-summary"><p>${escapeHtml(platformDisplayName(entry.platform))}</p><h1>${escapeHtml(entry.title)}</h1>
+        <div class="game-summary"><p class="game-summary-platform" data-platform-theme="${escapeHtml(entry.platform)}">${escapeHtml(platformDisplayName(entry.platform))}</p><h1>${escapeHtml(entry.title)}</h1>
           <div class="katalog-chips"><span class="pegi pegi-${entry.pegi || 'none'}">${escapeHtml(ratingLabel)}</span>${communityRating(entry)}${releaseYear}${publisher}</div>
           ${gameReleasePanel(entry)}${addToLibraryPanel(entry, user, libraryGame)}${gameDescriptionPanel(entry)}
         </div>

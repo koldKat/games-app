@@ -59,7 +59,7 @@ Multicolor marks are represented by a subdued gradient. The gradient preserves t
 
 `public/js/platforms.js` owns the exact platform-to-theme map. It deliberately performs no regex guessing. Every built-in platform must resolve to a named audited theme, while user-entered custom platforms receive the neutral `custom` theme.
 
-`public/css/library.css` owns the palette variables. `public/css/features.css` consumes the shared surface, frame, and mark variables for platform badges. Multicolor identities use the same ordered gradient for the frame and marker, with a darker version spread across the full surface. The card rail remains PEGI-colored, so platform identity never replaces age-rating semantics.
+`public/css/library.css` owns the palette variables. `public/css/features.css` consumes the shared surface, frame, and mark variables for platform badges. `public/js/platforms.js` applies the same identity classes to library cards and dialogs, public-release cards and edition selectors, Signal, public collector profiles, title suggestions, import review matches, and Stats for Nerds. Server-rendered public markup carries the raw platform in `data-platform-theme`; the public Kat·a·log client resolves it through the same centralized map after initial load and partial navigation. Multicolor identities use the same ordered gradient for the frame and marker, with a darker version spread across the full surface. The card rail remains PEGI-colored, so platform identity never replaces age-rating semantics.
 
 The platform regression test iterates every built-in platform and fails if any falls through to `custom`. Additions to the platform list therefore require an explicit palette decision.
 

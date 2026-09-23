@@ -22,6 +22,8 @@ db.pragma('foreign_keys = ON');
 for (const suffix of ['', '-wal', '-shm']) restrictDatabaseFile(`${DB_PATH}${suffix}`);
 const normalizeSearchText = value => String(value || '').normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+const gameGroupTitleKey = value => String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  .toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 const searchPattern = value => `%${normalizeSearchText(value).replace(/[\\%_]/g, character => `\\${character}`)}%`;
 const safeList = value => (Array.isArray(value) ? value : [])
   .map(item => String(item || '').trim().slice(0, GAME_LIMITS.metadataItemMax))
@@ -436,7 +438,7 @@ function hydrateGame(row) {
     igdbGenres: parseStoredList(igdbGenresJson), igdbThemes: parseStoredList(igdbThemesJson), igdbDevelopers: parseStoredList(igdbDevelopersJson) };
 }
 
-function listGames(userId, filters = {}) {
+function gameListQuery(userId, filters = {}) {
   const clauses = ['user_id = @userId'];
   const params = { userId };
   if (filters.q) {
@@ -514,7 +516,43 @@ function listGames(userId, filters = {}) {
     cartridge: `cartridge_number IS NULL, cartridge_number ASC, ${titleAsc}`,
   };
   const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
-  return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${sortMap[filters.sort] || sortMap.title}`).all(params).map(hydrateGame);
+  return { where, params, orderBy: sortMap[filters.sort] || sortMap.title };
+}
+
+function listGames(userId, filters = {}) {
+  const { where, params, orderBy } = gameListQuery(userId, filters);
+  return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${orderBy}`).all(params).map(hydrateGame);
+}
+
+function listGamesPage(userId, filters = {}) {
+  const { where, params, orderBy } = gameListQuery(userId, filters);
+  const pageSize = Math.max(1, Math.min(GAME_LIMITS.libraryPageSizeMax,
+    Number.parseInt(filters.limit, 10) || GAME_LIMITS.libraryPageSize));
+  const requestedPage = Math.max(1, Number.parseInt(filters.page, 10) || 1);
+  const splitPlatforms = Boolean(filters.platform && filters.platform !== MULTIPLATFORM_FILTER_VALUE);
+  const identities = db.prepare(`SELECT id, title, canonical_game_id AS canonicalGameId
+    FROM games ${where} ORDER BY ${orderBy}`).all(params);
+  const groups = [];
+  if (splitPlatforms) {
+    for (const row of identities) groups.push([row.id]);
+  } else {
+    const groupedIds = new Map();
+    for (const row of identities) {
+      const key = row.canonicalGameId ? `canonical-${row.canonicalGameId}` : gameGroupTitleKey(row.title) || `game-${row.id}`;
+      const ids = groupedIds.get(key);
+      if (ids) ids.push(row.id);
+      else { const first = [row.id]; groupedIds.set(key, first); groups.push(first); }
+    }
+  }
+  const total = groups.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(requestedPage, pages);
+  const ids = groups.slice((page - 1) * pageSize, page * pageSize).flat();
+  if (!ids.length) return { games: [], total, page, pageSize, pages };
+  const placeholders = ids.map(() => '?').join(',');
+  const byId = new Map(db.prepare(`SELECT ${selectFields} FROM games WHERE id IN (${placeholders})`)
+    .all(...ids).map(hydrateGame).map(game => [game.id, game]));
+  return { games: ids.map(id => byId.get(id)).filter(Boolean), total, page, pageSize, pages };
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
@@ -737,7 +775,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, listGamesPage, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
   coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

@@ -1,6 +1,8 @@
 import { mountThemedSearchClears, syncSearchClears } from './search-clears.js';
 import { UI_TIMING } from './ui-policy.js';
 import { APP_NAME } from './site-config.js';
+import { hydratePlatformThemes } from './platforms.js';
+import { bindFilterSelectStates } from './filter-state.js';
 
 export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpenLibrary = () => window.location.assign('/') } = {}) {
   const form = root.querySelector('[data-katalog-add]');
@@ -84,6 +86,7 @@ async function loadPublicBackgroundCovers() {
 export function bindKatalogGameDialog(root = document, { onClose = null } = {}) {
   const dialog = root.querySelector('[data-katalog-game-dialog]');
   if (!dialog || dialog.dataset.katalogGameBound === 'true') return;
+  hydratePlatformThemes(dialog);
   dialog.dataset.katalogGameBound = 'true';
   const close = () => dialog.close();
   dialog.querySelector('[data-katalog-game-close]')?.addEventListener('click', close);
@@ -122,6 +125,7 @@ export async function openKatalogGameDialog(root = document, url, {
     if (!next || !main || sequence !== katalogGameSequence) throw new Error('Game details could not be displayed.');
     main.querySelector('[data-katalog-game-dialog]')?.remove();
     main.append(document.importNode(next, true));
+    hydratePlatformThemes(main);
     window.history.pushState({ katalog: true }, '', `${target.pathname}${target.search}`);
     bindKatalogGameDialog(root, { onClose: () => {
       window.history.replaceState({ katalog: true }, '', returnUrl);
@@ -135,6 +139,8 @@ export async function openKatalogGameDialog(root = document, url, {
 
 let katalogSearchSequence = 0;
 export function bindKatalogSearch(root = document, { navigate } = {}) {
+  hydratePlatformThemes(root);
+  bindFilterSelectStates(root);
   mountThemedSearchClears(root);
   const form = root.querySelector('.katalog-search');
   if (!form || form.dataset.katalogSearchBound === 'true') return;
@@ -183,7 +189,7 @@ async function navigateKatalog(url) {
     const parsed = new DOMParser().parseFromString(await response.text(), 'text/html'); const next = parsed.querySelector('.katalog-results');
     const current = document.querySelector('.katalog-results'); if (!next || !current) throw new Error('Search failed.');
     if (sequence !== katalogSearchSequence) return;
-    current.replaceWith(next); bindKatalogTitleTooltips(); history.replaceState({ katalog: true }, '', url);
+    current.replaceWith(next); hydratePlatformThemes(next); bindKatalogTitleTooltips(); history.replaceState({ katalog: true }, '', url);
   } catch { window.location.assign(url); }
 }
 
@@ -192,4 +198,5 @@ bindKatalogSearch();
 bindKatalogGameDialog();
 bindKatalogTitleTooltips();
 mountThemedSearchClears();
+hydratePlatformThemes();
 void loadPublicBackgroundCovers();

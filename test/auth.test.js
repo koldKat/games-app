@@ -181,6 +181,14 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
   data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
   assert.deepEqual(new Set(data.listGames(other.id, { platform: MULTIPLATFORM_FILTER_VALUE }).map(game => game.id)), new Set([switchCopy.id, ps5Copy.id]));
+  const groupedPage = data.listGamesPage(other.id, { q: 'Shared Adventure', limit: 1 });
+  assert.equal(groupedPage.total, 1);
+  assert.deepEqual(new Set(groupedPage.games.map(game => game.id)), new Set([switchCopy.id, ps5Copy.id]));
+  const splitPage = data.listGamesPage(other.id, { q: 'Shared Adventure', platform: 'Nintendo Switch', limit: 1 });
+  assert.equal(splitPage.total, 1);
+  assert.deepEqual(splitPage.games.map(game => game.id), [switchCopy.id]);
+  const emptyPage = data.listGamesPage(other.id, { q: 'No title can match this value', page: 99 });
+  assert.deepEqual(emptyPage, { games: [], total: 0, page: 1, pageSize: 50, pages: 1 });
   const titleMatches = data.searchGameTitles(other.id, 'shared adventure');
   assert.equal(titleMatches.length, 2);
   assert.ok(titleMatches.some(game => game.id === switchCopy.id && game.platform === 'Nintendo Switch'));

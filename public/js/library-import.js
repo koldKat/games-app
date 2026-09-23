@@ -1,4 +1,5 @@
 import { mountThemedSearchClears, syncSearchClears } from './search-clears.js';
+import { platformDisplayName, platformThemeClass } from './platforms.js';
 
 const STATUS = Object.freeze({
   new: ['NEW', 'New library record'],
@@ -113,8 +114,11 @@ export function createLibraryImporter({ api, toast, onImported, provider }) {
     const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = selected.has(identity);
     checkbox.disabled = item.action === 'none'; checkbox.dataset.importIdentity = identity;
     const copy = element('span', 'library-import-copy'); copy.append(element('strong', '', item.title));
-    const matchText = item.matches?.length ? ` // ${item.matches.map(match => `${match.platform}: ${match.title}`).join(' // ')}` : '';
-    copy.append(element('small', '', `${provider.itemMeta(item)}${matchText}`));
+    const metadata = element('small', '', provider.itemMeta(item));
+    for (const match of item.matches || []) {
+      metadata.append(' // ', element('em', `library-import-platform platform-coded ${platformThemeClass(match.platform)}`, platformDisplayName(match.platform)), `: ${match.title}`);
+    }
+    copy.append(metadata);
     const state = element('span', `library-import-state state-${item.status}`);
     state.append(element('b', '', STATUS[item.status]?.[0] || item.status), element('small', '', STATUS[item.status]?.[1] || ''));
     rowLabel.append(checkbox, copy, state); return rowLabel;

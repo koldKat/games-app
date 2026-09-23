@@ -89,6 +89,15 @@
 .stats-table td { padding: 2px 0; font-size: 10px; line-height: 1.3; vertical-align: top; }
 .stats-key { padding-right: 9px !important; color: #81978f; }
 .stats-value { color: #d4e6df; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.stats-platform {
+  display:inline-flex;
+  align-items:center;
+  padding:2px 5px;
+  border:1px solid transparent;
+  border-radius:3px;
+  background:var(--platform-surface) padding-box,var(--platform-frame) border-box;
+  color:var(--platform-text);
+}
 .stats-section--server .stats-key { white-space: nowrap; }
 .top-actions .stats-button {
   width: auto;

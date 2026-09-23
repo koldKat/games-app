@@ -34,7 +34,7 @@ test('private Kat·a·log groups multi-platform titles unless a platform filter 
   assert.doesNotMatch(application, /version-next/);
   assert.doesNotMatch(application, /const versionStrip =/);
   assert.match(library, /\.platform-tag-label\{white-space:nowrap}/);
-  assert.match(library, /:where\(\.platform-tag,\.platform-version-menu button,\.game-versions button,\.activity-platform-tag\)\{--platform-accent:#708399/);
+  assert.match(library, /:where\(\.platform-tag,\.platform-version-menu button,\.game-versions button,\.activity-platform-tag,\.platform-coded\)\{--platform-accent:#708399/);
   assert.match(library, /\.platform-theme-nintendo-red\{--platform-accent:#e60012/);
   assert.match(library, /\.platform-theme-nintendo-multicolor\{--platform-accent:#4b72b8;--platform-mark:linear-gradient/);
   assert.match(library, /\.platform-theme-gamecube\{--platform-accent:#6a5fbb/);
@@ -60,12 +60,13 @@ test('NES and SNES display aliases cover interactive, lookup, statistics, and ad
   const adminKatalog = read('admin/js/katalog.js');
   const adminPublicKatalog = read('admin/js/public-katalog.js');
   const adminDashboard = read('admin/js/dashboard.js');
-  for (const source of [application, autocomplete, igdb, stats, adminKatalog, adminPublicKatalog, adminDashboard]) {
+  for (const source of [application, autocomplete, igdb, adminKatalog, adminPublicKatalog, adminDashboard]) {
     assert.match(source, /platformDisplayName/);
   }
-  assert.match(autocomplete, /summary\.textContent = `\$\{platformDisplayName\(duplicate\.platform\)\}/);
-  assert.match(igdb, /\.map\(platformDisplayName\)\.join\(', '\)/);
-  assert.match(stats, /platformDisplayName\(item\.platform\)/);
+  assert.match(stats, /platformLabel\(item\.platform/);
+  assert.match(autocomplete, /platform\.className = `autocomplete-platform platform-coded \$\{platformThemeClass\(duplicate\.platform\)\}`/);
+  assert.match(igdb, /platformThemeClass\(platform\)/);
+  assert.match(stats, /platformDisplayName\(platform\)/);
   assert.match(adminDashboard, /platformDisplayName\(item\.label\)/);
 });
 
@@ -183,11 +184,14 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(html, /href="\/css\/public-profile\.css"/);
   assert.match(read('public/js/activity-feed.js'), /import \{ openPublicProfile \} from '\.\/public-profile\.js'/);
   assert.match(read('public/js/activity-feed.js'), /data-public-profile/);
-  assert.match(read('public/js/public-profile.js'), /\/api\/public\/user\//);
+  const publicProfile = read('public/js/public-profile.js');
+  assert.match(publicProfile, /\/api\/public\/user\//);
+  assert.match(publicProfile, /platformThemeClass\(item\.platform\)/);
   assert.match(read('server/katalog-pages.js'), /href="\/css\/public-profile\.css"/);
   assert.match(readCss('public/css/public-profile.css'), /\.katalog-main \.signal-feed \.activity-profile-button[\s\S]*min-height:0;[\s\S]*padding:0;[\s\S]*border:0;[\s\S]*background:none;/);
   assert.match(readCss('public/css/public-profile.css'), /\.public-profile-dialog\{[^}]*border:1px solid #2c554b;[^}]*border-radius:6px;[^}]*background:#0a1117/);
   assert.match(readCss('public/css/public-profile.css'), /\.public-profile-card\{[^}]*border:0;[^}]*border-radius:0/);
+  assert.match(readCss('public/css/public-profile.css'), /\.public-profile-platforms \.public-profile-platform\{[^}]*background:var\(--platform-surface\) padding-box,var\(--platform-frame\) border-box/);
   assert.match(application, /createActivityFeed/); assert.match(activity, /activity_templates/); assert.match(activity, /activity_events/);
   assert.match(activity, /JOIN_TEMPLATES/); assert.match(activity, /LEVEL_TEMPLATES/);
   assert.match(read('public/js/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
@@ -430,7 +434,8 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
   assert.doesNotMatch(html, /id="load-more"/);
   assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
   assert.match(application, /function pagedGames\(\)/);
-  assert.match(application, /state\.page \+= direction === 'next' \? 1 : -1/);
+  assert.match(application, /loadGames\(state\.page \+ \(direction === 'next' \? 1 : -1\)\)/);
+  assert.match(application, /state\.gameTotal = Number\(result\.total\)/);
   assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);
 });
 
@@ -571,6 +576,7 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.match(application, /function ratingAtPointer\(event\)/);
   assert.match(application, /paintRating\(rating, true\)/);
   assert.match(application, /personalRating\(game\.rating\)/);
+  assert.doesNotMatch(application, /class="badges">[^\n]*personalRating\(game\.rating\)/);
   assert.match(application, /function cardRatingControl\(game\)/);
   assert.match(application, /data-action="rate"/);
   assert.match(application, /action === 'rate'/);
@@ -615,7 +621,7 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(privateApp, /setTimeout\(loadGames, UI_TIMING\.librarySearchDebounceMs\)/);
   assert.match(publicKatalog, /katalogSearchSequence/);
   assert.match(publicKatalog, /querySelector\('\.katalog-results'\)/);
-  assert.match(publicKatalog, /current\.replaceWith\(next\); bindKatalogTitleTooltips\(\); history\.replaceState/);
+  assert.match(publicKatalog, /current\.replaceWith\(next\); hydratePlatformThemes\(next\); bindKatalogTitleTooltips\(\); history\.replaceState/);
   assert.match(publicKatalog, /closest\('main\.katalog-main'\)\?\.addEventListener\('click'/);
   assert.match(publicKatalog, /target\.pathname\.startsWith\('\/game\/'\)[\s\S]*openKatalogGameDialog/);
   assert.match(publicKatalog, /main\.append\(document\.importNode\(next, true\)\)/);
@@ -693,6 +699,24 @@ test('public Kat·a·log cards overlay community ratings on their covers', () =>
   assert.match(pages, /class="katalog-cover"[^>]*>[\s\S]*\$\{communityRating\(entry\)\}<\/a>/);
   assert.match(css, /\.katalog-cover \.community-rating\{position:absolute;bottom:6px;left:50%/);
   assert.match(css, /transform:translateX\(-50%\);white-space:nowrap/);
+  assert.match(css, /\.katalog-chips>span,\.descriptor-list>span,\.descriptor-list>a\{/);
+  assert.doesNotMatch(css, /\.katalog-chips span,/);
+});
+
+test('platform identity colors reach every major collector-facing platform surface', () => {
+  const pages = read('server/katalog-pages.js'); const publicClient = read('public/js/katalog-public.js');
+  const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js');
+  const imports = read('public/js/library-import.js'); const stats = read('public/js/stats-ui.js');
+  assert.match(pages, /class="katalog-platform-token" data-platform-theme=/);
+  assert.match(pages, /class="game-summary-platform" data-platform-theme=/);
+  assert.match(pages, /class="katalog-owned-platform" data-platform-theme=/);
+  assert.match(pages, /class="\$\{release\.slug === entry\.slug \? 'active' : ''\}" data-platform-theme=/);
+  assert.match(publicClient, /hydratePlatformThemes\(root\)/);
+  assert.match(publicClient, /hydratePlatformThemes\(next\)/);
+  assert.match(application, /game-detail-platform platform-coded \$\{platformThemeClass\(game\.platform\)\}/);
+  assert.match(autocomplete, /autocomplete-platform platform-coded \$\{platformThemeClass/);
+  assert.match(imports, /library-import-platform platform-coded \$\{platformThemeClass/);
+  assert.match(stats, /stats-platform platform-coded \$\{platformThemeClass/);
 });
 
 test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
@@ -833,6 +857,24 @@ test('private and public Kat·a·log searches share the compact field scale', ()
   assert.match(read('server/katalog-pages.js'), /class="filters katalog-search-filters"/);
   assert.match(publicCss, /\.katalog-search-filters\{grid-template-columns:minmax\(190px,260px\)/);
   assert.doesNotMatch(read('server/katalog-pages.js'), /<button type="submit">Search<\/button>/);
+});
+
+test('selected content filters are visibly distinct from neutral dropdowns', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const publicPages = read('server/katalog-pages.js'); const publicKatalog = read('public/js/katalog-public.js');
+  const filterState = read('public/js/filter-state.js'); const theme = readCss('public/css/theme.css');
+  assert.equal((html.match(/data-content-filter/g) || []).length, 5);
+  assert.match(html, /id="pegi-filter" data-content-filter data-filter-color="pegi"/);
+  assert.doesNotMatch(html, /id="sort-filter"[^>]*data-content-filter/);
+  assert.match(publicPages, /select name="platform"[^>]*data-content-filter/);
+  assert.match(filterState, /select\.classList\.toggle\('is-filtering', active\)/);
+  assert.match(filterState, /label\?\.classList\.toggle\('has-active-filter', active\)/);
+  assert.match(filterState, /label\.dataset\.filterTone = select\.value/);
+  assert.match(application, /syncFilterSelectStates\(\)/);
+  assert.match(publicKatalog, /bindFilterSelectStates\(root\)/);
+  assert.match(theme, /\.filters select\.is-filtering\{[^}]*border-color:#466565;[^}]*background-color:#0d1415;[^}]*color:#9bbbbb/);
+  assert.match(theme, /label\[data-filter-tone="12"\]\{--filter-tone:#e4b447/);
+  assert.match(theme, /label\[data-filter-tone="18"\]\{--filter-tone:#df5656/);
 });
 
 test('SteamGridDB is a shared admin integration while account scans remain available', () => {

@@ -583,7 +583,7 @@ async function handleApi(request, response, url) {
     return sendJson(response, 202, { started: true, missing: db.gamesMissingCovers(user.id).length });
   }
   if (request.method === 'GET' && url.pathname === '/api/games') {
-    return sendJson(response, 200, db.listGames(user.id, Object.fromEntries(url.searchParams)));
+    return sendJson(response, 200, db.listGamesPage(user.id, Object.fromEntries(url.searchParams)));
   }
   if (request.method === 'GET' && url.pathname === '/api/stats') return sendJson(response, 200, db.stats(user.id));
   if (request.method === 'GET' && url.pathname === '/api/meta') {

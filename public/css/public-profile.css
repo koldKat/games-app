@@ -140,17 +140,19 @@
   flex-wrap: wrap;
   gap: 5px;
 }
-.public-profile-platforms span {
+.public-profile-platforms .public-profile-platform {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  border: 1px solid #2b4a42;
-  color: #b8cbc5;
+  max-width: none;
+  border: 1px solid transparent;
+  background: var(--platform-surface) padding-box, var(--platform-frame) border-box;
+  color: var(--platform-text);
   font-size: 10px;
 }
-.public-profile-platforms small {
-  color: #72e5c9;
+.public-profile-platforms .public-profile-platform small {
+  color: color-mix(in srgb, var(--platform-accent) 78%, #dcece6);
   font-size: 9px;
 }
 .public-profile-platforms p,

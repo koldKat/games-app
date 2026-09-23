@@ -260,7 +260,7 @@ body {
   font-size: 10px;
   white-space: nowrap;
 }
-:where(.platform-tag,.platform-version-menu button,.game-versions button,.activity-platform-tag) {
+:where(.platform-tag,.platform-version-menu button,.game-versions button,.activity-platform-tag,.platform-coded) {
   --platform-accent:#708399;
   --platform-text:#c4ccd3;
   --platform-border:color-mix(in srgb,var(--platform-accent) 36%,#29333d);
@@ -643,6 +643,18 @@ body {
   font-size: 9px;
   letter-spacing: .08em;
   text-transform: uppercase;
+}
+.game-detail-hero>div>.game-detail-platform,
+.game-detail-platform-value {
+  color:color-mix(in srgb,var(--platform-accent) 76%,#dce8e4);
+}
+.game-detail-platform-value {
+  padding:2px 4px;
+  border:1px solid transparent;
+  border-radius:3px;
+  background:var(--platform-surface) padding-box,var(--platform-frame) border-box;
+  width:max-content;
+  max-width:100%;
 }
 .game-detail-chips {
   display: flex;
@@ -1069,6 +1081,11 @@ body {
   margin-top: 2px;
   text-transform: none;
   letter-spacing: 0;
+}
+.autocomplete-platform {
+  color:color-mix(in srgb,var(--platform-accent) 76%,#dce8e4);
+  font-style:normal;
+  font-weight:800;
 }
 .title-suggestions .existing b, .title-suggestions .katalog b {
   flex: none;

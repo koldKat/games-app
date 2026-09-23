@@ -554,6 +554,40 @@ input[type="checkbox"]:focus-visible {
   border-color: #35d6b2;
   box-shadow: 0 0 0 1px #35d6b244;
 }
+.filters label.has-active-filter > span {
+  color:#789b9b;
+}
+.filters select.is-filtering {
+  border-color:#466565;
+  background-color:#0d1415;
+  color:#9bbbbb;
+  box-shadow:inset 0 -1px #587b7b;
+}
+.filters select.is-filtering:hover,
+.filters select.is-filtering:focus {
+  border-color:#608585;
+  box-shadow:inset 0 -1px #719999,0 0 0 1px #60858524;
+}
+.filters label[data-filter-tone="3"] { --filter-tone:#4fbd69; }
+.filters label[data-filter-tone="7"] { --filter-tone:#83bd46; }
+.filters label[data-filter-tone="12"] { --filter-tone:#e4b447; }
+.filters label[data-filter-tone="16"] { --filter-tone:#e67b45; }
+.filters label[data-filter-tone="18"] { --filter-tone:#df5656; }
+.filters label[data-filter-tone="none"] { --filter-tone:#71808d; }
+.filters label[data-filter-tone] > span {
+  color:color-mix(in srgb,var(--filter-tone) 70%,#a9b3b1);
+}
+.filters label[data-filter-tone] select.is-filtering {
+  border-color:color-mix(in srgb,var(--filter-tone) 52%,#303942);
+  background-color:color-mix(in srgb,var(--filter-tone) 7%,#0d1116);
+  color:color-mix(in srgb,var(--filter-tone) 76%,#e1e9e6);
+  box-shadow:inset 0 -1px color-mix(in srgb,var(--filter-tone) 68%,#303942);
+}
+.filters label[data-filter-tone] select.is-filtering:hover,
+.filters label[data-filter-tone] select.is-filtering:focus {
+  border-color:color-mix(in srgb,var(--filter-tone) 72%,#44505a);
+  box-shadow:inset 0 -1px var(--filter-tone),0 0 0 1px color-mix(in srgb,var(--filter-tone) 24%,transparent);
+}
 .filter-foot {
   margin-top: 7px;
   padding: 6px 1px 0;
