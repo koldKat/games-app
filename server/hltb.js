@@ -48,10 +48,8 @@ async function request(url, options = {}) {
 async function createSession() {
   const headers = { 'User-Agent': USER_AGENT, Referer: `${BASE_URL}/` };
   const auth = await (await request(`${BASE_URL}${SEARCH_PATH}/init?t=${Date.now()}`, { headers })).json();
-  const dynamicKey = Object.entries(auth).find(([key]) => /key/i.test(key));
-  const dynamicValue = Object.entries(auth).find(([key]) => /val/i.test(key));
-  if (!auth.token || !dynamicKey || !dynamicValue) throw new Error('HLTB authentication response changed.');
-  return { at: Date.now(), path: SEARCH_PATH, token: auth.token, key: dynamicKey[1], value: dynamicValue[1] };
+  if (!auth.token) throw new Error('HLTB authentication is temporarily unavailable.');
+  return { at: Date.now(), path: SEARCH_PATH, token: auth.token };
 }
 
 async function activeSession() {
@@ -86,15 +84,14 @@ async function fetchSearch(title, retry = true) {
     searchType: 'games', searchTerms: title.split(/\s+/), searchPage: 1, size: 20,
     searchOptions: { games: { userId: 0, platform: '', sortCategory: 'popular', rangeCategory: 'main',
       rangeTime: { min: 0, max: 0 }, gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
-      rangeYear: { max: '', min: '' }, modifier: '' }, users: { sortCategory: 'postcount' },
+      year: '', modifier: '' }, users: { sortCategory: 'postcount' },
     lists: { sortCategory: 'follows' }, filter: '', sort: 0, randomizer: 0 }, useCache: true,
-    [auth.key]: auth.value,
   };
   const response = await fetch(`${BASE_URL}${auth.path}`, {
     method: 'POST', signal: AbortSignal.timeout(TIMEOUT_MS),
     headers: { 'Content-Type': 'application/json', Accept: '*/*', 'User-Agent': USER_AGENT,
       Referer: `${BASE_URL}/`, Origin: BASE_URL, 'x-auth-token': String(auth.token),
-      'x-hp-key': String(auth.key), 'x-hp-val': String(auth.value) },
+    },
     body: JSON.stringify(payload),
   });
   if ((response.status === 401 || response.status === 403) && retry) { session = null; return fetchSearch(title, false); }

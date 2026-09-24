@@ -872,7 +872,7 @@ test('selected content filters are visibly distinct from neutral dropdowns', () 
   assert.match(filterState, /label\.dataset\.filterTone = select\.value/);
   assert.match(application, /syncFilterSelectStates\(\)/);
   assert.match(publicKatalog, /bindFilterSelectStates\(root\)/);
-  assert.match(theme, /\.filters select\.is-filtering\{[^}]*border-color:#466565;[^}]*background-color:#0d1415;[^}]*color:#9bbbbb/);
+  assert.match(theme, /\.filters select\.is-filtering\{[^}]*border-color:#397d89;[^}]*background-color:#0b181b;[^}]*color:#a5d5dc/);
   assert.match(theme, /label\[data-filter-tone="12"\]\{--filter-tone:#e4b447/);
   assert.match(theme, /label\[data-filter-tone="18"\]\{--filter-tone:#df5656/);
 });

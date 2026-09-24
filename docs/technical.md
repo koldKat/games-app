@@ -579,7 +579,7 @@ The library client calls the authenticated `account/getFilteredProducts` endpoin
 
 ## HowLongToBeat integration
 
-HowLongToBeat does not provide a documented public developer API. `server/hltb.js` uses Node's built-in `fetch` implementation against HLTB's current token-gated search route, requests the rotating search credentials, and performs opt-in searches. The same results expose HLTB game-image filenames, which are offered only within an explicit per-game Request cover search // never by bulk cover work. The provider is native JavaScript: it does not spawn Python, invoke the old Downloads script, or add a Python dependency.
+HowLongToBeat does not provide a documented public developer API. `server/hltb.js` uses Node's built-in `fetch` implementation against HLTB's current token-gated search route, obtains the short-lived search token from its initialization endpoint, and sends only the current `x-auth-token` header used by HLTB's public client. The same results expose HLTB game-image filenames, which are offered only within an explicit per-game Request cover search // never by bulk cover work. The provider is native JavaScript: it does not spawn Python, invoke the old Downloads script, or add a Python dependency.
 
 Responses are reduced to a numeric record ID, title, source URL, similarity score, and four hour values: Main Story, Main + Sides, Completionist, and All Styles. Search results are cached for 30 minutes, provider calls are serialized, and each request has a 20-second timeout. Authentication is refreshed once after an authorization failure. The private endpoint can change without notice, so this remains optional assistance and lookup errors never block ordinary game editing.
 

@@ -22,6 +22,10 @@ test('HLTB lookup targets the current endpoint and normalizes title matching', (
   const provider = fs.readFileSync(path.join(__dirname, '..', 'server/hltb.js'), 'utf8');
   assert.match(provider, /const SEARCH_PATH = '\/api\/search\/site'/);
   assert.match(provider, /\$\{BASE_URL\}\$\{SEARCH_PATH\}\/init/);
+  assert.match(provider, /if \(!auth\.token\) throw new Error/);
+  assert.match(provider, /'x-auth-token': String\(auth\.token\)/);
+  assert.doesNotMatch(provider, /x-hp-key|x-hp-val|dynamicKey|dynamicValue/);
+  assert.match(provider, /year: '', modifier: ''/);
   assert.match(provider, /if \(results\.length\) cache\.set\(key, \{ at: Date\.now\(\), results \}\)/);
   assert.equal(normalize('Pokémon™ & Friends'), 'pokemon and friends');
   assert.equal(similarity('Pokémon Pokopia', 'Pokemon Pokopia'), 1);
