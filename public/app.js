@@ -1148,7 +1148,7 @@ function renderCoverSelection() {
   $('#cover-remove-button').hidden = !url; box.hidden = !url;
   const source = $('#game-form').dataset.coverSource || ''; const sourceLabels = { steamgriddb: 'SteamGridDB', thegamesdb: 'TheGamesDB', hltb: 'HowLongToBeat', igdb: 'IGDB', upload: 'Uploaded' };
   const details = [$('#game-form').dataset.coverMatchTitle || 'Custom match', sourceLabels[source]].filter(Boolean).join(' · ');
-  box.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
+  box.innerHTML = url ? `<img class="cover-selection-image" src="${escapeHtml(url)}" alt="Selected game cover"><span><strong>Cover selected</strong><small>${escapeHtml(details)}</small></span>` : '';
 }
 function clearCoverUpload() {
   const preview = $('#game-form').dataset.coverPreview || '';

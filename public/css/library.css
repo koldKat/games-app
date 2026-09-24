@@ -943,6 +943,8 @@ body {
   flex: none;
 }
 .cover-selection {
+  position: relative;
+  z-index: 3;
   height: 62px;
   display: flex;
   align-items: center;
@@ -956,6 +958,18 @@ body {
   width: 36px;
   height: 50px;
   object-fit: cover;
+}
+.cover-selection-image {
+  position: relative;
+  z-index: 1;
+  transform-origin: left top;
+}
+.cover-selection-image:hover {
+  z-index: 4;
+  transform: scale(6);
+  outline: 1px solid #57d7b8;
+  outline-offset: 1px;
+  box-shadow: 0 12px 34px #020807e6, 0 0 0 4px #07100ecf;
 }
 .cover-selection strong, .cover-selection small {
   display: block;
