@@ -962,14 +962,17 @@ body {
 .cover-selection-image {
   position: relative;
   z-index: 1;
-  transform-origin: left top;
 }
 .cover-selection-image:hover {
+  position: absolute;
+  top: 5px;
+  left: 5px;
   z-index: 4;
-  transform: scale(6);
+  width: 252px;
+  height: 350px;
   outline: 1px solid #57d7b8;
-  outline-offset: 1px;
-  box-shadow: 0 12px 34px #020807e6, 0 0 0 4px #07100ecf;
+  outline-offset: 0;
+  box-shadow: 0 12px 34px #020807e6;
 }
 .cover-selection strong, .cover-selection small {
   display: block;
