@@ -264,9 +264,17 @@ function createKatalogStore(database, { canonical: suppliedCanonical = null } = 
   }
 
   const upsertTransaction = database.transaction((userId, game, evaluation, coverUrl) => {
+    const matchedGameEntry = findForGame(game, evaluation.identity);
+    const identityOwner = findByIdentity(evaluation.identity.titleKey, evaluation.identity.platformKey);
+    if (!matchedGameEntry && identityOwner) {
+      return { entry: identityOwner, created: false, previousCoverUrl: '', usedCover: false, identityConflict: true };
+    }
     const canonicalGame = canonical.upsertGame(game, { allowLocal: true });
     const canonicalRelease = canonical.ensureRelease(canonicalGame?.id, game);
-    const existing = findByCanonicalRelease(canonicalRelease?.id) || findForGame(game, evaluation.identity);
+    const existing = findByCanonicalRelease(canonicalRelease?.id) || matchedGameEntry;
+    if (existing && identityOwner && Number(existing.id) !== Number(identityOwner.id)) {
+      return { entry: identityOwner, created: false, previousCoverUrl: '', usedCover: false, identityConflict: true };
+    }
     if (existing) {
       const shouldReplace = existing.status === 'candidate' && evaluation.confidence >= existing.confidence;
       if (shouldReplace) {

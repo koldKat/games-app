@@ -37,12 +37,30 @@ test('public collector profiles are opt-in and expose aggregates without private
   assert.equal(profile.level, 5);
   assert.equal(profile.title, 'Cartridge Keeper');
   assert.deepEqual(profile.stats, { total: 3, owned: 2, physical: 1, digital: 1, wishlisted: 1, completed: 1, playing: 1, favorites: 1, platforms: 2, contributions: 1 });
-  assert.deepEqual(profile.topPlatforms[0], { platform: 'PlayStation 5', count: 2 });
+  assert.deepEqual(profile.platforms, [
+    { platform: 'PC (Steam)', count: 1 },
+    { platform: 'PlayStation 5', count: 1 },
+  ]);
   assert.equal(JSON.stringify(profile).includes('private@example.com'), false);
   assert.equal(JSON.stringify(profile).includes('private note'), false);
 
   await auth.updateAccount(user.id, { currentPassword: 'profile-password', publicProfile: false });
   assert.equal(publicProfiles.get('public_curator'), null);
+});
+
+test('public collector profiles expose every owned platform without a display limit', async () => {
+  const user = await auth.register('many_platforms', 'profile-password');
+  const platforms = ['Nintendo Switch', 'Nintendo Switch 2', 'Nintendo 3DS', 'PlayStation 5', 'Xbox Series X|S', 'GOG', 'Steam'];
+  for (const [index, platform] of platforms.entries()) {
+    data.createGame(user.id, { title: `Owned ${index}`, platform, ownership: 'owned' });
+  }
+  data.createGame(user.id, { title: 'Wanted only', platform: 'Evercade', ownership: 'wanted' });
+  await auth.updateAccount(user.id, { currentPassword: 'profile-password', publicProfile: true });
+
+  const profile = publicProfiles.get('many_platforms');
+  assert.equal(profile.platforms.length, platforms.length);
+  assert.deepEqual(profile.platforms.map(item => item.platform).sort(), [...platforms].sort());
+  assert.equal(profile.platforms.some(item => item.platform === 'Evercade'), false);
 });
 
 test('locked accounts never retain a public profile surface', async () => {

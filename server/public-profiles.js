@@ -19,8 +19,9 @@ const collectionStats = db.prepare(`SELECT COUNT(*) AS total,
   FROM games WHERE user_id=? AND hidden=0`);
 const publicContributions = db.prepare(`SELECT COUNT(DISTINCT id) AS count FROM catalogue_entries
   WHERE submitted_by_user_id=? AND status='public'`);
-const topPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM games WHERE user_id=? AND hidden=0
-  GROUP BY platform ORDER BY count DESC, platform COLLATE NOCASE LIMIT 5`);
+const ownedPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM games
+  WHERE user_id=? AND hidden=0 AND ownership='owned'
+  GROUP BY platform ORDER BY count DESC, platform COLLATE NOCASE`);
 
 function get(username) {
   const account = profileAccount.get(String(username || '').trim());
@@ -38,7 +39,7 @@ function get(username) {
       wishlisted: Number(stats.wishlisted), completed: Number(stats.completed), playing: Number(stats.playing),
       favorites: Number(stats.favorites), platforms: Number(stats.platforms), contributions: Number(publicContributions.get(account.id).count),
     },
-    topPlatforms: topPlatforms.all(account.id).map(row => ({ platform: row.platform, count: Number(row.count) })),
+    platforms: ownedPlatforms.all(account.id).map(row => ({ platform: row.platform, count: Number(row.count) })),
   };
 }
 

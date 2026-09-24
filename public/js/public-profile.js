@@ -78,9 +78,9 @@ function render(profile) {
   }
 
   const platforms = element('section', 'public-profile-platforms');
-  platforms.append(element('h3', '', 'Top platforms'));
+  platforms.append(element('h3', '', 'Platforms'));
   const list = element('div');
-  for (const item of profile.topPlatforms || []) {
+  for (const item of profile.platforms || []) {
     const row = element('span', `public-profile-platform platform-tag ${platformThemeClass(item.platform)}`);
     row.append(element('b', '', platformDisplayName(item.platform)), element('small', '', Number(item.count || 0).toLocaleString(UI_LOCALE)));
     list.append(row);

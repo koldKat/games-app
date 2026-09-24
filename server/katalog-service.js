@@ -65,6 +65,7 @@ function createKatalogService({ data, store, covers, logger = console }) {
       const result = store.upsertFromGame(userId, game, evaluation, katalogCoverUrl);
       if (!result.usedCover) covers.remove(katalogCoverUrl);
       if (result.previousCoverUrl && result.previousCoverUrl !== result.entry.coverUrl) covers.remove(result.previousCoverUrl);
+      if (result.identityConflict) return { state: 'conflict', entry: result.entry, evaluation };
       return { state: result.entry.status, entry: result.entry, evaluation };
     } catch (error) {
       if (katalogCoverUrl) covers.remove(katalogCoverUrl);
@@ -81,7 +82,7 @@ function createKatalogService({ data, store, covers, logger = console }) {
   }
 
   function syncAll(games = []) {
-    const summary = { total: games.length, public: 0, candidate: 0, linked: 0, ineligible: 0, errors: 0 };
+    const summary = { total: games.length, public: 0, candidate: 0, linked: 0, conflict: 0, ineligible: 0, errors: 0 };
     for (const game of games) {
       const result = syncGameSafely(game.userId, game);
       if (result.state === 'error') summary.errors++;

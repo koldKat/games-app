@@ -170,6 +170,21 @@ test('equal titles with different IGDB identities do not merge across platforms'
   assert.equal(new Set(result.entries.map(entry => entry.canonicalGameId)).size, 2);
 });
 
+test('same-platform normalized-title collisions with different IGDB identities remain unlinked', t => {
+  const { database, store } = fixture(); t.after(() => database.close());
+  const first = game({ igdbId: 11429, title: '18 Wheels of Steel: Extreme Trucker 2', platform: 'GOG' });
+  const conflicting = game({ id: 22, igdbId: 11428, title: '18 Wheels of Steel Extreme Trucker 2', platform: 'GOG' });
+  const original = store.upsertFromGame(1, first, evaluateKatalogGame(first), '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
+  const result = store.upsertFromGame(2, conflicting, evaluateKatalogGame(conflicting), '/covers/cccccccccccccccccccccccccccccccc.jpg');
+
+  assert.equal(result.identityConflict, true);
+  assert.equal(result.entry.id, original.entry.id);
+  assert.equal(result.usedCover, false);
+  assert.equal(database.prepare('SELECT COUNT(*) count FROM catalogue_entries').get().count, 1);
+  assert.equal(database.prepare('SELECT COUNT(*) count FROM catalogue_game_links').get().count, 1);
+  assert.equal(database.prepare('SELECT COUNT(*) count FROM catalogue_game_links WHERE game_id=22').get().count, 0);
+});
+
 test('candidate records remain absent from public pages until reviewed', t => {
   const { database, store } = fixture(); t.after(() => database.close());
   const source = game({ coverMatchTitle: 'Metroid Collection' });

@@ -24,7 +24,7 @@ Open `http://localhost:3005` in a browser. To use another device on the same net
 
 Every account has an isolated library. Game ownership is attached to the account's internal numeric ID, so changing a username does not affect its collection.
 
-Account settings also contain an optional **Public collector profile** switch. It is off by default. When enabled, a visitor can select your name in Kat·a·log Signal to see your avatar, collector level and title, join month, aggregate collection counts, public contribution count, and top platforms. Individual games, ratings, notes, email, location, and account settings are never included. **Hide from Kat·a·log Signal** remains independent: a public profile does not make hidden Signal events appear.
+Account settings also contain an optional **Public collector profile** switch. It is off by default. When enabled, a visitor can select your name in Kat·a·log Signal to see your avatar, collector level and title, join month, aggregate collection counts, public contribution count, and every platform represented by an owned, non-hidden game. Individual games, ratings, notes, email, location, and account settings are never included. **Hide from Kat·a·log Signal** remains independent: a public profile does not make hidden Signal events appear.
 
 ### Signing in and out
 
