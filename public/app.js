@@ -657,6 +657,9 @@ async function loadGames(page = 1) {
     if (sequence === gameLoadSequence && state.user?.id === userId) { state.loading = false; renderGames(); flushPendingGamePatches(); }
   }
 }
+function refreshLibraryPage(page = state.page) {
+  return Promise.all([loadGames(page), loadStatsAndMeta()]);
+}
 async function loadStatsAndMeta() {
   const sequence = ++metaLoadSequence; const userId = state.user?.id;
   try {
@@ -984,6 +987,7 @@ function payload() {
 }
 $('#game-form').addEventListener('submit', async event => {
   event.preventDefault(); const id = $('#game-id').value; const save = $('#save-game');
+  const returnPage = id ? state.page : 1;
   save.disabled = true; save.textContent = 'Checking…';
   const duplicate = await titleAutocomplete.duplicateBeforeSave();
   const original = state.games.find(game => String(game.id) === id);
@@ -998,14 +1002,14 @@ $('#game-form').addEventListener('submit', async event => {
   try {
     const result = await api(id ? `/api/games/${id}` : '/api/games', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
     applySaveProgress(result);
-    closeForm(); toast(id ? 'Game updated.' : 'Game added to the shelf.'); await Promise.all([loadGames(), loadStatsAndMeta()]);
+    closeForm(); toast(id ? 'Game updated.' : 'Game added to the shelf.'); await refreshLibraryPage(returnPage);
   } catch (error) { $('#form-error').textContent = error.message; $('#form-error').hidden = false; }
   finally { save.disabled = false; save.textContent = 'Save game'; }
 });
 $('#delete-game').addEventListener('click', async () => {
-  const id = $('#game-id').value; const title = $('#game-title').value;
+  const id = $('#game-id').value; const title = $('#game-title').value; const returnPage = state.page;
   if (!id || !await confirmAction({ title: 'Delete game?', message: `Permanently delete “${title}” from the collection?`, confirmLabel: 'Delete game', kicker: 'Destructive // game' })) return;
-  try { await api(`/api/games/${id}`, { method: 'DELETE' }); closeForm(); toast('Game deleted.'); await Promise.all([loadGames(), loadStatsAndMeta()]); }
+  try { await api(`/api/games/${id}`, { method: 'DELETE' }); closeForm(); toast('Game deleted.'); await refreshLibraryPage(returnPage); }
   catch (error) { toast(error.message); }
 });
 function changedCardGame(game, action, event) {
@@ -1030,10 +1034,11 @@ function cardActionToast(action, changed) {
 async function saveCardAction(game, action, event) {
   const changed = changedCardGame(game, action, event);
   if (!changed) return;
+  const returnPage = state.page;
   try {
     const result = await api(`/api/games/${game.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changed) });
     applySaveProgress(result);
-    await Promise.all([loadGames(), loadStatsAndMeta()]);
+    await refreshLibraryPage(returnPage);
     toast(cardActionToast(action, changed));
   } catch (error) { toast(error.message); }
 }
