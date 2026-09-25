@@ -436,6 +436,9 @@ test('private Kat·a·log uses ten-row pagination instead of a show-more control
   assert.match(application, /function pagedGames\(\)/);
   assert.match(application, /loadGames\(state\.page \+ \(direction === 'next' \? 1 : -1\)\)/);
   assert.match(application, /state\.gameTotal = Number\(result\.total\)/);
+  assert.match(application, /pagination\.hidden = pages < 2/);
+  assert.match(application, /pagination\.toggleAttribute\('inert', state\.loading\)/);
+  assert.doesNotMatch(application, /pagination\.hidden = state\.loading/);
   assert.match(application, /Game deleted\.'\); await refreshLibraryPage\(returnPage\)/);
   assert.match(application, /const returnPage = id \? state\.page : 1/);
   assert.match(css, /\.library-pagination\{display:grid;grid-template-columns:1fr auto 1fr/);

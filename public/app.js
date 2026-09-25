@@ -545,7 +545,9 @@ function updateCollectionChrome() {
   const shown = pagedGames(); const pages = pageCount(); const pagination = $('#library-pagination');
   $('#library-loader').hidden = !state.loading || state.games.length > 0;
   $('#empty').hidden = state.loading || state.games.length > 0;
-  pagination.hidden = state.loading || pages < 2;
+  pagination.hidden = pages < 2;
+  pagination.toggleAttribute('inert', state.loading);
+  pagination.setAttribute('aria-busy', String(state.loading));
   $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
@@ -680,6 +682,7 @@ Object.entries(filters).filter(([key]) => !['q', 'favorite'].includes(key)).forE
 }));
 $('#clear-filters').addEventListener('click', () => { Object.entries(filters).forEach(([key, element]) => { element.value = key === 'sort' ? 'title' : ''; }); renderQuickFilter(); schedulePreferenceSave(); loadGames(); });
 $('#library-pagination').addEventListener('click', event => {
+  if (state.loading) return;
   const direction = event.target.closest('[data-library-page]')?.dataset.libraryPage;
   if (!direction) return;
   void loadGames(state.page + (direction === 'next' ? 1 : -1));
