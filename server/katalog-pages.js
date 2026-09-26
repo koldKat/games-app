@@ -327,18 +327,18 @@ function gameMetadata(entry) {
   const igdbUrl = safeExternalUrl(entry.igdbUrl);
   const score = (value, count) => value == null ? 'Not rated' : `${Number(value).toFixed(1)} / 100 · ${Number(count || 0).toLocaleString(UI_LOCALE)}`;
   const igdbTagGroup = (label, values, kind) => values?.length ? `<div class="igdb-tag-group igdb-tag-group--${kind}"><strong>${label}</strong><div class="descriptor-list">${values.slice(0, 12).map(item => `<a class="metadata-filter-chip metadata-filter-chip--${kind}" href="${escapeHtml(queryHref({ q: item }))}" data-katalog-metadata-search>${escapeHtml(item)}</a>`).join('')}</div></div>` : '';
-  const igdb = entry.igdbId ? `<article class="igdb-metadata"><header><span>DATABASE // IGDB</span><h2>IGDB information</h2></header>
+  const igdb = entry.igdbId ? `<article class="metadata-panel igdb-metadata"><header><span>DATABASE // IGDB</span><h2>IGDB information</h2></header>
       <div class="igdb-score-grid"><div><span>IGDB users</span><strong>${escapeHtml(score(entry.igdbRating, entry.igdbRatingCount))}</strong></div><div><span>Critics</span><strong>${escapeHtml(score(entry.igdbCriticRating, entry.igdbCriticRatingCount))}</strong></div></div>
       ${entry.igdbDevelopers?.length ? `<p><strong>Developer</strong> ${escapeHtml(entry.igdbDevelopers.join(' · '))}</p>` : ''}
       ${igdbTagGroup('Genres', entry.igdbGenres, 'genre')}${igdbTagGroup('Themes', entry.igdbThemes, 'theme')}
       ${igdbUrl ? `<a href="${escapeHtml(igdbUrl)}" target="_blank" rel="noopener noreferrer">View source on IGDB ↗</a>` : ''}</article>` : '';
   return `<section class="game-metadata">
-    <article><header><span>PLAYTIME // HLTB</span><h2>How long it takes</h2></header>
+    <div class="game-metadata-stack"><article class="metadata-panel hltb-metadata"><header><span>PLAYTIME // HLTB</span><h2>How long it takes</h2></header>
       <div class="time-grid">${hours('Main story', entry.hltbMainStory)}${hours('Main + sides', entry.hltbMainExtra)}${hours('Completionist', entry.hltbCompletionist)}${hours('All styles', entry.hltbAllStyles)}</div>${hltbLink}
-    </article>
-    <article><header><span>CONTENT // PEGI</span><h2>Rating information</h2></header>
+    </article>${igdb}</div>
+    <article class="metadata-panel pegi-metadata"><header><span>CONTENT // PEGI</span><h2>Rating information</h2></header>
       ${descriptorList}${pegiDetailSections(entry)}${pegiLink}
-    </article>${igdb}
+    </article>
   </section>`;
 }
 

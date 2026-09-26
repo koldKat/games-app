@@ -204,7 +204,7 @@ Select any non-control area of a library card to open its read-only record of me
 4. Review the filled fields, especially platform and release year.
 5. Select **Save game**.
 
-The lookup can fill title, PEGI rating, publisher, release year, descriptors, exact platform release dates, consumer advice, a brief outline, content-specific issues, and other issues. When PEGI divides matches across multiple result pages, Game Kat·a·log retrieves up to the first 10 pages and presents the merged result count above the choices. PEGI has no documented public developer API, so the app reads its public search pages only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
+The lookup can fill title, PEGI rating, publisher, release year, descriptors, exact platform release dates, consumer advice, a brief outline, content-specific issues, and other issues. When PEGI divides matches across multiple result pages, Game Kat·a·log retrieves up to the first 10 pages, removes duplicate records, sorts the combined choices alphabetically by title, and presents the merged result count above them. PEGI has no documented public developer API, so the app reads its public search pages only when you explicitly request a lookup. If PEGI is unavailable or changes its page, manual entry continues to work.
 
 After selecting a result, **PEGI details** opens beneath the form. It contains:
 

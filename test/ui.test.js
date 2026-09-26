@@ -449,6 +449,7 @@ test('public Kat·a·log prioritizes covers with an eight-column desktop grid', 
   assert.match(css, /\.katalog-grid\{display:grid;grid-template-columns:repeat\(8,minmax\(0,1fr\)\);gap:9px\}/);
   assert.match(css, /\.katalog-chips\{align-items:flex-start\}/);
   assert.match(css, /\.katalog-chips>span\{height:22px\}/);
+  assert.match(css, /\.game-metadata-stack\{display:grid;gap:10px;align-content:start\}/);
   assert.match(css, /max-width:680px\)[\s\S]*\.katalog-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
 });
 

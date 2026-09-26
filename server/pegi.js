@@ -11,6 +11,7 @@ const QUERY_MAX_LENGTH = 128;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const TRANSIENT_HTTP_STATUS = new Set([429, 500, 502, 503, 504]);
 const RETRY_DELAYS_MS = Object.freeze([300, 900]);
+const RESULT_COLLATOR = new Intl.Collator('en-US', { sensitivity: 'base', numeric: true });
 const decode = value => String(value || '')
   .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&#039;|&apos;/g, "'")
   .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -102,7 +103,13 @@ function resultKey(result) {
 function mergeResults(pages) {
   const unique = new Map();
   for (const result of pages.flat()) if (!unique.has(resultKey(result))) unique.set(resultKey(result), result);
-  return [...unique.values()];
+  return [...unique.values()].sort((left, right) => {
+    for (const field of ['title', 'publisher']) {
+      const order = RESULT_COLLATOR.compare(String(left[field] || ''), String(right[field] || ''));
+      if (order) return order;
+    }
+    return RESULT_COLLATOR.compare((left.releases || []).join(' '), (right.releases || []).join(' '));
+  });
 }
 
 async function searchPegi(query, { fetcher = fetchPage } = {}) {

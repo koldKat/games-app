@@ -55,3 +55,15 @@ test('PEGI pagination is capped and duplicate records are removed conservatively
   const base = { title: 'Same', publisher: 'One', pegi: 7, releases: ['PC - 01/01/2025'] };
   assert.equal(mergeResults([[base], [{ ...base }], [{ ...base, releases: ['PS5 - 01/01/2025'] }]]).length, 2);
 });
+
+test('PEGI results are alphabetized naturally with stable edition ordering', () => {
+  const results = mergeResults([[
+    { title: 'Zoo', publisher: 'Studio', releases: [] },
+    { title: 'Alpha 10', publisher: 'Studio', releases: [] },
+    { title: 'alpha 2', publisher: 'Studio B', releases: ['Switch'] },
+    { title: 'Alpha 2', publisher: 'Studio A', releases: ['PlayStation'] },
+  ]]);
+  assert.deepEqual(results.map(result => `${result.title} // ${result.publisher}`), [
+    'Alpha 2 // Studio A', 'alpha 2 // Studio B', 'Alpha 10 // Studio', 'Zoo // Studio',
+  ]);
+});

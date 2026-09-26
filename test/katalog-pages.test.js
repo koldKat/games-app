@@ -59,6 +59,7 @@ test('signed-in catalogue cards mark grouped titles with an owned release', () =
 
 test('public game details separate searchable IGDB genres and themes', () => {
   const html = renderGame({ entry: { ...entry, igdbId: 411, igdbGenres: ['Puzzle'], igdbThemes: ['Science fiction'] } });
+  assert.match(html, /class="game-metadata-stack"[\s\S]*PLAYTIME \/\/ HLTB[\s\S]*DATABASE \/\/ IGDB[\s\S]*class="metadata-panel pegi-metadata"/);
   assert.match(html, /<strong>Genres<\/strong>[\s\S]*metadata-filter-chip--genre[^>]*href="\/katalog\?q=Puzzle"[^>]*>Puzzle<\/a>/);
   assert.match(html, /<strong>Themes<\/strong>[\s\S]*metadata-filter-chip--theme[^>]*href="\/katalog\?q=Science\+fiction"[^>]*>Science fiction<\/a>/);
   assert.match(html, /"genre":\["Puzzle"\]/);

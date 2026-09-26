@@ -893,10 +893,16 @@
 .game-metadata {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 10px;
   margin-top: 10px;
 }
-.game-metadata>article {
+.game-metadata-stack {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.game-metadata .metadata-panel {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -927,7 +933,6 @@
   font-size: 11px;
 }
 .game-metadata .igdb-metadata {
-  grid-column: 1 / -1;
   border-color: #255b50;
   background: #091713;
 }
