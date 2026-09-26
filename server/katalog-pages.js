@@ -200,7 +200,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
     <a class="katalog-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
     <div class="katalog-card-body"><span class="katalog-platform">${platformLabel}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
       <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
-      <div class="katalog-chips">${libraryPill}<span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}${releases.length > 1 ? `<span>${releases.length} platforms</span>` : ''}</div>
+      <div class="katalog-chips">${libraryPill}<span class="pegi pegi-${entry.pegi || 'none'}">PEGI ${entry.pegi || '//'}</span>${entry.hltbMainStory ? `<span>${escapeHtml(entry.hltbMainStory)}h main</span>` : ''}</div>
     </div></article>`;
   }).join('');
   const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(platformDisplayName(item.platform))} (${item.count})</option>`).join('');

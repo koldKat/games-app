@@ -40,7 +40,7 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
   const catalogue = renderKatalog({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
   assert.match(catalogue, /data-platform-theme="Steam">Steam<\/span><i>·<\/i><span[^>]*data-platform-theme="PlayStation 5">PlayStation 5<\/span>/);
-  assert.match(catalogue, /2 platforms/);
+  assert.doesNotMatch(catalogue, /2 platforms/);
   const detail = renderGame({ entry: { ...entry, releases, releaseCount: 2 } });
   assert.match(detail, /PLATFORM RELEASES/);
   assert.match(detail, /portal-2-ps5/);

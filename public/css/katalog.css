@@ -512,6 +512,9 @@
   flex-wrap: wrap;
   gap: 5px;
 }
+.katalog-chips {
+  align-items: flex-start;
+}
 .katalog-chips > span,.descriptor-list > span,.descriptor-list > a {
   display: inline-flex;
   align-items: center;
@@ -523,6 +526,9 @@
   color: #9eacb4;
   font-size: 11px;
   line-height: 1;
+}
+.katalog-chips > span {
+  height: 22px;
 }
 .descriptor-list a.metadata-filter-chip {
   min-height:19px;
