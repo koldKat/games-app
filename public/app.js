@@ -23,6 +23,7 @@ import { createSteamImporter } from './js/steam-import.js';
 import { createGogImporter } from './js/gog-import.js';
 import { GAME_LABELS } from './js/game-labels.js';
 import { hasMediaFormat, mediaFormatLabel, selectedMediaFormats, setMediaFormatInputs } from './js/media-formats.js';
+import { createRandomGamePicker } from './js/random-game.js';
 import { APP_NAME, COPYRIGHT_START_YEAR, GITHUB_URL } from './js/site-config.js';
 import {
   DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
@@ -65,6 +66,7 @@ let preferencesReady = false;
 let preferencesDirty = false;
 let preferenceSaveTimer;
 let groupFilterRefreshTimer;
+let randomGamePicker = null;
 const filters = {
   q: $('#search'), platform: $('#platform-filter'), ownership: $('#ownership-filter'),
   pegi: $('#pegi-filter'), playStatus: $('#status-filter'), missing: $('#missing-filter'),
@@ -552,6 +554,7 @@ function updateCollectionChrome() {
   $('#library-page-status').textContent = `Page ${state.page} of ${pages}`;
   pagination.querySelector('[data-library-page="previous"]').disabled = state.page <= 1;
   pagination.querySelector('[data-library-page="next"]').disabled = state.page >= pages;
+  randomGamePicker?.setAvailability(state.gameTotal, state.loading);
   const count = state.gameTotal; const grouped = !filters.platform.value || filters.platform.value === MULTIPLATFORM_FILTER_VALUE;
   $('#result-count').textContent = `${count.toLocaleString(UI_LOCALE)} ${grouped ? count === 1 ? 'game group' : 'game groups' : count === 1 ? 'game' : 'games'} found`;
 }
@@ -638,6 +641,11 @@ function queryString() {
   for (const [key, element] of Object.entries(filters)) if (element.value) params.set(key, element.value);
   params.set('page', String(state.page));
   params.set('limit', String(LIBRARY_PAGE_SIZE));
+  return params.toString();
+}
+function randomQueryString() {
+  const params = new URLSearchParams();
+  for (const [key, element] of Object.entries(filters)) if (key !== 'sort' && element.value) params.set(key, element.value);
   return params.toString();
 }
 async function loadGames(page = 1) {
@@ -779,10 +787,14 @@ ${igdbDetailsMarkup(game, escapeHtml)}
 ${detailSection('Notes', notes)}`;
 }
 function mountVersionPicker(host, game, onSelect, anchor) {
-  renderVersionPicker(host, game, state.games, groupGames, onSelect, anchor);
+  const versions = Array.isArray(game?.versions) && game.versions.length ? game.versions : state.games;
+  renderVersionPicker(host, game, versions, groupGames, selected => {
+    onSelect(game?.versions ? { ...selected, versions: game.versions } : selected);
+  }, anchor);
 }
-function openDetails(game) {
+function openDetails(game, randomPick = false) {
   detailGame = game;
+  randomGamePicker?.setDialog(randomPick, game.id);
   $('#game-details-title').textContent = game.title;
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
@@ -791,13 +803,13 @@ function openDetails(game) {
   const pegiText = detailPegiText(game);
   const releases = detailReleases(game);
   $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });
-  mountVersionPicker(detailsDialog, game, openDetails, $('#game-details-title'));
+  mountVersionPicker(detailsDialog, game, selected => openDetails(selected, randomPick), $('#game-details-title'));
   if (!detailsDialog.open) detailsDialog.showModal();
   setTimeout(() => $('[data-details-close]').focus(), UI_TIMING.formFocusDelayMs);
 }
-function closeDetails() { detailsDialog.close(); detailGame = null; }
+function closeDetails() { detailsDialog.close(); detailGame = null; randomGamePicker?.setDialog(false); }
 $$('[data-details-close]').forEach(button => button.addEventListener('click', closeDetails));
-detailsDialog.addEventListener('close', () => { detailGame = null; });
+detailsDialog.addEventListener('close', () => { detailGame = null; randomGamePicker?.setDialog(false); });
 closeOnTrueBackdrop(detailsDialog, closeDetails);
 detailsDialog.addEventListener('click', event => {
   const chip = event.target.closest('[data-metadata-search]');
@@ -807,6 +819,11 @@ detailsDialog.addEventListener('click', event => {
   filters.q.focus({ preventScroll: true });
 });
 $('#game-details-edit').addEventListener('click', () => { const game = detailGame; closeDetails(); if (game) openForm(game); });
+randomGamePicker = createRandomGamePicker({
+  button: $('#random-game'), rerollButton: $('#game-details-reroll'), api, queryString: randomQueryString,
+  openGame: (game, randomPick) => openDetails(game, randomPick), toast,
+});
+randomGamePicker.setAvailability(state.gameTotal, state.loading);
 const ratingPicker = $('#game-rating-picker');
 function ratingValue(value) {
   const numeric = Number(value);

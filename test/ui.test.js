@@ -536,6 +536,18 @@ test('collection filtering separates owned physical and digital games', () => {
   assert.match(constants, /'owned_physical', 'owned_digital'/);
 });
 
+test('random picker uses the complete filtered library and reuses the details dialog', () => {
+  const html = read('public/index.html'); const application = read('public/app.js');
+  const picker = read('public/js/random-game.js'); const server = read('server.js'); const database = read('server/db.js');
+  assert.match(html, /id="random-game"[^>]*>random\(\)<\/button>/);
+  assert.match(html, /id="game-details-reroll"[^>]*>reroll\(\)<\/button>/);
+  assert.match(application, /createRandomGamePicker/);
+  assert.match(picker, /\/api\/games\/random/);
+  assert.match(picker, /params\.set\('excludeId'/);
+  assert.match(server, /url\.pathname === '\/api\/games\/random'/);
+  assert.match(database, /function randomGame\(userId, filters = \{\}, random = Math\.random\)/);
+});
+
 test('filter transitions immediately remove stale cards while the server result loads', () => {
   const application = read('public/app.js');
   assert.match(application, /groupGames\(state\.games\.filter\(gameMatchesFilters\), \{ splitPlatforms \}\)/);
@@ -626,7 +638,7 @@ test('library cards open a read-only details view before editing', () => {
   assert.match(html, /id="game-details-dialog"/);
   assert.doesNotMatch(application, /data-action="view">View details/);
   assert.match(application, /if \(!action\) return openDetails\(game\)/);
-  assert.match(application, /function openDetails\(game\)/);
+  assert.match(application, /function openDetails\(game, randomPick = false\)/);
   assert.match(application, /if \(action === 'view'\) return openDetails\(game\)/);
   assert.match(application, /safeDetailLink\(game\.descriptionSourceUrl, 'View description source'\)/);
   assert.match(application, /detailsDialog\.addEventListener\('close'/);

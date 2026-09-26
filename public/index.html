@@ -251,7 +251,7 @@
               <option value="igdb_user_desc">IGDB users · highest</option><option value="igdb_user">IGDB users · lowest</option><option value="igdb_critic_desc">IGDB critics · highest</option><option value="igdb_critic">IGDB critics · lowest</option><option value="cartridge">Cartridge no.</option>
             </select></label>
           </div>
-          <div class="filter-foot"><span id="result-count">Loading collection…</span><button class="text-button" id="clear-filters" hidden>Clear filters</button></div>
+          <div class="filter-foot"><span id="result-count">Loading collection…</span><div class="filter-foot-actions"><button type="button" class="text-button random-button" id="random-game" disabled>random()</button><button type="button" class="text-button" id="clear-filters" hidden>Clear filters</button></div></div>
         </div>
 
         <div id="library-loader" class="library-loader" role="status" aria-live="polite" hidden>
@@ -386,7 +386,7 @@
     <section class="modal-card game-details-card">
       <header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div id="game-details-content"></div>
-      <footer class="modal-actions"><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
+      <footer class="modal-actions"><button type="button" class="button ghost" id="game-details-reroll" hidden>reroll()</button><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
     </section>
   </dialog>
   <dialog id="account-dialog">

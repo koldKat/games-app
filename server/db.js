@@ -43,6 +43,7 @@ const hltbHours = value => {
 };
 const sqlTextValues = values => values.map(value => `'${value.replaceAll("'", "''")}'`).join(', ');
 db.function('search_normalize', { deterministic: true }, normalizeSearchText);
+db.function('game_group_key', { deterministic: true }, gameGroupTitleKey);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -466,9 +467,9 @@ function gameListQuery(userId, filters = {}) {
   if (filters.platform === MULTIPLATFORM_FILTER_VALUE) {
     params.multiplatformHidden = hiddenFilter ? 1 : 0;
     clauses.push(`(CASE WHEN canonical_game_id IS NOT NULL THEN 'canonical-'||canonical_game_id
-      ELSE 'title-'||search_normalize(title) END) IN (
+      WHEN game_group_key(title)<>'' THEN 'title-'||game_group_key(title) ELSE 'game-'||id END) IN (
         SELECT CASE WHEN sibling.canonical_game_id IS NOT NULL THEN 'canonical-'||sibling.canonical_game_id
-          ELSE 'title-'||search_normalize(sibling.title) END AS identity
+          WHEN game_group_key(sibling.title)<>'' THEN 'title-'||game_group_key(sibling.title) ELSE 'game-'||sibling.id END AS identity
         FROM games AS sibling
         WHERE sibling.user_id=@userId AND sibling.hidden=@multiplatformHidden
         GROUP BY identity
@@ -576,6 +577,38 @@ function listGamesPage(userId, filters = {}) {
   const byId = new Map(db.prepare(`SELECT ${selectFields} FROM games WHERE id IN (${placeholders})`)
     .all(...ids).map(hydrateGame).map(game => [game.id, game]));
   return { games: ids.map(id => byId.get(id)).filter(Boolean), total, page, pageSize, pages };
+}
+
+function randomGame(userId, filters = {}, random = Math.random) {
+  const { where, params } = gameListQuery(userId, filters);
+  const splitPlatforms = Boolean(filters.platform && filters.platform !== MULTIPLATFORM_FILTER_VALUE);
+  const identity = `CASE WHEN canonical_game_id IS NOT NULL THEN 'canonical-'||canonical_game_id
+    WHEN game_group_key(title)<>'' THEN 'title-'||game_group_key(title) ELSE 'game-'||id END`;
+  const candidates = splitPlatforms
+    ? `SELECT id, 'game-'||id AS identity FROM games ${where}`
+    : `SELECT MIN(id) AS id, identity FROM (SELECT id, ${identity} AS identity FROM games ${where}) GROUP BY identity`;
+  let excludedIdentity = '';
+  const excludedId = Number.parseInt(filters.excludeId, 10);
+  if (Number.isInteger(excludedId) && excludedId > 0) {
+    const excluded = db.prepare(`SELECT id, ${identity} AS identity FROM games WHERE id=? AND user_id=?`).get(excludedId, userId);
+    if (excluded) excludedIdentity = splitPlatforms ? `game-${excluded.id}` : excluded.identity;
+  }
+  const exclusion = excludedIdentity ? 'WHERE identity<>@excludedIdentity' : '';
+  const selectionParams = excludedIdentity ? { ...params, excludedIdentity } : params;
+  let total = db.prepare(`SELECT COUNT(*) AS count FROM (${candidates}) ${exclusion}`).get(selectionParams).count;
+  if (!total && excludedIdentity) return randomGame(userId, { ...filters, excludeId: '' }, random);
+  total = Number(total) || 0;
+  if (!total) return null;
+  const randomValue = Math.max(0, Math.min(0.9999999999999999, Number(random()) || 0));
+  const offset = Math.floor(randomValue * total);
+  const selected = db.prepare(`SELECT id, identity FROM (${candidates}) ${exclusion} ORDER BY id LIMIT 1 OFFSET @offset`)
+    .get({ ...selectionParams, offset });
+  if (!selected) return null;
+  const game = getGame(userId, selected.id);
+  if (!game || splitPlatforms) return game;
+  const versions = db.prepare(`SELECT ${selectFields} FROM games ${where} AND ${identity}=@selectedIdentity ORDER BY id`)
+    .all({ ...params, selectedIdentity: selected.identity }).map(hydrateGame);
+  return { ...game, versions };
 }
 
 function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
@@ -802,7 +835,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, listGamesPage, listProgressionGames, listUserIds, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, listGamesPage, randomGame, listProgressionGames, listUserIds, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
   coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

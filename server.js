@@ -585,6 +585,10 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/api/games') {
     return sendJson(response, 200, db.listGamesPage(user.id, Object.fromEntries(url.searchParams)));
   }
+  if (request.method === 'GET' && url.pathname === '/api/games/random') {
+    const game = db.randomGame(user.id, Object.fromEntries(url.searchParams));
+    return game ? sendJson(response, 200, game) : sendJson(response, 404, { error: 'No games match the current filters.' });
+  }
   if (request.method === 'GET' && url.pathname === '/api/stats') return sendJson(response, 200, db.stats(user.id));
   if (request.method === 'GET' && url.pathname === '/api/meta') {
     return sendJson(response, 200, { platforms: db.platformNames(user.id), version: readVersion(), pegiLookup: true,

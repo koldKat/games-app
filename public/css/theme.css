@@ -599,6 +599,28 @@ input[type="checkbox"]:focus-visible {
   padding: 6px 1px 0;
   border-color: #1b242e;
   font-size: 9px;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.filter-foot-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-left:auto;
+}
+.random-button {
+  padding:2px 6px;
+  border:0;
+  background:none;
+  color:#45ddbd;
+}
+.random-button:hover,.random-button:focus-visible {
+  color:#c6f4e8;
+  outline:none;
+}
+.random-button:disabled {
+  color:#59666f;
+  cursor:default;
 }
 .text-button {
   color: #45ddbd;
