@@ -24,7 +24,7 @@ body {
   align-items: stretch;
   width: 100%;
   min-width: 0;
-  height: 34px;
+  height: 30px;
 }
 .form-grid input[type="number"] {
   -moz-appearance: textfield;
@@ -38,8 +38,8 @@ body {
   flex: 1;
   min-width: 0;
   width: auto !important;
-  height: 34px !important;
-  min-height: 34px;
+  height: 30px !important;
+  min-height: 30px;
   margin: 0 !important;
   padding: 0 7px !important;
   border-left: 0;
@@ -59,8 +59,8 @@ body {
   flex: 0 0 28px;
   width: 28px !important;
   min-width: 28px;
-  height: 34px !important;
-  min-height: 34px;
+  height: 30px !important;
+  min-height: 30px;
   margin: 0 !important;
   padding: 0 !important;
   border: 1px solid #27323e;
@@ -549,6 +549,12 @@ input[type="checkbox"]:focus-visible {
   padding: 7px 8px;
   font-size: 10px;
   color: #dce4ee;
+}
+.form-grid input:not([type="checkbox"]):not([type="hidden"]):not([type="file"]), .form-grid select {
+  height: 30px;
+  min-height: 30px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .filters select:focus, .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
   border-color: #35d6b2;

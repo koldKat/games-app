@@ -5,13 +5,23 @@
   border:0;
 }
 .format-field legend {
+  display:flex;
+  align-items:baseline;
+  gap:5px;
   margin:0 0 3px 1px;
   padding:0;
   color:#728092;
-  font-size:8px;
+  font-size:9px;
   font-weight:800;
   letter-spacing:.07em;
   text-transform:uppercase;
+}
+.format-field legend small {
+  color:#52616e;
+  font:inherit;
+  font-weight:600;
+  letter-spacing:.03em;
+  text-transform:none;
 }
 .format-options {
   display:flex;
@@ -32,47 +42,59 @@
   clip-path:inset(50%);
   white-space:nowrap;
 }
-.format-option span {
+.form-grid .format-option > span {
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
+  gap:7px;
+  margin:0;
   min-height:30px;
+  padding:0 9px;
   box-sizing:border-box;
   border:1px solid #27323e;
   border-radius:4px;
   background:#090d13;
-  color:#8795a3;
-  font-size:10px;
+  color:#9aa7b4;
+  font-size:11px;
   font-weight:700;
   line-height:1;
+  letter-spacing:.025em;
+  text-transform:uppercase;
+  transition:border-color .12s ease,background-color .12s ease,color .12s ease;
 }
 .format-option span::before {
-  width:9px;
-  height:9px;
-  margin-right:5px;
+  flex:0 0 11px;
+  width:11px;
+  height:11px;
   border:1px solid #41505e;
   border-radius:2px;
   background:#070a0f;
   content:'';
 }
 .format-option input:checked + span {
-  border-color:#397d70;
-  background:#0b1b18;
-  color:#a8dfd1;
-  box-shadow:inset 0 -1px #55a994;
+  border-color:#347666;
+  background:#0b1916;
+  color:#b7e7da;
 }
 .format-option input:checked + span::before {
   border-color:#49c9aa;
-  background:linear-gradient(135deg,transparent 42%,#07100e 43% 54%,transparent 55%),#49c9aa;
+  background-color:#173e35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.1 4.8 8.5 9.8 3.4' fill='none' stroke='%2372e1c4' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:10px 10px;
 }
 .format-option input:focus-visible + span {
   outline:1px solid #6ce0c3;
   outline-offset:2px;
 }
-.format-field > small {
-  display:block;
-  margin:3px 0 0 1px;
-  color:#61717d;
-  font-size:8px;
-  line-height:1.2;
+.format-option:hover span {
+  border-color:#3a4b59;
+  background:#0c1219;
+  color:#c2ccd5;
+}
+.format-option:hover input:checked + span {
+  border-color:#43917e;
+  background:#0d1e1a;
+  color:#c7f1e6;
 }
