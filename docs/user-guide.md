@@ -64,8 +64,8 @@ The ten compact cards summarize the current account and act as one-click major f
 | Card | Meaning |
 |---|---|
 | **Total** | Every title in the account's library and clears all filters |
-| **Owned physical** | Owned games stored as physical copies |
-| **Owned digital** | Owned games stored as digital copies |
+| **Owned physical** | Owned games with Physical selected |
+| **Owned digital** | Owned games with Digital selected |
 | **Wishlisted** | Games wanted but not yet owned |
 | **Backlog** | Games waiting to be played |
 | **Playing** | Games currently in progress |
@@ -73,6 +73,8 @@ The ten compact cards summarize the current account and act as one-click major f
 | **Paused** | Games intentionally put on hold |
 | **Abandoned** | Games no longer being pursued |
 | **Favorites** | Games marked as favorites |
+
+Physical and Digital are independent. A game with both selected appears in both dashboard totals and both Library-filter results; the two format counts therefore do not have to add up to the overall Owned count.
 
 Selecting a summary card applies its corresponding library filter and highlights the active card. **Total** clears search and every library filter while retaining the selected sort order.
 
@@ -137,7 +139,7 @@ The small release string beside **Game Kat·a·log** comes from the project's `V
 
 Your account has a private collector level. The persistent application header and account panel show its current level, title, total XP, and distance to the next level on My Kat·a·log, Signal, Forum, and the public Kat·a·log, including after a direct refresh. The same `+Game` control remains available in every signed-in view and opens the game form without navigating back to My Kat·a·log. Levels use the same triangular Gamebooks curve: level 1 starts at 1,000 XP, level 2 at 3,000 XP, level 10 at 55,000 XP, and the maximum level is 100. Header XP changes animate in queued, level-scaled segments: at level 16, each awarded update takes 1,600 ms.
 
-XP recognizes durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favorite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; sparking a reply from another account; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once. Owning one title on multiple platforms awards 40 XP, owning both physical and digital editions of one title on the same platform awards 30 XP, and reaching 25 distinct owned titles on one platform awards 150 XP.
+XP recognizes durable collection work: adding a game; setting a cover, PEGI details, HLTB times, description, personal note, publisher, year, rating, favorite, wishlist, play state, or first avatar; opening a new platform shelf; contributing a game to the public Kat·a·log; starting a forum thread or reply; sparking a reply from another account; and collection, enrichment, and completion milestones. Recording a note awards 5 XP once per game; changing a Wishlisted game to Owned awards 25 XP once; publishing a contributed game to the Kat·a·log awards 30 XP once. Owning one title on multiple platforms awards 40 XP, selecting both Physical and Digital for an owned title/platform awards 30 XP, and reaching 25 distinct owned titles on one platform awards 150 XP.
 
 Each award is permanently recorded against the account, action, and relevant game, release, platform, or milestone. Repeating a qualifying state cannot award the same achievement twice. Hidden and Wishlisted games do not count toward the three ownership achievements. There is no passive, timed, login, or idle XP gain. Existing libraries receive a restart-safe one-time backfill for newly introduced collection achievements. Every XP amount, including these three awards, is controlled from the localhost administrator panel; the level curve and titles remain stable.
 
@@ -189,7 +191,7 @@ Select any non-control area of a library card to open its read-only record of me
 | **Your rating** | Optional private score from 0.5 to 5 stars; hover to preview the score, click a star’s left or right half for half-star increments, or use the keyboard arrows when the control is focused |
 | **Collection** | Owned or Wishlisted |
 | **Play status** | Backlog, Playing, Completed, Paused, Abandoned, or Hidden |
-| **Format** | Physical, Digital, or Unknown |
+| **Format** | Independent Physical and Digital pills; select either one or both, or leave both clear when the format is unknown |
 | **Cartridge no.** | Mainly used for Evercade cartridge numbering |
 | **Publisher** | Optional publisher or label |
 | **Release year** | Four-digit release year |

@@ -8,6 +8,7 @@ const {
   STORED_PLAY_STATUS_VALUES, TITLE_LOOKUP_MIN_LENGTH,
 } = require('./constants');
 const { GAME_LIMITS } = require('./validation-policy');
+const { normalizeMediaFormats } = require('./media-format-policy');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'games.db');
 const db = new Database(DB_PATH);
@@ -173,6 +174,8 @@ db.exec(`
     play_status TEXT NOT NULL DEFAULT 'backlog' CHECK (play_status IN (${sqlTextValues(STORED_PLAY_STATUS_VALUES)})),
     hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
     media_format TEXT NOT NULL DEFAULT 'physical' CHECK (media_format IN (${sqlTextValues(MEDIA_FORMAT_VALUES)})),
+    format_physical INTEGER NOT NULL DEFAULT 1 CHECK (format_physical IN (0, 1)),
+    format_digital INTEGER NOT NULL DEFAULT 0 CHECK (format_digital IN (0, 1)),
     cartridge_number INTEGER,
     publisher TEXT NOT NULL DEFAULT '',
     release_year INTEGER,
@@ -274,6 +277,12 @@ if (!gameColumns.includes('gog_product_id')) db.exec('ALTER TABLE games ADD COLU
 if (gameColumns.includes('esrb_rating')) db.prepare(`UPDATE games SET description=CASE WHEN description_source='ESRB' THEN '' ELSE description END, description_source=CASE WHEN description_source='ESRB' THEN '' ELSE description_source END, description_source_url=CASE WHEN description_source='ESRB' THEN '' ELSE description_source_url END WHERE description_source='ESRB'`).run();
 if (!gameColumns.includes('rating')) db.exec('ALTER TABLE games ADD COLUMN rating REAL');
 if (!gameColumns.includes('hidden')) db.exec('ALTER TABLE games ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1))');
+if (!gameColumns.includes('format_physical') || !gameColumns.includes('format_digital')) db.transaction(() => {
+  if (!gameColumns.includes('format_physical')) db.exec('ALTER TABLE games ADD COLUMN format_physical INTEGER NOT NULL DEFAULT 0 CHECK (format_physical IN (0, 1))');
+  if (!gameColumns.includes('format_digital')) db.exec('ALTER TABLE games ADD COLUMN format_digital INTEGER NOT NULL DEFAULT 0 CHECK (format_digital IN (0, 1))');
+  db.prepare(`UPDATE games SET format_physical=CASE WHEN media_format='physical' THEN 1 ELSE 0 END,
+    format_digital=CASE WHEN media_format='digital' THEN 1 ELSE 0 END`).run();
+})();
 const canonical = createCanonicalStore(db);
 
 db.exec(`
@@ -295,7 +304,10 @@ db.exec(`
 
 const selectFields = `id, title, platform, pegi, ownership,
   CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END AS playStatus,
-  media_format AS mediaFormat, cartridge_number AS cartridgeNumber, publisher,
+  CASE WHEN format_physical=1 AND format_digital=1 THEN 'both'
+    WHEN format_physical=1 THEN 'physical' WHEN format_digital=1 THEN 'digital' ELSE 'unknown' END AS mediaFormat,
+  format_physical AS formatPhysical, format_digital AS formatDigital,
+  cartridge_number AS cartridgeNumber, publisher,
   release_year AS releaseYear, notes, rating, favorite, pegi_url AS pegiUrl,
   pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
@@ -318,7 +330,7 @@ const selectFields = `id, title, platform, pegi, ownership,
   created_at AS createdAt, updated_at AS updatedAt`;
 
 const insert = db.prepare(`
-  INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, hidden, media_format,
+  INSERT INTO games (user_id, title, platform, pegi, ownership, play_status, hidden, media_format, format_physical, format_digital,
     cartridge_number, publisher, release_year, notes, rating, favorite, pegi_url, pegi_descriptors,
     pegi_releases, pegi_advice, pegi_outline, pegi_content_issues, pegi_other_issues,
     hltb_id, hltb_title, hltb_url, hltb_main_story, hltb_main_extra, hltb_completionist, hltb_all_styles, hltb_updated_at,
@@ -326,7 +338,7 @@ const insert = db.prepare(`
     igdb_id, igdb_slug, igdb_url, igdb_rating, igdb_rating_count, igdb_critic_rating, igdb_critic_rating_count,
     igdb_genres, igdb_themes, igdb_developers, igdb_updated_at,
     steam_app_id, steam_playtime_minutes, steam_last_played_at, gog_product_id)
-  VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat,
+  VALUES (@userId, @title, @platform, @pegi, @ownership, @playStatus, @hidden, @mediaFormat, @formatPhysical, @formatDigital,
     @cartridgeNumber, @publisher, @releaseYear, @notes, @rating, @favorite, @pegiUrl, @pegiDescriptorsJson,
     @pegiReleasesJson, @pegiAdvice, @pegiOutline, @pegiContentIssues, @pegiOtherIssues,
     @hltbId, @hltbTitle, @hltbUrl, @hltbMainStory, @hltbMainExtra, @hltbCompletionist, @hltbAllStyles, @hltbUpdatedAt,
@@ -338,7 +350,7 @@ const insert = db.prepare(`
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
     play_status=CASE WHEN @hidden=1 THEN play_status ELSE @playStatus END, hidden=@hidden,
-    media_format=@mediaFormat, cartridge_number=@cartridgeNumber,
+    media_format=@mediaFormat, format_physical=@formatPhysical, format_digital=@formatDigital, cartridge_number=@cartridgeNumber,
     publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=@rating, favorite=@favorite,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
@@ -378,7 +390,7 @@ function normalizeGame(input = {}) {
   const requestedPlayStatus = PLAY_STATUS_VALUES.includes(input.playStatus) ? input.playStatus : 'backlog';
   const hidden = requestedPlayStatus === 'hidden' ? 1 : 0;
   const playStatus = hidden ? 'backlog' : requestedPlayStatus;
-  const mediaFormat = MEDIA_FORMAT_VALUES.includes(input.mediaFormat) ? input.mediaFormat : 'physical';
+  const { mediaFormat, mediaFormats, formatPhysical, formatDigital } = normalizeMediaFormats(input);
   const cartridgeNumber = input.cartridgeNumber === '' || input.cartridgeNumber == null ? null : Number.parseInt(input.cartridgeNumber, 10);
   const releaseYear = input.releaseYear === '' || input.releaseYear == null ? null : Number.parseInt(input.releaseYear, 10);
   const rating = input.rating === '' || input.rating == null ? null : Number(input.rating);
@@ -391,7 +403,7 @@ function normalizeGame(input = {}) {
     ? Math.round(Number(value) * 10) / 10 : null;
   const igdbCount = value => igdbId ? Math.max(0, Number.parseInt(value, 10) || 0) : 0;
   return {
-    title, platform, pegi, ownership, playStatus, hidden, mediaFormat, cartridgeNumber,
+    title, platform, pegi, ownership, playStatus, hidden, mediaFormat, mediaFormats, formatPhysical, formatDigital, cartridgeNumber,
     publisher: boundedText(input.publisher, GAME_LIMITS.publisherMax, 'Publisher'), releaseYear,
     notes: boundedText(input.notes, GAME_LIMITS.notesMax, 'Notes'), rating, favorite: input.favorite ? 1 : 0,
     pegiUrl: boundedText(input.pegiUrl, GAME_LIMITS.urlMax, 'PEGI URL'),
@@ -441,6 +453,7 @@ function hydrateGame(row) {
 function gameListQuery(userId, filters = {}) {
   const clauses = ['user_id = @userId'];
   const params = { userId };
+  const hiddenFilter = filters.ownership === 'hidden' || filters.playStatus === 'hidden';
   if (filters.q) {
     clauses.push(`(search_normalize(title) LIKE @q ESCAPE '\\'
       OR search_normalize(publisher) LIKE @q ESCAPE '\\'
@@ -451,19 +464,19 @@ function gameListQuery(userId, filters = {}) {
     params.q = searchPattern(filters.q);
   }
   if (filters.platform === MULTIPLATFORM_FILTER_VALUE) {
-    clauses.push(`EXISTS (
-      SELECT 1 FROM games AS sibling
-      WHERE sibling.user_id=games.user_id AND sibling.id<>games.id AND sibling.hidden=games.hidden
-        AND sibling.platform<>games.platform COLLATE NOCASE
-        AND ((games.canonical_game_id IS NOT NULL AND sibling.canonical_game_id=games.canonical_game_id)
-          OR (games.canonical_game_id IS NULL AND sibling.canonical_game_id IS NULL
-            AND search_normalize(sibling.title)=search_normalize(games.title)))
-    )`);
+    params.multiplatformHidden = hiddenFilter ? 1 : 0;
+    clauses.push(`(CASE WHEN canonical_game_id IS NOT NULL THEN 'canonical-'||canonical_game_id
+      ELSE 'title-'||search_normalize(title) END) IN (
+        SELECT CASE WHEN sibling.canonical_game_id IS NOT NULL THEN 'canonical-'||sibling.canonical_game_id
+          ELSE 'title-'||search_normalize(sibling.title) END AS identity
+        FROM games AS sibling
+        WHERE sibling.user_id=@userId AND sibling.hidden=@multiplatformHidden
+        GROUP BY identity
+        HAVING COUNT(DISTINCT sibling.platform COLLATE NOCASE)>1
+      )`);
   } else if (filters.platform) { clauses.push('platform = @platform'); params.platform = filters.platform; }
-  const hiddenFilter = filters.ownership === 'hidden' || filters.playStatus === 'hidden';
   if (filters.ownership === 'owned_physical' || filters.ownership === 'owned_digital') {
-    clauses.push('ownership = \'owned\' AND media_format = @ownedFormat');
-    params.ownedFormat = filters.ownership.slice('owned_'.length);
+    clauses.push(`ownership = 'owned' AND ${filters.ownership === 'owned_physical' ? 'format_physical' : 'format_digital'} = 1`);
   } else if (filters.ownership !== 'hidden' && OWNERSHIP_FILTER_VALUES.includes(filters.ownership)) {
     clauses.push('ownership = @ownership'); params.ownership = filters.ownership;
   }
@@ -527,7 +540,9 @@ function listGames(userId, filters = {}) {
 function listProgressionGames(userId) {
   return db.prepare(`SELECT id, title, platform, canonical_game_id AS canonicalGameId,
     ownership, CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END AS playStatus,
-    media_format AS mediaFormat FROM games WHERE user_id=?`).all(userId);
+    CASE WHEN format_physical=1 AND format_digital=1 THEN 'both'
+      WHEN format_physical=1 THEN 'physical' WHEN format_digital=1 THEN 'digital' ELSE 'unknown' END AS mediaFormat,
+    format_physical AS formatPhysical, format_digital AS formatDigital FROM games WHERE user_id=?`).all(userId);
 }
 
 function listUserIds() { return db.prepare('SELECT id FROM users ORDER BY id').all().map(row => row.id); }
@@ -771,7 +786,11 @@ function updateGameHltb(userId, id, metadata = {}) {
 function stats(userId) {
   const total = db.prepare('SELECT COUNT(*) n FROM games WHERE user_id=? AND hidden=0').get(userId).n;
   const ownership = db.prepare('SELECT ownership label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY ownership').all(userId);
-  const ownedFormats = db.prepare("SELECT media_format label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 AND ownership='owned' GROUP BY media_format").all(userId);
+  const formatCounts = db.prepare(`SELECT
+    COALESCE(SUM(format_physical=1),0) physical, COALESCE(SUM(format_digital=1),0) digital,
+    COALESCE(SUM(format_physical=0 AND format_digital=0),0) unknown
+    FROM games WHERE user_id=? AND hidden=0 AND ownership='owned'`).get(userId);
+  const ownedFormats = ['physical', 'digital', 'unknown'].map(label => ({ label, count: Number(formatCounts[label]) || 0 })).filter(item => item.count);
   const platforms = db.prepare('SELECT platform label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY platform ORDER BY count DESC, platform').all(userId);
   const pegi = db.prepare("SELECT COALESCE(CAST(pegi AS TEXT), 'Unrated') label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY pegi ORDER BY pegi").all(userId);
   const play = db.prepare('SELECT play_status label, COUNT(*) count FROM games WHERE user_id=? AND hidden=0 GROUP BY play_status').all(userId);

@@ -275,7 +275,7 @@ function addToLibraryPanel(entry, user, libraryGame) {
   if (user) return `<form class="katalog-add" data-katalog-add="${entry.id}">
     <div><strong>Add this release</strong><span>Personal tracking stays private.</span></div>
     <label><span>Collection</span><select name="ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option></select></label>
-    <label><span>Format</span><select name="mediaFormat"><option value="physical">Physical</option><option value="digital">Digital</option><option value="unknown">Unknown</option></select></label>
+    <label><span>Format</span><select name="mediaFormat"><option value="physical">Physical</option><option value="digital">Digital</option><option value="both">Physical + digital</option><option value="unknown">Unknown</option></select></label>
     <button type="submit">Add to my Kat·a·log</button><p data-add-message role="status" aria-live="polite"></p>
   </form>`;
   return '<aside class="katalog-signin"><strong>Keep this game in your library.</strong><span>Create an account or sign in to add it with one click.</span><a href="/">Sign in to Game Kat·a·log</a></aside>';

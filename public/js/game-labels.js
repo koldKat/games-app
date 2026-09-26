@@ -9,5 +9,6 @@ export const GAME_LABELS = Object.freeze({
   hidden: 'Hidden',
   physical: 'Physical',
   digital: 'Digital',
+  both: 'Physical + digital',
   unknown: 'Unknown',
 });

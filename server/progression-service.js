@@ -1,6 +1,7 @@
 'use strict';
 
 const { hasPegiMetadata, hasHltbMetadata, hasDurableCover, normalizeKatalogText } = require('./katalog-policy');
+const { mediaFormatsForGame } = require('./media-format-policy');
 
 const GAME_MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
 const ENRICHED_MILESTONES = [10, 25, 50];
@@ -35,7 +36,7 @@ function createProgressionService({ store, data }) {
       platformsByGame.get(identity).add(platform);
       const release = `${identity}:${platform}`;
       if (!formatsByRelease.has(release)) formatsByRelease.set(release, new Set());
-      formatsByRelease.get(release).add(String(game.mediaFormat || '').toLowerCase());
+      for (const format of mediaFormatsForGame(game)) formatsByRelease.get(release).add(format);
       if (!gamesByPlatform.has(platform)) gamesByPlatform.set(platform, new Set());
       gamesByPlatform.get(platform).add(identity);
     }

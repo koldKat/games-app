@@ -22,6 +22,7 @@ import { bindFilterSelectStates, syncFilterSelectStates } from './js/filter-stat
 import { createSteamImporter } from './js/steam-import.js';
 import { createGogImporter } from './js/gog-import.js';
 import { GAME_LABELS } from './js/game-labels.js';
+import { hasMediaFormat, mediaFormatLabel, selectedMediaFormats, setMediaFormatInputs } from './js/media-formats.js';
 import { APP_NAME, COPYRIGHT_START_YEAR, GITHUB_URL } from './js/site-config.js';
 import {
   DECORATIVE_COVER_SLOT_MAX, LIBRARY_PAGE_SIZE, LOOKUP_MIN_TITLE_LENGTH, PEGI_RELEASE_PREVIEW_LIMIT,
@@ -497,7 +498,7 @@ function gameCard(game) {
   const cover = game.coverUrl ? `<img class="game-cover" src="${escapeHtml(game.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"><span class="game-cover-shade"></span>` : '';
   return `<article class="game-card ${game.coverUrl ? 'has-cover' : ''}" data-id="${game.id}" style="--rating-color:${pegiColors[game.pegi] || pegiColors.none}">${cover}
     <div class="card-top">${platform}<button class="favorite-button ${game.favorite ? 'on' : ''}" data-action="favorite" aria-label="${game.favorite ? 'Remove favorite' : 'Mark favorite'}">★</button></div>
-    <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || (game.mediaFormat === 'physical' ? 'Physical copy' : labels[game.mediaFormat]))}</div>
+    <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || mediaFormatLabel(game, labels))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
     ${cardRatingControl(game)}<div class="card-actions"><button type="button" class="edit-button" data-action="edit">Edit details</button>${quick}</div>
@@ -511,8 +512,8 @@ function gameMatchesFilters(game) {
   const hiddenFilter = filters.ownership.value === 'hidden';
   if (hiddenFilter && game.playStatus !== 'hidden') return false;
   if (!hiddenFilter && game.playStatus === 'hidden') return false;
-  if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || game.mediaFormat !== 'physical')) return false;
-  if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || game.mediaFormat !== 'digital')) return false;
+  if (filters.ownership.value === 'owned_physical' && (game.ownership !== 'owned' || !hasMediaFormat(game, 'physical'))) return false;
+  if (filters.ownership.value === 'owned_digital' && (game.ownership !== 'owned' || !hasMediaFormat(game, 'digital'))) return false;
   if (filters.ownership.value && !filters.ownership.value.startsWith('owned_') && !hiddenFilter && game.ownership !== filters.ownership.value) return false;
   if (filters.playStatus.value && game.playStatus !== filters.playStatus.value) return false;
   if (filters.pegi.value === 'none' && game.pegi != null) return false;
@@ -534,7 +535,7 @@ function cardNode(game) {
 }
 function displayedGames() {
   const splitPlatforms = Boolean(filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE);
-  return groupGames(state.games, { splitPlatforms }).map(group => selectedGroupCopy(group, selectedCopyIds));
+  return groupGames(state.games.filter(gameMatchesFilters), { splitPlatforms }).map(group => selectedGroupCopy(group, selectedCopyIds));
 }
 function pageCount() { return Math.max(1, state.gamePages); }
 function pagedGames() {
@@ -786,7 +787,7 @@ function openDetails(game) {
   const rating = personalRating(game.rating);
   const descriptors = (game.pegiDescriptors || []).map(item => badge(item, /purchases|random items/i.test(item) ? 'descriptor purchase' : 'descriptor')).join('');
   const times = detailTimes(game);
-  const facts = detailRows([['Platform', platformDisplayName(game.platform), `platform-coded game-detail-platform-value ${platformThemeClass(game.platform)}`], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', labels[game.mediaFormat]], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
+  const facts = detailRows([['Platform', platformDisplayName(game.platform), `platform-coded game-detail-platform-value ${platformThemeClass(game.platform)}`], ['Collection', labels[game.ownership]], ['Play status', labels[game.playStatus]], ['Format', mediaFormatLabel(game, labels)], ['Publisher', game.publisher], ['Release year', game.releaseYear], ['Cartridge no.', game.cartridgeNumber == null ? '' : game.cartridgeNumber]]);
   const pegiText = detailPegiText(game);
   const releases = detailReleases(game);
   $('#game-details-content').innerHTML = detailMarkup(game, { rating, descriptors, times, facts, pegiText, releases });
@@ -903,7 +904,8 @@ function openForm(game = null) {
   const filteredPlatform = filters.platform.value && filters.platform.value !== MULTIPLATFORM_FILTER_VALUE ? filters.platform.value : '';
   $('#game-title').value = formValue(game, 'title'); setPlatformValue(formValue(game, 'platform', filteredPlatform || 'Nintendo Switch'));
   $('#game-pegi').value = formValue(game, 'pegi'); $('#game-ownership').value = formValue(game, 'ownership', 'owned');
-  $('#game-status').value = formValue(game, 'playStatus', 'backlog'); $('#game-format').value = formValue(game, 'mediaFormat', 'physical');
+  $('#game-status').value = formValue(game, 'playStatus', 'backlog');
+  setMediaFormatInputs(game, $('#game-format-physical'), $('#game-format-digital'));
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); setRating(formValue(game, 'rating')); $('#game-description').value = formValue(game, 'description'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
   $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); igdbLookup.load(game); renderCoverSelection(); renderPegiDetails();
@@ -982,7 +984,8 @@ const titleAutocomplete = createTitleAutocomplete({
 const hltbLookup = createHltbLookup({ $, api, escapeHtml, toast });
 function payload() {
   return { title: $('#game-title').value, platform: selectedPlatform(), pegi: $('#game-pegi').value,
-    ownership: $('#game-ownership').value, playStatus: $('#game-status').value, mediaFormat: $('#game-format').value,
+    ownership: $('#game-ownership').value, playStatus: $('#game-status').value,
+    mediaFormats: selectedMediaFormats($('#game-format-physical'), $('#game-format-digital')),
     cartridgeNumber: $('#game-cartridge').value, publisher: $('#game-publisher').value, releaseYear: $('#game-year').value, rating: $('#game-rating').value,
     notes: $('#game-notes').value, description: $('#game-description').value, descriptionSource: $('#game-form').dataset.descriptionSource || '', descriptionSourceUrl: $('#game-form').dataset.descriptionSourceUrl || '', favorite: $('#game-favorite').checked, pegiUrl: $('#game-form').dataset.pegiUrl || '',
     ...($('#game-form')._pegiMetadata || pegiMetadata()), ...hltbLookup.payload(), ...igdbLookup.payload(),

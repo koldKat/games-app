@@ -1,4 +1,5 @@
 import { platformDisplayName, platformThemeClass } from './platforms.js';
+import { mediaFormatLabel } from './media-formats.js';
 
 export function renderVersionPicker(host, game, games, groupGames, onSelect, anchor) {
   if (!host || !anchor) return;
@@ -14,7 +15,7 @@ export function renderVersionPicker(host, game, games, groupGames, onSelect, anc
     const button = document.createElement('button');
     button.type = 'button';
     button.classList.add(platformThemeClass(version.platform));
-    button.textContent = `${platformDisplayName(version.platform)} · ${version.mediaFormat || 'copy'} · #${version.id}`;
+    button.textContent = `${platformDisplayName(version.platform)} · ${mediaFormatLabel(version)} · #${version.id}`;
     button.setAttribute('aria-pressed', String(version.id === game.id));
     button.disabled = version.id === game.id;
     button.addEventListener('click', () => onSelect(version));
@@ -38,7 +39,7 @@ export function cardVersionControl(game, escapeHtml, formatLabels) {
   const menuId = `card-version-menu-${game.id}`;
   const options = versions.map(version => {
     const label = platformLabel(version, versions);
-    const format = formatLabels[version.mediaFormat] || version.mediaFormat || 'Unknown format';
+    const format = mediaFormatLabel(version, formatLabels);
     return `<button type="button" class="${platformThemeClass(version.platform)}" role="menuitemradio" aria-checked="${version.id === game.id}" data-action="version" data-game-id="${version.id}"><span>${escapeHtml(label)}</span><small>${escapeHtml(format)} // #${version.id}</small></button>`;
   }).join('');
   return `<div class="platform-picker"><button type="button" class="platform-tag platform-switch ${currentTheme}" data-action="version-menu" aria-expanded="false" aria-haspopup="menu" aria-controls="${menuId}"><span class="platform-tag-label">${escapeHtml(current)}</span><span class="platform-switch-indicator" aria-hidden="true"></span></button><div class="platform-version-menu" id="${menuId}" role="menu" aria-label="Choose a recorded copy" hidden>${options}</div></div>`;

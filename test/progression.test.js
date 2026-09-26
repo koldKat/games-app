@@ -119,3 +119,12 @@ test('hidden and wishlisted records do not qualify for collection achievements',
   const result = service.backfillCollectionAchievements(user.id);
   assert.equal(result.awards.some(item => ['multiplatform_collector', 'format_double_dip', 'platform_specialist'].includes(item.event)), false);
 });
+
+test('one owned record with both format flags earns the double-dip award', async () => {
+  const user = await auth.register('xp_single_record_double_dip', 'password-eleven');
+  const game = data.createGame(user.id, { title: 'One Row Double Dip', platform: 'PlayStation 5', ownership: 'owned', mediaFormats: ['physical', 'digital'] });
+  const service = createProgressionService({ store: data.progression, data });
+  const result = service.recordGame(user.id, game, { created: true });
+  assert.deepEqual(result.awards.filter(item => item.event === 'format_double_dip').map(item => item.amount), [30]);
+  assert.equal(service.recordGame(user.id, game).awards.some(item => item.event === 'format_double_dip'), false);
+});

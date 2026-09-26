@@ -9,7 +9,7 @@ Track owned and wishlisted games across consoles, handhelds, computers, storefro
 ### Private libraries
 
 - Separate SQLite-backed libraries for every account, with settings synchronized across devices.
-- Owned physical, owned digital, and wishlisted collection states.
+- Independent physical and digital ownership on each game, including both formats on one record, plus wishlists.
 - Backlog, playing, completed, paused, and abandoned play states, plus a recoverable hidden-library state.
 - Half-star ratings, favorites, notes, cartridge numbers, publisher, release year, descriptions, PEGI metadata, IGDB genres, themes, user and critic ratings, cover art, and HowLongToBeat estimates.
 - Grid and compact views, accent-insensitive live search across titles, publishers, notes, descriptions, genres, and themes, composable filters, and 27 sorting modes.
@@ -45,7 +45,7 @@ Navigation swaps only the content below the header. The account control, collect
 ### Collector progression
 
 - The Gamebooks level curve, 100 levels, and Kat·a·log-specific titles.
-- Permanent XP awards for building and enriching a collection, multi-platform and physical/digital collecting, platform depth, play milestones, public contributions, avatars, and forum participation.
+- Permanent XP awards for building and enriching a collection, multi-platform and combined physical/digital ownership, platform depth, play milestones, public contributions, avatars, and forum participation.
 - Stable event references prevent repeated actions from farming XP.
 - The header XP meter updates live and animates awards in level-scaled steps.
 - Future award amounts can be tuned from the localhost admin panel without rewriting historical XP.

@@ -19,7 +19,7 @@ test('private Kat·a·log groups multi-platform titles unless a platform filter 
   const application = read('public/app.js'); const groups = read('public/js/game-groups.js'); const library = readCss('public/css/library.css');
   assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/js\/game-groups\.js'/);
   assert.match(application, /filters\.platform\.value !== MULTIPLATFORM_FILTER_VALUE/);
-  assert.match(application, /groupGames\(state\.games, \{ splitPlatforms \}\)/);
+  assert.match(application, /groupGames\(state\.games\.filter\(gameMatchesFilters\), \{ splitPlatforms \}\)/);
   assert.match(application, />Multiple platforms<\/option>/);
   const picker = read('public/js/version-picker.js');
   assert.match(application, /cardVersionControl\(game, escapeHtml, labels\)/);
@@ -520,14 +520,25 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
 test('collection filtering separates owned physical and digital games', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const database = read('server/db.js'); const preferences = read('server/preferences.js'); const constants = read('server/constants.js');
+  const formatUi = read('public/js/media-formats.js'); const css = readCss('public/css/media-formats.css');
   assert.match(html, /value="owned_physical">Owned · physical<\/option><option value="owned_digital">Owned · digital/);
   assert.match(html, /id="stat-owned-physical"[\s\S]*id="stat-owned-digital"/);
   assert.match(application, /filters\.ownership\.value === 'owned_physical'/);
   assert.match(application, /filters\.ownership\.value === 'owned_digital'/);
-  assert.match(database, /media_format = @ownedFormat/);
+  assert.match(database, /format_physical' : 'format_digital'/);
   assert.match(database, /const ownedFormats =/);
+  assert.match(html, /id="game-format-physical" type="checkbox"[\s\S]*id="game-format-digital" type="checkbox"/);
+  assert.doesNotMatch(html, /id="game-format"/);
+  assert.match(application, /selectedMediaFormats\(\$\('#game-format-physical'\), \$\('#game-format-digital'\)\)/);
+  assert.match(formatUi, /formats\.length === 2/);
+  assert.match(css, /\.format-option input:checked \+ span/);
   assert.match(preferences, /OWNERSHIP_FILTER_VALUES/);
   assert.match(constants, /'owned_physical', 'owned_digital'/);
+});
+
+test('filter transitions immediately remove stale cards while the server result loads', () => {
+  const application = read('public/app.js');
+  assert.match(application, /groupGames\(state\.games\.filter\(gameMatchesFilters\), \{ splitPlatforms \}\)/);
 });
 
 test('hidden games use the existing Library dropdown and never add a dashboard card', () => {

@@ -9,8 +9,8 @@ const profileAccount = db.prepare(`SELECT u.id, u.username, u.avatar_path AS ava
   WHERE u.username=? COLLATE NOCASE AND u.public_profile=1 AND u.admin_locked=0`);
 const collectionStats = db.prepare(`SELECT COUNT(*) AS total,
     COALESCE(SUM(ownership='owned'), 0) AS owned,
-    COALESCE(SUM(ownership='owned' AND media_format='physical'), 0) AS physical,
-    COALESCE(SUM(ownership='owned' AND media_format='digital'), 0) AS digital,
+    COALESCE(SUM(ownership='owned' AND format_physical=1), 0) AS physical,
+    COALESCE(SUM(ownership='owned' AND format_digital=1), 0) AS digital,
     COALESCE(SUM(ownership='wanted'), 0) AS wishlisted,
     COALESCE(SUM(play_status='completed'), 0) AS completed,
     COALESCE(SUM(play_status='playing'), 0) AS playing,

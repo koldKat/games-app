@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="/css/foundation.css">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/library.css">
+  <link rel="stylesheet" href="/css/media-formats.css">
   <link rel="stylesheet" href="/css/landing.css">
   <link rel="stylesheet" href="/css/features.css">
   <link rel="stylesheet" href="/css/activity.css">
@@ -335,7 +336,10 @@
         <label><span>PEGI rating</span><select id="game-pegi"><option value="">Unrated / N/A</option><option>3</option><option>7</option><option>12</option><option>16</option><option>18</option></select></label>
         <label><span>Collection</span><select id="game-ownership"><option value="owned">Owned</option><option value="wanted">Wishlisted</option></select></label>
         <label><span>Play status</span><select id="game-status"><option value="backlog">Backlog</option><option value="playing">Playing</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="abandoned">Abandoned</option><option value="hidden">Hidden</option></select></label>
-        <label><span>Format</span><select id="game-format"><option value="physical">Physical</option><option value="digital">Digital</option><option value="unknown">Unknown</option></select></label>
+        <fieldset class="format-field"><legend>Format</legend><div class="format-options">
+          <label class="format-option"><input id="game-format-physical" type="checkbox"><span>Physical</span></label>
+          <label class="format-option"><input id="game-format-digital" type="checkbox"><span>Digital</span></label>
+        </div><small>Leave both clear if the format is unknown.</small></fieldset>
         <label><span>Cartridge no.</span><input id="game-cartridge" type="number" min="0" step="1" placeholder="Evercade #"></label>
         <label><span>Publisher</span><input id="game-publisher" maxlength="160" placeholder="Optional"></label>
         <label><span>Release year</span><input id="game-year" type="number" min="1970" max="2100" placeholder="2026"></label>

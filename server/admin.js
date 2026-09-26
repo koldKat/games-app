@@ -192,7 +192,11 @@ function adminStats() {
     favorites: scalar('SELECT COUNT(*) n FROM games WHERE favorite=1'), databaseBytes: pageCount * pageSize,
     catalogue: catalogue.counts(), canonical: catalogue.canonicalCounts(),
     ownership: db.prepare('SELECT ownership label, COUNT(*) count FROM games GROUP BY ownership ORDER BY count DESC').all(),
-    formats: db.prepare('SELECT media_format label, COUNT(*) count FROM games GROUP BY media_format ORDER BY count DESC, media_format').all(),
+    formats: db.prepare(`SELECT label, count FROM (
+      SELECT 'physical' label, COUNT(*) count FROM games WHERE format_physical=1
+      UNION ALL SELECT 'digital', COUNT(*) FROM games WHERE format_digital=1
+      UNION ALL SELECT 'unknown', COUNT(*) FROM games WHERE format_physical=0 AND format_digital=0
+    ) WHERE count>0 ORDER BY count DESC, label`).all(),
     playStatus: db.prepare(`SELECT CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END label, COUNT(*) count
       FROM games GROUP BY label ORDER BY count DESC, label`).all(),
     platforms: db.prepare('SELECT platform label, COUNT(*) count FROM games GROUP BY platform ORDER BY count DESC, platform LIMIT 12').all(),

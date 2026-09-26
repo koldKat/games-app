@@ -43,11 +43,13 @@ test('account libraries remain isolated and unowned rows are never claimed by us
     /Collection must be Owned or Wishlisted/);
   assert.equal(data.stats(owner.id).total, 1);
   data.createGame(owner.id, { title: 'Digital Game', platform: 'PC (Windows)', mediaFormat: 'digital' });
-  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_physical' }).map(game => game.title), ['Owned Game']);
-  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_digital' }).map(game => game.title), ['Digital Game']);
-  assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'physical').count, 1);
-  assert.equal(data.stats(owner.id).ownedFormats.find(row => row.label === 'digital').count, 1);
-
+  const bothFormats = data.createGame(owner.id, { title: 'Double Format Game', platform: 'PlayStation 5', mediaFormats: ['physical', 'digital'] });
+  assert.deepEqual([bothFormats.mediaFormat, bothFormats.formatPhysical, bothFormats.formatDigital], ['both', 1, 1]);
+  const editedBothFormats = data.updateGame(owner.id, bothFormats.id, { ...bothFormats, notes: 'Still both formats', mediaFormats: ['physical', 'digital'] });
+  assert.deepEqual([editedBothFormats.mediaFormat, editedBothFormats.formatPhysical, editedBothFormats.formatDigital], ['both', 1, 1]);
+  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_physical' }).map(game => game.title), ['Double Format Game', 'Owned Game']);
+  assert.deepEqual(data.listGames(owner.id, { ownership: 'owned_digital' }).map(game => game.title), ['Digital Game', 'Double Format Game']);
+  assert.deepEqual(data.stats(owner.id).ownedFormats, [{ label: 'physical', count: 2 }, { label: 'digital', count: 2 }]);
   const hiddenGame = data.createGame(owner.id, { title: 'Hidden Game', platform: 'Obscure Console', playStatus: 'playing' });
   const hiddenResult = data.updateGame(owner.id, hiddenGame.id, { ...hiddenGame, playStatus: 'hidden' });
   assert.equal(hiddenResult.playStatus, 'hidden');
@@ -55,7 +57,7 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.ok(!data.listGames(owner.id).some(game => game.id === hiddenGame.id));
   assert.deepEqual(data.listGames(owner.id, { playStatus: 'hidden' }).map(game => game.id), [hiddenGame.id]);
   assert.deepEqual(data.listGames(owner.id, { ownership: 'hidden' }).map(game => game.id), [hiddenGame.id]);
-  assert.equal(data.stats(owner.id).total, 2);
+  assert.equal(data.stats(owner.id).total, 3);
   assert.ok(!data.stats(owner.id).platforms.some(row => row.label === 'Obscure Console'));
   assert.ok(data.platformNames(owner.id).includes('Obscure Console'));
   assert.ok(!data.gamesMissingCovers(owner.id).some(game => game.id === hiddenGame.id));
@@ -178,9 +180,18 @@ test('account libraries remain isolated and unowned rows are never claimed by us
   assert.deepEqual(data.listGames(other.id, { sort: 'year_desc' }).slice(0, 2).map(game => game.title), ['Needs PEGI', 'Short Adventure']);
   const switchCopy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'Nintendo Switch' });
   const ps5Copy = data.createGame(other.id, { title: 'Shared Adventure', platform: 'PlayStation 5' });
+  const canonicalSwitch = data.createGame(other.id, { title: 'Canonical Adventure', platform: 'Nintendo Switch' });
+  const canonicalPc = data.createGame(other.id, { title: 'Canonical Adventure Complete', platform: 'Steam' });
+  const canonical = data.canonical.upsertGame({ title: 'Canonical Adventure' }, { allowLocal: true });
+  data.db.prepare('UPDATE games SET canonical_game_id=? WHERE id IN (?,?)').run(canonical.id, canonicalSwitch.id, canonicalPc.id);
   data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
   data.createGame(other.id, { title: 'Same-platform Duplicate', platform: 'Steam' });
-  assert.deepEqual(new Set(data.listGames(other.id, { platform: MULTIPLATFORM_FILTER_VALUE }).map(game => game.id)), new Set([switchCopy.id, ps5Copy.id]));
+  const hiddenSwitch = data.createGame(other.id, { title: 'Buried Co-op', platform: 'Nintendo Switch', playStatus: 'hidden' });
+  const hiddenPs5 = data.createGame(other.id, { title: 'Buried Co-op', platform: 'PlayStation 5', playStatus: 'hidden' });
+  assert.deepEqual(new Set(data.listGames(other.id, { platform: MULTIPLATFORM_FILTER_VALUE }).map(game => game.id)),
+    new Set([switchCopy.id, ps5Copy.id, canonicalSwitch.id, canonicalPc.id]));
+  assert.deepEqual(new Set(data.listGames(other.id, { platform: MULTIPLATFORM_FILTER_VALUE, ownership: 'hidden' }).map(game => game.id)),
+    new Set([hiddenSwitch.id, hiddenPs5.id]));
   const groupedPage = data.listGamesPage(other.id, { q: 'Shared Adventure', limit: 1 });
   assert.equal(groupedPage.total, 1);
   assert.deepEqual(new Set(groupedPage.games.map(game => game.id)), new Set([switchCopy.id, ps5Copy.id]));

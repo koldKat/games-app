@@ -30,9 +30,10 @@ test('adding from the catalogue creates a private row with an independent cover'
     },
     covers: { copy: () => '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg', remove: url => calls.removed.push(url) },
   });
-  const game = service.addToLibrary(20, 4, { ownership: 'wanted', mediaFormat: 'digital' });
+  const game = service.addToLibrary(20, 4, { ownership: 'wanted', mediaFormat: 'both' });
   assert.equal(game.coverUrl, '/covers/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.jpg');
   assert.equal(game.ownership, 'wanted');
+  assert.equal(game.mediaFormat, 'both');
   assert.equal(game.notes, '');
   assert.deepEqual(calls.link, [4, 9, 20]);
   assert.deepEqual(calls.removed, []);

@@ -5,8 +5,11 @@ const fs = require('node:fs');
 async function versionPickerModule() {
   const platforms = fs.readFileSync(require.resolve('../public/js/platforms.js'), 'utf8');
   const platformUrl = `data:text/javascript;base64,${Buffer.from(platforms).toString('base64')}`;
+  const mediaFormats = fs.readFileSync(require.resolve('../public/js/media-formats.js'), 'utf8');
+  const mediaFormatsUrl = `data:text/javascript;base64,${Buffer.from(mediaFormats).toString('base64')}`;
   const source = fs.readFileSync(require.resolve('../public/js/version-picker.js'), 'utf8')
-    .replace("'./platforms.js'", JSON.stringify(platformUrl));
+    .replace("'./platforms.js'", JSON.stringify(platformUrl))
+    .replace("'./media-formats.js'", JSON.stringify(mediaFormatsUrl));
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
 
