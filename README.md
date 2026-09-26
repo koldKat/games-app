@@ -45,7 +45,7 @@ Navigation swaps only the content below the header. The account control, collect
 ### Collector progression
 
 - The Gamebooks level curve, 100 levels, and Kat·a·log-specific titles.
-- Permanent XP awards for building and enriching a collection, playing games, milestones, public contributions, avatars, and forum participation.
+- Permanent XP awards for building and enriching a collection, multi-platform and physical/digital collecting, platform depth, play milestones, public contributions, avatars, and forum participation.
 - Stable event references prevent repeated actions from farming XP.
 - The header XP meter updates live and animates awards in level-scaled steps.
 - Future award amounts can be tuned from the localhost admin panel without rewriting historical XP.

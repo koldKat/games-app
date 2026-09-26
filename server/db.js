@@ -524,6 +524,14 @@ function listGames(userId, filters = {}) {
   return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${orderBy}`).all(params).map(hydrateGame);
 }
 
+function listProgressionGames(userId) {
+  return db.prepare(`SELECT id, title, platform, canonical_game_id AS canonicalGameId,
+    ownership, CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END AS playStatus,
+    media_format AS mediaFormat FROM games WHERE user_id=?`).all(userId);
+}
+
+function listUserIds() { return db.prepare('SELECT id FROM users ORDER BY id').all().map(row => row.id); }
+
 function listGamesPage(userId, filters = {}) {
   const { where, params, orderBy } = gameListQuery(userId, filters);
   const pageSize = Math.max(1, Math.min(GAME_LIMITS.libraryPageSizeMax,
@@ -775,7 +783,7 @@ function platformNames(userId) {
   return db.prepare('SELECT DISTINCT platform FROM games WHERE user_id=? ORDER BY platform COLLATE NOCASE').all(userId).map(row => row.platform);
 }
 
-module.exports = { db, canonical, progression, normalizeGame, listGames, listGamesPage, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
+module.exports = { db, canonical, progression, normalizeGame, listGames, listGamesPage, listProgressionGames, listUserIds, getGame, allGamesForKatalog, accountGameIdentities, searchGameTitles, findDuplicateGames, createGame, updateGame, deleteGame, linkSteamGame, linkGogGame,
   coverProviderCredentials, setCoverProviderCredentials, gamesMissingCovers, updateGameCover,
   gamesWithRemoteCovers, gamesWithLocalCovers, coverUrlReferenceCount, replaceGameCoverUrl,
   gamesMissingPegiMetadata, updateGamePegiMetadata, gamesMissingHltb, updateGameHltb, gamesMissingDescriptions, updateGameDescription,

@@ -5,7 +5,8 @@ const { XP_EVENTS, progressForXp, xpForLevel } = require('./progression-policy')
 function createProgressionStore(db) {
   db.exec(`CREATE TABLE IF NOT EXISTS user_progression (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, xp INTEGER NOT NULL DEFAULT 0, backfilled_at TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
     CREATE TABLE IF NOT EXISTS progression_events (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, event TEXT NOT NULL, ref TEXT NOT NULL, amount INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id,event,ref));
-    CREATE TABLE IF NOT EXISTS progression_config (event TEXT PRIMARY KEY, amount INTEGER NOT NULL CHECK(amount >= 0 AND amount <= 100000), updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);`);
+    CREATE TABLE IF NOT EXISTS progression_config (event TEXT PRIMARY KEY, amount INTEGER NOT NULL CHECK(amount >= 0 AND amount <= 100000), updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS progression_backfills (user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, migration TEXT NOT NULL, completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(user_id,migration));`);
   if (!db.pragma('table_info(user_progression)').some(column => column.name === 'backfilled_at')) db.exec('ALTER TABLE user_progression ADD COLUMN backfilled_at TEXT');
   const seed = db.prepare('INSERT OR IGNORE INTO progression_config(event, amount) VALUES (?, ?)');
   for (const [event, definition] of Object.entries(XP_EVENTS)) seed.run(event, definition.amount);
@@ -13,6 +14,8 @@ function createProgressionStore(db) {
   const getXp = db.prepare('SELECT xp FROM user_progression WHERE user_id=?');
   const isBackfilled = db.prepare('SELECT backfilled_at FROM user_progression WHERE user_id=?');
   const markBackfilled = db.prepare('UPDATE user_progression SET backfilled_at=CURRENT_TIMESTAMP WHERE user_id=?');
+  const hasMigration = db.prepare('SELECT 1 FROM progression_backfills WHERE user_id=? AND migration=?');
+  const markMigration = db.prepare('INSERT OR IGNORE INTO progression_backfills(user_id,migration) VALUES (?,?)');
   const configRows = db.prepare('SELECT event, amount FROM progression_config ORDER BY event');
   let amountCache = null;
   function configuredAmounts() {
@@ -36,6 +39,12 @@ function createProgressionStore(db) {
   function info(userId) { ensure.run(userId); return { ...progressForXp(getXp.get(userId).xp), recent: recentRows.all(userId, 8).map(row => ({ ...row, label: XP_EVENTS[row.event]?.label || row.event })) }; }
   function config() { const saved = configuredAmounts(); return Object.entries(XP_EVENTS).map(([event, definition]) => ({ event, label: definition.label, amount: saved.get(event) ?? definition.amount })); }
   function setConfig(values = {}) { const update = db.prepare('UPDATE progression_config SET amount=?, updated_at=CURRENT_TIMESTAMP WHERE event=?'); for (const [event, amount] of Object.entries(values)) if (XP_EVENTS[event]) { const clean = Math.max(0, Math.min(100000, Math.round(Number(amount)))); if (!Number.isFinite(clean)) throw new Error(`Invalid XP amount for ${event}.`); update.run(clean, event); } amountCache = null; return config(); }
-  return { award: txAward, info, config, setConfig, isBackfilled: userId => { ensure.run(userId); return Boolean(isBackfilled.get(userId).backfilled_at); }, markBackfilled: userId => { ensure.run(userId); markBackfilled.run(userId); } };
+  return {
+    award: txAward, info, config, setConfig,
+    isBackfilled: userId => { ensure.run(userId); return Boolean(isBackfilled.get(userId).backfilled_at); },
+    markBackfilled: userId => { ensure.run(userId); markBackfilled.run(userId); },
+    hasMigration: (userId, migration) => Boolean(hasMigration.get(userId, migration)),
+    markMigration: (userId, migration) => markMigration.run(userId, migration),
+  };
 }
 module.exports = { createProgressionStore };

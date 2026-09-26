@@ -694,6 +694,12 @@ auth.purgeExpiredSessions();
 server.listen(PORT, HOST, () => {
   console.log(`${APP_NAME} is running at http://localhost:${PORT}`);
   backup.start();
+  setImmediate(() => {
+    try {
+      for (const result of progression.backfillCollectionAchievementsForAll()) publishProgression(result.userId, result);
+    }
+    catch (error) { console.error('[progression] collection achievement backfill failed:', error.message); }
+  });
   // Startup must stay cheap. A complete image normalization and Kat·a·log replay
   // touches every game and can monopolize Node for a long time on a real library.
   // New and edited games are synchronized immediately in their request paths;

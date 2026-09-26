@@ -84,3 +84,38 @@ test('Steam imports record per-game XP with one final collection milestone scan'
   assert.equal(first.awards.filter(item => item.event === 'platform_first').length, 1);
   assert.equal(service.recordImportedGames(user.id, games).awards.length, 0);
 });
+
+test('collection achievements award multiple platforms, mixed formats, and platform depth once', async () => {
+  const user = await auth.register('xp_collection_achievements', 'password-nine');
+  const service = createProgressionService({ store: data.progression, data });
+  const physical = data.createGame(user.id, { title: 'Double Shelf', platform: 'PC', ownership: 'owned', mediaFormat: 'physical' });
+  const digital = data.createGame(user.id, { title: 'Double Shelf Digital', platform: 'PC', ownership: 'owned', mediaFormat: 'digital' });
+  const secondPlatform = data.createGame(user.id, { title: 'Double Shelf Switch', platform: 'Nintendo Switch', ownership: 'owned', mediaFormat: 'physical' });
+  const canonical = data.canonical.upsertGame({ title: 'Double Shelf' }, { allowLocal: true });
+  data.db.prepare('UPDATE games SET canonical_game_id=? WHERE id IN (?,?,?)').run(canonical.id, physical.id, digital.id, secondPlatform.id);
+  for (let index = 1; index <= 24; index++) data.createGame(user.id, {
+    title: `PC Specialist ${index}`, platform: 'PC', ownership: 'owned', mediaFormat: 'digital',
+  });
+
+  const first = service.backfillCollectionAchievements(user.id);
+  const second = service.backfillCollectionAchievements(user.id);
+  const achievementAwards = first.awards.filter(item => ['multiplatform_collector', 'format_double_dip', 'platform_specialist'].includes(item.event));
+  assert.deepEqual(achievementAwards.map(item => item.event).sort(), ['format_double_dip', 'multiplatform_collector', 'platform_specialist']);
+  assert.equal(achievementAwards.reduce((sum, item) => sum + item.amount, 0), 220);
+  assert.equal(second.awards.length, 0);
+  assert.equal(data.progression.config().filter(item => ['multiplatform_collector', 'format_double_dip', 'platform_specialist'].includes(item.event)).length, 3);
+});
+
+test('hidden and wishlisted records do not qualify for collection achievements', async () => {
+  const user = await auth.register('xp_collection_exclusions', 'password-ten');
+  const service = createProgressionService({ store: data.progression, data });
+  data.createGame(user.id, { title: 'Not Owned', platform: 'PC', ownership: 'wanted', mediaFormat: 'physical' });
+  data.createGame(user.id, { title: 'Not Owned', platform: 'Nintendo Switch', ownership: 'wanted', mediaFormat: 'digital' });
+  data.createGame(user.id, { title: 'Hidden Pair', platform: 'PC', ownership: 'owned', mediaFormat: 'physical', playStatus: 'hidden' });
+  data.createGame(user.id, { title: 'Hidden Pair Digital', platform: 'PC', ownership: 'owned', mediaFormat: 'digital', playStatus: 'hidden' });
+  const hidden = data.db.prepare("SELECT id FROM games WHERE user_id=? AND title LIKE 'Hidden Pair%'").all(user.id).map(row => row.id);
+  const canonical = data.canonical.upsertGame({ title: 'Hidden Pair' }, { allowLocal: true });
+  data.db.prepare(`UPDATE games SET canonical_game_id=? WHERE id IN (${hidden.map(() => '?').join(',')})`).run(canonical.id, ...hidden);
+  const result = service.backfillCollectionAchievements(user.id);
+  assert.equal(result.awards.some(item => ['multiplatform_collector', 'format_double_dip', 'platform_specialist'].includes(item.event)), false);
+});

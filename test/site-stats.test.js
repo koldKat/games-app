@@ -68,7 +68,7 @@ test('public site stats aggregate game-focused facts without exposing private re
   assert.equal(stats.totalXp, 18_000);
   assert.equal(stats.appLevel, 3);
   assert.equal(Math.floor(stats.averageLevel), 2);
-  assert.equal(stats.xpEventTypes, 33);
+  assert.equal(stats.xpEventTypes, 36);
   assert.equal(stats.avgCpu, 0.2);
   assert.equal(stats.avgHeapTotal, 20);
   assert.equal(stats.avgSamples, 60);
