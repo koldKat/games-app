@@ -102,6 +102,7 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(ui, /pointerup/);
   assert.match(ui, /formatCount\(Math\.floor\(Number\(stats\.averageLevel\)/);
   assert.match(ui, /Avg CPU \(session\)/);
+  assert.doesNotMatch(ui, /\['Process (?:heap|RSS)'/);
   assert.match(ui, /CPU age/);
   assert.match(ui, /Traffic in/);
   assert.match(ui, /Traffic out/);

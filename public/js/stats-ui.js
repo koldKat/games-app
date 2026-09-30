@@ -99,7 +99,6 @@ function sections(stats) {
       ['CPU age', stats.cpuAgeYears == null ? 'N/A' : `${formatCount(stats.cpuAgeYears)}y`],
       ['CPU clock', stats.cpuGhz == null ? 'N/A' : `${formatDecimal(stats.cpuGhz)} GHz`],
       ['Architecture', stats.cpuArch || 'Unknown'], ['System RAM', formatBytes(stats.totalRamBytes)],
-      ['Process heap', formatBytes(stats.heapUsedBytes)], ['Process RSS', formatBytes(stats.rssBytes)],
     ] },
     { kind: 'app', label: 'The app', rows: [
       ['App age', formatDuration(stats.appAgeSeconds)], ['Session uptime', formatDuration(stats.sessionUptimeSeconds)],
