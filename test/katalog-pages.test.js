@@ -12,6 +12,12 @@ const entry = {
   hltbMainStory: 8, hltbMainExtra: 13, hltbCompletionist: 21, hltbAllStyles: 12,
 };
 
+test('guest game details carry the exact release through authentication', () => {
+  const html = renderGame({ entry });
+  assert.match(html, /href="\/\?returnTo=%2Fgame%2Fportal-2-steam"/);
+  assert.doesNotMatch(renderGame({ entry, user: { username: 'collector' } }), /class="katalog-signin"/);
+});
+
 test('catalogue page is crawlable server-rendered HTML', () => {
   const html = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [{ platform: 'Steam', count: 1 }] });
   assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/katalog">/);

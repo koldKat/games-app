@@ -163,7 +163,9 @@ async function open(trigger) {
     const stats = await response.json();
     if (controller !== requestController || !modal.open) return;
     body.className = 'stats-body';
-    body.replaceChildren(...sections(stats).map(section));
+    const content = element('div', 'stats-sections');
+    content.append(...sections(stats).map(section));
+    body.replaceChildren(content);
   } catch (error) {
     if (error.name === 'AbortError' || controller !== requestController || !modal.open) return;
     body.className = 'stats-body stats-body--message';

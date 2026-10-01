@@ -47,13 +47,14 @@ test('feed user previews include the account\'s current level and title', async 
 
 test('existing progression history backfills real level crossings with their original timestamp', async () => {
   const user = await auth.register('signal_history', 'password-four');
+  const timestamp = new Date(Date.now() - 86400000).toISOString().slice(0, 19).replace('T', ' ');
   data.db.prepare(`INSERT INTO progression_events(user_id,event,ref,amount,created_at)
-    VALUES (?, 'game_added', 'historic-level', 1000, '2026-08-29 10:00:00')`).run(user.id);
+    VALUES (?, 'game_added', 'historic-level', 1000, ?)`).run(user.id, timestamp);
   assert.equal(activity.backfillLevelUps(), 1);
   assert.equal(activity.backfillLevelUps(), 0);
   const entry = activity.list().find(item => item.username === 'signal_history' && item.type === 'level_up');
   assert.equal(entry.level, 1);
-  assert.equal(entry.createdAt, '2026-08-29 10:00:00');
+  assert.equal(entry.createdAt, timestamp);
 });
 
 test('public Kat·a·log contributions can be safely backfilled into Signal with PEGI and platform identity', async () => {

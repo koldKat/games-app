@@ -3,6 +3,7 @@ import { bindForum } from './forum-page.js';
 import { dismissActivityPreview } from './activity-feed.js';
 import { UI_TIMING } from './ui-policy.js';
 import { APP_NAME } from './site-config.js';
+import { publicAuthReturn } from './auth-return.js';
 
 const KATALOG_PATH = /^\/(?:katalog|signal|forum(?:\/|$)|game\/)/;
 
@@ -113,9 +114,11 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
         const input = katalog.querySelector('.katalog-search input[name="q"]');
         input?.focus(); input?.setSelectionRange(input.value.length, input.value.length);
       }
+      return true;
     } catch (error) {
       if (error.name === 'AbortError' || request !== controller) return;
       // Keep the current workspace intact if the public response cannot be loaded.
+      return false;
     } finally {
       if (request === controller) request = null;
     }
@@ -197,9 +200,26 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
   });
 
   function restoreCurrent() {
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = publicAuthReturn(params.get('returnTo'), window.location.origin);
+    const returnView = publicAuthReturn(params.get('returnView'), window.location.origin);
+    if (returnTo?.startsWith('/game/') && returnView && /^\/(?:katalog|signal)(?:\?|$)/.test(returnView)) {
+      return resumeGame(returnTo, returnView);
+    }
+    if (returnTo) return open(returnTo);
     if (!KATALOG_PATH.test(window.location.pathname)) return Promise.resolve();
     return open(`${window.location.pathname}${window.location.search}${window.location.hash}`, { push: false });
   }
 
-  return { open, restoreCurrent, showLibrary, isOpen: () => view === 'katalog' };
+  async function resumeGame(url, returnUrl) {
+    const restored = await open(returnUrl);
+    if (!restored) return;
+    await openKatalogGameDialog(katalog, url, {
+      returnUrl,
+      onAdded: game => onGameAdded(game),
+      onOpenLibrary: game => showLibrary({ gameId: game?.id }),
+    });
+  }
+
+  return { open, restoreCurrent, resumeGame, showLibrary, isOpen: () => view === 'katalog' };
 }

@@ -278,7 +278,8 @@ function addToLibraryPanel(entry, user, libraryGame) {
     <label><span>Format</span><select name="mediaFormat"><option value="physical">Physical</option><option value="digital">Digital</option><option value="both">Physical + digital</option><option value="unknown">Unknown</option></select></label>
     <button type="submit">Add to my Kat·a·log</button><p data-add-message role="status" aria-live="polite"></p>
   </form>`;
-  return '<aside class="katalog-signin"><strong>Keep this game in your library.</strong><span>Create an account or sign in to add it with one click.</span><a href="/">Sign in to Game Kat·a·log</a></aside>';
+  const returnTo = `/game/${encodeURIComponent(entry.slug)}`;
+  return `<aside class="katalog-signin"><strong>Keep this game in your library.</strong><span>Create an account or sign in to add it with one click.</span><a href="/?returnTo=${encodeURIComponent(returnTo)}">Sign in to Game Kat·a·log</a></aside>`;
 }
 
 function gameDescriptionPanel(entry) {

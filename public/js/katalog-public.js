@@ -88,6 +88,16 @@ export function bindKatalogGameDialog(root = document, { onClose = null } = {}) 
   if (!dialog || dialog.dataset.katalogGameBound === 'true') return;
   hydratePlatformThemes(dialog);
   dialog.dataset.katalogGameBound = 'true';
+  const signIn = dialog.querySelector('.katalog-signin a');
+  if (signIn) {
+    const destination = new URL(signIn.href).searchParams.get('returnTo');
+    if (destination) {
+      const params = new URLSearchParams({ returnTo: destination });
+      const returnView = dialog.dataset.returnView;
+      if (returnView) params.set('returnView', returnView);
+      signIn.href = `/?${params}`;
+    }
+  }
   const close = () => dialog.close();
   dialog.querySelector('[data-katalog-game-close]')?.addEventListener('click', close);
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
@@ -109,7 +119,7 @@ export function bindKatalogGameDialog(root = document, { onClose = null } = {}) 
 
 let katalogGameSequence = 0;
 export async function openKatalogGameDialog(root = document, url, {
-  returnUrl = window.location.pathname === '/signal' ? '/signal' : '/katalog',
+  returnUrl = /^\/(?:signal|katalog)$/.test(window.location.pathname) ? `${window.location.pathname}${window.location.search}` : '/katalog',
   onAdded = () => {},
   onOpenLibrary = () => window.location.assign('/'),
 } = {}) {
@@ -123,16 +133,20 @@ export async function openKatalogGameDialog(root = document, url, {
     const next = parsed.querySelector('[data-katalog-game-dialog]');
     const main = root.querySelector('main.katalog-main');
     if (!next || !main || sequence !== katalogGameSequence) throw new Error('Game details could not be displayed.');
-    main.querySelector('[data-katalog-game-dialog]')?.remove();
+    const previous = main.querySelector('[data-katalog-game-dialog]');
+    if (previous?.open) { previous.dataset.skipCloseNavigation = 'true'; previous.close(); }
+    previous?.remove();
     main.append(document.importNode(next, true));
+    main.querySelector('[data-katalog-game-dialog]').dataset.returnView = returnUrl;
     hydratePlatformThemes(main);
     window.history.pushState({ katalog: true }, '', `${target.pathname}${target.search}`);
     bindKatalogGameDialog(root, { onClose: () => {
       window.history.replaceState({ katalog: true }, '', returnUrl);
-      document.title = returnUrl === '/signal' ? `Kat·a·log Signal // ${APP_NAME}` : `Public Kat·a·log // ${APP_NAME}`;
+      document.title = new URL(returnUrl, window.location.origin).pathname === '/signal' ? `Kat·a·log Signal // ${APP_NAME}` : `Public Kat·a·log // ${APP_NAME}`;
     } });
     bindKatalogAddForm(root, { onAdded, onOpenLibrary });
   } catch {
+    if (sequence !== katalogGameSequence) return;
     window.location.assign(`${target.pathname}${target.search}`);
   }
 }
