@@ -39,8 +39,7 @@ function parseCovers(body) {
       const resolution = String(image.resolution || '').match(/^(\d+)x(\d+)$/);
       const originalUrl = `${base.original || base.large || ''}${image.filename}`;
       results.push({ providerGameId: game.id, gameTitle: game.game_title, url: originalUrl,
-        // TheGamesDB's generated small variants are intermittently missing. The
-        // original is authoritative and the chooser has only a few manual rows.
+        // Generated thumbnails can be missing; prefer the original.
         thumbnailUrl: originalUrl,
         width: resolution ? Number(resolution[1]) : null, height: resolution ? Number(resolution[2]) : null,
         style: platformName || 'Front boxart', source: 'thegamesdb', sourceUrl: 'https://thegamesdb.net/', platforms: [platformName].filter(Boolean) });

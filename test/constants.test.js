@@ -7,7 +7,7 @@ const root = path.join(__dirname, '..');
 const constants = require('../server/constants');
 const { ACCOUNT_LIMITS, GAME_LIMITS, KATALOG_LIMITS } = require('../server/validation-policy');
 const siteConfig = require('../server/site-config');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const { readSource: read } = require('./helpers/source');
 
 test('shared server constants define catalogue domains and batch policy', () => {
   assert.deepEqual(constants.PEGI_RATINGS, [3, 7, 12, 16, 18]);
@@ -35,7 +35,7 @@ test('provider requests use the current shared application identity', () => {
 });
 
 test('browser policies name pagination, lookup, and timing contracts', () => {
-  const policy = read('public/js/ui-policy.js');
+  const policy = read('public/js/core/ui-policy.js');
   const application = read('public/app.js');
   assert.match(policy, /LIBRARY_PAGE_SIZE = 50/);
   assert.match(policy, /debounceMs: 100/);
@@ -43,8 +43,8 @@ test('browser policies name pagination, lookup, and timing contracts', () => {
   assert.doesNotMatch(application, /state\.limit/);
   assert.match(policy, /UI_LOCALE = 'en-US'/);
   assert.match(policy, /MULTIPLATFORM_FILTER_VALUE = '__multiple_platforms__'/);
-  assert.match(read('public/js/game-labels.js'), /wanted: 'Wishlisted'/);
-  assert.match(read('public/js/site-config.js'), /GITHUB_URL/);
+  assert.match(read('public/js/library/game-labels.js'), /wanted: 'Wishlisted'/);
+  assert.match(read('public/js/core/site-config.js'), /GITHUB_URL/);
 });
 
 test('site identity and input limits have explicit small policy modules', () => {
@@ -63,9 +63,9 @@ test('site identity and input limits have explicit small policy modules', () => 
 
 test('user-facing dates and numbers never inherit a device locale', () => {
   const sources = [
-    'public/app.js', 'public/js/activity-feed.js', 'public/js/cover-provider-settings.js',
-    'public/js/library-import.js', 'public/js/steam-import.js', 'public/js/gog-import.js',
-    'public/js/patch-ui.js', 'public/js/progression-ui.js', 'public/js/public-profile.js',
+    'public/app.js', 'public/js/community/activity-feed.js', 'public/js/metadata/cover-provider-settings.js',
+    'public/js/imports/library-import.js', 'public/js/imports/steam-import.js', 'public/js/imports/gog-import.js',
+    'public/js/community/patch-ui.js', 'public/js/progression/progression-ui.js', 'public/js/account/public-profile.js',
     'admin/js/core.js', 'admin/js/patch.js', 'admin/js/announcements.js',
     'server/activity.js', 'server/forum-pages.js', 'server/katalog-pages.js',
   ].map(read).join('\n');

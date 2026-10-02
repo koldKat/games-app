@@ -1,0 +1,134 @@
+// Served by scripts/check-browser-flows.js in an isolated real browser.
+const nativeFetch = window.fetch.bind(window);
+const errors = [];
+window.addEventListener('error', event => errors.push(event.message));
+window.addEventListener('unhandledrejection', event => errors.push(String(event.reason?.stack || event.reason)));
+const check = (condition, message) => { if (!condition) throw new Error(message); };
+const waitFor = async (condition, message) => {
+  for (let attempt = 0; attempt < 150; attempt++) {
+    if (condition()) return;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error(message);
+};
+const mode = new URLSearchParams(location.search).get('mode') || 'guest';
+let signedIn = mode !== 'guest';
+const user = { id: 17, username: 'TestCollector', email: '', avatarUrl: null };
+const progress = { xp: 500, level: 0, title: 'Collector', currentLevelXp: 0, nextLevelXp: 1000, progress: 50 };
+let games = [
+  { id: 1, title: 'Portal 2', platform: 'Steam', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['digital'], rating: 3, pegiDescriptors: [], pegiReleases: [] },
+  { id: 2, title: 'Portal 2', platform: 'Nintendo Switch', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['physical'], pegiDescriptors: [], pegiReleases: [] },
+];
+let eventController;
+let eventConnections = 0;
+let libraryRequests = 0;
+window.EventSource = class {
+  addEventListener() {}
+  close() {}
+};
+window.fetch = async (target, options = {}) => {
+  const url = new URL(target, location.origin);
+  const reply = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
+  if (['/katalog', '/signal', '/forum'].includes(url.pathname)) return nativeFetch(`/fixtures${url.pathname}.html`);
+  if (url.pathname === '/cover-showcase.json') return reply({ covers: [] });
+  if (!url.pathname.startsWith('/api/')) return nativeFetch(target, options);
+  if (url.pathname === '/api/config') return reply({ version: 'test-version' });
+  if (url.pathname === '/api/auth/me') return reply(signedIn ? { user, preferences: {}, progress } : { error: 'Unauthorized' }, signedIn ? 200 : 401);
+  if (url.pathname === '/api/login') { signedIn = true; return reply({ user, preferences: {}, progress }); }
+  if (url.pathname === '/api/logout') { signedIn = false; return reply({}); }
+  if (url.pathname === '/api/events') {
+    eventConnections++;
+    const stream = new ReadableStream({ start(controller) {
+      eventController = controller;
+      options.signal?.addEventListener('abort', () => { try { controller.close(); } catch {} });
+    } });
+    return new Response(stream, { headers: { 'Content-Type': 'text/event-stream' } });
+  }
+  if (url.pathname === '/api/games' && options.method === 'POST') {
+    const game = { ...JSON.parse(options.body), id: 3 }; games.push(game); return reply(game, 201);
+  }
+  if (url.pathname === '/api/games') { libraryRequests++; return reply({ games, total: 1, page: 1, pages: 1 }); }
+  if (/^\/api\/games\/\d+$/.test(url.pathname)) return reply(games.find(game => game.id === Number(url.pathname.split('/').at(-1))));
+  if (url.pathname === '/api/stats') return reply({ total: games.length });
+  if (url.pathname === '/api/meta') return reply({ platforms: ['Steam', 'Nintendo Switch'], integrations: {}, user });
+  if (url.pathname === '/api/showcase/covers') return reply({ covers: [] });
+  if (url.pathname === '/api/activity') return reply({ entries: [] });
+  if (url.pathname === '/api/progression') return reply(progress);
+  if (url.pathname === '/api/titles/autocomplete') return reply({ existing: [], catalogue: [], suggestions: [] });
+  if (url.pathname === '/api/ping') return reply({ threads: [], unread: 0 });
+  if (url.pathname === '/api/preferences') return reply({});
+  if (url.pathname.includes('/status')) return reply({ configured: false, missing: 0, job: null });
+  if (url.pathname.startsWith('/api/steam') || url.pathname.startsWith('/api/gog')) return reply({ connected: false });
+  throw new Error(`Unmocked API request: ${url.pathname}`);
+};
+
+try {
+  await import('/app.js');
+  const boot = await import('/js/boot/init.js');
+  if (!signedIn) {
+    await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Guest startup stalled');
+    check(!document.querySelector('#auth-screen').hidden, 'Guest authentication visible');
+    document.querySelector('[data-auth-mode="register"]').click();
+    check(!document.querySelector('#auth-email-label').hidden, 'Registration email visible');
+    document.querySelector('[data-auth-mode="login"]').click();
+    document.querySelector('#auth-username').value = user.username;
+    document.querySelector('#auth-password').value = 'test-password-123';
+    document.querySelector('#auth-form').requestSubmit();
+  }
+  await waitFor(() => !document.querySelector('#app-shell').hidden && document.querySelector('.game-card'), 'Authenticated library did not mount');
+  await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Session resume did not finish');
+  check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'XP fill restored');
+  const mountedHeader = document.querySelector('#app-shell .topbar');
+  check(mountedHeader, 'Shared header is mounted');
+  const { katalogNavigation } = await import('/js/boot/navigation.js');
+  await katalogNavigation.open('/katalog');
+  check(document.querySelector('#library-view').hidden, 'Public view switches content');
+  check(document.querySelector('#app-shell .topbar') === mountedHeader, 'Header preserved across navigation');
+  await katalogNavigation.open('/signal');
+  await katalogNavigation.open('/forum');
+  document.querySelector('[data-add-game]').click();
+  check(document.querySelector('#game-dialog').open, 'Add game opens from another view');
+  document.querySelector('[data-close]').click();
+  katalogNavigation.showLibrary();
+  const selector = document.querySelector('.platform-switch');
+  check(selector, 'Grouped game has platform selector');
+  selector.click();
+  document.querySelector('[data-action="version"][data-game-id="2"]').click();
+  const card = document.querySelector('.game-card');
+  check(card.dataset.id === '2', 'Platform selection changes selected record');
+  card.querySelector('[data-action="edit"]').click();
+  check(document.querySelector('#game-dialog').open && document.querySelector('#game-id').value === '2', 'Selected platform opens in editor');
+  document.querySelector('[data-close]').click();
+  document.querySelector('#account-button').click();
+  check(document.querySelector('#account-dialog').open, 'Profile opens');
+  check(document.activeElement.tagName !== 'INPUT', 'Profile does not focus a text input');
+  document.querySelector('[data-account-close]').click();
+  boot.initializeApp();
+  check(eventConnections === 1, 'Repeated bootstrap does not duplicate event streams');
+  eventController.enqueue(new TextEncoder().encode('event: version-updated\ndata: {"version":"live-test"}\n\n'));
+  await waitFor(() => document.querySelector('#app-version').textContent === 'live-test', 'SSE version update failed');
+  eventController.enqueue(new TextEncoder().encode(`event: progression-updated\ndata: ${JSON.stringify({ progress: { ...progress, xp: 600, progress: 60 } })}\n\n`));
+  await waitFor(() => document.querySelector('#header-progression [data-header-progress-meter]').value === 60, 'SSE XP update failed');
+  const { showAuth, enterApp } = await import('/js/account/session.js');
+  document.querySelector('[data-add-game]').click();
+  const { confirmAction } = await import('/js/ui-helpers/dialogs.js');
+  const confirmation = confirmAction({ message: 'Session lifecycle check' });
+  const search = document.querySelector('#search'); search.value = 'pending'; search.dispatchEvent(new Event('input'));
+  const requestsBeforeLogout = libraryRequests;
+  showAuth('Session expired');
+  check(!document.querySelector('dialog[open]'), 'Session loss closes every modal');
+  check(await confirmation === false, 'Closing confirmation on session loss settles its promise');
+  await new Promise(resolve => setTimeout(resolve, 250));
+  check(libraryRequests === requestsBeforeLogout, 'Session loss cancels pending library search');
+  check(document.querySelector('#header-progression').hidden, 'Old XP is hidden after session loss');
+  await enterApp(user, {}, progress);
+  check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'Next session restores its own XP');
+  await new Promise(resolve => setTimeout(resolve, 100));
+  check(errors.length === 0, errors.join('\n'));
+  const { activityFeed } = await import('/js/boot/services.js');
+  const { state } = await import('/js/core/runtime.js');
+  state.stopEvents?.(); activityFeed.stop();
+  await nativeFetch('/report', { method: 'POST', body: JSON.stringify({ ok: true, mode }) });
+} catch (error) {
+  await nativeFetch('/report', { method: 'POST', body: JSON.stringify({ ok: false, mode, error: error.stack, errors }) });
+}

@@ -35,7 +35,7 @@ function hero(coverUrls, title, copy, kicker = 'PUBLIC // DISCUSSION') {
 function shell({ title, description, canonical, content, user, progress, coverUrls = [], type = 'CollectionPage' }) {
   return pageShell({ title, description, canonical, content, user, progress, coverUrls, currentView: 'forum',
     structuredData: { '@context': 'https://schema.org', '@type': type, name: title.replace(' // Game Kat·a·log', ''), url: canonical, description },
-    extraStyles: '<link rel="stylesheet" href="/css/forum.css">', extraScripts: '<script type="module" src="/js/forum-page.js"></script>' });
+    extraStyles: '<link rel="stylesheet" href="/css/forum.css">', extraScripts: '<script type="module" src="/js/community/forum-page.js"></script>' });
 }
 function threadComposer(category) {
   if (!category) return '';

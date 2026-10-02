@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 async function platformsModule() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/platforms.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/library/platforms.js'), 'utf8');
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
 

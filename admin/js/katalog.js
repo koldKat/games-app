@@ -1,6 +1,6 @@
 import { api, button, cell, confirmAction, emptyRow, toast, busy } from './core.js';
 import { ADMIN_TIMING } from './admin-policy.js';
-import { platformDisplayName } from '/js/platforms.js';
+import { platformDisplayName } from '/js/library/platforms.js';
 
 export async function loadKatalog() {
   const body = document.getElementById('katalog-body'); body.replaceChildren();

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 async function sortingModule() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/game-sorting.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/library/game-sorting.js'), 'utf8');
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
 

@@ -1,5 +1,5 @@
 import { UI_LOCALE, api, button, confirmAction, toast } from './core.js';
-import { formatAnnouncementBody } from '/js/announcement-format.js';
+import { formatAnnouncementBody } from '/js/community/announcement-format.js';
 
 let editingId = null;
 let editingDraft = false;

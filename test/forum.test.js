@@ -4,10 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const { readSource: read } = require('./helpers/source');
 
 test('forum stays modular, public to read, account-gated to contribute, and locally moderated', () => {
-  const data = read('server/forum-data.js'); const routes = read('server/forum-routes.js'); const pages = read('server/forum-pages.js'); const client = read('public/js/forum-page.js');
+  const data = read('server/forum-data.js'); const routes = read('server/forum-routes.js'); const pages = read('server/forum-pages.js'); const client = read('public/js/community/forum-page.js');
   assert.match(read('server/db.js'), /CREATE TABLE IF NOT EXISTS forum_threads/);
   assert.match(read('server/db.js'), /CREATE TABLE IF NOT EXISTS forum_categories/);
   assert.match(data, /DEFAULT_CATEGORIES/);

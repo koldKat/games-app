@@ -1,4 +1,4 @@
-/*Card identity: PEGI owns the rail; platform stays an in-card label. */
+/* PEGI rail; platform pill. */
 .game-card:before {
   background: var(--rating-color, #526170);
 }
@@ -21,7 +21,7 @@
   background: var(--platform-surface, linear-gradient(#111923,#111923)) padding-box,var(--platform-frame, linear-gradient(#2b3946,#2b3946)) border-box;
   color: var(--platform-text, #9eacba);
 }
-/*Major collection filters: dense on desktop, two rows on smaller screens. */
+/* Collection filters. */
 .stats {
   grid-template-columns: repeat(10, minmax(0, 1fr));
 }
@@ -153,7 +153,7 @@
     height: 27px;
   }
 }
-/*Public landing page: six equal feature modules plus crawlable public links. */
+/* Landing features and public links. */
 .auth-screen {
   overflow: auto;
 }
@@ -332,7 +332,7 @@
   line-height: 1;
   transform: translateY(1px);
 }
-/*Directional physical depth instead of diffuse black halos. */
+/* Directional shadows. */
 .auth-cover-field i {
   box-shadow: 8px 14px 24px #0009, 1px 2px 0 #06100e;
 }
@@ -423,7 +423,7 @@
 .action-dialog .modal-actions .button {
   min-width: 92px;
 }
-/*Promo copy is supporting text, not microscopic decoration. */
+/* Promo typography. */
 .auth-promo p {
   font-size: 12px;
   line-height: 1.5;
@@ -542,7 +542,7 @@
     font-size: 12px;
   }
 }
-/*Rich PEGI metadata stays compact on cards and expands only when requested. */
+/* Expandable PEGI metadata. */
 .badge.descriptor {
   background: #121d25;
   color: #8ea4b5;
@@ -714,7 +714,7 @@
     margin-left: 0;
   }
 }
-/*Dialogs remain comfortably inside the viewport; every scroll surface uses the app theme. */
+/* Bounded dialogs and themed scrollbars. */
 * {
   scrollbar-width: thin;
   scrollbar-color: #376e61 #080d12;

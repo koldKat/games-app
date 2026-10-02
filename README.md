@@ -176,10 +176,19 @@ The app supplies canonical URLs, Open Graph and Twitter metadata, structured dat
 
 ## Development and tests
 
-Application code has no browser build step. Run the complete regression suite and documentation consistency check with:
+Application code has no browser build step. The entry points delegate to focused browser features, server route/runtime modules, and SQLite repositories. See the [architecture reference](docs/technical.md#architecture) for ownership and boundaries.
+
+Run the regression suite, public/admin module-graph checks, and documentation consistency check with:
 
 ```bash
 npm test
+```
+
+Optional end-to-end checks use isolated test state, not your running server or library:
+
+```bash
+npm run test:server
+BROWSER_PATH=/path/to/chromium npm run test:browser
 ```
 
 Useful maintenance commands:

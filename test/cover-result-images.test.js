@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'cover-result-images.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'ui-helpers', 'cover-result-images.js'), 'utf8');
 
 async function fallbackModule() {
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);

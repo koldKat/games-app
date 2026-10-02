@@ -6,8 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const policy = fs.readFileSync(path.join(root, 'public/js/artwork-url.js'), 'utf8');
-const application = fs.readFileSync(path.join(root, 'public/app.js'), 'utf8');
+const policy = fs.readFileSync(path.join(root, 'public/js/covers/artwork-url.js'), 'utf8');
+const application = require('./helpers/source').readSource('public/js/covers/decorations.js');
 const showcasePool = fs.readFileSync(path.join(root, 'server/showcase-pool.js'), 'utf8');
 
 test('decorative artwork accepts durable local covers on every app surface', async () => {

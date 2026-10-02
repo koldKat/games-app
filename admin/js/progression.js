@@ -1,5 +1,5 @@
 import { api, busy, toast } from './core.js';
-import { mountThemedNumberSteppers } from '/js/number-steppers.js';
+import { mountThemedNumberSteppers } from '/js/ui-helpers/number-steppers.js';
 
 let config = [];
 function render() {

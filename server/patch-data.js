@@ -1,7 +1,6 @@
 'use strict';
 
-// Private support threads: a Patch is opened by a visitor/account and Ping is
-// the account-facing view of the same conversation.
+// Patch and Ping share the same private support conversation.
 const { db } = require('./db');
 
 const PATCH_KINDS = Object.freeze(['bug', 'idea', 'game_data', 'other']);

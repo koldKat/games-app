@@ -33,7 +33,7 @@ test('catalogue page is crawlable server-rendered HTML', () => {
   assert.match(html, /<i class="has-art"><img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async"><\/i>/);
   assert.doesNotMatch(html, /style="background-image:/);
   assert.match(html, /data-app-version/);
-  assert.match(html, /src="\/js\/site-header\.js"/);
+  assert.match(html, /src="\/js\/shell\/site-header\.js"/);
   assert.match(html, /<img src="\/covers\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\.jpg" alt="" decoding="async">/);
   assert.match(html, /Discover enriched releases and add them to your private library\.<\/p>/);
   assert.doesNotMatch(html, /without entering everything again/);
@@ -117,7 +117,7 @@ test('Signal is a crawlable public page that attaches to the live feed client', 
   assert.match(html, /<link rel="canonical" href="https:\/\/gamekat\.net\/signal">/);
   assert.match(html, /<h1>Kat·a·log Signal<\/h1>/);
   assert.match(html, /data-activity-feed data-activity-limit="all" data-activity-grouped="true" data-activity-layout="newspaper"/);
-  assert.match(html, /src="\/js\/signal-page\.js"/);
+  assert.match(html, /src="\/js\/community\/signal-page\.js"/);
   assert.doesNotMatch(html, /LAST 30 DAYS|Recent public activity|Personal libraries, ratings, wishlists, edits, and play status stay private/);
   assert.match(html, /id="header-progression" class="header-progression"/);
   assert.match(html, /LV 17/);
@@ -136,7 +136,7 @@ test('guest public navigation marks the current Signal or Kat·a·log section in
   assert.match(signal, /class="button signal-button themed-tooltip header-tooltip active" href="\/signal"[\s\S]*header-nav-label">Signal/);
   for (const html of [catalogue, signal]) {
     assert.match(html, /class="header-community-actions"[\s\S]*data-stats-open[\s\S]*class="header-library-actions"/);
-    assert.match(html, /src="\/js\/stats-ui\.js"/);
+    assert.match(html, /src="\/js\/stats\/stats-ui\.js"/);
   }
 });
 

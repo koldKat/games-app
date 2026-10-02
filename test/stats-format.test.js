@@ -4,8 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 async function formatModule() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/stats-format.js'), 'utf8')
-    .replace("import { UI_LOCALE } from './ui-policy.js';", "const UI_LOCALE = 'en-US';");
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public/js/stats/stats-format.js'), 'utf8')
+    .replace("import { UI_LOCALE } from '../core/ui-policy.js';", "const UI_LOCALE = 'en-US';");
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
 

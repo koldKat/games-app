@@ -86,16 +86,16 @@ test('public site stats aggregate game-focused facts without exposing private re
 
 test('stats UI is modular, public, responsive, and protected from false backdrop closes', () => {
   const root = path.join(__dirname, '..');
-  const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+  const { readSource: read } = require('./helpers/source');
   const server = read('server.js'); const markup = read('public/index.html');
-  const ui = read('public/js/stats-ui.js'); const css = read('public/css/stats.css');
+  const ui = read('public/js/stats/stats-ui.js'); const css = read('public/css/stats.css');
   assert.match(server, /url\.pathname === '\/api\/site-stats'/);
   assert.ok(server.indexOf("url.pathname === '/api/site-stats'") < server.indexOf('const user = auth.authenticate(request)'));
   assert.match(markup, /data-stats-open/);
-  assert.match(markup, /src="\/js\/stats-ui\.js"/);
-  assert.match(markup, /src="\/js\/mobile-action-dock\.js"/);
-  assert.match(read('server/katalog-pages.js'), /src="\/js\/stats-ui\.js"/);
-  assert.match(read('server/katalog-pages.js'), /src="\/js\/mobile-action-dock\.js"/);
+  assert.match(markup, /src="\/js\/stats\/stats-ui\.js"/);
+  assert.match(markup, /src="\/js\/shell\/mobile-action-dock\.js"/);
+  assert.match(read('server/katalog-pages.js'), /src="\/js\/stats\/stats-ui\.js"/);
+  assert.match(read('server/katalog-pages.js'), /src="\/js\/shell\/mobile-action-dock\.js"/);
   assert.match(ui, /controllerLoaderMarkup/);
   assert.match(ui, /pressedBackdrop/);
   assert.match(ui, /pointerdown/);
@@ -116,7 +116,7 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.doesNotMatch(css, /\.top-actions \.stats-button \{ display: none; \}/);
   assert.match(read('public/css/theme.css'), /\.header-community-actions\.mobile-action-dock \{[\s\S]*position:fixed;[\s\S]*bottom:calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
-  const mobileDock = read('public/js/mobile-action-dock.js');
+  const mobileDock = read('public/js/shell/mobile-action-dock.js');
   assert.match(mobileDock, /document\.body\.append\(group\)/);
   assert.match(mobileDock, /home\.after\(group\)/);
   assert.match(mobileDock, /classList\.add\('mobile-action-dock', 'top-actions'\)/);

@@ -1,4 +1,4 @@
-/*Dense, not microscopic: legible type at desktop and high-resolution widths. */
+/* Desktop typography. */
 body {
   font-size: 14px;
 }
@@ -14,7 +14,7 @@ body {
 .hero-copy {
   font-size: 12px;
 }
-/*Monochrome box-art fan in the collection header. */
+/* Header cover fan. */
 .hero-art {
   right: 3%;
   bottom: 0;
@@ -881,7 +881,7 @@ body {
     display: none;
   }
 }
-/*Cover-backed cards follow Gamebooks: centered art flowing across the card under a readability fade. */
+/* Centered cover art with a readability fade. */
 .game-card.has-cover {
   background: #0d1219;
 }

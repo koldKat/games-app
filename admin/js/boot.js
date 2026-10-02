@@ -9,8 +9,8 @@ import { loadProgression } from './progression.js';
 import { loadAnnouncements } from './announcements.js';
 import { loadForum } from './forum.js';
 import { loadPatch } from './patch.js';
-import { mountThemedNumberSteppers } from '/js/number-steppers.js';
-import { mountThemedSearchClears } from '/js/search-clears.js';
+import { mountThemedNumberSteppers } from '/js/ui-helpers/number-steppers.js';
+import { mountThemedSearchClears } from '/js/ui-helpers/search-clears.js';
 import { ADMIN_TIMING } from './admin-policy.js';
 
 const loaders = {

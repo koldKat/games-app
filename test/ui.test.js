@@ -4,24 +4,24 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const { readSource: read } = require('./helpers/source');
 const readCss = relative => read(relative)
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}').replace(/\s+/g, ' ').trim();
 const publicStylesheets = ['foundation.css', 'theme.css', 'library.css', 'landing.css', 'features.css'];
 const readPublicCss = () => publicStylesheets.map(file => readCss(`public/css/${file}`)).join('');
 
 test('browser modules do not assign through an optional chain', () => {
-  const modules = fs.readdirSync(path.join(root, 'public/js')).filter(file => file.endsWith('.js')).map(file => read(`public/js/${file}`)).join('\n');
+  const modules = require('./helpers/source').readTree('public/js');
   assert.doesNotMatch(modules, /\?\.[\w$]*\([^)]*\)\s*\.\s*[\w$]+\s*=/);
 });
 
 test('private Kat·a·log groups multi-platform titles unless a platform filter is active', () => {
-  const application = read('public/app.js'); const groups = read('public/js/game-groups.js'); const library = readCss('public/css/library.css');
-  assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/js\/game-groups\.js'/);
+  const application = read('public/app.js'); const groups = read('public/js/library/game-groups.js'); const library = readCss('public/css/library.css');
+  assert.match(application, /import \{ groupGames, selectedGroupCopy \} from '\.\/game-groups\.js'/);
   assert.match(application, /filters\.platform\.value !== MULTIPLATFORM_FILTER_VALUE/);
   assert.match(application, /groupGames\(state\.games\.filter\(gameMatchesFilters\), \{ splitPlatforms \}\)/);
   assert.match(application, />Multiple platforms<\/option>/);
-  const picker = read('public/js/version-picker.js');
+  const picker = read('public/js/editor/version-picker.js');
   assert.match(application, /cardVersionControl\(game, escapeHtml, labels\)/);
   assert.match(application, /action === 'version-menu'/);
   assert.match(application, /action === 'version'/);
@@ -54,9 +54,9 @@ test('private Kat·a·log groups multi-platform titles unless a platform filter 
 
 test('NES and SNES display aliases cover interactive, lookup, statistics, and admin surfaces', () => {
   const application = read('public/app.js');
-  const autocomplete = read('public/js/title-autocomplete.js');
-  const igdb = read('public/js/igdb-ui.js');
-  const stats = read('public/js/stats-ui.js');
+  const autocomplete = read('public/js/editor/title-autocomplete.js');
+  const igdb = read('public/js/metadata/igdb-ui.js');
+  const stats = read('public/js/stats/stats-ui.js');
   const adminKatalog = read('admin/js/katalog.js');
   const adminPublicKatalog = read('admin/js/public-katalog.js');
   const adminDashboard = read('admin/js/dashboard.js');
@@ -92,7 +92,7 @@ test('phone heroes do not reserve space for hidden subtitles or cover fans', () 
 });
 
 test('view navigation keeps independent randomized cover fans and restores the private fan', () => {
-  const application = read('public/app.js'); const navigation = read('public/js/katalog-navigation.js'); const server = read('server.js');
+  const application = read('public/app.js'); const navigation = read('public/js/katalog/katalog-navigation.js'); const server = read('server.js');
   assert.match(application, /const slots = \$\$\('#library-view \.hero-cover'\)/);
   assert.match(application, /onLibraryVisible: \(\) =>[\s\S]*loadHeroCovers/);
   assert.match(application, /api\('\/api\/showcase\/covers\?scope=owned'\)/);
@@ -108,7 +108,7 @@ test('admin version changes update authenticated headers over SSE', () => {
   assert.match(events, /function publishAll\(event, data\)/);
   assert.match(events, /function subscribePublicSite\(request, response\)/);
   assert.match(application, /event === 'version-updated'\) \$\('#app-version'\)\.textContent = data\.version \|\| 'dev'/);
-  assert.match(read('public/js/site-header.js'), /new EventSource\('\/api\/site\/stream'\)/);
+  assert.match(read('public/js/shell/site-header.js'), /new EventSource\('\/api\/site\/stream'\)/);
   assert.match(read('public/index.html'), /id="app-version" data-app-version/);
 });
 
@@ -146,9 +146,9 @@ test('public and admin interfaces include themed confirmation dialogs', () => {
 test('close and search-clear controls share the green close icon template', () => {
   const icon = read('public/assets/ui-icons.svg');
   const sources = [
-    'public/index.html', 'admin/index.html', 'public/js/patch-ui.js',
-    'public/js/public-profile.js', 'public/js/search-clears.js',
-    'public/js/stats-ui.js', 'server/forum-pages.js', 'server/katalog-pages.js',
+    'public/index.html', 'admin/index.html', 'public/js/community/patch-ui.js',
+    'public/js/account/public-profile.js', 'public/js/ui-helpers/search-clears.js',
+    'public/js/stats/stats-ui.js', 'server/forum-pages.js', 'server/katalog-pages.js',
   ].map(read).join('\n');
   const styles = [readCss('public/css/foundation.css'), readCss('public/css/theme.css'), readCss('public/css/forum.css'), readCss('public/css/stats.css'), readCss('admin/style.css')].join('\n');
   assert.match(icon, /<symbol id="close" viewBox="0 0 12 12">/);
@@ -182,9 +182,9 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(html, /id="activity-feed"/); assert.match(html, /data-activity-feed data-activity-limit="3"/); assert.match(html, /href="\/signal">Open the public signal/); assert.match(html, /id="account-hide-from-activity"/);
   assert.match(html, /id="account-public-profile"/);
   assert.match(html, /href="\/css\/public-profile\.css"/);
-  assert.match(read('public/js/activity-feed.js'), /import \{ openPublicProfile \} from '\.\/public-profile\.js'/);
-  assert.match(read('public/js/activity-feed.js'), /data-public-profile/);
-  const publicProfile = read('public/js/public-profile.js');
+  assert.match(read('public/js/community/activity-feed.js'), /import \{ openPublicProfile \} from '\.\.\/account\/public-profile\.js'/);
+  assert.match(read('public/js/community/activity-feed.js'), /data-public-profile/);
+  const publicProfile = read('public/js/account/public-profile.js');
   assert.match(publicProfile, /\/api\/public\/user\//);
   assert.match(publicProfile, /platformThemeClass\(item\.platform\)/);
   assert.match(read('server/katalog-pages.js'), /href="\/css\/public-profile\.css"/);
@@ -194,64 +194,64 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
   assert.match(readCss('public/css/public-profile.css'), /\.public-profile-platforms \.public-profile-platform\{[^}]*background:var\(--platform-surface\) padding-box,var\(--platform-frame\) border-box/);
   assert.match(application, /createActivityFeed/); assert.match(activity, /activity_templates/); assert.match(activity, /activity_events/);
   assert.match(activity, /JOIN_TEMPLATES/); assert.match(activity, /LEVEL_TEMPLATES/);
-  assert.match(read('public/js/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
-  assert.match(read('public/js/signal-page.js'), /const activityFeed = createActivityFeed\(\)/);
-  assert.match(read('public/js/signal-page.js'), /activityFeed\.start\(\)/);
-  assert.match(read('public/js/signal-page.js'), /pagehide'[\s\S]*activityFeed\.stop\(\)/);
-  assert.match(read('public/js/activity-feed.js'), /function preview\(content, url, kind, alt, detail = ''\)/);
-  assert.match(read('public/js/activity-feed.js'), /class="activity-preview-profile"/);
+  assert.match(read('public/js/community/activity-feed.js'), /new EventSource\('\/api\/activity\/stream'\)/);
+  assert.match(read('public/js/community/signal-page.js'), /const activityFeed = createActivityFeed\(\)/);
+  assert.match(read('public/js/community/signal-page.js'), /activityFeed\.start\(\)/);
+  assert.match(read('public/js/community/signal-page.js'), /pagehide'[\s\S]*activityFeed\.stop\(\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /function preview\(content, url, kind, alt, detail = ''\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /class="activity-preview-profile"/);
   assert.match(activity, /userLevel: progression\.level, userTitle: progression\.title/);
-  assert.match(read('public/js/activity-feed.js'), /class="activity-game-link\$\{rating/);
-  assert.match(read('public/js/activity-feed.js'), /activity-game-link--pegi-\$\{rating\}/);
-  assert.match(read('public/js/activity-feed.js'), /const PEGI_ACTIVITY_COLORS = Object\.freeze/);
-  assert.match(read('public/js/activity-feed.js'), /function pegiGameLinkStyle\(rating\)/);
-  assert.match(read('public/js/activity-feed.js'), /style="color:\$\{color\};text-decoration-color:\$\{color\}"/);
-  assert.match(read('public/js/activity-feed.js'), /platformThemeClass\(entry\.gamePlatform\)/);
-  assert.match(read('public/js/activity-feed.js'), /platformDisplayName\(entry\.gamePlatform\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /class="activity-game-link\$\{rating/);
+  assert.match(read('public/js/community/activity-feed.js'), /activity-game-link--pegi-\$\{rating\}/);
+  assert.match(read('public/js/community/activity-feed.js'), /const PEGI_ACTIVITY_COLORS = Object\.freeze/);
+  assert.match(read('public/js/community/activity-feed.js'), /function pegiGameLinkStyle\(rating\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /style="color:\$\{color\};text-decoration-color:\$\{color\}"/);
+  assert.match(read('public/js/community/activity-feed.js'), /platformThemeClass\(entry\.gamePlatform\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /platformDisplayName\(entry\.gamePlatform\)/);
   assert.match(read('public/css/activity.css'), /activity-game-link--pegi-18/);
   assert.match(read('public/css/activity.css'), /activity-game-link--pegi-3:visited/);
   assert.match(readCss('public/css/activity.css'), /\.activity-platform-tag\{[^}]*background:var\(--platform-surface\) padding-box,var\(--platform-frame\) border-box/);
   assert.match(readCss('public/css/katalog.css'), /\.signal-feed \.activity-entry--catalogue_contribution\{border-left:2px solid #3f9d87/);
-  assert.match(read('public/js/activity-feed.js'), /export function dismissActivityPreview/);
-  assert.match(read('public/js/activity-feed.js'), /typeof link\.blur === 'function'/);
-  assert.match(read('public/js/activity-feed.js'), /addEventListener\('pointerleave'/);
-  assert.match(read('public/js/signal-page.js'), /dismissActivityPreview\(link\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /export function dismissActivityPreview/);
+  assert.match(read('public/js/community/activity-feed.js'), /typeof link\.blur === 'function'/);
+  assert.match(read('public/js/community/activity-feed.js'), /addEventListener\('pointerleave'/);
+  assert.match(read('public/js/community/signal-page.js'), /dismissActivityPreview\(link\)/);
   assert.match(read('public/css/activity.css'), /activity-preview-trigger:not\(\.activity-preview-dismissed\):hover/);
-  assert.doesNotMatch(read('public/js/activity-feed.js'), /class="activity-art"/);
-  assert.match(read('public/js/activity-feed.js'), /function groupedCards\(entries, idPrefix/);
-  assert.match(read('public/js/activity-feed.js'), /function newspaperCards\(entries\)/);
-  assert.match(read('public/js/activity-feed.js'), /KAT·A·LOG \/\/ UPDATES/);
-  assert.match(read('public/js/activity-feed.js'), /COLLECTORS \/\/ SIGNAL/);
-  assert.match(read('public/js/activity-feed.js'), /KATALOG_ACTIVITY_TYPES = new Set\(\['catalogue_contribution'\]\)/);
-  assert.match(read('public/js/activity-feed.js'), /SIGNAL_MOBILE_QUERY = '\(max-width: 760px\)'/);
-  assert.match(read('public/js/activity-feed.js'), /const desktopNewspaper = host\.dataset\.activityLayout === 'newspaper' && !mobileLayout\.matches/);
-  assert.match(read('public/js/activity-feed.js'), /desktopNewspaper[\s\S]*\? newspaperCards\(visible\)/);
-  assert.match(read('public/js/activity-feed.js'), /laneEntries\.length \? groupedCards[\s\S]*activity-feed-empty/);
-  assert.match(read('public/js/activity-feed.js'), /mobileLayout\.addEventListener\('change', refreshLayout\)/);
-  assert.match(read('public/js/activity-feed.js'), /mobileLayout\.removeEventListener\('change', refreshLayout\)/);
-  assert.doesNotMatch(read('public/js/activity-feed.js'), /activity-mobile-stream/);
-  assert.match(read('public/js/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 6/);
-  assert.match(read('public/js/activity-feed.js'), /function collapseContributions\(entries, dayIndex, dayKey, idPrefix/);
-  assert.match(read('public/js/activity-feed.js'), /activity-group-chevron/);
-  assert.match(read('public/js/activity-feed.js'), /data-activity-group-key/);
-  assert.match(read('public/js/activity-feed.js'), /const expandedKeys = new Set/);
-  assert.match(read('public/js/activity-feed.js'), /function setGroupExpanded\(host, groupKey, expanded\)/);
-  assert.match(read('public/js/activity-feed.js'), /setGroupExpanded\(host, toggle\.dataset\.activityGroupKey/);
-  assert.match(read('public/js/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
-  assert.match(read('public/js/activity-feed.js'), /const targets = hosts\(\)/);
-  assert.match(read('public/js/activity-feed.js'), /controllerLoaderMarkup\('Tuning the signal…'\)/);
+  assert.doesNotMatch(read('public/js/community/activity-feed.js'), /class="activity-art"/);
+  assert.match(read('public/js/community/activity-feed.js'), /function groupedCards\(entries, idPrefix/);
+  assert.match(read('public/js/community/activity-feed.js'), /function newspaperCards\(entries\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /KAT·A·LOG \/\/ UPDATES/);
+  assert.match(read('public/js/community/activity-feed.js'), /COLLECTORS \/\/ SIGNAL/);
+  assert.match(read('public/js/community/activity-feed.js'), /KATALOG_ACTIVITY_TYPES = new Set\(\['catalogue_contribution'\]\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /SIGNAL_MOBILE_QUERY = '\(max-width: 760px\)'/);
+  assert.match(read('public/js/community/activity-feed.js'), /const desktopNewspaper = host\.dataset\.activityLayout === 'newspaper' && !mobileLayout\.matches/);
+  assert.match(read('public/js/community/activity-feed.js'), /desktopNewspaper[\s\S]*\? newspaperCards\(visible\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /laneEntries\.length \? groupedCards[\s\S]*activity-feed-empty/);
+  assert.match(read('public/js/community/activity-feed.js'), /mobileLayout\.addEventListener\('change', refreshLayout\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /mobileLayout\.removeEventListener\('change', refreshLayout\)/);
+  assert.doesNotMatch(read('public/js/community/activity-feed.js'), /activity-mobile-stream/);
+  assert.match(read('public/js/community/activity-feed.js'), /const CONTRIBUTION_COLLAPSE_THRESHOLD = 6/);
+  assert.match(read('public/js/community/activity-feed.js'), /function collapseContributions\(entries, dayIndex, dayKey, idPrefix/);
+  assert.match(read('public/js/community/activity-feed.js'), /activity-group-chevron/);
+  assert.match(read('public/js/community/activity-feed.js'), /data-activity-group-key/);
+  assert.match(read('public/js/community/activity-feed.js'), /const expandedKeys = new Set/);
+  assert.match(read('public/js/community/activity-feed.js'), /function setGroupExpanded\(host, groupKey, expanded\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /setGroupExpanded\(host, toggle\.dataset\.activityGroupKey/);
+  assert.match(read('public/js/community/activity-feed.js'), /host\.dataset\.activityLimit === 'all' \? entries\.length/);
+  assert.match(read('public/js/community/activity-feed.js'), /const targets = hosts\(\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /controllerLoaderMarkup\('Tuning the signal…'\)/);
   assert.match(read('public/css/katalog.css'), /\.signal-feed-loader/);
-  assert.match(read('public/js/katalog-navigation.js'), /onSignalVisible\(\)/);
+  assert.match(read('public/js/katalog/katalog-navigation.js'), /onSignalVisible\(\)/);
   assert.match(read('public/css/katalog.css'), /\.signal-feed \.activity-day h3/);
   assert.match(read('public/css/katalog.css'), /\.activity-newspaper \{/);
   assert.match(read('public/css/katalog.css'), /grid-template-columns:minmax\(0,11fr\) minmax\(280px,9fr\)/);
   assert.match(read('public/css/katalog.css'), /align-items:stretch/);
-  assert.match(read('public/js/activity-feed.js'), /entry\.type === 'announcement'/);
-  assert.match(read('public/js/activity-feed.js'), /body\.pinned/);
-  assert.match(read('public/js/activity-feed.js'), /function pinnedCard\(entry\)/);
+  assert.match(read('public/js/community/activity-feed.js'), /entry\.type === 'announcement'/);
+  assert.match(read('public/js/community/activity-feed.js'), /body\.pinned/);
+  assert.match(read('public/js/community/activity-feed.js'), /function pinnedCard\(entry\)/);
   assert.match(read('public/css/activity.css'), /\.activity-pinned-card/);
   assert.match(read('public/css/activity.css'), /\.activity-contribution-group/);
-  assert.match(read('public/js/announcement-format.js'), /formatAnnouncementBody/);
+  assert.match(read('public/js/community/announcement-format.js'), /formatAnnouncementBody/);
   assert.match(read('admin/index.html'), /data-tab="announcements"/);
   assert.match(read('admin/index.html'), /id="announcement-form"/);
   assert.match(read('admin/js/boot.js'), /loadAnnouncements/);
@@ -262,9 +262,9 @@ test('Kat·a·log Signal is a modular public feed with a global account privacy 
 test('desktop header actions use below-control themed tooltips without mobile overlays', () => {
   const html = read('public/index.html');
   const pages = read('server/katalog-pages.js');
-  const patchUi = read('public/js/patch-ui.js');
+  const patchUi = read('public/js/community/patch-ui.js');
   const features = readCss('public/css/features.css');
-  const siteHeader = read('public/js/site-header.js');
+  const siteHeader = read('public/js/shell/site-header.js');
   for (const name of ['Signal', 'Forum', 'Stats for nerds', 'Send a Patch', 'Open Ping', 'Kat·a·log', 'My Kat·a·log', 'Add a game', 'Open profile']) {
     assert.match(html, new RegExp(`themed-tooltip header-tooltip[^>]*data-tooltip="${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`), name);
   }
@@ -309,7 +309,7 @@ test('authenticated app matches the login account-cover background visibility', 
   assert.match(application, /document\.activeElement\?\.matches\('select'\)[\s\S]*addEventListener\('blur', resolve/);
   assert.match(application, /const url = loaded\[index % loaded\.length\]/);
   assert.doesNotMatch(application, /const slot = slots\[nextSlot\+\+\]/);
-  assert.match(application, /authDecorationSequence \+= 1;[\s\S]*state\.user = user/);
+  assert.match(application, /runtime\.authDecorationSequence \+= 1;[\s\S]*state\.user = user/);
   assert.doesNotMatch(application, /applyDecorativeCovers\(slots, covers\.slice/);
   assert.match(css, /\.app-cover-field\{[^}]*opacity:0?\.1/);
   assert.doesNotMatch(css, /\.app-cover-field i\{filter:/);
@@ -408,7 +408,7 @@ test('landing footer links to the public repository without replacing the app', 
 });
 
 test('authenticated library carries the family copyright notice with a rolling year', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/site-config.js'); const catalogue = read('server/katalog-pages.js'); const css = readPublicCss();
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/core/site-config.js'); const catalogue = read('server/katalog-pages.js'); const css = readPublicCss();
   assert.match(html, /class="app-footer" aria-label="Site footer"[\s\S]*koldKat productions[\s\S]*data-copyright-year>© 2026[\s\S]*GAMEKAT\.NET \/\/ GAME KAT·A·LOG[\s\S]*USER GUIDE/);
   assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
@@ -427,7 +427,7 @@ test('common filters never move the viewport', () => {
 });
 
 test('private Kat·a·log uses ten-row pagination instead of a show-more control', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/ui-policy.js'); const css = readPublicCss();
+  const html = read('public/index.html'); const application = read('public/app.js'); const policy = read('public/js/core/ui-policy.js'); const css = readPublicCss();
   assert.match(html, /id="library-pagination" class="library-pagination" aria-label="My Kat·a·log pages"/);
   assert.match(html, /aria-label="Previous page">page\.prev\(\)<\/button>/);
   assert.match(html, /aria-label="Next page">page\.next\(\)<\/button>/);
@@ -454,7 +454,7 @@ test('public Kat·a·log prioritizes covers with an eight-column desktop grid', 
 });
 
 test('game saves animate awarded progression even if the event stream is late', () => {
-  const application = read('public/app.js'); const server = read('server.js'); const progressionUi = read('public/js/progression-ui.js');
+  const application = read('public/app.js'); const server = read('server.js'); const progressionUi = read('public/js/progression/progression-ui.js');
   assert.match(application, /function applySaveProgress\(result\)/);
   assert.match(application, /applySaveProgress\(result\);/);
   assert.match(server, /progression: progressionResult/);
@@ -475,10 +475,10 @@ test('game saves animate awarded progression even if the event stream is late', 
 });
 
 test('catalogue navigation keeps the authenticated shell mounted and swaps only its content view', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const navigation = read('public/js/katalog-navigation.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const navigation = read('public/js/katalog/katalog-navigation.js');
   assert.match(html, /<main id="app-main">\s*<div id="library-view">/);
   assert.match(html, /<section id="katalog-view" class="katalog-view" hidden aria-live="polite"><\/section>/);
-  assert.match(application, /import \{ createKatalogNavigation \} from '\.\/js\/katalog-navigation\.js'/);
+  assert.match(application, /import \{ createKatalogNavigation \} from '\.\.\/katalog\/katalog-navigation\.js'/);
   assert.match(application, /openKatalog: slug => katalogNavigation\.open/);
   assert.match(navigation, /library\.hidden = false; katalog\.hidden = true/);
   assert.match(navigation, /katalog\.replaceChildren\(document\.importNode\(main, true\)\)/);
@@ -498,11 +498,11 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /onOpenLibrary: game => showLibrary\(\{ gameId: game\?\.id \}\)/);
   assert.match(application, /onLibraryGameOpen: async id => \{[\s\S]*openDetails\(await api\(`\/api\/games\/\$\{id\}`\)\)/);
   assert.match(navigation, /function showLibrary[\s\S]*\[data-katalog-game-dialog\]\[open\][\s\S]*skipCloseNavigation = 'true'[\s\S]*dialog\.close\(\)[\s\S]*library\.hidden = false/);
-  const publicKatalog = read('public/js/katalog-public.js');
+  const publicKatalog = read('public/js/katalog/katalog-public.js');
   assert.match(publicKatalog, /response\.status === 409 && body\.existing/);
   assert.match(publicKatalog, /bindKatalogAddForm\(root, \{ onAdded, onOpenLibrary \}\)/);
   assert.match(publicKatalog, /if \(dialog\.dataset\.skipCloseNavigation === 'true'\) \{ delete dialog\.dataset\.skipCloseNavigation; return; \}/);
-  assert.match(read('public/js/controller-loader.js'), /class="library-loader-controller"/);
+  assert.match(read('public/js/ui-helpers/controller-loader.js'), /class="library-loader-controller"/);
   const themeCss = readCss('public/css/theme.css');
   assert.match(themeCss, /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
   assert.match(themeCss, /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
@@ -520,7 +520,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
 test('collection filtering separates owned physical and digital games', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const database = read('server/db.js'); const preferences = read('server/preferences.js'); const constants = read('server/constants.js');
-  const formatUi = read('public/js/media-formats.js'); const css = readCss('public/css/media-formats.css');
+  const formatUi = read('public/js/library/media-formats.js'); const css = readCss('public/css/media-formats.css');
   assert.match(html, /value="owned_physical">Owned · physical<\/option><option value="owned_digital">Owned · digital/);
   assert.match(html, /id="stat-owned-physical"[\s\S]*id="stat-owned-digital"/);
   assert.match(application, /filters\.ownership\.value === 'owned_physical'/);
@@ -538,7 +538,7 @@ test('collection filtering separates owned physical and digital games', () => {
 
 test('random picker uses the complete filtered library and reuses the details dialog', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const picker = read('public/js/random-game.js'); const server = read('server.js'); const database = read('server/db.js');
+  const picker = read('public/js/library/random-game.js'); const server = read('server.js'); const database = read('server/db.js');
   assert.match(html, /id="random-game"[^>]*>random\(\)<\/button>/);
   assert.match(html, /id="game-details-reroll"[^>]*>reroll\(\)<\/button>/);
   assert.match(application, /createRandomGamePicker/);
@@ -555,7 +555,7 @@ test('filter transitions immediately remove stale cards while the server result 
 
 test('hidden games use the existing Library dropdown and never add a dashboard card', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const sorting = read('public/js/game-sorting.js'); const icons = read('public/assets/stat-icons.svg'); const css = readPublicCss();
+  const sorting = read('public/js/library/game-sorting.js'); const icons = read('public/assets/stat-icons.svg'); const css = readPublicCss();
   assert.equal((html.match(/class="stat-card /g) || []).length, 10);
   assert.match(html, /<span>Library<\/span><select id="ownership-filter"[\s\S]*?<option value="hidden">Hidden<\/option>/);
   assert.doesNotMatch(html, /id="status-filter"[^<]*(?:<option[^>]*>[^<]*<\/option>)*<option value="hidden">/);
@@ -647,7 +647,7 @@ test('library cards open a read-only details view before editing', () => {
 });
 
 test('private, public, and administrator catalogues use delayed live search', () => {
-  const privateApp = read('public/app.js'); const publicKatalog = read('public/js/katalog-public.js');
+  const privateApp = read('public/app.js'); const publicKatalog = read('public/js/katalog/katalog-public.js');
   const adminKatalog = read('admin/js/katalog.js'); const adminPublicKatalog = read('admin/js/public-katalog.js');
   assert.match(privateApp, /setTimeout\(loadGames, UI_TIMING\.librarySearchDebounceMs\)/);
   assert.match(publicKatalog, /katalogSearchSequence/);
@@ -658,8 +658,8 @@ test('private, public, and administrator catalogues use delayed live search', ()
   assert.match(publicKatalog, /main\.append\(document\.importNode\(next, true\)\)/);
   assert.match(publicKatalog, /event\.stopPropagation\(\)/);
   assert.match(publicKatalog, /setTimeout\(\(\) => \{/);
-  assert.match(read('public/js/katalog-navigation.js'), /async function refreshResults\(url\)/);
-  assert.match(read('public/js/katalog-navigation.js'), /current\.replaceWith\(document\.importNode\(next, true\)\)/);
+  assert.match(read('public/js/katalog/katalog-navigation.js'), /async function refreshResults\(url\)/);
+  assert.match(read('public/js/katalog/katalog-navigation.js'), /current\.replaceWith\(document\.importNode\(next, true\)\)/);
   assert.match(adminKatalog, /setTimeout\(loadKatalog, ADMIN_TIMING\.searchDebounceMs\)/);
   assert.match(adminPublicKatalog, /setTimeout\(loadPublicKatalog, ADMIN_TIMING\.searchDebounceMs\)/);
 });
@@ -702,7 +702,7 @@ test('password reset has a token-based login flow and localhost SMTP administrat
 });
 
 test('public release links retain crawlable URLs while opening in the Kat·a·log detail dialog', () => {
-  const navigation = read('public/js/katalog-navigation.js'); const catalogue = read('public/js/katalog-public.js'); const css = readCss('public/css/katalog.css');
+  const navigation = read('public/js/katalog/katalog-navigation.js'); const catalogue = read('public/js/katalog/katalog-public.js'); const css = readCss('public/css/katalog.css');
   assert.match(navigation, /bindKatalogGameDialog/);
   assert.match(catalogue, /data-katalog-game-dialog/);
   assert.match(catalogue, /dialog\.showModal\(\)/);
@@ -735,9 +735,9 @@ test('public Kat·a·log cards overlay community ratings on their covers', () =>
 });
 
 test('platform identity colors reach every major collector-facing platform surface', () => {
-  const pages = read('server/katalog-pages.js'); const publicClient = read('public/js/katalog-public.js');
-  const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js');
-  const imports = read('public/js/library-import.js'); const stats = read('public/js/stats-ui.js');
+  const pages = read('server/katalog-pages.js'); const publicClient = read('public/js/katalog/katalog-public.js');
+  const application = read('public/app.js'); const autocomplete = read('public/js/editor/title-autocomplete.js');
+  const imports = read('public/js/imports/library-import.js'); const stats = read('public/js/stats/stats-ui.js');
   assert.match(pages, /class="katalog-platform-token" data-platform-theme=/);
   assert.match(pages, /class="game-summary-platform" data-platform-theme=/);
   assert.match(pages, /class="katalog-owned-platform" data-platform-theme=/);
@@ -751,7 +751,7 @@ test('platform identity colors reach every major collector-facing platform surfa
 });
 
 test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
-  const css = readCss('public/css/katalog.css'); const catalogue = read('public/js/katalog-public.js');
+  const css = readCss('public/css/katalog.css'); const catalogue = read('public/js/katalog/katalog-public.js');
   assert.match(css, /\.katalog-title\[data-truncated="true"\]::after/);
   assert.match(css, /content:attr\(data-full-title\)/);
   assert.match(css, /\.katalog-title\[data-truncated="true"\]:hover::after/);
@@ -760,7 +760,7 @@ test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
 });
 
 test('logged-out public pages load their cover background after rendering', () => {
-  const catalogue = read('public/js/katalog-public.js');
+  const catalogue = read('public/js/katalog/katalog-public.js');
   assert.match(catalogue, /async function loadPublicBackgroundCovers/);
   assert.match(catalogue, /fetch\('\/api\/showcase\/covers', \{ cache: 'no-store' \}\)/);
   assert.match(catalogue, /await new Promise\(resolve =>/);
@@ -770,9 +770,9 @@ test('logged-out public pages load their cover background after rendering', () =
 
 test('sorting is modular and includes Katalog, HLTB duration, and IGDB score orders', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const sorting = read('public/js/game-sorting.js'); const database = read('server/db.js');
-  assert.match(application, /import \{ compareGames \} from '\.\/js\/game-sorting\.js'/);
-  assert.doesNotMatch(application, /function compareGames\(/);
+  const sorting = read('public/js/library/game-sorting.js'); const database = read('server/db.js');
+  assert.match(read('public/js/core/live-updates.js'), /import \{ compareGames \} from '\.\.\/library\/game-sorting\.js'/);
+  assert.doesNotMatch(read('public/js/core/live-updates.js'), /function compareGames\(/);
   assert.match(html, /Title · Z–A[\s\S]*Release year · newest[\s\S]*Recently updated/);
   assert.match(html, /HLTB main · shortest[\s\S]*HLTB main \+ sides · longest[\s\S]*HLTB completionist · shortest[\s\S]*HLTB all styles · longest/);
   for (const value of ['hltb_main_short', 'hltb_main_long', 'hltb_extra_short', 'hltb_extra_long', 'hltb_100_short', 'hltb_100_long', 'hltb_all_short', 'hltb_all_long']) {
@@ -786,7 +786,7 @@ test('sorting is modular and includes Katalog, HLTB duration, and IGDB score ord
 
 test('HLTB integration is native Node and exposes all four estimates', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const provider = read('server/hltb.js'); const hltbUi = read('public/js/hltb-ui.js'); const server = read('server.js'); const css = readPublicCss();
+  const provider = read('server/hltb.js'); const hltbUi = read('public/js/metadata/hltb-ui.js'); const server = read('server.js'); const css = readPublicCss();
   assert.match(html, /Main Story, Main \+ Sides, Completionist, and All Styles/);
   assert.match(html, /id="hltb-bulk-start"[\s\S]*Fill HLTB times/);
   assert.match(application, /event === 'hltb-job'/);
@@ -805,11 +805,11 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
   assert.match(css, /\.card-hltb dt\{[^}]*font-size:10px/);
   assert.match(css, /\.card-hltb dd\{[^}]*font-size:13px/);
-  assert.match(read('public/js/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);
+  assert.match(read('public/js/metadata/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);
 });
 
 test('title autocomplete is themed and silently degrades when SteamGridDB fails', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const autocomplete = read('public/js/title-autocomplete.js'); const css = readPublicCss(); const server = read('server.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const autocomplete = read('public/js/editor/title-autocomplete.js'); const css = readPublicCss(); const server = read('server.js');
   assert.match(html, /id="game-title"[\s\S]*role="combobox"[\s\S]*id="title-suggestions"[^>]*role="listbox"/);
   assert.match(application, /createTitleAutocomplete/);
   assert.match(autocomplete, /api\(`\/api\/titles\/autocomplete/);
@@ -832,7 +832,7 @@ test('title autocomplete is themed and silently degrades when SteamGridDB fails'
 });
 
 test('cover processing uses compact text with a themed detail tooltip', () => {
-  const application = read('public/app.js'); const settings = read('public/js/cover-provider-settings.js'); const css = readPublicCss();
+  const application = read('public/app.js'); const settings = read('public/js/metadata/cover-provider-settings.js'); const css = readPublicCss();
   assert.match(application, /Scanning \$\{job\.processed\.toLocaleString\(UI_LOCALE\)\}\/\$\{job\.total\.toLocaleString\(UI_LOCALE\)\}/);
   assert.match(application, /element\.dataset\.tooltip = detail/);
   assert.match(application, /element\.removeAttribute\('title'\)/);
@@ -841,9 +841,9 @@ test('cover processing uses compact text with a themed detail tooltip', () => {
 });
 
 test('mobile always uses the card view and browser-native tooltips are not used', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const patch = read('public/js/patch-ui.js'); const accounts = read('admin/js/accounts.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const patch = read('public/js/community/patch-ui.js'); const accounts = read('admin/js/accounts.js');
   assert.match(readCss('public/css/library.css'), /@media \(max-width:680px\)[\s\S]*\.view-buttons\{display:none\}/);
-  assert.match(application, /const compactViewMedia = window\.matchMedia\('\(max-width: 680px\)'\)/);
+  assert.match(application, /compactViewMedia = window\.matchMedia\('\(max-width: 680px\)'\)/);
   assert.match(application, /state\.view === 'list' && !compactViewMedia\.matches/);
   assert.match(html, /id="grid-view" data-tooltip="Card view"/);
   assert.match(html, /id="list-view" data-tooltip="Compact view"/);
@@ -855,7 +855,7 @@ test('mobile always uses the card view and browser-native tooltips are not used'
 });
 
 test('number inputs use themed steppers instead of browser spin controls', () => {
-  const stepper = read('public/js/number-steppers.js'); const app = read('public/app.js'); const boot = read('admin/js/boot.js'); const progression = read('admin/js/progression.js');
+  const stepper = read('public/js/ui-helpers/number-steppers.js'); const app = read('public/app.js'); const boot = read('admin/js/boot.js'); const progression = read('admin/js/progression.js');
   assert.match(stepper, /export function mountThemedNumberSteppers/);
   assert.match(stepper, /input\.stepDown\(\)/);
   assert.match(stepper, /input\.stepUp\(\)/);
@@ -867,7 +867,7 @@ test('number inputs use themed steppers instead of browser spin controls', () =>
 });
 
 test('search fields use a themed clear control instead of browser-native cancel UI', () => {
-  const clears = read('public/js/search-clears.js'); const app = read('public/app.js'); const katalog = read('public/js/katalog-public.js'); const admin = read('admin/js/boot.js');
+  const clears = read('public/js/ui-helpers/search-clears.js'); const app = read('public/app.js'); const katalog = read('public/js/katalog/katalog-public.js'); const admin = read('admin/js/boot.js');
   assert.match(clears, /export function mountThemedSearchClears/);
   assert.match(clears, /themed-search-clear/);
   assert.match(clears, /input\.dispatchEvent\(new Event\('input'/);
@@ -892,8 +892,8 @@ test('private and public Kat·a·log searches share the compact field scale', ()
 
 test('selected content filters are visibly distinct from neutral dropdowns', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const publicPages = read('server/katalog-pages.js'); const publicKatalog = read('public/js/katalog-public.js');
-  const filterState = read('public/js/filter-state.js'); const theme = readCss('public/css/theme.css');
+  const publicPages = read('server/katalog-pages.js'); const publicKatalog = read('public/js/katalog/katalog-public.js');
+  const filterState = read('public/js/ui-helpers/filter-state.js'); const theme = readCss('public/css/theme.css');
   assert.equal((html.match(/data-content-filter/g) || []).length, 5);
   assert.match(html, /id="pegi-filter" data-content-filter data-filter-color="pegi"/);
   assert.doesNotMatch(html, /id="sort-filter"[^>]*data-content-filter/);
@@ -922,10 +922,10 @@ test('SteamGridDB is a shared admin integration while account scans remain avail
 
 test('Steam and GOG library imports stay modular, reviewed, and identity-safe', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const importer = read('public/js/library-import.js'); const steamImporter = read('public/js/steam-import.js'); const gogImporter = read('public/js/gog-import.js');
+  const importer = read('public/js/imports/library-import.js'); const steamImporter = read('public/js/imports/steam-import.js'); const gogImporter = read('public/js/imports/gog-import.js');
   const server = read('server.js'); const adminHtml = read('admin/index.html'); const adminClient = read('admin/js/integrations.js');
-  assert.match(application, /import \{ createSteamImporter \} from '\.\/js\/steam-import\.js'/);
-  assert.match(application, /import \{ createGogImporter \} from '\.\/js\/gog-import\.js'/);
+  assert.match(application, /import \{ createSteamImporter \} from '\.\.\/imports\/steam-import\.js'/);
+  assert.match(application, /import \{ createGogImporter \} from '\.\.\/imports\/gog-import\.js'/);
   assert.match(html, /id="steam-import-review"[^>]*>Review library/);
   assert.match(html, /id="gog-import-review"[^>]*>Review library/);
   assert.match(html, /id="steam-import-dialog"/);
@@ -975,7 +975,7 @@ test('account metadata services use compact themed disclosures', () => {
 });
 
 test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const settings = read('public/js/cover-provider-settings.js'); const server = read('server.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const settings = read('public/js/metadata/cover-provider-settings.js'); const server = read('server.js');
   assert.match(html, /data-cover-provider="thegamesdb"/);
   assert.match(html, /thegamesdb\.net\/login\.php[^>]*>Sign in \/ register ↗/);
   assert.match(html, /api\.thegamesdb\.net\/key\.php[^>]*>View API key ↗/);
@@ -991,11 +991,11 @@ test('TheGamesDB cover provider is modular, themed, and account-backed', () => {
 
 test('IGDB integration stays modular and keeps external ratings in details', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
-  const client = read('server/igdb.js'); const batch = read('server/igdb-bulk.js'); const ui = read('public/js/igdb-ui.js'); const css = readPublicCss();
-  const katalogClient = read('public/js/katalog-public.js'); const adminHtml = read('admin/index.html');
+  const client = read('server/igdb.js'); const batch = read('server/igdb-bulk.js'); const ui = read('public/js/metadata/igdb-ui.js'); const css = readPublicCss();
+  const katalogClient = read('public/js/katalog/katalog-public.js'); const adminHtml = read('admin/index.html');
   assert.match(html, /data-cover-provider="igdb"/); assert.doesNotMatch(html, /data-credential="clientId"|data-credential="clientSecret"/);
   assert.match(adminHtml, /data-app-integration="igdb"[\s\S]*name="clientId"[\s\S]*name="clientSecret"/);
-  assert.match(application, /import \{ createIgdbLookup, igdbDetailsMarkup \} from '\.\/js\/igdb-ui\.js'/);
+  assert.match(application, /import \{ createIgdbLookup \} from '\.\.\/metadata\/igdb-ui\.js'/);
   assert.match(application, /igdbDetailsMarkup\(game, escapeHtml\)/); assert.doesNotMatch(application, /card[\s\S]{0,120}igdbRating/);
   assert.match(ui, /IGDB users/); assert.match(ui, /Critics/); assert.match(ui, /onExternalSelect|export function createIgdbLookup/);
   assert.match(ui, /tagGroup\('Genres', game\.igdbGenres, 'genre'\)/); assert.match(ui, /tagGroup\('Themes', game\.igdbThemes, 'theme'\)/);
@@ -1019,7 +1019,7 @@ test('durable public covers stream from disk instead of buffering whole images',
 });
 
 test('batch updates use cookie-authenticated SSE and rerender grouped cards safely', () => {
-  const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/events.js'); const server = read('server.js');
+  const html = read('public/index.html'); const application = read('public/app.js'); const stream = read('public/js/core/events.js'); const server = read('server.js');
   assert.match(html, /id="pegi-bulk-start"[\s\S]*Fill PEGI details/);
   assert.match(stream, /credentials: 'same-origin'/);
   assert.doesNotMatch(stream, /Authorization|Bearer/);
@@ -1029,8 +1029,8 @@ test('batch updates use cookie-authenticated SSE and rerender grouped cards safe
   assert.match(application, /state\.games\.sort\([\s\S]*renderGames\(\);/);
   assert.match(application, /pendingGamePatches\.set\(game\.id, game\)/);
   assert.match(application, /renderGames\(\); flushPendingGamePatches\(\)/);
-  assert.match(application, /sequence !== gameLoadSequence \|\| state\.user\?\.id !== userId/);
-  assert.match(application, /generation !== sessionGeneration/);
+  assert.match(application, /sequence !== runtime\.gameLoadSequence \|\| state\.user\?\.id !== userId/);
+  assert.match(application, /generation !== runtime\.sessionGeneration/);
 });
 
 test('the product wordmark uses middle dots and no header cat artwork', () => {
@@ -1042,10 +1042,10 @@ test('the product wordmark uses middle dots and no header cat artwork', () => {
 
 test('generated documentation highlights the section currently in view', () => {
   const generator = read('scripts/generate-docs.js');
-  const navigation = read('public/js/docs-navigation.js');
+  const navigation = read('public/js/ui-helpers/docs-navigation.js');
   const generatedPages = ['public/docs/index.html', 'public/docs/user-guide.html', 'public/docs/technical.html'].map(read);
   assert.match(generator, /\.toc a\.active/);
-  assert.match(generator, /<script type="module" src="\/js\/docs-navigation\.js"><\/script>/);
+  assert.match(generator, /<script type="module" src="\/js\/ui-helpers\/docs-navigation\.js"><\/script>/);
   assert.doesNotMatch(generator, /<script>\(\(\)=>/);
   assert.match(navigation, /aria-current/);
   assert.match(navigation, /getBoundingClientRect\(\)\.top <= 72/);

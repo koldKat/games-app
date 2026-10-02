@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { frame, keepAlive, publish, subscribe } = require('../server/events');
-const clientSource = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'public', 'js', 'events.js'), 'utf8');
+const clientSource = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'public', 'js', 'core', 'events.js'), 'utf8');
 
 test('SSE frames carry named JSON events', () => {
   assert.equal(frame('game-updated', { game: { id: 7 } }), 'event: game-updated\ndata: {"game":{"id":7}}\n\n');

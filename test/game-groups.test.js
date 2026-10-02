@@ -3,18 +3,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 async function versionPickerModule() {
-  const platforms = fs.readFileSync(require.resolve('../public/js/platforms.js'), 'utf8');
+  const platforms = fs.readFileSync(require.resolve('../public/js/library/platforms.js'), 'utf8');
   const platformUrl = `data:text/javascript;base64,${Buffer.from(platforms).toString('base64')}`;
-  const mediaFormats = fs.readFileSync(require.resolve('../public/js/media-formats.js'), 'utf8');
+  const mediaFormats = fs.readFileSync(require.resolve('../public/js/library/media-formats.js'), 'utf8');
   const mediaFormatsUrl = `data:text/javascript;base64,${Buffer.from(mediaFormats).toString('base64')}`;
-  const source = fs.readFileSync(require.resolve('../public/js/version-picker.js'), 'utf8')
-    .replace("'./platforms.js'", JSON.stringify(platformUrl))
-    .replace("'./media-formats.js'", JSON.stringify(mediaFormatsUrl));
+  const source = fs.readFileSync(require.resolve('../public/js/editor/version-picker.js'), 'utf8')
+    .replace("'../library/platforms.js'", JSON.stringify(platformUrl))
+    .replace("'../library/media-formats.js'", JSON.stringify(mediaFormatsUrl));
   return import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 }
 
 test('selected copy supplies the rating and action ID after regrouping and updates', async () => {
-  const source = fs.readFileSync(require.resolve('../public/js/game-groups.js'), 'utf8');
+  const source = fs.readFileSync(require.resolve('../public/js/library/game-groups.js'), 'utf8');
   const { groupGames, selectedGroupCopy } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
   const { cardVersionControl } = await versionPickerModule();
   const games = [
@@ -42,7 +42,7 @@ test('the edition picker safely ignores a missing insertion anchor', async () =>
 });
 
 test('canonical identities group title variants without merging distinct games', async () => {
-  const source = fs.readFileSync(require.resolve('../public/js/game-groups.js'), 'utf8');
+  const source = fs.readFileSync(require.resolve('../public/js/library/game-groups.js'), 'utf8');
   const { groupGames } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
   const games = [
     { id: 1, canonicalGameId: 90, title: 'NieR: Automata', platform: 'PS4' },

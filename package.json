@@ -11,7 +11,10 @@
     "covers:showcase": "node scripts/generate-cover-showcase.js",
     "docs:build": "node scripts/generate-docs.js",
     "docs:check": "node scripts/generate-docs.js --check",
-    "test": "node --test && node scripts/generate-docs.js --check"
+    "client:check": "node --experimental-vm-modules scripts/check-client-modules.js",
+    "test:browser": "node scripts/check-browser-flows.js",
+    "test:server": "node scripts/check-server-flows.js",
+    "test": "node --test && npm run client:check && node scripts/generate-docs.js --check"
   },
   "dependencies": {
     "better-sqlite3": "^11.9.1",

@@ -160,12 +160,12 @@ function pageShell({ title, description, canonical, content, structuredData, use
     ${content}
     ${footerMarkup(copyright)}
   </div>
-  <script type="module" src="/js/katalog-public.js"></script>
-  <script type="module" src="/js/site-header.js"></script>
-  <script type="module" src="/js/patch-page.js"></script>
-  <script type="module" src="/js/mobile-action-dock.js"></script>
-  <script type="module" src="/js/stats-ui.js"></script>
-  ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/signal-page.js"></script>' : ''}
+  <script type="module" src="/js/katalog/katalog-public.js"></script>
+  <script type="module" src="/js/shell/site-header.js"></script>
+  <script type="module" src="/js/community/patch-page.js"></script>
+  <script type="module" src="/js/shell/mobile-action-dock.js"></script>
+  <script type="module" src="/js/stats/stats-ui.js"></script>
+  ${canonical === `${SITE_URL}/signal` ? '<script type="module" src="/js/community/signal-page.js"></script>' : ''}
   ${extraScripts}
 </body>
 </html>`;

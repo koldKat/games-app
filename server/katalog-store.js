@@ -5,7 +5,7 @@ const { createCanonicalStore } = require('./canonical-store');
 const { GAME_LIMITS, KATALOG_LIMITS } = require('./validation-policy');
 
 const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
-// The wide Kat·a·log grid has eight columns: keep ten complete desktop rows visible per page.
+// Ten desktop rows at eight columns.
 const PEGI_RATINGS = new Set(require('./constants').PEGI_RATINGS);
 
 const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
@@ -351,8 +351,7 @@ function createKatalogStore(database, { canonical: suppliedCanonical = null } = 
         .all({ ...params, limit: pageSize, offset: (safePage - 1) * pageSize }).map(hydrateEntry).map(publicEntry);
       return { entries: releases, total, page: safePage, pageSize, pages };
     }
-    // Grouping can span platforms, so first scan only the small identity columns.
-    // Hydrate descriptions and metadata solely for the groups shown on this page.
+    // Group lightweight identities first; hydrate only the visible page.
     const identities = database.prepare(`SELECT id, title, title_key AS titleKey, canonical_game_id AS canonicalGameId
       FROM catalogue_entries WHERE ${where} ORDER BY title COLLATE NOCASE, platform COLLATE NOCASE`).all(params);
     const groupedIds = new Map(); const groups = [];

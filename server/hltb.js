@@ -3,9 +3,7 @@
 const { TITLE_LOOKUP_MIN_LENGTH } = require('./constants');
 
 const BASE_URL = 'https://howlongtobeat.com';
-// HLTB's current token-gated game search endpoint. Bundle discovery has proved
-// unreliable because it can surface legacy endpoints that still exist in code
-// but no longer expose `/init`.
+// Bundle discovery can select obsolete endpoints without /init support.
 const SEARCH_PATH = '/api/search/site';
 const CACHE_MS = 30 * 60 * 1000;
 const SESSION_MS = 10 * 60 * 1000;
@@ -109,9 +107,7 @@ async function search(title) {
   const run = queue.catch(() => {}).then(() => fetchSearch(clean));
   queue = run.then(() => undefined, () => undefined);
   const results = await run;
-  // An empty HLTB response is often transient (indexing or provider search
-  // hiccups). Do not turn that into a 30-minute false negative: a manual
-  // retry or the next bulk pass must be able to ask the provider again.
+  // Empty responses may be transient; cache only successful matches.
   if (results.length) cache.set(key, { at: Date.now(), results });
   return results;
 }

@@ -1,6 +1,6 @@
 import { api, button, busy, cell, confirmAction, emptyRow, formatDate, toast } from './core.js';
 import { ADMIN_TIMING } from './admin-policy.js';
-import { platformDisplayName } from '/js/platforms.js';
+import { platformDisplayName } from '/js/library/platforms.js';
 
 const stateLabel = value => value === 'public' ? 'PUBLIC' : value === 'candidate' ? 'REVIEW' : 'REJECTED';
 const editDialog = document.getElementById('katalog-edit-dialog');
