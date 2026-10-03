@@ -367,7 +367,7 @@ The authentication design is a reduced version of the gamebooks app's model.
 - `crypto.scrypt` derives a 64-byte hash.
 - Every password receives a random 16-byte salt.
 - Verification uses `crypto.timingSafeEqual`.
-- Passwords must contain 8 to 200 characters.
+- Passwords must contain 4 to 200 characters.
 
 ### Usernames
 

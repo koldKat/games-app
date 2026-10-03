@@ -19,7 +19,7 @@ Open `http://localhost:3005` in a browser. To use another device on the same net
 1. Select **Register**.
 2. Choose a username. Matching is case-insensitive.
 3. Optionally enter an email address.
-4. Choose a password with at least eight characters and enter it again for confirmation.
+4. Choose a password with at least four characters and enter it again for confirmation.
 5. Select **Create account**.
 
 Every account has an isolated library. Game ownership is attached to the account's internal numeric ID, so changing a username does not affect its collection.
@@ -342,7 +342,7 @@ Enter an optional email address and current password, then save. Email addresses
 
 ### Change password
 
-Enter the current password, enter the new password twice, and save. The new password must contain at least eight characters.
+Enter the current password, enter the new password twice, and save. The new password must contain at least four characters.
 
 Changing a password invalidates all existing sessions for that account. Sign in again with the new password.
 

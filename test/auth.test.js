@@ -19,6 +19,15 @@ test.after(() => {
   for (const suffix of ['', '-shm', '-wal']) fs.rmSync(`${dbPath}${suffix}`, { force: true });
 });
 
+test('passwords accept four characters but reject shorter values', async () => {
+  await assert.rejects(() => auth.register('short_password_test', 'abc'), /at least 4 characters/);
+  const user = await auth.register('four_character_test', 'abcd');
+  assert.equal((await auth.login(user.username, 'abcd')).id, user.id);
+  await assert.rejects(() => auth.updateAccount(user.id, { currentPassword: 'abcd', newPassword: 'abc' }), /at least 4 characters/);
+  await auth.updateAccount(user.id, { currentPassword: 'abcd', newPassword: 'efgh' });
+  assert.equal((await auth.login(user.username, 'efgh')).id, user.id);
+});
+
 test('account libraries remain isolated and unowned rows are never claimed by username', async () => {
   data.db.prepare(`INSERT INTO games (title, platform) VALUES ('Unowned Game', 'Nintendo Switch')`).run();
   const other = await auth.register('other_user', 'long-password', 'Other@Example.com');

@@ -39,7 +39,7 @@ function setAuthMode(mode) {
   $('#auth-submit').textContent = mode === 'register' ? 'Create account' : 'Authenticate';
   $('#auth-username').placeholder = mode === 'register' ? 'player_one' : '';
   $('#auth-password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
-  $('#auth-password').placeholder = mode === 'register' ? '8+ characters' : '';
+  $('#auth-password').placeholder = mode === 'register' ? '4+ characters' : '';
   $('#auth-email-label').hidden = mode !== 'register';
   $('#auth-confirm-label').hidden = mode !== 'register';
   $('#auth-password-confirm').required = mode === 'register';

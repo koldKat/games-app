@@ -3,7 +3,7 @@
 const ACCOUNT_LIMITS = Object.freeze({
   usernameMin: 3,
   usernameMax: 32,
-  passwordMin: 8,
+  passwordMin: 4,
   passwordMax: 200,
   emailMax: 254,
 });
