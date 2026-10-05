@@ -8,7 +8,7 @@
 .promo-signal-link {
   margin-top: 9px;
   color: #72e5c9;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   letter-spacing: .04em;
   text-decoration: none;
 }
@@ -33,7 +33,7 @@
 .activity-entry p {
   margin: 0;
   color: #acbeb9;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   line-height: 1.35;
 }
 .activity-entry b, .activity-entry em {
@@ -79,7 +79,7 @@
   border-radius: 3px;
   background: var(--platform-surface) padding-box, var(--platform-frame) border-box;
   color: var(--platform-text);
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   font-weight: 700;
   line-height: 1.2;
   vertical-align: baseline;
@@ -129,7 +129,7 @@
   background: #0a1916;
   box-shadow: 0 6px 18px #000b;
   color: #dbece6;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   line-height: 1;
   opacity: 0;
   pointer-events: none;
@@ -140,11 +140,11 @@
 }
 .activity-preview-profile b {
   color: #72e5c9;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
 }
 .activity-preview-profile small {
   color: #b9c9c4;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .activity-preview-trigger:not(.activity-preview-dismissed):hover > img, .activity-preview-trigger:not(.activity-preview-dismissed):focus-within > img {
   opacity: 1;
@@ -158,15 +158,15 @@
 }
 .activity-entry time {
   align-self: center;
-  color: #66847c;
-  font-size: 8px;
+  color: #69867f;
+  font-size: var(--text-small, 13px);
   line-height: 1;
   text-align: right;
 }
 .activity-feed-empty {
   margin: auto 0;
   color: #718a83;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   line-height: 1.45;
 }
 .activity-entry--announcement {
@@ -182,7 +182,7 @@
 }
 .activity-entry--announcement p>strong {
   color:#7be5ca;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   letter-spacing:.02em;
 }
 .activity-announcement-body {
@@ -203,7 +203,7 @@
   background:none;
   color:#9ab3ac;
   font:inherit;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   line-height:1.35;
   cursor:pointer;
   text-align:left;
@@ -213,7 +213,7 @@
   align-items: center;
   gap: 5px;
   color: #9ab3ac;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   line-height: 1.35;
 }
 .activity-group-summary b {
@@ -229,7 +229,7 @@
 .activity-group-chevron {
   display:inline-block;
   color:#72e5c9;
-  font-size:7px;
+  font-size:var(--text-small, 13px);
   transition:transform .15s ease;
 }
 .activity-group-toggle[aria-expanded="true"] .activity-group-chevron {
@@ -237,7 +237,7 @@
 }
 .activity-group-count {
   color:#718d85;
-  font-size:9px;
+  font-size:var(--text-small, 13px);
 }
 .activity-group-items {
   display:grid;
@@ -264,7 +264,7 @@
   padding:0 4px;
   background:#11150f;
   color:#f0d073;
-  font-size:8px;
+  font-size:var(--text-small, 13px);
   letter-spacing:.04em;
 }
 .activity-pinned-card header svg {
@@ -274,7 +274,7 @@
 }
 .activity-pinned-card>div {
   color:#c2d0ca;
-  font-size:9px;
+  font-size:var(--text-small, 13px);
   line-height:1.45;
 }
 .account-activity-toggle {
@@ -305,12 +305,12 @@
 .account-activity-toggle strong {
   display: block;
   color: #cfe0da;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .account-activity-toggle small {
   display: block;
   margin-top: 3px;
   color: #78958d;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   line-height: 1.35;
 }

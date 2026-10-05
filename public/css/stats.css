@@ -84,7 +84,7 @@
 .stats-section-label {
   margin: 0 0 5px;
   color: #5edbb9;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   line-height: 1.2;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -93,7 +93,7 @@
 .stats-section--progression .stats-section-label { color: #b68cf0; }
 .stats-section--server .stats-section-label,.stats-section--app .stats-section-label { color: #719ac0; }
 .stats-table { width: 100%; border-collapse: collapse; }
-.stats-table td { padding: 2px 0; font-size: 10px; line-height: 1.3; vertical-align: top; }
+.stats-table td { padding: 2px 0; font-size: var(--text-small, 13px); line-height: 1.3; vertical-align: top; }
 .stats-key { padding-right: 9px !important; color: #81978f; }
 .stats-value { color: #d4e6df; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
 .stats-platform {
@@ -136,5 +136,5 @@
   .stats-card { max-height: calc(100vh - 12px); max-height: calc(100dvh - 12px); }
   .stats-body { max-height: calc(100vh - 70px); max-height: calc(100dvh - 70px); padding: 12px; }
   .stats-sections { column-count: 1; }
-  .stats-table td { font-size: 11px; }
+  .stats-table td { font-size: var(--text-small, 13px); }
 }

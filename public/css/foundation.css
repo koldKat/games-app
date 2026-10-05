@@ -1,4 +1,8 @@
 :root {
+  --text-small: 13px;
+  --text-tag: 12px;
+  --text-body: 14px;
+  --text-input: 14px;
   --ink: #161b27;
   --muted: #737887;
   --paper: #f4f2ed;
@@ -89,7 +93,7 @@ button {
 .brand small {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   margin-top: 4px;
   letter-spacing: 0.02em;
 }
@@ -164,7 +168,7 @@ button {
   margin: 0 0 9px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   font-weight: 800;
   color: var(--coral);
 }
@@ -218,7 +222,7 @@ button {
   transform: rotate(7deg);
   box-shadow: 12px 16px 28px #0008;
   padding: 29px 11px 0;
-  color: #172033;
+  color: #7d828d;
   font: 800 16px/1.1 "Manrope";
   text-align: center;
 }
@@ -267,7 +271,7 @@ button {
   height: 39px;
   border-radius: 12px;
   background: #e9edf4;
-  color: #4d617f;
+  color: #718199;
   font-size: 18px;
   font-weight: 900;
 }
@@ -291,7 +295,7 @@ button {
   display: block;
   color: var(--muted);
   margin-top: 5px;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
 }
 .library {
   margin-top: 43px;
@@ -320,7 +324,7 @@ button {
   width: 35px;
   height: 31px;
   border-radius: 7px;
-  color: #7f7e7a;
+  color: #82817d;
 }
 .icon-button.active {
   background: #fff;
@@ -364,8 +368,8 @@ button {
 }
 .filters label > span, .form-grid label > span {
   display: block;
-  color: #777b86;
-  font-size: 10px;
+  color: #7c808b;
+  font-size: var(--text-small, 13px);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -392,7 +396,7 @@ button {
   margin-top: 14px;
   padding: 12px 2px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
 }
 .text-button {
   border: 0;
@@ -442,8 +446,8 @@ button {
   align-items: center;
   gap: 6px;
   max-width: calc(100% - 34px);
-  font-size: 10px;
-  color: #666d7b;
+  font-size: var(--text-small, 13px);
+  color: #7b818d;
   text-transform: uppercase;
   letter-spacing: 0.075em;
   font-weight: 800;
@@ -475,7 +479,7 @@ button {
 }
 .game-meta {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   min-height: 16px;
   white-space: nowrap;
   overflow: hidden;
@@ -491,8 +495,8 @@ button {
   padding: 5px 8px;
   border-radius: 7px;
   background: #eceae5;
-  color: #646873;
-  font-size: 9px;
+  color: #7d8089;
+  font-size: var(--text-small, 13px);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.045em;
@@ -532,16 +536,16 @@ button {
   border: 0;
   border-radius: 8px;
   padding: 7px 9px;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   font-weight: 800;
 }
 .edit-button {
   background: #efede8;
-  color: #4f5664;
+  color: #7d828c;
 }
 .quick-button {
   background: #e2f0e8;
-  color: #347455;
+  color: #598d74;
   margin-left: auto;
 }
 .game-grid.list-view {
@@ -700,12 +704,12 @@ dialog::backdrop {
 }
 .pegi-assist strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
 }
 .pegi-assist small {
   display: block;
-  color: #757b89;
-  font-size: 10px;
+  color: #7b808e;
+  font-size: var(--text-small, 13px);
   margin-top: 3px;
 }
 .pegi-results {
@@ -742,21 +746,21 @@ dialog::backdrop {
   background: #e6efe5;
   border-radius: 7px;
   font-weight: 900;
-  color: #35714e;
+  color: #598b6e;
   flex: 0 0 auto;
 }
 .pegi-result strong {
   display: block;
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
 }
 .pegi-result small {
   display: block;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   margin-top: 3px;
 }
 .pegi-message {
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   color: var(--muted);
   padding: 9px;
 }
@@ -782,7 +786,7 @@ dialog::backdrop {
 .check-label span {
   margin: 0 !important;
   text-transform: none !important;
-  font-size: 12px !important;
+  font-size: var(--text-small, 13px) !important;
   letter-spacing: 0 !important;
 }
 .modal-actions {
@@ -801,7 +805,7 @@ dialog::backdrop {
   background: #f8dfda;
   color: #9d392b;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   margin: 14px 0 0;
 }
 @media (max-width: 1050px) {
@@ -886,7 +890,7 @@ dialog::backdrop {
   }
   .pegi-assist .button {
     padding: 8px 10px;
-    font-size: 11px;
+    font-size: var(--text-small, 13px);
   }
 }
 @media (max-width: 480px) {

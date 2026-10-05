@@ -55,7 +55,7 @@
   border-top:1px solid #284039;
   background:#0b1715;
   color:#8ca59e;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   text-align:center
 }
 .library-import-summary {
@@ -70,13 +70,13 @@
 .library-import-summary strong {
   margin-right:auto;
   color:#dffdf5;
-  font-size:12px
+  font-size:var(--text-small, 13px)
 }
 .library-import-summary span {
   padding:3px 5px;
   border:1px solid #2b423e;
   color:#91a8a2;
-  font-size:10px
+  font-size:var(--text-small, 13px)
 }
 .library-import-toolbar {
   display:grid;
@@ -129,7 +129,7 @@
 .library-import-copy strong {
   overflow:hidden;
   color:#d9e8e4;
-  font-size:11px;
+  font-size:var(--text-small, 13px);
   text-overflow:ellipsis;
   white-space:nowrap
 }
@@ -137,7 +137,7 @@
   margin-top:2px;
   overflow:hidden;
   color:#738984;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   text-overflow:ellipsis;
   white-space:nowrap
 }
@@ -151,13 +151,13 @@
 }
 .library-import-state b {
   color:#5be0bf;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   letter-spacing:.08em
 }
 .library-import-state small {
   margin-top:2px;
   color:#72857f;
-  font-size:10px
+  font-size:var(--text-small, 13px)
 }
 .state-ambiguous b {
   color:#e8bc61
@@ -168,7 +168,7 @@
 .library-import-card>.modal-actions>span {
   margin-right:auto;
   color:#81958f;
-  font-size:10px
+  font-size:var(--text-small, 13px)
 }
 .library-import-progress {
   padding:8px 0 2px
@@ -179,11 +179,11 @@
   gap:12px;
   margin-bottom:5px;
   color:#9fb8b1;
-  font-size:11px
+  font-size:var(--text-small, 13px)
 }
 .library-import-progress b {
   color:#67e7c5;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   font-weight:700
 }
 .library-import-meter {

@@ -10,14 +10,14 @@
   gap:5px;
   margin:0 0 3px 1px;
   padding:0;
-  color:#728092;
-  font-size:9px;
+  color:#758394;
+  font-size:var(--text-small, 13px);
   font-weight:800;
   letter-spacing:.07em;
   text-transform:uppercase;
 }
 .format-field legend small {
-  color:#52616e;
+  color:#78848e;
   font:inherit;
   font-weight:600;
   letter-spacing:.03em;
@@ -55,7 +55,7 @@
   border-radius:4px;
   background:#090d13;
   color:#9aa7b4;
-  font-size:11px;
+  font-size:var(--text-small, 13px);
   font-weight:700;
   line-height:1;
   letter-spacing:.025em;

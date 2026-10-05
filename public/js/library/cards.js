@@ -47,7 +47,7 @@ function cardRatingControl(game) {
     return `<button type="button" class="rating-star ${stateClass}" data-action="rate" data-rating-star="${position}" aria-label="Rate ${position} star${position === 1 ? '' : 's'}">★</button>`;
   }).join('');
   const label = value ? `${value.toFixed(1)} / 5` : 'Not rated';
-  return `<div class="rating-field card-rating-field"><div class="rating-picker card-rating-picker" data-card-rating="${value}" role="group" aria-label="Your rating: ${label}">${stars}<output>${label}</output><small class="card-rating-inline-label">Your rating</small></div></div>`;
+  return `<div class="rating-field card-rating-field"><div class="rating-picker card-rating-picker" data-card-rating="${value}" role="group" aria-label="Your rating: ${label}">${stars}<output>${label}</output></div></div>`;
 }
 
 function paintCardRating(picker, value, preview = false) {

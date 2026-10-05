@@ -395,7 +395,7 @@ test('login and registration keep a stable desktop rail without filler content',
 });
 
 test('landing promo descriptions remain readable', () => {
-  assert.match(readPublicCss(), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
+  assert.match(readPublicCss(), /\.auth-promo p\{font-size:var\(--text-body\);line-height:1\.5;color:#92a0ae\}/);
 });
 
 test('landing footer links to the public repository without replacing the app', () => {
@@ -619,7 +619,8 @@ test('personal ratings use private half-star values and card rendering', () => {
   assert.match(css, /\.rating-picker \.rating-star\{[^}]*font-size:19px/);
   assert.match(css, /\.rating-picker \.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
   assert.match(application, /rating-picker card-rating-picker/);
-  assert.match(application, /card-rating-inline-label">Your rating/);
+  assert.doesNotMatch(application, /card-rating-inline-label/);
+  assert.match(application, /aria-label="Your rating: \$\{label\}"/);
   assert.match(css, /\.card-rating-field\{margin-top:8px/);
   assert.match(css, /\.rating-star\.half\{background:linear-gradient\(90deg,#f5a623 50%,#44515e 50%\)/);
   assert.match(catalogue, /SELECT AVG\(g\.rating\)/);
@@ -801,9 +802,10 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(css, /\.game-card\{display:flex;flex-direction:column/);
   assert.match(css, /\.card-actions\{margin-top:auto/);
   assert.match(css, /\.game-title\{font-size:14px;height:2\.44em/);
-  assert.match(css, /\.badges\{height:42px;align-content:flex-start;overflow:hidden/);
+  assert.match(css, /\.badges\{height:46px;align-content:flex-start;overflow:hidden/);
   assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
-  assert.match(css, /\.card-hltb dt\{[^}]*font-size:10px/);
+  assert.match(css, /\.card-hltb dt\{[^}]*font-size:var\(--text-small,13px\)[^}]*white-space:nowrap/);
+  assert.doesNotMatch(css, /\.card-hltb dt\{[^}]*min-height:/);
   assert.match(css, /\.card-hltb dd\{[^}]*font-size:13px/);
   assert.match(read('public/js/metadata/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);
 });
@@ -882,7 +884,7 @@ test('search fields use a themed clear control instead of browser-native cancel 
 test('private and public Kat·a·log searches share the compact field scale', () => {
   const privateCss = readCss('public/css/theme.css'); const publicCss = readCss('public/css/katalog.css');
   assert.match(privateCss, /\.search-wrap\{height:34px/);
-  assert.match(privateCss, /\.search-wrap input\{font-size:11px/);
+  assert.match(privateCss, /\.search-wrap input\{font-size:var\(--text-input\)/);
   assert.match(read('server/katalog-pages.js'), /class="filter-panel katalog-search"/);
   assert.match(read('server/katalog-pages.js'), /class="search-wrap"/);
   assert.match(read('server/katalog-pages.js'), /class="filters katalog-search-filters"/);

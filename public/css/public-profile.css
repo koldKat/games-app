@@ -93,12 +93,12 @@
 }
 .public-profile-identity span {
   color: #72e5c9;
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
   font-weight: 700;
 }
 .public-profile-identity small {
   color: #7f9b93;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .public-profile-stats {
   display: grid;
@@ -120,7 +120,7 @@
 }
 .public-profile-stat span {
   color: #78958d;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   line-height: 1.25;
 }
 .public-profile-platforms {
@@ -131,7 +131,7 @@
 .public-profile-platforms h3 {
   margin: 0 0 7px;
   color: #91aaa2;
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -149,17 +149,17 @@
   border: 1px solid transparent;
   background: var(--platform-surface) padding-box, var(--platform-frame) border-box;
   color: var(--platform-text);
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .public-profile-platforms .public-profile-platform small {
   color: color-mix(in srgb, var(--platform-accent) 78%, #dcece6);
-  font-size: 9px;
+  font-size: var(--text-small, 13px);
 }
 .public-profile-platforms p,
 .public-profile-status {
   margin: 0;
   color: #82968f;
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
 }
 .public-profile-status {
   padding: 24px 10px;

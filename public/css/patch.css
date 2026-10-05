@@ -20,7 +20,7 @@
 .patch-copy {
   margin:0 0 10px;
   color:#9cadb1;
-  font-size:12px;
+  font-size:var(--text-small, 13px);
   line-height:1.5;
 }
 .patch-card textarea {
@@ -53,7 +53,7 @@
 .patch-empty {
   margin:8px 0;
   color:#809198;
-  font-size:12px;
+  font-size:var(--text-small, 13px);
 }
 .ping-item {
   display:flex;
@@ -83,21 +83,21 @@
 }
 .ping-item b {
   color:#d2e4de;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   letter-spacing:.08em;
   text-transform:uppercase;
 }
 .ping-item small {
   overflow:hidden;
   color:#83959c;
-  font-size:11px;
+  font-size:var(--text-small, 13px);
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 .ping-item time {
   flex:0 0 auto;
-  color:#70828a;
-  font-size:9px;
+  color:#73858c;
+  font-size:var(--text-small, 13px);
 }
 .patch-back {
   margin:0 0 8px;
@@ -130,18 +130,18 @@
 .ping-message span,.ping-message time {
   display:block;
   color:#7d9490;
-  font-size:9px;
+  font-size:var(--text-small, 13px);
   font-weight:700;
   letter-spacing:.08em;
 }
 .ping-message p {
   margin:4px 0;
   color:#c7d4d5;
-  font-size:12px;
+  font-size:var(--text-body);
   line-height:1.45;
 }
 .ping-message time {
-  color:#71818a;
+  color:#74848c;
   font-weight:400;
   letter-spacing:0;
 }
@@ -161,12 +161,12 @@
   color:#dce4ee;
   padding:7px 8px;
   font:inherit;
-  font-size:10px;
+  font-size:var(--text-small, 13px);
   line-height:1.5;
   resize:vertical;
 }
 .ping-reply textarea::placeholder {
-  color:#6f7f88;
+  color:#75848d;
 }
 .ping-reply textarea:focus {
   border-color:#35d6b2;
@@ -186,8 +186,8 @@
   margin-left:3px;
   border-radius:999px;
   background:#48b69a;
-  color:#07120f;
-  font-size:8px;
+  color:#7e8482;
+  font-size:var(--text-small, 13px);
   font-weight:800;
   line-height:1;
 }
@@ -203,7 +203,7 @@
 .top-actions .ping-button:disabled {
   border-color:#283139;
   background:#10161b;
-  color:#59666d;
+  color:#778287;
   cursor:default;
   opacity:.72;
 }
@@ -227,17 +227,17 @@
   gap:3px;
 }
 .ping-item b {
-  font-size:11px;
+  font-size:var(--text-small, 13px);
 }
 .ping-item small {
   font-size:13px;
 }
 .ping-item time {
-  font-size:10px;
+  font-size:var(--text-small, 13px);
 }
 .patch-back {
   margin-bottom:10px;
-  font-size:11px;
+  font-size:var(--text-small, 13px);
 }
 .ping-messages {
   gap:8px;
@@ -247,7 +247,7 @@
   padding:10px;
 }
 .ping-message span,.ping-message time {
-  font-size:10px;
+  font-size:var(--text-small, 13px);
 }
 .ping-message p {
   margin:5px 0;
@@ -265,7 +265,7 @@
 }
 .ping-reply .button {
   min-height:34px;
-  font-size:11px;
+  font-size:var(--text-small, 13px);
 }
 .auth-footer [data-patch-open] {
   min-height:0;
@@ -295,7 +295,7 @@
     padding:7px;
   }
   .ping-item time {
-    font-size:8px;
+    font-size:var(--text-small, 13px);
   }
   .ping-messages {
     max-height:34dvh;

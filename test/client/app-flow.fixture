@@ -78,10 +78,23 @@ try {
   await waitFor(() => !document.querySelector('#app-shell').hidden && document.querySelector('.game-card'), 'Authenticated library did not mount');
   await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Session resume did not finish');
   check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'XP fill restored');
+  const textSize = selector => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
+  check(textSize('.game-meta') >= 13, 'Card metadata remains readable');
+  check(textSize('.platform-tag') >= 12, 'Compact platform labels remain readable');
+  check(textSize('#account-current-password') >= 14, 'Profile password input remains readable');
+  check(textSize('#search') >= 14, 'Library search remains readable');
+  const cardRating = document.querySelector('.card-rating-picker');
+  check(cardRating.scrollWidth <= cardRating.clientWidth + 1, 'Card rating text fits its control');
+  check(getComputedStyle(cardRating.querySelector('output')).whiteSpace === 'nowrap', 'Rating score stays on one line');
+  check(!cardRating.querySelector('.card-rating-inline-label'), 'Card rating omits the redundant visible label');
+  if (matchMedia('(max-width: 520px)').matches) {
+    check(textSize('#account-current-password') >= 16, 'Mobile profile input avoids browser focus zoom');
+  }
   const mountedHeader = document.querySelector('#app-shell .topbar');
   check(mountedHeader, 'Shared header is mounted');
   const { katalogNavigation } = await import('/js/boot/navigation.js');
   await katalogNavigation.open('/katalog');
+  check(textSize('.katalog-search input') >= 14, 'Public search shares the readable input scale');
   check(document.querySelector('#library-view').hidden, 'Public view switches content');
   check(document.querySelector('#app-shell .topbar') === mountedHeader, 'Header preserved across navigation');
   await katalogNavigation.open('/signal');

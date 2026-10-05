@@ -4,6 +4,8 @@
 
 ## Architecture
 
+Public UI typography uses `--text-small` (13px), `--text-body` (14px), and `--text-input` (14px, 16px on small mobile screens) in the existing feature stylesheets. Card status and platform tags use the compact `--text-tag` (12px) scale with reduced padding. Muted neutral text is brightened for dark surfaces; PEGI and platform identity colors remain separate. Card rating controls retain accessible labels without redundant visible text. Browser-flow checks guard card metadata, platform labels, and account/search input sizes.
+
 Game Kat·a·log follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.
 
 ```text

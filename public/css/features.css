@@ -137,12 +137,14 @@
 }
 @media (max-width: 520px) {
   .stats {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .stat-card small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-height: 2.4em;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: normal;
   }
   .stat-card > span:first-child {
     align-items: center;
@@ -154,6 +156,11 @@
   }
 }
 /* Landing features and public links. */
+@media (max-width: 360px) {
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .auth-screen {
   overflow: auto;
 }
@@ -173,7 +180,7 @@
   font-size: 15px;
 }
 .auth-promo p {
-  font-size: 9px;
+  font-size: var(--text-body);
   line-height: 1.45;
   margin-top: 6px;
 }
@@ -205,7 +212,7 @@
   border: 1px solid #315446;
   background: #10231d;
   color: #67d6a1;
-  font-size: 8px;
+  font-size: var(--text-small, 13px);
 }
 .promo-pegi b:nth-child(3), .promo-pegi b:nth-child(4) {
   border-color: #665327;
@@ -231,8 +238,8 @@
   border: 1px solid #21303a;
   background: #080d12;
   padding: 5px;
-  color: #6f817f;
-  font-size: 7px;
+  color: #728482;
+  font-size: var(--text-small, 13px);
 }
 .promo-system span:last-child {
   grid-column: 1/-1;
@@ -269,8 +276,8 @@
   padding: 0 8px;
   border: 1px solid #19282f;
   background: #080d12;
-  color: #52616d;
-  font-size: 7px;
+  color: #78848d;
+  font-size: var(--text-small, 13px);
   letter-spacing: 0.08em;
 }
 .auth-footer nav {
@@ -387,7 +394,7 @@
 .session-resume-screen small {
   margin-top: 5px;
   color: #5fddc0;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   letter-spacing: 0.05em;
 }
 .resuming-session .session-resume-screen {
@@ -405,7 +412,7 @@
 .action-message {
   margin: 3px 0 2px;
   color: #8d9aa8;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   line-height: 1.55;
 }
 .button.action-danger {
@@ -425,12 +432,13 @@
 }
 /* Promo typography. */
 .auth-promo p {
-  font-size: 12px;
+  font-size: var(--text-body);
   line-height: 1.5;
   color: #92a0ae;
 }
 .promo-system {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 3px;
 }
 .promo-system span, .promo-system span:last-child {
@@ -439,14 +447,14 @@
   white-space: nowrap;
 }
 .promo-system span {
-  font-size: 6px;
+  font-size: var(--text-small, 13px);
 }
 @media (max-width: 580px) {
   .promo-library, .promo-covers, .promo-metadata, .promo-track, .promo-private {
     min-height: 170px;
   }
   .auth-promo p {
-    font-size: 12px;
+    font-size: var(--text-small, 13px);
   }
 }
 .integration-bulk .bulk-status {
@@ -473,7 +481,7 @@
   background: #0a1916;
   box-shadow: 0 7px 18px #000b;
   color: #d9ebe5;
-  font-size: 10px;
+  font-size: var(--text-small);
   line-height: 1.25;
   opacity: 0;
   pointer-events: none;
@@ -515,7 +523,7 @@
   border: 1px solid #3a4b59;
   background: #111923;
   color: #c4d0da;
-  font-size: 9px;
+  font-size: var(--text-small);
   line-height: 1.45;
   white-space: normal;
   box-shadow: 4px 7px 16px #000a;
@@ -539,7 +547,7 @@
 }
 @media (max-width: 520px) {
   .library-title {
-    font-size: 12px;
+    font-size: var(--text-small, 13px);
   }
 }
 /* Expandable PEGI metadata. */
@@ -570,7 +578,7 @@
   cursor: pointer;
   list-style: none;
   color: #64e8ca;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -598,7 +606,7 @@
 .game-pegi-details summary small {
   margin-left: auto;
   color: #8293a2;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -618,7 +626,7 @@
   border: 1px solid #2c414e;
   background: #101b24;
   color: #b5c5d1;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .pegi-detail-tag.purchase {
   border-color: #695321;
@@ -649,13 +657,13 @@
   display: block;
 }
 .pegi-purchase-warning strong {
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
   color: #f0c35d;
 }
 .pegi-purchase-warning small {
   margin-top: 2px;
   color: #b29a67;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
 }
 .pegi-detail-body section {
   padding: 11px 0 4px;
@@ -664,14 +672,14 @@
 .pegi-detail-body h3 {
   margin: 0 0 6px;
   color: #91a2b1;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .pegi-detail-body p {
   margin: 0;
   color: #c3cdd6;
-  font-size: 12px;
+  font-size: var(--text-small, 13px);
   line-height: 1.65;
   text-align: justify;
   text-justify: inter-word;
@@ -689,13 +697,13 @@
   padding: 6px 8px;
   background: #0d151d;
   color: #bac7d2;
-  font-size: 11px;
+  font-size: var(--text-small, 13px);
 }
 .pegi-source {
   display: inline-block;
   margin-top: 12px;
   color: #55d9bc;
-  font-size: 10px;
+  font-size: var(--text-small, 13px);
   text-decoration: none;
 }
 .pegi-source:hover {
