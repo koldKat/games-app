@@ -274,7 +274,7 @@ input[type="checkbox"]:focus-visible {
 }
 .footer-studio-links small {
   color: #829d94;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .footer-studio-links i {
   color: #5bcdb2;
@@ -315,7 +315,7 @@ input[type="checkbox"]:focus-visible {
   letter-spacing: -0.02em;
 }
 .brand small {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   margin-top: 2px;
   color: #778492;
 }
@@ -376,7 +376,7 @@ input[type="checkbox"]:focus-visible {
   box-shadow: 0 0 0 34px #35d6b207, 0 0 0 68px #35d6b204;
 }
 .kicker {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: 0.13em;
   margin: 0 0 5px;
   color: #35d6b2;
@@ -479,7 +479,7 @@ input[type="checkbox"]:focus-visible {
   font: 700 16px/1 ui-monospace, monospace;
 }
 .stat-card small {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   margin: 0;
 }
 .library {
@@ -537,7 +537,7 @@ input[type="checkbox"]:focus-visible {
   margin-top: 7px;
 }
 .filters label > span, .form-grid label > span {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: 0.07em;
   margin: 0 0 3px 1px;
   color: #758394;
@@ -598,7 +598,7 @@ input[type="checkbox"]:focus-visible {
   margin-top: 7px;
   padding: 6px 1px 0;
   border-color: #1b242e;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   gap:8px;
   flex-wrap:wrap;
 }
@@ -824,7 +824,7 @@ dialog::backdrop {
   color: #67e6c8;
 }
 .pegi-assist small {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   margin-top: 2px;
 }
 .pegi-results {
@@ -881,7 +881,7 @@ dialog::backdrop {
   font-size: var(--text-small, 13px);
 }
 .pegi-result small, .pegi-message {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .form-grid {
   gap: 7px;
@@ -1026,7 +1026,7 @@ dialog::backdrop {
     font-size: var(--text-small, 13px);
   }
   .stat-card small {
-    font-size: var(--text-small, 13px);
+    font-size: var(--text-caption);
   }
   .library-head h2 {
     font-size: 16px;
@@ -1076,7 +1076,7 @@ dialog::backdrop {
   border-bottom: 1px solid #24303c;
   background: #0e151d;
   color: #8695a5;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: 0.08em;
 }
 .auth-terminal .brand-mark {
@@ -1150,7 +1150,7 @@ dialog::backdrop {
 .auth-body form label > span {
   display: block;
   color: #758394;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   margin: 0 0 3px 1px;
@@ -1175,7 +1175,7 @@ dialog::backdrop {
   height: 34px;
 }
 .auth-hint {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1.45;
   color: #a5b0bd;
   background: #101b1d;
@@ -1242,7 +1242,7 @@ dialog::backdrop {
 .header-progression [data-header-progress-xp] {
   margin-left:auto;
   color:#9ab1aa;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   white-space:nowrap
 }
 .header-progression-meter {
@@ -1267,7 +1267,7 @@ dialog::backdrop {
 }
 .header-progression [data-header-progress-next] {
   color:#718b83;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height:1;
   white-space:nowrap
 }
@@ -1434,7 +1434,7 @@ dialog::backdrop {
 }
 .account-summary small {
   display: block;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   color: #748393;
   margin-top: 2px;
 }
@@ -1482,7 +1482,7 @@ dialog::backdrop {
 }
 .account-progression small {
   color:#78958d;
-  font-size:var(--text-small, 13px)
+  font-size: var(--text-caption)
 }
 .avatar-actions {
   display: flex;

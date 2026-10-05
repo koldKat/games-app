@@ -239,7 +239,7 @@
   background: #080d12;
   padding: 5px;
   color: #728482;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .promo-system span:last-child {
   grid-column: 1/-1;
@@ -277,7 +277,7 @@
   border: 1px solid #19282f;
   background: #080d12;
   color: #78848d;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: 0.08em;
 }
 .auth-footer nav {
@@ -447,7 +447,7 @@
   white-space: nowrap;
 }
 .promo-system span {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 @media (max-width: 580px) {
   .promo-library, .promo-covers, .promo-metadata, .promo-track, .promo-private {
@@ -606,7 +606,7 @@
 .game-pegi-details summary small {
   margin-left: auto;
   color: #8293a2;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -626,7 +626,7 @@
   border: 1px solid #2c414e;
   background: #101b24;
   color: #b5c5d1;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .pegi-detail-tag.purchase {
   border-color: #695321;

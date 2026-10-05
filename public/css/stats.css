@@ -84,7 +84,7 @@
 .stats-section-label {
   margin: 0 0 5px;
   color: #5edbb9;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1.2;
   letter-spacing: .1em;
   text-transform: uppercase;

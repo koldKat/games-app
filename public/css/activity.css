@@ -79,7 +79,7 @@
   border-radius: 3px;
   background: var(--platform-surface) padding-box, var(--platform-frame) border-box;
   color: var(--platform-text);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-tag);
   font-weight: 700;
   line-height: 1.2;
   vertical-align: baseline;
@@ -144,7 +144,7 @@
 }
 .activity-preview-profile small {
   color: #b9c9c4;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .activity-preview-trigger:not(.activity-preview-dismissed):hover > img, .activity-preview-trigger:not(.activity-preview-dismissed):focus-within > img {
   opacity: 1;
@@ -159,7 +159,7 @@
 .activity-entry time {
   align-self: center;
   color: #69867f;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1;
   text-align: right;
 }
@@ -264,7 +264,7 @@
   padding:0 4px;
   background:#11150f;
   color:#f0d073;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing:.04em;
 }
 .activity-pinned-card header svg {

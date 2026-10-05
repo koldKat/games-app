@@ -83,6 +83,8 @@ try {
   check(textSize('.platform-tag') >= 12, 'Compact platform labels remain readable');
   check(textSize('#account-current-password') >= 14, 'Profile password input remains readable');
   check(textSize('#search') >= 14, 'Library search remains readable');
+  check(textSize('.filters label > span') === 12, 'Filter captions remain quieter than controls');
+  check(textSize('.stat-card small') === 12, 'Stat captions use the compact caption scale');
   const cardRating = document.querySelector('.card-rating-picker');
   check(cardRating.scrollWidth <= cardRating.clientWidth + 1, 'Card rating text fits its control');
   check(getComputedStyle(cardRating.querySelector('output')).whiteSpace === 'nowrap', 'Rating score stays on one line');

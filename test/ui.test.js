@@ -398,6 +398,13 @@ test('landing promo descriptions remain readable', () => {
   assert.match(readPublicCss(), /\.auth-promo p\{font-size:var\(--text-body\);line-height:1\.5;color:#92a0ae\}/);
 });
 
+test('Signal keeps timestamps and platform pills smaller than entry text', () => {
+  const css = readCss('public/css/katalog.css');
+  assert.match(css, /\.signal-feed \.activity-entry p\{font-size:var\(--text-small\)/);
+  assert.match(css, /\.signal-feed \.activity-entry time\{font-size:var\(--text-tag\)/);
+  assert.match(readCss('public/css/activity.css'), /\.activity-platform-tag\{[^}]*font-size:var\(--text-tag\)/);
+});
+
 test('landing footer links to the public repository without replacing the app', () => {
   const html = read('public/index.html');
   const authFooter = html.match(/<footer class="auth-footer">[\s\S]*?<\/footer>/)?.[0] || '';
@@ -804,7 +811,7 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(css, /\.game-title\{font-size:14px;height:2\.44em/);
   assert.match(css, /\.badges\{height:46px;align-content:flex-start;overflow:hidden/);
   assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
-  assert.match(css, /\.card-hltb dt\{[^}]*font-size:var\(--text-small,13px\)[^}]*white-space:nowrap/);
+  assert.match(css, /\.card-hltb dt\{[^}]*font-size:var\(--text-caption\)[^}]*white-space:nowrap/);
   assert.doesNotMatch(css, /\.card-hltb dt\{[^}]*min-height:/);
   assert.match(css, /\.card-hltb dd\{[^}]*font-size:13px/);
   assert.match(read('public/js/metadata/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);

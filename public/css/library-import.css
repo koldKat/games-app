@@ -137,7 +137,7 @@
   margin-top:2px;
   overflow:hidden;
   color:#738984;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   text-overflow:ellipsis;
   white-space:nowrap
 }
@@ -157,7 +157,7 @@
 .library-import-state small {
   margin-top:2px;
   color:#72857f;
-  font-size:var(--text-small, 13px)
+  font-size: var(--text-caption)
 }
 .state-ambiguous b {
   color:#e8bc61
@@ -168,7 +168,7 @@
 .library-import-card>.modal-actions>span {
   margin-right:auto;
   color:#81958f;
-  font-size:var(--text-small, 13px)
+  font-size: var(--text-caption)
 }
 .library-import-progress {
   padding:8px 0 2px

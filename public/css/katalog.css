@@ -178,11 +178,11 @@
   border-left:2px solid #5789a8;
 }
 .signal-feed .activity-entry p {
-  font-size: var(--text-body);
+  font-size: var(--text-small);
   line-height: 1.35;
 }
 .signal-feed .activity-entry time {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-tag);
 }
 .signal-feed .activity-entry--level_up {
   border-color: #756339;
@@ -234,7 +234,7 @@
     padding: 5px;
   }
   .signal-feed .activity-entry p {
-    font-size: var(--text-body);
+    font-size: var(--text-small);
   }
 }
 .katalog-hero-art {
@@ -292,7 +292,7 @@
 .game-summary>p,.game-metadata header span {
   margin: 0 0 5px;
   color: var(--green);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -326,7 +326,7 @@
 }
 .katalog-search label:not(.search-wrap) span,.katalog-add label span {
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -428,7 +428,7 @@
   align-items: center;
   gap: 4px;
   overflow: hidden;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .09em;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -524,7 +524,7 @@
   border: 1px solid #283844;
   border-radius: 4px;
   color: #9eacb4;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1;
 }
 .katalog-chips > span {
@@ -640,7 +640,7 @@
 }
 .community-rating small {
   color: #9eacb4;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .katalog-pagination {
   display: grid;
@@ -707,7 +707,7 @@
 }
 .katalog-game-dialog-card>header span {
   color: var(--green);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: .14em;
 }
@@ -836,7 +836,7 @@
 }
 .katalog-release-panel header span {
   color:var(--green);
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight:700;
   letter-spacing:.12em;
 }
@@ -875,7 +875,7 @@
 }
 .katalog-release-panel a small {
   color:#728982;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .katalog-signin span {
   grid-column: 1;
@@ -986,7 +986,7 @@
 }
 .time-grid span {
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   text-transform: uppercase;
 }
 .time-grid strong {

@@ -6,7 +6,7 @@ body {
   font-size: 16px;
 }
 .brand small, .kicker {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .button {
   font-size: var(--text-small, 13px);
@@ -173,6 +173,9 @@ body {
 .stat-card small, .filter-foot, .game-meta, .empty-state p {
   font-size: var(--text-small, 13px);
 }
+.stat-card small, .filter-foot {
+  font-size: var(--text-caption);
+}
 .library-loader {
   min-height: clamp(180px, 28vh, 280px);
   display: grid;
@@ -251,7 +254,7 @@ body {
   }
 }
 .filters label > span, .form-grid label > span, .auth-body form label > span {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .search-wrap input, .filters select, .form-grid input, .form-grid select, .form-grid textarea {
   font-size: var(--text-input);
@@ -459,7 +462,7 @@ body {
 }
 .platform-version-menu button small {
   color: color-mix(in srgb, var(--platform-text) 65%, #56616c);
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -542,7 +545,7 @@ body {
 .rating-field > span {
   margin: 0 0 3px 1px;
   color: #758394;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .07em;
 }
 .rating-picker {
@@ -649,7 +652,7 @@ body {
 .game-detail-hero>div>p:first-child,.game-detail-hero small {
   margin: 0 0 7px;
   color: #758394;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -697,7 +700,7 @@ body {
 }
 .game-detail-facts span,.game-detail-times span {
   color: #748392;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .06em;
   text-transform: uppercase;
 }
@@ -847,11 +850,14 @@ body {
 .pegi-assist small, .pegi-result small, .pegi-message, .form-error, .account-summary small {
   font-size: var(--text-small, 13px);
 }
+.pegi-assist small, .pegi-result small, .account-summary small {
+  font-size: var(--text-caption);
+}
 .check-label span {
   font-size: var(--text-small, 13px) !important;
 }
 .auth-terminal {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .auth-body h1 {
   font-size: 22px;
@@ -863,7 +869,7 @@ body {
   font-size: var(--text-input);
 }
 .auth-hint {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 @media (min-width: 1800px) {
   body {
@@ -881,7 +887,7 @@ body {
     --text-input: 16px;
   }
   .stat-card small {
-    font-size: var(--text-small, 13px);
+    font-size: var(--text-caption);
   }
   .game-title {
     font-size: 14px;
@@ -947,7 +953,7 @@ body {
 .cover-assist small {
   display: block;
   color: #7e8b99;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   margin-top: 2px;
 }
 .cover-assist-actions {
@@ -997,7 +1003,7 @@ body {
   color: #8fc4f1;
 }
 .cover-selection small {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   color: #7d8a98;
   margin-top: 3px;
 }
@@ -1042,7 +1048,7 @@ body {
   margin-top: 4px;
 }
 .cover-result small {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   color: #758393;
   margin-top: 2px;
 }
@@ -1053,7 +1059,7 @@ body {
 .title-autocomplete > label > span {
   display: block;
   color: #758394;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -1104,7 +1110,7 @@ body {
 .title-suggestions small {
   flex: none;
   color: #748680;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -1152,7 +1158,7 @@ body {
 .duplicate-warning small {
   margin-top: 2px;
   color: #9f9062;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .duplicate-warning .button {
   flex: none;
@@ -1227,7 +1233,7 @@ body {
   color: #7eb6e8;
 }
 .integration-summary small, .integration-bulk span {
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   color: #7d8998;
   margin-top: 2px;
 }
@@ -1274,7 +1280,7 @@ body {
 }
 .provider-credential-pair label > span {
   color: #819489;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1.2;
   letter-spacing: .04em;
 }
@@ -1379,7 +1385,7 @@ body {
 }
 .game-igdb-details header small, .igdb-score-grid span {
   color: #75998f;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .06em;
   text-transform: uppercase;
 }
@@ -1425,7 +1431,7 @@ body {
 }
 .game-igdb-tags b,.igdb-tag-group>b,.igdb-tag-group>strong {
   color:#75998f;
-  font-size:var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing:.06em;
   text-transform:uppercase;
 }
@@ -1494,7 +1500,7 @@ body {
 }
 .game-hltb-details header small {
   color: #8a8067;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -1528,7 +1534,7 @@ body {
 }
 .hltb-time-grid span {
   color: #8a8067;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
 }
 .hltb-time-grid strong {
   margin-top: 2px;
@@ -1551,7 +1557,7 @@ body {
 .card-hltb dt {
   overflow: hidden;
   color: #8f866e;
-  font-size: var(--text-small, 13px);
+  font-size: var(--text-caption);
   line-height: 1.2;
   text-overflow: ellipsis;
   text-transform: uppercase;
