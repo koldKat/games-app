@@ -12,6 +12,11 @@ const waitFor = async (condition, message) => {
   throw new Error(message);
 };
 const mode = new URLSearchParams(location.search).get('mode') || 'guest';
+let testViewport;
+if (mode === 'mobile') {
+  testViewport = Object.assign(new EventTarget(), { width: innerWidth, height: innerHeight, offsetLeft: 0, offsetTop: 0 });
+  Object.defineProperty(window, 'visualViewport', { configurable: true, value: testViewport });
+}
 let signedIn = mode !== 'guest';
 const user = { id: 17, username: 'TestCollector', email: '', avatarUrl: null };
 const progress = { xp: 500, level: 0, title: 'Collector', currentLevelXp: 0, nextLevelXp: 1000, progress: 50 };
@@ -64,6 +69,7 @@ window.fetch = async (target, options = {}) => {
 
 try {
   await import('/app.js');
+  await import('/js/shell/mobile-action-dock.js');
   const boot = await import('/js/boot/init.js');
   if (!signedIn) {
     await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Guest startup stalled');
@@ -91,6 +97,22 @@ try {
   check(!cardRating.querySelector('.card-rating-inline-label'), 'Card rating omits the redundant visible label');
   if (matchMedia('(max-width: 520px)').matches) {
     check(textSize('#account-current-password') >= 16, 'Mobile profile input avoids browser focus zoom');
+  }
+  if (testViewport) {
+    const dock = document.querySelector('.mobile-action-dock');
+    check(dock && getComputedStyle(dock).position === 'fixed', 'Mobile actions use the floating dock');
+    testViewport.height = innerHeight - 160;
+    testViewport.offsetTop = 40;
+    testViewport.dispatchEvent(new Event('resize'));
+    check(document.documentElement.style.getPropertyValue('--mobile-viewport-bottom') === '120px', 'Dock tracks the visible bottom inset');
+    check(dock.getBoundingClientRect().bottom <= testViewport.offsetTop + testViewport.height, 'Mobile dock stays above the visible bottom edge');
+    testViewport.width = 260;
+    testViewport.offsetLeft = 20;
+    testViewport.dispatchEvent(new Event('scroll'));
+    check(dock.getBoundingClientRect().left >= testViewport.offsetLeft, 'Dock follows the visible left edge');
+    check(dock.getBoundingClientRect().right <= testViewport.offsetLeft + testViewport.width, 'Dock fits a narrow visible viewport');
+    Object.assign(testViewport, { width: innerWidth, height: innerHeight, offsetLeft: 0, offsetTop: 0 });
+    testViewport.dispatchEvent(new Event('resize'));
   }
   const mountedHeader = document.querySelector('#app-shell .topbar');
   check(mountedHeader, 'Shared header is mounted');

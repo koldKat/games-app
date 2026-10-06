@@ -7,8 +7,27 @@ if (group) {
   const visibilityRoot = group.closest('#app-shell');
   group.before(home);
   const media = window.matchMedia(MOBILE_ACTION_QUERY);
+  const viewport = window.visualViewport;
+  const root = document.documentElement;
+  const viewportProperties = ['--mobile-viewport-bottom', '--mobile-viewport-left', '--mobile-viewport-right', '--mobile-viewport-width'];
+
+  const syncViewport = () => {
+    if (!media.matches || visibilityRoot?.hidden) {
+      viewportProperties.forEach(property => root.style.removeProperty(property));
+      return;
+    }
+    const width = viewport?.width ?? window.innerWidth;
+    const height = viewport?.height ?? window.innerHeight;
+    const left = viewport?.offsetLeft ?? 0;
+    const top = viewport?.offsetTop ?? 0;
+    root.style.setProperty('--mobile-viewport-bottom', `${Math.max(0, window.innerHeight - height - top)}px`);
+    root.style.setProperty('--mobile-viewport-left', `${left}px`);
+    root.style.setProperty('--mobile-viewport-right', `${Math.max(0, window.innerWidth - width - left)}px`);
+    root.style.setProperty('--mobile-viewport-width', `${width}px`);
+  };
 
   const placeActions = () => {
+    syncViewport();
     if (media.matches && !visibilityRoot?.hidden) {
       group.classList.add('mobile-action-dock', 'top-actions');
       document.body.append(group);
@@ -20,5 +39,8 @@ if (group) {
 
   placeActions();
   media.addEventListener('change', placeActions);
+  window.addEventListener('resize', syncViewport, { passive: true });
+  viewport?.addEventListener('resize', syncViewport, { passive: true });
+  viewport?.addEventListener('scroll', syncViewport, { passive: true });
   if (visibilityRoot) new MutationObserver(placeActions).observe(visibilityRoot, { attributes: true, attributeFilter: ['hidden'] });
 }

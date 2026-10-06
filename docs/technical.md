@@ -6,6 +6,8 @@
 
 Public UI typography separates captions (`--text-caption`, 12px), ordinary UI text (`--text-small`, 13px), reading text (`--text-body`, 14px), and inputs (`--text-input`, 14px; 16px on small mobile screens). Card tags use `--text-tag` (12px) with compact padding. Brightened muted text preserves contrast; PEGI and platform colors remain separate. Card ratings retain accessible labels without redundant visible text. Browser-flow checks guard this hierarchy and rating layout.
 
+The mobile action dock and add-game control track `visualViewport` resize and scroll events so browser chrome and the on-screen keyboard cannot hide them below the visible viewport. Safe-area insets remain applied, and the dock can wrap within the available width without overlapping the add-game control. Browsers without `visualViewport` retain fixed positioning. The browser fixture explicitly loads the standalone dock module and checks reduced-height and narrow viewport bounds; desktop window resizing alone does not exercise mobile browser chrome.
+
 Game Kat·a·log follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.
 
 ```text

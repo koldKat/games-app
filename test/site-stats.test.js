@@ -115,7 +115,7 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(css, /column-count: 3/);
   assert.match(css, /@media \(max-width: 600px\)/);
   assert.doesNotMatch(css, /\.top-actions \.stats-button \{ display: none; \}/);
-  assert.match(read('public/css/theme.css'), /\.header-community-actions\.mobile-action-dock \{[\s\S]*position:fixed;[\s\S]*bottom:calc\(10px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(read('public/css/theme.css'), /\.header-community-actions\.mobile-action-dock \{[\s\S]*position:fixed;[\s\S]*bottom:calc\(10px \+ env\(safe-area-inset-bottom\) \+ var\(--mobile-viewport-bottom, 0px\)\)/);
   const mobileDock = read('public/js/shell/mobile-action-dock.js');
   assert.match(mobileDock, /document\.body\.append\(group\)/);
   assert.match(mobileDock, /home\.after\(group\)/);
