@@ -66,8 +66,8 @@ The ten compact cards summarize the current account and act as one-click major f
 | Card | Meaning |
 |---|---|
 | **Total** | Every title in the account's library and clears all filters |
-| **Owned physical** | Owned games with Physical selected |
-| **Owned digital** | Owned games with Digital selected |
+| **Physical** | Owned games with Physical selected |
+| **Digital** | Owned games with Digital selected |
 | **Wishlisted** | Games wanted but not yet owned |
 | **Backlog** | Games waiting to be played |
 | **Playing** | Games currently in progress |
@@ -105,7 +105,7 @@ Search matches the game title, publisher, notes, description, IGDB genres, and I
 | Filter | Options |
 |---|---|
 | **Platform** | Platforms currently present in the account, plus **Multiple platforms** for titles recorded on two or more distinct platforms |
-| **Library** | Owned physical, Owned digital, Wishlisted, or Hidden |
+| **Library** | Physical, Digital, Wishlisted, or Hidden |
 | **PEGI** | 3, 7, 12, 16, 18, or Unrated |
 | **Play status** | Backlog, Playing, Completed, Paused, or Abandoned |
 | **Data gaps** | No PEGI info, no IGDB info, no cover, no HLTB info, no description, any missing, or all missing; Evercade titles are included whenever their information is absent |

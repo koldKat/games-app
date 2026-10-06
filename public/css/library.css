@@ -485,8 +485,8 @@ body {
   font-size: var(--text-small, 13px);
 }
 .game-card .badge {
-  padding: 2px 4px;
-  font-size: var(--text-tag);
+  padding: 1px 3px;
+  font-size: calc(var(--text-tag) - 1px);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
@@ -843,6 +843,13 @@ body {
 }
 .toast {
   font-size: var(--text-small, 13px);
+}
+.pegi-assist > div {
+  min-width: 0;
+}
+.pegi-assist .button, .cover-assist-actions .button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .pegi-assist strong, .pegi-result strong, .account-summary strong {
   font-size: var(--text-small, 13px);

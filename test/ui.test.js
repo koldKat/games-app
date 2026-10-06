@@ -528,7 +528,9 @@ test('collection filtering separates owned physical and digital games', () => {
   const html = read('public/index.html'); const application = read('public/app.js');
   const database = read('server/db.js'); const preferences = read('server/preferences.js'); const constants = read('server/constants.js');
   const formatUi = read('public/js/library/media-formats.js'); const css = readCss('public/css/media-formats.css');
-  assert.match(html, /value="owned_physical">Owned · physical<\/option><option value="owned_digital">Owned · digital/);
+  assert.match(html, /value="owned_physical">Physical<\/option><option value="owned_digital">Digital/);
+  assert.match(html, /id="stat-owned-physical">\/\/<\/b><small>Physical<\/small>/);
+  assert.match(html, /id="stat-owned-digital">\/\/<\/b><small>Digital<\/small>/);
   assert.match(html, /id="stat-owned-physical"[\s\S]*id="stat-owned-digital"/);
   assert.match(application, /filters\.ownership\.value === 'owned_physical'/);
   assert.match(application, /filters\.ownership\.value === 'owned_digital'/);
