@@ -159,3 +159,9 @@ export function platformFromReleaseText(releases) {
   if (exact) return exact;
   return /(^|[^\p{L}\p{N}])pc([^\p{L}\p{N}]|$)/u.test(haystack) ? 'PC (Windows)' : undefined;
 }
+
+export function platformForPegiResult(releases, current) {
+  const platforms = [...new Set((releases || []).map(platformFromReleaseText).filter(Boolean))];
+  if (platforms.includes(current) || (isPcStorefront(current) && platforms.includes('PC (Windows)'))) return current;
+  return platforms.length === 1 ? platforms[0] : current;
+}

@@ -25,6 +25,22 @@ test('PEGI PC release text maps to Windows without replacing storefront identity
   assert.equal(isPcStorefront('PC (Windows)'), false);
 });
 
+test('PEGI selection preserves the selected edition rather than favoring a longer platform name', async () => {
+  const { platformForPegiResult } = await platformsModule();
+  const releases = ['Xbox Series X|S - 14/08/2026', 'PlayStation 4 - 14/08/2026'];
+  assert.equal(platformForPegiResult(releases, 'PlayStation 4'), 'PlayStation 4');
+  assert.equal(platformForPegiResult([...releases].reverse(), 'PlayStation 4'), 'PlayStation 4');
+  assert.equal(platformForPegiResult(releases, 'Xbox Series X|S'), 'Xbox Series X|S');
+  assert.equal(platformForPegiResult(releases, 'Nintendo Switch'), 'Nintendo Switch');
+  assert.equal(platformForPegiResult(['PlayStation 4 - 14/08/2026'], 'Nintendo Switch'), 'PlayStation 4');
+  assert.equal(platformForPegiResult(['PlayStation 4', 'PlayStation 4'], 'Nintendo Switch'), 'PlayStation 4');
+  assert.equal(platformForPegiResult(['Unknown device'], 'PlayStation 4'), 'PlayStation 4');
+  assert.equal(platformForPegiResult([], 'PlayStation 4'), 'PlayStation 4');
+  for (const storefront of ['Steam', 'GOG', 'Epic Games Store']) {
+    assert.equal(platformForPegiResult(['PC - 14/08/2026', ...releases], storefront), storefront);
+  }
+});
+
 test('platform themes resolve audited product identities without regex guessing', async () => {
   const { knownPlatforms, platformDisplayName, platformTheme, platformThemeClass, platformThemes } = await platformsModule();
   assert.equal(platformDisplayName('Nintendo Entertainment System'), 'NES');
