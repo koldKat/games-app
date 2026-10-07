@@ -321,6 +321,8 @@ test('stored sessions use a resume screen instead of flashing authentication', (
   assert.match(html, /<html lang="en" class="resuming-session">/);
   assert.match(html, /id="session-resume"[^>]*role="status"/);
   assert.match(html, /html\.resuming-session, \.resuming-session body \{ overflow: hidden; \}/);
+  assert.match(html, /\.resuming-session body \{ position: fixed; inset: 0; margin: 0; min-height: 0;/);
+  assert.match(html, /\.resuming-session #session-resume \{ position: fixed; inset: 0;/);
   assert.match(css, /html\.resuming-session,\.resuming-session body\{overflow:hidden\}/);
   assert.match(css, /\.resuming-session body>:not\(#session-resume\)\{visibility:hidden\}/);
   assert.match(css, /\.resuming-session \.session-resume-screen\{display:grid\}/);

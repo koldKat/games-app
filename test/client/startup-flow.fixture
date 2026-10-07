@@ -1,0 +1,17 @@
+const check = (condition, message) => { if (!condition) throw new Error(message); };
+let result;
+try {
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  check(!document.styleSheets.length || [...document.styleSheets].every(sheet => !sheet.href), 'Startup check excludes external stylesheets');
+  const root = document.documentElement;
+  const body = document.body;
+  check(getComputedStyle(root).overflow === 'hidden', 'Root scrolling is locked before styles load');
+  check(getComputedStyle(body).overflow === 'hidden' && getComputedStyle(body).position === 'fixed', 'Body is anchored before styles load');
+  check(body.getBoundingClientRect().left === 0 && body.getBoundingClientRect().right === root.clientWidth, 'Default browser body margins cannot widen startup');
+  const loader = document.querySelector('#session-resume');
+  check(getComputedStyle(loader).position === 'fixed', 'Loading surface is fixed before styles load');
+  check(loader.getBoundingClientRect().height === root.clientHeight, 'Loading surface fills the initial viewport');
+  check(getComputedStyle(document.querySelector('#auth-screen')).visibility === 'hidden', 'Authentication stays hidden before styles load');
+  result = { ok: true };
+} catch (error) { result = { ok: false, error: String(error.stack || error) }; }
+await fetch('/report', { method: 'POST', body: JSON.stringify(result) });

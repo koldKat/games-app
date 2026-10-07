@@ -71,6 +71,16 @@ const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'text/html'); res.end(html.replace('</body>', '<script type="module" src="/flow.js"></script></body>')); return;
   }
   if (url.pathname === '/flow.js') { res.setHeader('Content-Type', 'application/javascript'); res.end(fixture); return; }
+  if (url.pathname === '/startup') {
+    res.setHeader('Content-Type', 'text/html');
+    res.end(html.replace(/<link\b[^>]*rel="stylesheet"[^>]*>/g, '').replace('</body>', '<script type="module" src="/startup-flow.js"></script></body>'));
+    return;
+  }
+  if (url.pathname === '/startup-flow.js') {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.end(fs.readFileSync(path.join(root, 'test/client/startup-flow.fixture')));
+    return;
+  }
   if (fixtures[url.pathname]) { res.setHeader('Content-Type', 'text/html'); res.end(fixtures[url.pathname]); return; }
   const filename = path.resolve(root, 'public', '.' + url.pathname);
   if (!filename.startsWith(path.join(root, 'public') + path.sep)) { res.writeHead(403); res.end(); return; }
@@ -84,17 +94,18 @@ async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
   try {
-    for (const [mode, pathname, size] of [['guest', '/', '1440,1000'], ['restored', '/signal', '1440,1000'], ['mobile', '/', '390,844']]) {
+    for (const [mode, pathname, size] of [['startup-mobile', '/startup', '390,844'], ['guest', '/', '1440,1000'], ['restored', '/signal', '1440,1000'], ['mobile', '/', '390,844']]) {
       const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'gamekat-browser-'));
       const report = new Promise(resolve => { resolveReport = resolve; });
       const url = `http://127.0.0.1:${port}${pathname}?mode=${mode}`;
-      const browser = spawn(executable, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', `--user-data-dir=${profile}`, `--window-size=${size}`, ...(mode === 'mobile' ? ['--remote-debugging-port=0', 'about:blank'] : [url])], { stdio: 'ignore', detached: process.platform !== 'win32' });
+      const mobile = mode.endsWith('mobile');
+      const browser = spawn(executable, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', `--user-data-dir=${profile}`, `--window-size=${size}`, ...(mobile ? ['--remote-debugging-port=0', 'about:blank'] : [url])], { stdio: 'ignore', detached: process.platform !== 'win32' });
       const exited = new Promise(resolve => browser.once('close', resolve));
       const failed = new Promise((_, reject) => browser.once('error', reject));
       let timer;
       let mobileConnection;
       try {
-        if (mode === 'mobile') mobileConnection = await openMobilePage(profile, url);
+        if (mobile) mobileConnection = await openMobilePage(profile, url);
         const result = await Promise.race([report, failed, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${mode}: browser check timed out`)), 30_000); })]);
         if (!result.ok) throw new Error(JSON.stringify(result, null, 2));
         console.log(`Browser flow passed: ${mode}`);

@@ -33,8 +33,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <style>
     html.resuming-session, .resuming-session body { overflow: hidden; }
+    .resuming-session body { position: fixed; inset: 0; margin: 0; min-height: 0; background: #080b10; }
     .resuming-session body > :not(#session-resume) { visibility: hidden; }
-    .resuming-session #session-resume { display: grid; visibility: visible; }
+    .resuming-session #session-resume { position: fixed; inset: 0; display: grid; place-items: center; align-content: center; visibility: visible; }
   </style>
   <link rel="stylesheet" href="/css/foundation.css">
   <link rel="stylesheet" href="/css/theme.css">

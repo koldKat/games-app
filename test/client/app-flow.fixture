@@ -86,6 +86,7 @@ try {
   await waitFor(() => !document.querySelector('#app-shell').hidden && document.querySelector('.game-card'), 'Authenticated library did not mount');
   await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Session resume did not finish');
   check(getComputedStyle(document.documentElement).overflowY !== 'hidden', 'Startup restores normal page scrolling');
+  check(getComputedStyle(document.body).position !== 'fixed', 'Startup releases the temporary body lock');
   check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'XP fill restored');
   const textSize = selector => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
   check(textSize('.game-meta') >= 13, 'Card metadata remains readable');
