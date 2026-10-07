@@ -19,6 +19,48 @@ const fixtures = {
   '/fixtures/forum.html': renderIndex({ categories: [], recent: [] }),
 };
 let resolveReport;
+
+async function openMobilePage(profile, url) {
+  const portFile = path.join(profile, 'DevToolsActivePort');
+  let connection;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      const [port, endpoint] = fs.readFileSync(portFile, 'utf8').trim().split('\n');
+      connection = `ws://127.0.0.1:${port}${endpoint}`;
+      break;
+    } catch { await new Promise(resolve => setTimeout(resolve, 50)); }
+  }
+  if (!connection) throw new Error('Mobile browser debugging endpoint did not start.');
+  const socket = new WebSocket(connection);
+  await new Promise((resolve, reject) => {
+    socket.addEventListener('open', resolve, { once: true });
+    socket.addEventListener('error', reject, { once: true });
+  });
+  let id = 0;
+  const pending = new Map();
+  socket.addEventListener('message', event => {
+    const result = JSON.parse(event.data);
+    if (result.id) {
+      const request = pending.get(result.id);
+      pending.delete(result.id);
+      if (result.error) request?.reject(new Error(result.error.message));
+      else request?.resolve(result.result);
+    }
+  });
+  const send = (method, params = {}, sessionId) => new Promise((resolve, reject) => {
+    const requestId = ++id;
+    pending.set(requestId, { resolve, reject });
+    socket.send(JSON.stringify({ id: requestId, method, params, sessionId }));
+  });
+  try {
+    const { targetInfos } = await send('Target.getTargets');
+    const target = targetInfos.find(item => item.type === 'page');
+    const { sessionId } = await send('Target.attachToTarget', { targetId: target.targetId, flatten: true });
+    await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, screenWidth: 390, screenHeight: 844, deviceScaleFactor: 3, mobile: true }, sessionId);
+    await send('Page.navigate', { url }, sessionId);
+    return socket;
+  } catch (error) { socket.close(); throw error; }
+}
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/report') {
@@ -45,16 +87,20 @@ async function run() {
     for (const [mode, pathname, size] of [['guest', '/', '1440,1000'], ['restored', '/signal', '1440,1000'], ['mobile', '/', '390,844']]) {
       const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'gamekat-browser-'));
       const report = new Promise(resolve => { resolveReport = resolve; });
-      const browser = spawn(executable, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', `--user-data-dir=${profile}`, `--window-size=${size}`, `http://127.0.0.1:${port}${pathname}?mode=${mode}`], { stdio: 'ignore', detached: process.platform !== 'win32' });
+      const url = `http://127.0.0.1:${port}${pathname}?mode=${mode}`;
+      const browser = spawn(executable, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', `--user-data-dir=${profile}`, `--window-size=${size}`, ...(mode === 'mobile' ? ['--remote-debugging-port=0', 'about:blank'] : [url])], { stdio: 'ignore', detached: process.platform !== 'win32' });
       const exited = new Promise(resolve => browser.once('close', resolve));
       const failed = new Promise((_, reject) => browser.once('error', reject));
       let timer;
+      let mobileConnection;
       try {
+        if (mode === 'mobile') mobileConnection = await openMobilePage(profile, url);
         const result = await Promise.race([report, failed, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${mode}: browser check timed out`)), 30_000); })]);
         if (!result.ok) throw new Error(JSON.stringify(result, null, 2));
         console.log(`Browser flow passed: ${mode}`);
       } finally {
         clearTimeout(timer);
+        mobileConnection?.close();
         // Stop this test's process group before deleting its Chrome profile.
         const terminate = signal => {
           try {

@@ -10,6 +10,7 @@ if (group) {
   const viewport = window.visualViewport;
   const root = document.documentElement;
   const viewportProperties = ['--mobile-viewport-bottom', '--mobile-viewport-left', '--mobile-viewport-right', '--mobile-viewport-width'];
+  let frame;
 
   const syncViewport = () => {
     if (!media.matches || visibilityRoot?.hidden) {
@@ -26,11 +27,20 @@ if (group) {
     root.style.setProperty('--mobile-viewport-width', `${width}px`);
   };
 
+  const settleViewport = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      syncViewport();
+      frame = requestAnimationFrame(syncViewport);
+    });
+  };
+
   const placeActions = () => {
     syncViewport();
     if (media.matches && !visibilityRoot?.hidden) {
       group.classList.add('mobile-action-dock', 'top-actions');
       document.body.append(group);
+      settleViewport();
       return;
     }
     group.classList.remove('mobile-action-dock', 'top-actions');
@@ -42,5 +52,7 @@ if (group) {
   window.addEventListener('resize', syncViewport, { passive: true });
   viewport?.addEventListener('resize', syncViewport, { passive: true });
   viewport?.addEventListener('scroll', syncViewport, { passive: true });
+  window.addEventListener('pageshow', settleViewport);
+  new MutationObserver(settleViewport).observe(root, { attributes: true, attributeFilter: ['class'] });
   if (visibilityRoot) new MutationObserver(placeActions).observe(visibilityRoot, { attributes: true, attributeFilter: ['hidden'] });
 }

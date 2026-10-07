@@ -102,8 +102,20 @@ try {
     check(textSize('#account-current-password') >= 16, 'Mobile profile input avoids browser focus zoom');
   }
   if (testViewport) {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    check(document.documentElement.clientWidth === 390, `Mobile viewport width: ${document.documentElement.clientWidth}, inner ${innerWidth}, screen ${screen.width}; ` +
+      [...document.querySelectorAll('body *')].filter(node => node.getBoundingClientRect().right > 391 && getComputedStyle(node).visibility !== 'hidden').slice(0, 12).map(node => `${node.tagName}.${node.className}:${Math.round(node.getBoundingClientRect().right)}`).join(', '));
+    check(document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      `Mobile page overflows horizontally: ${document.documentElement.scrollWidth}/${document.documentElement.clientWidth} ` +
+      [...document.querySelectorAll('body *')].filter(node => node.getBoundingClientRect().right > 391 && getComputedStyle(node).visibility !== 'hidden').slice(0, 12).map(node => `${node.tagName}.${node.className}:${Math.round(node.getBoundingClientRect().right)}`).join(', '));
     const dock = document.querySelector('.mobile-action-dock');
     check(dock && getComputedStyle(dock).position === 'fixed', 'Mobile actions use the floating dock');
+    check(dock.getBoundingClientRect().bottom <= testViewport.height && dock.getBoundingClientRect().top >= 0, 'Mobile dock is visible before any scroll event');
+    testViewport.height = innerHeight - 80;
+    document.documentElement.classList.add('fixture-viewport-settle');
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    check(document.documentElement.style.getPropertyValue('--mobile-viewport-bottom') === '80px', 'Dock remeasures after startup-state changes without scrolling');
+    document.documentElement.classList.remove('fixture-viewport-settle');
     testViewport.height = innerHeight - 160;
     testViewport.offsetTop = 40;
     testViewport.dispatchEvent(new Event('resize'));
@@ -121,11 +133,14 @@ try {
   check(mountedHeader, 'Shared header is mounted');
   const { katalogNavigation } = await import('/js/boot/navigation.js');
   await katalogNavigation.open('/katalog');
+  if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Public katalog fits the phone viewport');
   check(textSize('.katalog-search input') >= 14, 'Public search shares the readable input scale');
   check(document.querySelector('#library-view').hidden, 'Public view switches content');
   check(document.querySelector('#app-shell .topbar') === mountedHeader, 'Header preserved across navigation');
   await katalogNavigation.open('/signal');
+  if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Signal fits the phone viewport');
   await katalogNavigation.open('/forum');
+  if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Forum fits the phone viewport');
   document.querySelector('[data-add-game]').click();
   check(document.querySelector('#game-dialog').open, 'Add game opens from another view');
   document.querySelector('[data-close]').click();
