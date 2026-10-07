@@ -8,6 +8,8 @@ Public UI typography separates captions (`--text-caption`, 12px), ordinary UI te
 
 The mobile action dock and add-game control track `visualViewport` resize and scroll events so browser chrome and the on-screen keyboard cannot hide them below the visible viewport. Safe-area insets remain applied, and the dock can wrap within the available width without overlapping the add-game control. Browsers without `visualViewport` retain fixed positioning. The browser fixture explicitly loads the standalone dock module and checks reduced-height and narrow viewport bounds; desktop window resizing alone does not exercise mobile browser chrome.
 
+The initial `resuming-session` state disables root and body overflow in both critical head CSS and the shared stylesheet. Hidden startup content still occupies layout space, so visibility alone cannot prevent transient scrollbars in installed mobile mode. Removing the startup class restores ordinary page scrolling without leaving a persistent scroll lock.
+
 Manual PEGI selection maps each listed release separately and preserves the editor's selected platform when represented, including PC storefronts covered by a generic PC release. Only one unambiguous mapped platform can replace the selection; multi-platform or unmapped results leave it unchanged. This prevents PS4 selections from being overwritten by a longer Xbox platform name.
 
 Game Kat·a·log follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.

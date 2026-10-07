@@ -12,6 +12,8 @@ const waitFor = async (condition, message) => {
   throw new Error(message);
 };
 const mode = new URLSearchParams(location.search).get('mode') || 'guest';
+check(getComputedStyle(document.documentElement).overflow === 'hidden', 'Startup prevents root scrollbar flashes');
+check(getComputedStyle(document.body).overflow === 'hidden', 'Startup prevents body scrollbar flashes');
 let testViewport;
 if (mode === 'mobile') {
   testViewport = Object.assign(new EventTarget(), { width: innerWidth, height: innerHeight, offsetLeft: 0, offsetTop: 0 });
@@ -83,6 +85,7 @@ try {
   }
   await waitFor(() => !document.querySelector('#app-shell').hidden && document.querySelector('.game-card'), 'Authenticated library did not mount');
   await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Session resume did not finish');
+  check(getComputedStyle(document.documentElement).overflowY !== 'hidden', 'Startup restores normal page scrolling');
   check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'XP fill restored');
   const textSize = selector => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize);
   check(textSize('.game-meta') >= 13, 'Card metadata remains readable');

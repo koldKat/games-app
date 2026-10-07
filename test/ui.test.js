@@ -320,6 +320,8 @@ test('stored sessions use a resume screen instead of flashing authentication', (
   const html = read('public/index.html'); const application = read('public/app.js'); const css = readPublicCss();
   assert.match(html, /<html lang="en" class="resuming-session">/);
   assert.match(html, /id="session-resume"[^>]*role="status"/);
+  assert.match(html, /html\.resuming-session, \.resuming-session body \{ overflow: hidden; \}/);
+  assert.match(css, /html\.resuming-session,\.resuming-session body\{overflow:hidden\}/);
   assert.match(css, /\.resuming-session body>:not\(#session-resume\)\{visibility:hidden\}/);
   assert.match(css, /\.resuming-session \.session-resume-screen\{display:grid\}/);
   assert.match(application, /function endSessionResume\(\)/);

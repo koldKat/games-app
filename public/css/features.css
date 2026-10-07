@@ -400,6 +400,9 @@
 .resuming-session .session-resume-screen {
   display: grid;
 }
+html.resuming-session, .resuming-session body {
+  overflow: hidden;
+}
 .resuming-session body > :not(#session-resume) {
   visibility: hidden;
 }
