@@ -27,7 +27,7 @@ function httpError(statusCode) {
 
 function fetchPageOnce(url) {
   return new Promise((resolve, reject) => {
-    const request = https.get(url, { headers: { 'User-Agent': APP_USER_AGENT }, timeout: REQUEST_TIMEOUT_MS }, response => {
+    const request = https.get(url, { headers: { 'User-Agent': APP_USER_AGENT, Referer: 'https://pegi.info/' }, timeout: REQUEST_TIMEOUT_MS }, response => {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.resume();
         return resolve(fetchPageOnce(new URL(response.headers.location, url)));

@@ -1,6 +1,32 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { MAX_PAGES, fetchPage, mergeResults, parseResults, resultPageCount, searchPegi } = require('../server/pegi');
+const https = require('node:https');
+const { EventEmitter } = require('node:events');
+const { APP_USER_AGENT } = require('../server/constants');
+
+test('PEGI document requests include its homepage referrer without impersonating a browser', async context => {
+  const requests = [];
+  context.mock.method(https, 'get', (url, options, callback) => {
+    requests.push({ url: String(url), options });
+    const response = new EventEmitter();
+    response.statusCode = 200;
+    response.headers = {};
+    response.setEncoding = () => {};
+    queueMicrotask(() => {
+      callback(response);
+      response.emit('data', '<div id="results"></div>');
+      response.emit('end');
+    });
+    return new EventEmitter();
+  });
+  const url = new URL('https://pegi.info/search-pegi?q=Minecraft&page=1');
+  assert.equal(await fetchPage(url), '<div id="results"></div>');
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, url.toString());
+  assert.equal(requests[0].options.headers.Referer, 'https://pegi.info/');
+  assert.equal(requests[0].options.headers['User-Agent'], APP_USER_AGENT);
+});
 
 test('PEGI lookup retries transient provider failures before succeeding', async () => {
   let attempts = 0;

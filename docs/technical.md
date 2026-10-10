@@ -16,6 +16,8 @@ The themed document clips horizontal overflow at the root, preventing decorative
 
 Manual PEGI selection maps each listed release separately and preserves the editor's selected platform when represented, including PC storefronts covered by a generic PC release. Only one unambiguous mapped platform can replace the selection; multi-platform or unmapped results leave it unchanged. This prevents PS4 selections from being overwritten by a longer Xbox platform name.
 
+Server-side PEGI document requests include `Referer: https://pegi.info/` while retaining the application's own User-Agent. PEGI's search gateway rejects requests without this homepage referrer by redirecting to an external blocked-access page that returns 404. Manual and batch lookups share the same transport; no browser process, session cookie, or hardcoded form token is required.
+
 Game Kat·a·log follows the same lightweight family architecture as the other local apps: one Node.js HTTP process, SQLite persistence, no browser framework, and no build step for application code.
 
 ```text
