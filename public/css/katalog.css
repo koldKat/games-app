@@ -492,7 +492,7 @@
 }
 .katalog-card-tooltip dl { display:grid; gap:5px; margin:0; }
 .katalog-card-tooltip dl>div { display:grid; grid-template-columns:95px minmax(0,1fr); gap:10px; }
-.katalog-card-tooltip dt { color:var(--muted,#a5b2bf); font-size:11px; }
+.katalog-card-tooltip dt { color:var(--muted,#a5b2bf); font-size:inherit; }
 .katalog-card-tooltip dd { margin:0; font-weight:500; }
 .katalog-title:hover {
   color:var(--green);

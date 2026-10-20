@@ -80,8 +80,8 @@ test('catalogue preview playtime falls back to the first positive recorded estim
     const preview = html.match(/<template data-katalog-preview>([\s\S]*?)<\/template>/)[1];
     assert.match(preview, /A long &lt;game&gt; &amp; its full name/);
     assert.match(preview, /&lt;publisher&gt;/);
-    if (expected) assert.ok(preview.includes(expected));
-    else assert.doesNotMatch(preview, /HowLongToBeat/);
+    if (expected) { assert.ok(preview.includes(expected)); assert.match(preview, /<dt>HLTB<\/dt>/); }
+    else assert.doesNotMatch(preview, /HLTB/);
   }
 });
 

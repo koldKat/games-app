@@ -195,7 +195,7 @@ function katalogCardPreview(entry, releases, libraryGames) {
   const estimates = [['Main story', entry.hltbMainStory], ['Main + extras', entry.hltbMainExtra], ['Completionist', entry.hltbCompletionist], ['All styles', entry.hltbAllStyles]];
   const estimate = estimates.find(([, value]) => Number.isFinite(Number(value)) && Number(value) > 0);
   const playtime = estimate ? `${Number(Number(estimate[1]).toFixed(1))}h · ${estimate[0]}` : '';
-  return `<template data-katalog-preview><strong class="katalog-preview-title">${escapeHtml(entry.title)}</strong><dl>${row('Library', ownership)}${row('Publisher', entry.publisher)}${row('Year', entry.releaseYear)}${row('PEGI', entry.pegi || 'Unrated')}${row('HowLongToBeat', playtime)}</dl></template>`;
+  return `<template data-katalog-preview><strong class="katalog-preview-title">${escapeHtml(entry.title)}</strong><dl>${row('Library', ownership)}${row('Publisher', entry.publisher)}${row('Year', entry.releaseYear)}${row('PEGI', entry.pegi || 'Unrated')}${row('HLTB', playtime)}</dl></template>`;
 }
 
 function renderKatalogMain({ result, platforms, query = '', platform = '', detail = '', coverUrls = [], libraryGames = new Map() }) {
