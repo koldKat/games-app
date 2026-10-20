@@ -1,3 +1,4 @@
+import { bindCardTooltips } from './card-tooltips.js';
 import { mountThemedSearchClears, syncSearchClears } from '../ui-helpers/search-clears.js';
 import { UI_TIMING } from '../core/ui-policy.js';
 import { APP_NAME } from '../core/site-config.js';
@@ -45,22 +46,8 @@ export function bindKatalogAddForm(root = document, { onAdded = () => {}, onOpen
   });
 }
 
-let titleResizeTimer = null;
-let titleResizeBound = false;
-function updateKatalogTitleTooltips(root = document) {
-  root.querySelectorAll('[data-katalog-title]').forEach(title => {
-    const text = title.firstElementChild;
-    title.dataset.truncated = String(Boolean(text && text.scrollWidth > text.clientWidth));
-  });
-}
-export function bindKatalogTitleTooltips(root = document) {
-  requestAnimationFrame(() => updateKatalogTitleTooltips(root));
-  if (titleResizeBound) return;
-  titleResizeBound = true;
-  window.addEventListener('resize', () => {
-    clearTimeout(titleResizeTimer);
-    titleResizeTimer = setTimeout(() => updateKatalogTitleTooltips(), UI_TIMING.katalogTitleResizeDebounceMs);
-  }, { passive: true });
+export function bindKatalogTitleTooltips() {
+  bindCardTooltips();
 }
 
 async function loadPublicBackgroundCovers() {

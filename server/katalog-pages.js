@@ -188,6 +188,16 @@ function heroCoverDeck(coverUrls = []) {
   }).join('')}</div>`;
 }
 
+function katalogCardPreview(entry, releases, libraryGames) {
+  const row = (label, value) => value ? `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>` : '';
+  const copies = releases.map(release => libraryGames.get(Number(release.id))).filter(Boolean);
+  const ownership = copies.some(copy => copy.ownership === 'owned') ? 'Owned' : copies.some(copy => copy.ownership === 'wanted') ? 'Wanted' : '';
+  const estimates = [['Main story', entry.hltbMainStory], ['Main + extras', entry.hltbMainExtra], ['Completionist', entry.hltbCompletionist], ['All styles', entry.hltbAllStyles]];
+  const estimate = estimates.find(([, value]) => Number.isFinite(Number(value)) && Number(value) > 0);
+  const playtime = estimate ? `${Number(Number(estimate[1]).toFixed(1))}h · ${estimate[0]}` : '';
+  return `<template data-katalog-preview><strong class="katalog-preview-title">${escapeHtml(entry.title)}</strong><dl>${row('Library', ownership)}${row('Publisher', entry.publisher)}${row('Year', entry.releaseYear)}${row('PEGI', entry.pegi || 'Unrated')}${row('HowLongToBeat', playtime)}</dl></template>`;
+}
+
 function renderKatalogMain({ result, platforms, query = '', platform = '', detail = '', coverUrls = [], libraryGames = new Map() }) {
   const heroTitle = detail ? '<h2>Public Kat·a·log</h2>' : '<h1>Public Kat·a·log</h1>';
   const cards = result.entries.map(entry => {
@@ -197,8 +207,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
     return `<article class="katalog-card">
     <a class="katalog-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
     <div class="katalog-card-body"><span class="katalog-platform">${platformLabel}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>
-      <p>${escapeHtml([entry.publisher, entry.releaseYear].filter(Boolean).join(' · ') || 'Release details pending')}</p>
-    </div></article>`;
+    </div>${katalogCardPreview(entry, releases, libraryGames)}</article>`;
   }).join('');
   const platformOptions = platforms.map(item => `<option value="${escapeHtml(item.platform)}"${item.platform === platform ? ' selected' : ''}>${escapeHtml(platformDisplayName(item.platform))} (${item.count})</option>`).join('');
   const pagination = result.pages > 1 ? `<nav class="katalog-pagination" aria-label="Kat·a·log pages">

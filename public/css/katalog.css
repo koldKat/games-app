@@ -421,7 +421,7 @@
   object-fit: cover;
 }
 .katalog-card-body {
-  padding: 9px;
+  padding: 9px 9px 6px;
 }
 .katalog-platform {
   display: flex;
@@ -449,7 +449,7 @@
 .katalog-card h2 {
   position:relative;
   z-index:1;
-  margin:4px 0 3px;
+  margin:4px 0 0;
   overflow:visible;
   font-size:14px;
   line-height:1.25;
@@ -466,46 +466,36 @@
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.katalog-title[data-truncated="true"]::after {
-  content:attr(data-full-title);
-  position:absolute;
-  z-index:6;
-  bottom:calc(100% + 5px);
-  left:0;
-  box-sizing:border-box;
-  width:100%;
-  padding:5px 6px;
-  border:1px solid #438878;
-  border-radius:4px;
-  background:#0b1815;
-  box-shadow:0 7px 18px #000b;
-  color:#dcf8f0;
-  font-size:var(--text-small);
-  font-weight:600;
-  line-height:1.35;
-  opacity:0;
-  pointer-events:none;
-  transform:translateY(3px);
-  transition:opacity .12s ease,transform .12s ease;
-  visibility:hidden;
-  white-space:normal;
+.katalog-card-tooltip {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  width: min(310px,calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb,var(--green,#35d6b2) 50%,#22303a);
+  border-radius: 8px;
+  background: linear-gradient(140deg,rgba(53,214,178,.07),transparent 65%),var(--panel-raised,#111821);
+  box-shadow: 0 10px 30px #0009;
+  color: var(--text,#d7e1e6);
+  font: 13px/1.45 Inter,ui-monospace,SFMono-Regular,Consolas,monospace;
+  pointer-events: none;
+  overflow-wrap: anywhere;
 }
-.katalog-title[data-truncated="true"]:hover::after,.katalog-title[data-truncated="true"]:focus-visible::after {
-  opacity:1;
-  transform:translateY(0);
-  visibility:visible;
+.katalog-card-tooltip[hidden] { display:none; }
+.katalog-preview-title {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--green,#35d6b2);
+  font-size: 14px;
+  line-height: 1.35;
 }
+.katalog-card-tooltip dl { display:grid; gap:5px; margin:0; }
+.katalog-card-tooltip dl>div { display:grid; grid-template-columns:95px minmax(0,1fr); gap:10px; }
+.katalog-card-tooltip dt { color:var(--muted,#a5b2bf); font-size:11px; }
+.katalog-card-tooltip dd { margin:0; font-weight:500; }
 .katalog-title:hover {
   color:var(--green);
-}
-.katalog-card p {
-  min-height: 18px;
-  margin: 0 0 7px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: var(--text-small, 13px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .katalog-chips,.descriptor-list {
   display: flex;

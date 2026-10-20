@@ -764,13 +764,17 @@ test('platform identity colors reach every major collector-facing platform surfa
   assert.match(stats, /stats-platform platform-coded \$\{platformThemeClass/);
 });
 
-test('clipped public Kat·a·log titles reveal an app-themed tooltip', () => {
+test('public Kat·a·log card previews use a themed shared viewport tooltip', () => {
   const css = readCss('public/css/katalog.css'); const catalogue = read('public/js/katalog/katalog-public.js');
-  assert.match(css, /\.katalog-title\[data-truncated="true"\]::after/);
-  assert.match(css, /content:attr\(data-full-title\)/);
-  assert.match(css, /\.katalog-title\[data-truncated="true"\]:hover::after/);
-  assert.match(catalogue, /function updateKatalogTitleTooltips/);
-  assert.match(catalogue, /text\.scrollWidth > text\.clientWidth/);
+  const tooltips = read('public/js/katalog/card-tooltips.js');
+  assert.match(css, /\.katalog-card-tooltip\{position:fixed/);
+  assert.match(css, /var\(--panel-raised,#111821\)/);
+  assert.match(css, /\.katalog-card-body\{padding:9px 9px 6px}/);
+  assert.doesNotMatch(css, /content:attr\(data-full-title\)/);
+  assert.match(catalogue, /bindCardTooltips\(\)/);
+  assert.match(tooltips, /document\.addEventListener\('pointerover'/);
+  assert.match(tooltips, /document\.addEventListener\('focusin'/);
+  assert.match(tooltips, /event\.key === 'Escape'/);
 });
 
 test('logged-out public pages load their cover background after rendering', () => {

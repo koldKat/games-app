@@ -61,9 +61,28 @@ test('catalogue preview cards omit ownership, PEGI and main playtime', () => {
   });
   const cards = html.match(/<article class="katalog-card">[\s\S]*?<\/article>/g);
   assert.equal(cards.length, 1);
-  for (const card of cards) assert.doesNotMatch(card, /katalog-library-pill|katalog-chips|Owned|PEGI|8h main/);
+  for (const card of cards) assert.doesNotMatch(card.replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-library-pill|katalog-chips|Owned|PEGI|Valve|2011|8h main/);
+  assert.match(cards[0], /<template data-katalog-preview>[\s\S]*Owned[\s\S]*Valve[\s\S]*2011[\s\S]*PEGI[\s\S]*8h · Main story/);
   const guest = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
-  assert.doesNotMatch(guest.match(/<article class="katalog-card">[\s\S]*?<\/article>/)[0], /katalog-chips|PEGI|8h main/);
+  assert.doesNotMatch(guest.match(/<article class="katalog-card">[\s\S]*?<\/article>/)[0].replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-chips|PEGI|Valve|2011|8h main/);
+});
+
+test('catalogue preview playtime falls back to the first positive recorded estimate', () => {
+  for (const [times, expected] of [
+    [{ hltbMainStory: 8 }, '8h · Main story'],
+    [{ hltbMainStory: null }, '13h · Main + extras'],
+    [{ hltbMainStory: 0, hltbMainExtra: null }, '21h · Completionist'],
+    [{ hltbMainStory: null, hltbMainExtra: 0, hltbCompletionist: null }, '12h · All styles'],
+    [{ hltbMainStory: -1, hltbMainExtra: 'bad', hltbCompletionist: null, hltbAllStyles: 0 }, null],
+  ]) {
+    const game = { ...entry, ...times, title: 'A long <game> & its full name', publisher: '<publisher>' };
+    const html = renderKatalog({ result: { entries: [game], total: 1, page: 1, pages: 1 }, platforms: [] });
+    const preview = html.match(/<template data-katalog-preview>([\s\S]*?)<\/template>/)[1];
+    assert.match(preview, /A long &lt;game&gt; &amp; its full name/);
+    assert.match(preview, /&lt;publisher&gt;/);
+    if (expected) assert.ok(preview.includes(expected));
+    else assert.doesNotMatch(preview, /HowLongToBeat/);
+  }
 });
 
 test('public game details separate searchable IGDB genres and themes', () => {
