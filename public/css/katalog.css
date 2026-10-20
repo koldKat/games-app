@@ -490,8 +490,8 @@
   font-size: 14px;
   line-height: 1.35;
 }
-.katalog-card-tooltip dl { display:grid; gap:5px; margin:0; }
-.katalog-card-tooltip dl>div { display:grid; grid-template-columns:95px minmax(0,1fr); gap:10px; }
+.katalog-card-tooltip dl { display:grid; grid-template-columns:max-content minmax(0,1fr); gap:5px 6px; margin:0; }
+.katalog-card-tooltip dl>div { display:contents; }
 .katalog-card-tooltip dt { color:var(--muted,#a5b2bf); font-size:inherit; }
 .katalog-card-tooltip dd { margin:0; font-weight:500; }
 .katalog-title:hover {
