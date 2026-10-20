@@ -52,15 +52,18 @@ test('catalogue cards summarize platform variants and release dialogs expose eac
   assert.match(detail, /portal-2-ps5/);
 });
 
-test('signed-in catalogue cards mark grouped titles with an owned release', () => {
+test('catalogue preview cards omit ownership, PEGI and main playtime', () => {
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
   const html = renderKatalog({
     result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 },
     platforms: [], user: { username: 'collector' },
     libraryGames: new Map([[4, { id: 19, ownership: 'owned', platform: 'PlayStation 5' }]]),
   });
-  assert.match(html, /class="katalog-library-pill">Owned<\/span>/);
-  assert.equal((html.match(/katalog-library-pill/g) || []).length, 1);
+  const cards = html.match(/<article class="katalog-card">[\s\S]*?<\/article>/g);
+  assert.equal(cards.length, 1);
+  for (const card of cards) assert.doesNotMatch(card, /katalog-library-pill|katalog-chips|Owned|PEGI|8h main/);
+  const guest = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
+  assert.doesNotMatch(guest.match(/<article class="katalog-card">[\s\S]*?<\/article>/)[0], /katalog-chips|PEGI|8h main/);
 });
 
 test('public game details separate searchable IGDB genres and themes', () => {
