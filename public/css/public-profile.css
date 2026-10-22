@@ -89,7 +89,7 @@
 }
 .public-profile-identity strong {
   color: #e4f2ed;
-  font-size: 17px;
+  font-size: var(--text-heading);
 }
 .public-profile-identity span {
   color: #72e5c9;
@@ -116,7 +116,7 @@
 }
 .public-profile-stat strong {
   color: #dcece6;
-  font-size: 15px;
+  font-size: var(--text-metric);
 }
 .public-profile-stat span {
   color: #78958d;

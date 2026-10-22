@@ -15,7 +15,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.5 Inter, ui-monospace, SFMono-Regular, Consolas, monospace;
+  font: var(--text-body, 13.12px)/1.5 Inter, ui-monospace, SFMono-Regular, Consolas, monospace;
   scrollbar-width: thin;
   scrollbar-color: #376e61 #080d12;
 }
@@ -300,7 +300,7 @@
 .game-summary h1 {
   margin: 0;
   color: #edf7f3;
-  font-size: clamp(18px,2vw,24px);
+  font-size: var(--text-display);
   line-height: 1.15;
   letter-spacing: -.025em;
 }
@@ -667,7 +667,7 @@
 }
 .katalog-empty strong {
   color: var(--text);
-  font-size: 18px;
+  font-size: var(--text-heading);
 }
 .katalog-game-dialog {
   width: min(1120px,calc(100vw - 22px));
@@ -900,7 +900,7 @@
 }
 .game-metadata h2 {
   margin: 0 0 12px;
-  font-size: 19px;
+  font-size: var(--text-heading);
 }
 .game-metadata h3 {
   margin: 12px 0 4px;
@@ -944,7 +944,7 @@
 }
 .game-summary .game-description h2 {
   margin: 3px 0 9px;
-  font-size: 17px;
+  font-size: var(--text-heading);
 }
 .game-description>p {
   margin: 0;
@@ -982,7 +982,7 @@
 .time-grid strong {
   margin-top: 2px;
   color: var(--amber);
-  font-size: 18px;
+  font-size: var(--text-metric);
 }
 .descriptor-list {
   margin-bottom: 9px;
@@ -1012,7 +1012,7 @@
     padding: 9px;
   }
   .game-summary h1 {
-    font-size: clamp(17px,5vw,21px);
+    font-size: var(--text-display);
   }
   .katalog-add {
     grid-column: 1/-1;

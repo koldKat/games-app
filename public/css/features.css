@@ -177,7 +177,7 @@
   margin-bottom: 7px;
 }
 .auth-promo h2 {
-  font-size: 15px;
+  font-size: var(--text-heading);
 }
 .auth-promo p {
   font-size: var(--text-body);
@@ -545,7 +545,7 @@ html.resuming-session, .resuming-session body {
   color: #61e3c5;
 }
 .library-title {
-  font-size: 14px;
+  font-size: var(--text-title);
   margin: 0;
 }
 @media (max-width: 520px) {

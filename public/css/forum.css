@@ -57,7 +57,7 @@
 .forum-categories h2,.forum-recent h2 {
   margin:2px 0 0;
   color:#e3efeb;
-  font-size:18px;
+  font-size:var(--text-heading);
 }
 .forum-categories>div {
   display:grid;
@@ -91,7 +91,7 @@
   margin:0;
   overflow:hidden;
   color:#cce2db;
-  font-size:14px;
+  font-size:var(--text-title);
   text-overflow:ellipsis;
   white-space:nowrap;
 }

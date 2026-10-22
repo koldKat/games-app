@@ -388,7 +388,7 @@ input[type="checkbox"]:focus-visible {
   color: #35d6b2;
 }
 .hero h1,.hero h2 {
-  font: 700 clamp(22px, 3vw, 33px) / 1.05 ui-monospace, monospace;
+  font: 700 var(--text-display) / 1.05 ui-monospace, monospace;
   margin: 0;
   letter-spacing: -0.04em;
 }
@@ -479,7 +479,7 @@ input[type="checkbox"]:focus-visible {
   min-width: 0;
 }
 .stat-card b {
-  font: 700 16px/1 ui-monospace, monospace;
+  font: 700 var(--text-metric)/1 ui-monospace, monospace;
 }
 .stat-card small {
   font-size: var(--text-caption);
@@ -492,7 +492,7 @@ input[type="checkbox"]:focus-visible {
   margin-bottom: 7px;
 }
 .library-head h2 {
-  font: 700 19px/1 ui-monospace, monospace;
+  font: 700 var(--text-section)/1 ui-monospace, monospace;
   letter-spacing: -0.03em;
 }
 .view-buttons {
@@ -787,7 +787,7 @@ dialog::backdrop {
   margin-bottom: 8px;
 }
 .modal-head h2 {
-  font: 700 17px ui-monospace, monospace;
+  font: 700 var(--text-heading) ui-monospace, monospace;
 }
 .close-button {
   display: grid;
@@ -936,7 +936,7 @@ dialog::backdrop {
     margin-top: 6px;
   }
   .hero h1,.hero h2 {
-    font-size: 21px;
+    font-size: var(--text-display);
   }
   .hero-copy {
     font-size: var(--text-small, 13px);
@@ -1007,7 +1007,7 @@ dialog::backdrop {
   .hero h1,.hero h2 {
     max-width: none;
     white-space: nowrap;
-    font-size: clamp(14px, 4.7vw, 18px);
+    font-size: clamp(14px, 4.1vw, 16px);
   }
   .hero-art {
     display: none;
@@ -1032,7 +1032,7 @@ dialog::backdrop {
     font-size: var(--text-caption);
   }
   .library-head h2 {
-    font-size: 16px;
+    font-size: var(--text-section);
   }
   .filters {
     grid-template-columns: 1fr 1fr;
@@ -1109,7 +1109,7 @@ dialog::backdrop {
   padding: 18px;
 }
 .auth-body h1 {
-  font: 700 20px/1.1 ui-monospace, monospace;
+  font: 700 var(--text-display)/1.1 ui-monospace, monospace;
   margin: 0;
 }
 .auth-body h1:before {

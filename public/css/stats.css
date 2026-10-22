@@ -39,7 +39,7 @@
 .stats-head h2 {
   margin: 0;
   color: #dff4ed;
-  font-size: 18px;
+  font-size: var(--text-heading);
   line-height: 1.1;
 }
 .stats-close {

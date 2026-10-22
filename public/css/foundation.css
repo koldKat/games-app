@@ -1,9 +1,15 @@
 :root {
+  /* Match Gamebooks' compact text scale; keep small text readable. */
   --text-small: 13px;
   --text-caption: 12px;
   --text-tag: 12px;
-  --text-body: 14px;
+  --text-body: 13.12px;
   --text-input: 14px;
+  --text-title: 13.6px;
+  --text-heading: 15.2px;
+  --text-section: 16px;
+  --text-display: 18.4px;
+  --text-metric: 14.4px;
   --ink: #161b27;
   --muted: #737887;
   --paper: #f4f2ed;
@@ -88,7 +94,7 @@ button {
   box-shadow: 5px 7px #efba4e;
 }
 .brand strong {
-  font: 800 20px/1 "Manrope", sans-serif;
+  font: 800 var(--text-section)/1 "Manrope", sans-serif;
   display: block;
 }
 .brand small {
@@ -177,14 +183,14 @@ button {
   color: #f39177;
 }
 .hero h1 {
-  font: 800 clamp(31px, 4vw, 51px) / 1.08 "Manrope", sans-serif;
+  font: 800 var(--text-display) / 1.08 "Manrope", sans-serif;
   margin: 0;
   letter-spacing: -0.035em;
 }
 .hero-copy {
   margin: 16px 0 0;
   color: #c7cbd5;
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 .hero-art {
   position: absolute;
@@ -290,7 +296,7 @@ button {
 }
 .stat-card b {
   display: block;
-  font: 800 23px/1 "Manrope";
+  font: 800 var(--text-metric)/1 "Manrope";
 }
 .stat-card small {
   display: block;
@@ -308,7 +314,7 @@ button {
   margin-bottom: 16px;
 }
 .library-head h2 {
-  font: 800 27px/1 "Manrope";
+  font: 800 var(--text-section)/1 "Manrope";
   margin: 0;
   letter-spacing: -0.03em;
 }
@@ -473,7 +479,7 @@ button {
   color: #efb340;
 }
 .game-title {
-  font: 800 16px/1.25 "Manrope";
+  font: 800 var(--text-title)/1.25 "Manrope";
   letter-spacing: -0.015em;
   margin: 15px 0 7px;
   overflow-wrap: anywhere;
@@ -595,7 +601,7 @@ button {
   font-size: 42px;
 }
 .empty-state h3 {
-  font: 800 20px "Manrope";
+  font: 800 var(--text-heading) "Manrope";
   color: var(--ink);
   margin: 8px 0;
 }
@@ -663,7 +669,7 @@ dialog::backdrop {
   margin-bottom: 16px;
 }
 .modal-head h2 {
-  font: 800 25px "Manrope";
+  font: 800 var(--text-heading) "Manrope";
   margin: 0;
 }
 .close-button {
@@ -858,7 +864,7 @@ dialog::backdrop {
     height: 34px;
   }
   .stat-card b {
-    font-size: 19px;
+    font-size: var(--text-metric);
   }
   .library {
     margin-top: 33px;
@@ -903,7 +909,7 @@ dialog::backdrop {
     padding: 27px 20px;
   }
   .hero h1 {
-    font-size: 29px;
+    font-size: var(--text-display);
     max-width: 80%;
   }
   .hero-copy {

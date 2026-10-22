@@ -3,7 +3,7 @@ body {
   font-size: var(--text-body);
 }
 .brand strong {
-  font-size: 16px;
+  font-size: var(--text-section);
 }
 .brand small, .kicker {
   font-size: var(--text-caption);
@@ -474,7 +474,7 @@ body {
   border-radius: inherit;
 }
 .game-title {
-  font-size: 14px;
+  font-size: var(--text-title);
   height: 2.44em;
   display: -webkit-box;
   overflow: hidden;
@@ -867,7 +867,7 @@ body {
   font-size: var(--text-caption);
 }
 .auth-body h1 {
-  font-size: 22px;
+  font-size: var(--text-display);
 }
 .auth-copy, .auth-tabs button {
   font-size: var(--text-small, 13px);
@@ -880,10 +880,10 @@ body {
 }
 @media (min-width: 1800px) {
   body {
-    font-size: 15px;
+    font-size: var(--text-body);
   }
   .game-title {
-    font-size: 15px;
+    font-size: var(--text-title);
   }
   .search-wrap input, .filters select, .form-grid input, .form-grid select, .form-grid textarea, .auth-body input {
     font-size: var(--text-input);
@@ -897,7 +897,7 @@ body {
     font-size: var(--text-caption);
   }
   .game-title {
-    font-size: 14px;
+    font-size: var(--text-title);
   }
 }
 @media (max-width: 680px) {
