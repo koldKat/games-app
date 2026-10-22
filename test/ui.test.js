@@ -80,7 +80,7 @@ test('top-level views share one hero geometry and branded section headings', () 
   assert.match(forum, /hero\(coverUrls, 'Kat·a·log Forum'/);
   assert.doesNotMatch(`${html}\n${pages}\n${forum}`, /<h[12]>The\s/i);
   assert.doesNotMatch(forum, /The Game Kat·a·log forum/);
-  assert.match(theme, /\.hero h1,\.hero h2\{font:700 clamp\(22px,3vw,33px\) \/ 1\.05 ui-monospace,monospace;margin:0;/);
+  assert.match(theme, /\.hero h1,\.hero h2\{font:700 var\(--text-display\) \/ 1\.05 ui-monospace,monospace;margin:0;/);
   assert.match(katalog, /\.katalog-main\{width:100%;margin:0;padding:0 0 10px}/);
   assert.doesNotMatch(katalog, /\.katalog-hero\{(?:margin-top|min-height|padding):/);
   assert.doesNotMatch(katalog, /\.signal-hero\{min-height:/);
@@ -726,8 +726,8 @@ test('public release links retain crawlable URLs while opening in the Kat·a·lo
 
 test('public game details keep long titles at a compact dialog scale', () => {
   const css = readCss('public/css/katalog.css');
-  assert.match(css, /\.game-summary h1\{margin:0;color:#edf7f3;font-size:clamp\(18px,2vw,24px\);line-height:1\.15/);
-  assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:clamp\(17px,5vw,21px\)}/);
+  assert.match(css, /\.game-summary h1\{margin:0;color:#edf7f3;font-size:var\(--text-display\);line-height:1\.15/);
+  assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:var\(--text-display\)}/);
 });
 
 test('game descriptions, PEGI prose, and personal notes use justified long-form text', () => {
@@ -818,7 +818,7 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(css, /\.card-hltb\{[^}]*display:grid/);
   assert.match(css, /\.game-card\{display:flex;flex-direction:column/);
   assert.match(css, /\.card-actions\{margin-top:auto/);
-  assert.match(css, /\.game-title\{font-size:14px;height:2\.44em/);
+  assert.match(css, /\.game-title\{font-size:var\(--text-title\);height:2\.44em/);
   assert.match(css, /\.badges\{height:46px;align-content:flex-start;overflow:hidden/);
   assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
   assert.match(css, /\.card-hltb dt\{[^}]*font-size:var\(--text-caption\)[^}]*white-space:nowrap/);

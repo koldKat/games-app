@@ -1699,3 +1699,8 @@ body {
     border-bottom: 1px solid #2e291b;
   }
 }
+
+/* Search text follows the compact body scale on every screen width. */
+body .search-wrap input[type="search"] {
+  font-size: var(--text-body, 13.12px);
+}
