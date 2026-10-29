@@ -788,3 +788,28 @@ html:has(dialog[open]) {
 .role-badge.role-badge--admin { color: #60a5fa; font-size: inherit; flex-shrink: 0; }
 .role-badge svg { display: block; width: 100%; height: 100%; }
 .role-badge:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
+
+.role-badge.role-badge--admin::after {
+  padding: 4px 7px;
+  border-color: #416b9c;
+  background: #111d2e;
+  color: #b9d7ff;
+  font-size: var(--text-small, 13px);
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+/* A nested badge owns the tooltip while it is hovered or keyboard-focused. */
+.themed-tooltip:has(.role-badge:is(:hover, :focus-visible))::after {
+  opacity: 0;
+  visibility: hidden;
+}
+.account-button #account-name:has(.role-badge) { overflow: visible; }
+.top-actions .role-badge::after {
+  top: calc(100% + 8px);
+  bottom: auto;
+  left: auto;
+  right: 0;
+  transform: translateY(3px);
+}
+.top-actions .role-badge:is(:hover, :focus-visible)::after { transform: translateY(0); }
