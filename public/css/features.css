@@ -776,6 +776,7 @@ html:has(dialog[open]) {
 
 /* Compact identity badges share the Gamebooks role icon and color. */
 .role-badge {
+  position: relative;
   display: inline-flex;
   width: .65em;
   height: .65em;
@@ -789,15 +790,32 @@ html:has(dialog[open]) {
 .role-badge svg { display: block; width: 100%; height: 100%; }
 .role-badge:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
 
-.role-badge.role-badge--admin::after {
+.role-badge-tooltip {
+  position: absolute;
+  z-index: 80;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  width: max-content;
   padding: 4px 7px;
-  border-color: #416b9c;
+  border: 1px solid #416b9c;
+  border-radius: 4px;
   background: #111d2e;
+  box-shadow: 0 7px 18px #000b;
   color: #b9d7ff;
   font-size: var(--text-small, 13px);
   font-weight: 600;
   line-height: 1.25;
   white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 3px);
+  transition: opacity .12s ease, transform .12s ease;
+}
+.role-badge:is(:hover, :focus-visible) > .role-badge-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 /* A nested badge owns the tooltip while it is hovered or keyboard-focused. */
 .themed-tooltip:has(.role-badge:is(:hover, :focus-visible))::after {
@@ -805,11 +823,11 @@ html:has(dialog[open]) {
   visibility: hidden;
 }
 .account-button #account-name:has(.role-badge) { overflow: visible; }
-.top-actions .role-badge::after {
+.top-actions .role-badge > .role-badge-tooltip {
   top: calc(100% + 8px);
   bottom: auto;
   left: auto;
   right: 0;
   transform: translateY(3px);
 }
-.top-actions .role-badge:is(:hover, :focus-visible)::after { transform: translateY(0); }
+.top-actions .role-badge:is(:hover, :focus-visible) > .role-badge-tooltip { transform: translateY(0); }

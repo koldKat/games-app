@@ -43,7 +43,7 @@ function userLabel(entry) {
   const name = entry.publicProfile
     ? `<button type="button" class="activity-profile-button" data-public-profile="${username}" aria-label="Open ${username}'s public profile">${username}</button>`
     : `<b>${username}</b>`;
-  return preview(name + roleBadgesMarkup(entry), entry.avatarUrl, 'avatar', `${entry.username} avatar`, profile);
+  return preview(name, entry.avatarUrl, 'avatar', `${entry.username} avatar`, profile) + roleBadgesMarkup(entry);
 }
 function phrase(entry) {
   if (entry.type === 'announcement') return `<strong>${escapeHtml(entry.title)}</strong><span class="activity-announcement-body">${formatAnnouncementBody(entry.body)}</span>`;

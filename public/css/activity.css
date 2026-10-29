@@ -314,8 +314,3 @@
   font-size: var(--text-small, 13px);
   line-height: 1.35;
 }
-
-.activity-preview-trigger:has(> .role-badge:is(:hover, :focus-visible)) > :is(img, .activity-preview-profile) {
-  opacity: 0;
-  visibility: hidden;
-}
