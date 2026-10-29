@@ -25,8 +25,12 @@ class AccountLockedError extends Error {
   }
 }
 
+function roleBadges(username, owner = ownerUsername()) {
+  return owner && String(username || '').trim().toLocaleLowerCase() === owner.toLocaleLowerCase() ? ['admin'] : [];
+}
+
 function publicUser(row) {
-  return { id: row.id, username: row.username, email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null,
+  return { id: row.id, username: row.username, badges: roleBadges(row.username), email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null,
     publicProfile: Boolean(row.public_profile), hideFromActivity: Boolean(row.hide_from_activity) };
 }
 
@@ -63,7 +67,7 @@ async function register(username, password, email) {
   const { hash, salt } = await hashPassword(password);
   try {
     const result = db.prepare('INSERT INTO users (username, email, password_hash, salt) VALUES (?, ?, ?, ?)').run(clean, cleanEmail, hash, salt);
-    return { id: Number(result.lastInsertRowid), username: clean, email: cleanEmail || '', avatarUrl: null, publicProfile: false, hideFromActivity: false };
+    return publicUser({ id: Number(result.lastInsertRowid), username: clean, email: cleanEmail });
   } catch (error) {
     if (String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE')) throw new Error(cleanEmail ? 'Username or email already in use.' : 'Username already taken.');
     throw error;
@@ -248,4 +252,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { roleBadges, ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

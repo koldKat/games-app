@@ -1,0 +1,31 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const dbPath = path.join('/tmp', `games-role-badges-${process.pid}.db`);
+process.env.DB_PATH = dbPath;
+process.env.OWNER_USERNAME = 'koldKat';
+const data = require('../server/db');
+require('../server/katalog-store').createKatalogStore(data.db);
+const auth = require('../server/auth');
+const profiles = require('../server/public-profiles');
+const activity = require('../server/activity');
+test.after(() => {
+  data.db.close();
+  for (const suffix of ['', '-shm', '-wal']) fs.rmSync(dbPath + suffix, { force: true });
+});
+test('only the configured owner receives the admin badge across session, profile and feed', async () => {
+  const regular = await auth.register('collector', 'password-regular');
+  const owner = await auth.register('koldKat', 'password-owner');
+  assert.deepEqual(regular.badges, []);
+  assert.deepEqual(owner.badges, ['admin']);
+  assert.deepEqual(auth.roleBadges('KOLDKAT'), ['admin']);
+  assert.deepEqual(auth.roleBadges('koldKat-fan'), []);
+  const session = auth.createSession(owner.id);
+  assert.deepEqual(auth.authenticate({ headers: { authorization: `Bearer ${session}` } }).badges, ['admin']);
+  await auth.updateAccount(owner.id, { currentPassword: 'password-owner', publicProfile: true });
+  assert.deepEqual(profiles.get('koldKat').badges, ['admin']);
+  activity.recordJoin(owner.id); activity.recordJoin(regular.id);
+  assert.deepEqual(activity.list().find(entry => entry.username === 'koldKat').badges, ['admin']);
+  assert.deepEqual(activity.list().find(entry => entry.username === 'collector').badges, []);
+});

@@ -1,3 +1,4 @@
+import { renderIdentityName } from './role-badges.js';
 import { UI_LOCALE } from '../core/ui-policy.js';
 import { platformDisplayName, platformThemeClass } from '../library/platforms.js';
 
@@ -65,7 +66,9 @@ function render(profile) {
   const body = dialog.querySelector('.public-profile-body');
   const identity = element('section', 'public-profile-identity');
   const copy = element('div');
-  copy.append(element('strong', '', profile.username), element('span', '', `LV ${profile.level} // ${profile.title}`));
+  const name = element('strong');
+  renderIdentityName(name, profile);
+  copy.append(name, element('span', '', `LV ${profile.level} // ${profile.title}`));
   const joined = memberSince(profile.memberSince);
   if (joined) copy.append(element('small', '', `Curating since ${joined}`));
   identity.append(avatar(profile), copy);

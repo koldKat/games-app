@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('./db');
+const { roleBadges } = require('./auth');
 const { progressForXp } = require('./progression-policy');
 
 const profileAccount = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, u.created_at AS createdAt,
@@ -30,6 +31,7 @@ function get(username) {
   const stats = collectionStats.get(account.id);
   return {
     username: account.username,
+    badges: roleBadges(account.username),
     avatarUrl: account.avatarPath ? `/avatars/${account.avatarPath}` : null,
     memberSince: account.createdAt,
     level: progress.level,

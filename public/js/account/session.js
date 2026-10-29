@@ -1,3 +1,4 @@
+import { renderIdentityName } from './role-badges.js';
 import { selectedCopyIds, $$, $ } from '../core/dom.js';
 import { runtime, state, filters } from '../core/runtime.js';
 import { coverProviderSettings, endSessionResume, progressionUi, patchUi } from '../boot/services.js';
@@ -49,8 +50,6 @@ async function enterApp(user, savedPreferences, progress = null) {
   progressionUi.reset();
   runtime.authDecorationSequence += 1;
   state.user = user;
-  $('#account-name').textContent = user.username;
-  $('#account-current-name').textContent = user.username;
   updateAvatarUI();
   applyPreferences(savedPreferences);
   const dataReady = Promise.all([loadGames(), loadStatsAndMeta()]);
@@ -85,6 +84,8 @@ function setAvatar(element, user) {
 }
 
 function updateAvatarUI() {
+  renderIdentityName($('#account-name'), state.user);
+  renderIdentityName($('#account-current-name'), state.user);
   setAvatar($('#account-avatar'), state.user);
   setAvatar($('#nav-avatar'), state.user);
   $('#avatar-remove').hidden = !state.user?.avatarUrl;

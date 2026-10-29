@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('./db');
+const { roleBadges, ownerUsername } = require('./auth');
 const { progressForXp } = require('./progression-policy');
 const { UI_LOCALE } = require('./constants');
 
@@ -172,10 +173,11 @@ function list(limit = null) {
       AND (a.type <> 'catalogue_contribution' OR c.id IS NOT NULL)
     ORDER BY a.created_at DESC, a.id DESC${take ? ' LIMIT ?' : ''}`;
   const rows = db.prepare(query).all(`-${FEED_DAYS} days`, ...(take ? [take] : []));
+  const badgeOwner = ownerUsername();
   return rows.map(row => {
     const progression = progressForXp(row.userXp);
     return { id: row.id, type: row.type, username: row.username || 'Unknown curator', avatarUrl: row.avatarPath ? `/avatars/${row.avatarPath}` : null,
-      publicProfile: Boolean(row.publicProfile),
+      publicProfile: Boolean(row.publicProfile), badges: roleBadges(row.username, badgeOwner),
       userLevel: progression.level, userTitle: progression.title, template: row.template || '', gameTitle: row.gameTitle || '', gameSlug: row.gameSlug || '', gamePlatform: row.gamePlatform || '', gamePegi: row.gamePegi == null ? null : Number(row.gamePegi), coverUrl: row.coverUrl || '', createdAt: row.createdAt, ...parseData(row.dataJson) };
   });
 }
