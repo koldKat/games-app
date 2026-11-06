@@ -4,7 +4,7 @@
 
 ## Architecture
 
-Public UI typography separates captions (`--text-caption`, 12px), ordinary UI text (`--text-small`, 13px), reading text (`--text-body`, 14px), and inputs (`--text-input`, 14px; 16px on small mobile screens). Card tags use `--text-tag` (12px) with compact padding. Brightened muted text preserves contrast; PEGI and platform colors remain separate. Card ratings retain accessible labels without redundant visible text. Browser-flow checks guard this hierarchy and rating layout.
+Public UI typography uses the original compact operator theme and monospace font stack. Existing component sizes are explicit; shared defaults for newer components are `--text-caption` (10px), `--text-small` (11px), `--text-tag` (9px), `--text-body` (14px), and `--text-input` (14px). Signal entries use 11px text on desktop and 10px on mobile, with 9px timestamps. Small mobile form inputs retain the 16px focus-zoom safeguard. Browser-flow checks cover compact captions, ratings, and form behavior.
 
 The mobile action dock and add-game control track `visualViewport` resize and scroll events so browser chrome and the on-screen keyboard cannot hide them below the visible viewport. Safe-area insets remain applied, and the dock can wrap within the available width without overlapping the add-game control. Browsers without `visualViewport` retain fixed positioning. The browser fixture explicitly loads the standalone dock module and checks reduced-height and narrow viewport bounds; desktop window resizing alone does not exercise mobile browser chrome.
 

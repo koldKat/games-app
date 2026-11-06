@@ -1,8 +1,9 @@
 /* Operator theme. */
 :root {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   color-scheme: dark;
   --ink: #e7edf5;
-  --muted: #a5b2bf;
+  --muted: #7f8b99;
   --paper: #080b10;
   --card: #0d1219;
   --line: #222c38;
@@ -13,7 +14,6 @@
   --amber: #e9b949;
   --violet: #a78bfa;
   --shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 html {
   overflow-x: clip;
@@ -186,7 +186,7 @@ input[type="checkbox"]:focus-visible {
   align-items: center;
   padding: 12px 0 0;
   color: #9ca3af;
-  font: 400 var(--text-small, 13px)/1.4 ui-monospace, monospace;
+  font: 400 11px/1.4 ui-monospace, monospace;
 }
 .app-footer > :last-child {
   justify-self: end;
@@ -273,15 +273,15 @@ input[type="checkbox"]:focus-visible {
 }
 .footer-studio-links b {
   color: inherit;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
 }
 .footer-studio-links small {
   color: #829d94;
-  font-size: var(--text-caption);
+  font-size: 9px;
 }
 .footer-studio-links i {
   color: #5bcdb2;
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
   font-style: normal;
 }
 .topbar {
@@ -318,14 +318,14 @@ input[type="checkbox"]:focus-visible {
   letter-spacing: -0.02em;
 }
 .brand small {
-  font-size: var(--text-caption);
+  font-size: 9px;
   margin-top: 2px;
-  color: #778492;
+  color: #657383;
 }
 .button {
   border-radius: 5px;
   padding: 7px 10px;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   text-decoration: none;
   box-shadow: none !important;
 }
@@ -353,7 +353,7 @@ input[type="checkbox"]:focus-visible {
 .button:disabled {
   border-color:#222d38;
   background:#0d131a;
-  color:#77828c;
+  color:#65717c;
   opacity:.72;
   filter:saturate(.3);
 }
@@ -379,7 +379,7 @@ input[type="checkbox"]:focus-visible {
   box-shadow: 0 0 0 34px #35d6b207, 0 0 0 68px #35d6b204;
 }
 .kicker {
-  font-size: var(--text-caption);
+  font-size: 8px;
   letter-spacing: 0.13em;
   margin: 0 0 5px;
   color: #35d6b2;
@@ -388,7 +388,7 @@ input[type="checkbox"]:focus-visible {
   color: #35d6b2;
 }
 .hero h1,.hero h2 {
-  font: 700 var(--text-display) / 1.05 ui-monospace, monospace;
+  font: 700 clamp(22px, 3vw, 33px) / 1.05 ui-monospace, monospace;
   margin: 0;
   letter-spacing: -0.04em;
 }
@@ -398,7 +398,7 @@ input[type="checkbox"]:focus-visible {
 }
 .hero-copy {
   margin: 8px 0 0;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   color: #778698;
 }
 .hero-art {
@@ -422,7 +422,7 @@ input[type="checkbox"]:focus-visible {
   border-width: 3px;
   padding: 18px 5px 0;
   background: linear-gradient(145deg, #2fd2af, #16826f);
-  font: 700 var(--text-small, 13px)/1 ui-monospace, monospace;
+  font: 700 10px/1 ui-monospace, monospace;
   box-shadow: 6px 9px 14px #000a;
 }
 .cartridge:before {
@@ -456,7 +456,7 @@ input[type="checkbox"]:focus-visible {
   width: 27px;
   height: 27px;
   border-radius: 4px;
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
   background: #151e29;
   color: #76a2d1;
 }
@@ -479,10 +479,10 @@ input[type="checkbox"]:focus-visible {
   min-width: 0;
 }
 .stat-card b {
-  font: 700 var(--text-metric)/1 ui-monospace, monospace;
+  font: 700 16px/1 ui-monospace, monospace;
 }
 .stat-card small {
-  font-size: var(--text-caption);
+  font-size: 9px;
   margin: 0;
 }
 .library {
@@ -492,7 +492,7 @@ input[type="checkbox"]:focus-visible {
   margin-bottom: 7px;
 }
 .library-head h2 {
-  font: 700 var(--text-section)/1 ui-monospace, monospace;
+  font: 700 19px/1 ui-monospace, monospace;
   letter-spacing: -0.03em;
 }
 .view-buttons {
@@ -505,8 +505,8 @@ input[type="checkbox"]:focus-visible {
   width: 27px;
   height: 24px;
   border-radius: 3px;
-  color: #758291;
-  font-size: var(--text-small, 13px);
+  color: #667485;
+  font-size: 12px;
 }
 .icon-button.active {
   background: #1b2632;
@@ -530,27 +530,27 @@ input[type="checkbox"]:focus-visible {
 }
 .search-wrap span {
   font-size: 17px;
-  color: #758291;
+  color: #536376;
 }
 .search-wrap input {
-  font-size: var(--text-input);
+  font-size: 11px;
 }
 .filters {
   gap: 6px;
   margin-top: 7px;
 }
 .filters label > span, .form-grid label > span {
-  font-size: var(--text-caption);
+  font-size: 8px;
   letter-spacing: 0.07em;
   margin: 0 0 3px 1px;
-  color: #758394;
+  color: #728092;
 }
 .filters select, .form-grid input, .form-grid select, .form-grid textarea {
   border-radius: 4px;
   background: #090d13;
   border-color: #27323e;
   padding: 7px 8px;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   color: #dce4ee;
 }
 .form-grid input:not([type="checkbox"]):not([type="hidden"]):not([type="file"]), .form-grid select {
@@ -601,7 +601,7 @@ input[type="checkbox"]:focus-visible {
   margin-top: 7px;
   padding: 6px 1px 0;
   border-color: #1b242e;
-  font-size: var(--text-caption);
+  font-size: 9px;
   gap:8px;
   flex-wrap:wrap;
 }
@@ -622,12 +622,12 @@ input[type="checkbox"]:focus-visible {
   outline:none;
 }
 .random-button:disabled {
-  color:#778289;
+  color:#59666f;
   cursor:default;
 }
 .text-button {
   color: #45ddbd;
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
 }
 .game-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -651,7 +651,7 @@ input[type="checkbox"]:focus-visible {
   width: 2px;
 }
 .platform-tag {
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   letter-spacing: 0.055em;
 }
 .platform-tag:before {
@@ -662,11 +662,11 @@ input[type="checkbox"]:focus-visible {
   font-size: 14px;
 }
 .game-title {
-  font: 700 var(--text-small, 13px)/1.22 ui-monospace, monospace;
+  font: 700 12px/1.22 ui-monospace, monospace;
   margin: 8px 0 4px;
 }
 .game-meta {
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   min-height: 11px;
 }
 .badges {
@@ -676,7 +676,7 @@ input[type="checkbox"]:focus-visible {
 .badge {
   padding: 3px 5px;
   border-radius: 3px;
-  font-size: var(--text-small, 13px);
+  font-size: 7px;
   background: #171e27;
   color: #8591a0;
 }
@@ -713,7 +713,7 @@ input[type="checkbox"]:focus-visible {
 .card-actions button {
   border-radius: 3px;
   padding: 4px 6px;
-  font-size: var(--text-small, 13px);
+  font-size: 7px;
 }
 .edit-button {
   background: #171e27;
@@ -750,7 +750,7 @@ input[type="checkbox"]:focus-visible {
   margin: 4px 0;
 }
 .empty-state p {
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   margin: 0 0 10px;
 }
 .fab {
@@ -765,7 +765,7 @@ input[type="checkbox"]:focus-visible {
   border-radius: 4px;
   background: #17212c;
   border: 1px solid #344456;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   box-shadow: 0 8px 25px #0008;
 }
 dialog {
@@ -787,7 +787,7 @@ dialog::backdrop {
   margin-bottom: 8px;
 }
 .modal-head h2 {
-  font: 700 var(--text-heading) ui-monospace, monospace;
+  font: 700 17px ui-monospace, monospace;
 }
 .close-button {
   display: grid;
@@ -823,11 +823,11 @@ dialog::backdrop {
   border-color: #25384a;
 }
 .pegi-assist strong {
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
   color: #67e6c8;
 }
 .pegi-assist small {
-  font-size: var(--text-caption);
+  font-size: 8px;
   margin-top: 2px;
 }
 .pegi-results {
@@ -852,7 +852,7 @@ dialog::backdrop {
   width: 26px;
   height: 26px;
   border-radius: 3px;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   background: #10271f;
   color: #57d8ad;
 }
@@ -881,10 +881,10 @@ dialog::backdrop {
   color:#9aaab4;
 }
 .pegi-result strong {
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
 }
 .pegi-result small, .pegi-message {
-  font-size: var(--text-caption);
+  font-size: 8px;
 }
 .form-grid {
   gap: 7px;
@@ -896,7 +896,7 @@ dialog::backdrop {
   gap: 6px;
 }
 .check-label span {
-  font-size: var(--text-small, 13px) !important;
+  font-size: 9px !important;
 }
 .modal-actions {
   gap: 5px;
@@ -907,7 +907,7 @@ dialog::backdrop {
 .form-error {
   padding: 6px 8px;
   border-radius: 3px;
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   margin: 7px 0 0;
   background: #2f1718;
   color: #ff8a7e;
@@ -936,10 +936,10 @@ dialog::backdrop {
     margin-top: 6px;
   }
   .hero h1,.hero h2 {
-    font-size: var(--text-display);
+    font-size: 21px;
   }
   .hero-copy {
-    font-size: var(--text-small, 13px);
+    font-size: 9px;
   }
   .stats {
     gap: 4px;
@@ -979,7 +979,7 @@ dialog::backdrop {
   }
   .pegi-assist .button {
     padding: 6px 7px;
-    font-size: var(--text-small, 13px);
+    font-size: 8px;
   }
 }
 @media (max-width: 680px) {
@@ -1007,7 +1007,7 @@ dialog::backdrop {
   .hero h1,.hero h2 {
     max-width: none;
     white-space: nowrap;
-    font-size: clamp(14px, 4.1vw, 16px);
+    font-size: clamp(14px, 4.7vw, 18px);
   }
   .hero-art {
     display: none;
@@ -1026,13 +1026,13 @@ dialog::backdrop {
     height: 21px;
   }
   .stat-card b {
-    font-size: var(--text-small, 13px);
+    font-size: 12px;
   }
   .stat-card small {
-    font-size: var(--text-caption);
+    font-size: 7px;
   }
   .library-head h2 {
-    font-size: var(--text-section);
+    font-size: 16px;
   }
   .filters {
     grid-template-columns: 1fr 1fr;
@@ -1079,7 +1079,7 @@ dialog::backdrop {
   border-bottom: 1px solid #24303c;
   background: #0e151d;
   color: #8695a5;
-  font-size: var(--text-caption);
+  font-size: 8px;
   letter-spacing: 0.08em;
 }
 .auth-terminal .brand-mark {
@@ -1109,7 +1109,7 @@ dialog::backdrop {
   padding: 18px;
 }
 .auth-body h1 {
-  font: 700 var(--text-display)/1.1 ui-monospace, monospace;
+  font: 700 20px/1.1 ui-monospace, monospace;
   margin: 0;
 }
 .auth-body h1:before {
@@ -1117,7 +1117,7 @@ dialog::backdrop {
   color: #35d6b2;
 }
 .auth-copy {
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
   color: #768494;
   line-height: 1.55;
   margin: 7px 0 14px;
@@ -1136,8 +1136,8 @@ dialog::backdrop {
   border: 0;
   border-radius: 2px;
   background: transparent;
-  color: #738392;
-  font-size: var(--text-small, 13px);
+  color: #708090;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1152,8 +1152,8 @@ dialog::backdrop {
 }
 .auth-body form label > span {
   display: block;
-  color: #758394;
-  font-size: var(--text-caption);
+  color: #728092;
+  font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   margin: 0 0 3px 1px;
@@ -1165,7 +1165,7 @@ dialog::backdrop {
   border-radius: 4px;
   background: #080c11;
   padding: 0 9px;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   outline: none;
 }
 .auth-body input:focus {
@@ -1178,7 +1178,7 @@ dialog::backdrop {
   height: 34px;
 }
 .auth-hint {
-  font-size: var(--text-caption);
+  font-size: 8px;
   line-height: 1.45;
   color: #a5b0bd;
   background: #101b1d;
@@ -1228,7 +1228,7 @@ dialog::backdrop {
 }
 .header-progression [data-header-progress-level] {
   color:#63e5c6;
-  font-size:var(--text-small, 13px);
+  font-size:11px;
   font-weight:700;
   letter-spacing:.08em;
   white-space:nowrap
@@ -1237,7 +1237,7 @@ dialog::backdrop {
   min-width:0;
   overflow:hidden;
   color:#d7e4e0;
-  font-size:var(--text-small, 13px);
+  font-size:12px;
   font-weight:600;
   white-space:nowrap;
   text-overflow:ellipsis
@@ -1245,7 +1245,7 @@ dialog::backdrop {
 .header-progression [data-header-progress-xp] {
   margin-left:auto;
   color:#9ab1aa;
-  font-size: var(--text-caption);
+  font-size: 11px;
   white-space:nowrap
 }
 .header-progression-meter {
@@ -1270,7 +1270,7 @@ dialog::backdrop {
 }
 .header-progression [data-header-progress-next] {
   color:#718b83;
-  font-size: var(--text-caption);
+  font-size: 9px;
   line-height:1;
   white-space:nowrap
 }
@@ -1294,7 +1294,7 @@ dialog::backdrop {
 .top-actions .katalog-button.active,.top-actions .library-button.active,.top-actions .signal-button.active,.top-actions .forum-button.active {
   border-color:#2b343c;
   background:#11161b;
-  color:#7a848d;
+  color:#68737d;
   cursor:default;
   pointer-events:auto;
 }
@@ -1400,7 +1400,7 @@ dialog::backdrop {
 .nav-avatar {
   width: 22px;
   height: 22px;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
 }
 .account-avatar img, .nav-avatar img {
   width: 100%;
@@ -1426,19 +1426,19 @@ dialog::backdrop {
   border: 1px solid #3aa990;
   background: #0b1718;
   color: #6aefd0;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
 }
 .account-identity {
   min-width: 0;
 }
 .account-summary strong {
   display: block;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
 }
 .account-summary small {
   display: block;
-  font-size: var(--text-caption);
-  color: #748393;
+  font-size: 8px;
+  color: #718091;
   margin-top: 2px;
 }
 .account-progression {
@@ -1454,7 +1454,7 @@ dialog::backdrop {
 }
 .progression-head span {
   color:#63e5c6;
-  font-size:var(--text-small, 13px);
+  font-size:10px;
   font-weight:700;
   letter-spacing:.08em
 }
@@ -1462,11 +1462,10 @@ dialog::backdrop {
   min-width:0;
   flex:1;
   color:#dcece8;
-  font-size:var(--text-small, 13px)
-}
+  font-size:11px}
 .progression-head b {
   color:#95b8ae;
-  font-size:var(--text-small, 13px);
+  font-size:10px;
   font-weight:500
 }
 .progression-meter {
@@ -1485,8 +1484,7 @@ dialog::backdrop {
 }
 .account-progression small {
   color:#78958d;
-  font-size: var(--text-caption)
-}
+  font-size: 9px}
 .avatar-actions {
   display: flex;
   gap: 8px;
@@ -1494,7 +1492,7 @@ dialog::backdrop {
 }
 .avatar-actions .text-button {
   padding: 0;
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
 }
 .avatar-remove {
   color: #ff756b;

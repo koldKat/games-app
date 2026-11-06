@@ -1,11 +1,11 @@
 @import url("/css/select-controls.css");
 
 :root {
-  /* Match Gamebooks' compact text scale; keep small text readable. */
-  --text-small: 13px;
-  --text-caption: 12px;
-  --text-tag: 12px;
-  --text-body: 13.12px;
+  /* Original compact Games typography, before the October 6 size increase. */
+  --text-small: 11px;
+  --text-caption: 10px;
+  --text-tag: 9px;
+  --text-body: 14px;
   --text-input: 14px;
   --text-title: 13.6px;
   --text-heading: 15.2px;
@@ -96,13 +96,13 @@ button {
   box-shadow: 5px 7px #efba4e;
 }
 .brand strong {
-  font: 800 var(--text-section)/1 "Manrope", sans-serif;
+  font: 800 20px/1 "Manrope", sans-serif;
   display: block;
 }
 .brand small {
   display: block;
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   margin-top: 4px;
   letter-spacing: 0.02em;
 }
@@ -177,7 +177,7 @@ button {
   margin: 0 0 9px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   font-weight: 800;
   color: var(--coral);
 }
@@ -185,14 +185,14 @@ button {
   color: #f39177;
 }
 .hero h1 {
-  font: 800 var(--text-display) / 1.08 "Manrope", sans-serif;
+  font: 800 clamp(31px, 4vw, 51px) / 1.08 "Manrope", sans-serif;
   margin: 0;
   letter-spacing: -0.035em;
 }
 .hero-copy {
   margin: 16px 0 0;
   color: #c7cbd5;
-  font-size: var(--text-body);
+  font-size: 15px;
 }
 .hero-art {
   position: absolute;
@@ -231,7 +231,7 @@ button {
   transform: rotate(7deg);
   box-shadow: 12px 16px 28px #0008;
   padding: 29px 11px 0;
-  color: #7d828d;
+  color: #172033;
   font: 800 16px/1.1 "Manrope";
   text-align: center;
 }
@@ -280,7 +280,7 @@ button {
   height: 39px;
   border-radius: 12px;
   background: #e9edf4;
-  color: #718199;
+  color: #4d617f;
   font-size: 18px;
   font-weight: 900;
 }
@@ -298,13 +298,13 @@ button {
 }
 .stat-card b {
   display: block;
-  font: 800 var(--text-metric)/1 "Manrope";
+  font: 800 23px/1 "Manrope";
 }
 .stat-card small {
   display: block;
   color: var(--muted);
   margin-top: 5px;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
 }
 .library {
   margin-top: 43px;
@@ -316,7 +316,7 @@ button {
   margin-bottom: 16px;
 }
 .library-head h2 {
-  font: 800 var(--text-section)/1 "Manrope";
+  font: 800 27px/1 "Manrope";
   margin: 0;
   letter-spacing: -0.03em;
 }
@@ -333,7 +333,7 @@ button {
   width: 35px;
   height: 31px;
   border-radius: 7px;
-  color: #82817d;
+  color: #7f7e7a;
 }
 .icon-button.active {
   background: #fff;
@@ -377,8 +377,8 @@ button {
 }
 .filters label > span, .form-grid label > span {
   display: block;
-  color: #7c808b;
-  font-size: var(--text-small, 13px);
+  color: #777b86;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -405,7 +405,7 @@ button {
   margin-top: 14px;
   padding: 12px 2px 0;
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
 }
 .text-button {
   border: 0;
@@ -455,8 +455,8 @@ button {
   align-items: center;
   gap: 6px;
   max-width: calc(100% - 34px);
-  font-size: var(--text-small, 13px);
-  color: #7b818d;
+  font-size: 10px;
+  color: #666d7b;
   text-transform: uppercase;
   letter-spacing: 0.075em;
   font-weight: 800;
@@ -481,14 +481,14 @@ button {
   color: #efb340;
 }
 .game-title {
-  font: 800 var(--text-title)/1.25 "Manrope";
+  font: 800 16px/1.25 "Manrope";
   letter-spacing: -0.015em;
   margin: 15px 0 7px;
   overflow-wrap: anywhere;
 }
 .game-meta {
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   min-height: 16px;
   white-space: nowrap;
   overflow: hidden;
@@ -504,8 +504,8 @@ button {
   padding: 5px 8px;
   border-radius: 7px;
   background: #eceae5;
-  color: #7d8089;
-  font-size: var(--text-small, 13px);
+  color: #646873;
+  font-size: 9px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.045em;
@@ -545,16 +545,16 @@ button {
   border: 0;
   border-radius: 8px;
   padding: 7px 9px;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   font-weight: 800;
 }
 .edit-button {
   background: #efede8;
-  color: #7d828c;
+  color: #4f5664;
 }
 .quick-button {
   background: #e2f0e8;
-  color: #598d74;
+  color: #347455;
   margin-left: auto;
 }
 .game-grid.list-view {
@@ -603,7 +603,7 @@ button {
   font-size: 42px;
 }
 .empty-state h3 {
-  font: 800 var(--text-heading) "Manrope";
+  font: 800 20px "Manrope";
   color: var(--ink);
   margin: 8px 0;
 }
@@ -671,7 +671,7 @@ dialog::backdrop {
   margin-bottom: 16px;
 }
 .modal-head h2 {
-  font: 800 var(--text-heading) "Manrope";
+  font: 800 25px "Manrope";
   margin: 0;
 }
 .close-button {
@@ -713,12 +713,12 @@ dialog::backdrop {
 }
 .pegi-assist strong {
   display: block;
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
 }
 .pegi-assist small {
   display: block;
-  color: #7b808e;
-  font-size: var(--text-small, 13px);
+  color: #757b89;
+  font-size: 10px;
   margin-top: 3px;
 }
 .pegi-results {
@@ -755,21 +755,21 @@ dialog::backdrop {
   background: #e6efe5;
   border-radius: 7px;
   font-weight: 900;
-  color: #598b6e;
+  color: #35714e;
   flex: 0 0 auto;
 }
 .pegi-result strong {
   display: block;
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
 }
 .pegi-result small {
   display: block;
   color: var(--muted);
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   margin-top: 3px;
 }
 .pegi-message {
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   color: var(--muted);
   padding: 9px;
 }
@@ -795,7 +795,7 @@ dialog::backdrop {
 .check-label span {
   margin: 0 !important;
   text-transform: none !important;
-  font-size: var(--text-small, 13px) !important;
+  font-size: 12px !important;
   letter-spacing: 0 !important;
 }
 .modal-actions {
@@ -814,7 +814,7 @@ dialog::backdrop {
   background: #f8dfda;
   color: #9d392b;
   border-radius: 9px;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   margin: 14px 0 0;
 }
 @media (max-width: 1050px) {
@@ -866,7 +866,7 @@ dialog::backdrop {
     height: 34px;
   }
   .stat-card b {
-    font-size: var(--text-metric);
+    font-size: 19px;
   }
   .library {
     margin-top: 33px;
@@ -899,7 +899,7 @@ dialog::backdrop {
   }
   .pegi-assist .button {
     padding: 8px 10px;
-    font-size: var(--text-small, 13px);
+    font-size: 11px;
   }
 }
 @media (max-width: 480px) {
@@ -911,7 +911,7 @@ dialog::backdrop {
     padding: 27px 20px;
   }
   .hero h1 {
-    font-size: var(--text-display);
+    font-size: 29px;
     max-width: 80%;
   }
   .hero-copy {

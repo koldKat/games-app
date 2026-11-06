@@ -80,7 +80,7 @@ test('top-level views share one hero geometry and branded section headings', () 
   assert.match(forum, /hero\(coverUrls, 'Kat·a·log Forum'/);
   assert.doesNotMatch(`${html}\n${pages}\n${forum}`, /<h[12]>The\s/i);
   assert.doesNotMatch(forum, /The Game Kat·a·log forum/);
-  assert.match(theme, /\.hero h1,\.hero h2\{font:700 var\(--text-display\) \/ 1\.05 ui-monospace,monospace;margin:0;/);
+  assert.match(theme, /\.hero h1,\.hero h2\{font:700 clamp\(22px,3vw,33px\) \/ 1\.05 ui-monospace,monospace;margin:0;/);
   assert.match(katalog, /\.katalog-main\{width:100%;margin:0;padding:0 0 10px}/);
   assert.doesNotMatch(katalog, /\.katalog-hero\{(?:margin-top|min-height|padding):/);
   assert.doesNotMatch(katalog, /\.signal-hero\{min-height:/);
@@ -399,14 +399,14 @@ test('login and registration keep a stable desktop rail without filler content',
 });
 
 test('landing promo descriptions remain readable', () => {
-  assert.match(readPublicCss(), /\.auth-promo p\{font-size:var\(--text-body\);line-height:1\.5;color:#92a0ae\}/);
+  assert.match(readPublicCss(), /\.auth-promo p\{font-size:12px;line-height:1\.5;color:#92a0ae\}/);
 });
 
 test('Signal keeps timestamps and platform pills smaller than entry text', () => {
   const css = readCss('public/css/katalog.css');
-  assert.match(css, /\.signal-feed \.activity-entry p\{font-size:var\(--text-small\)/);
-  assert.match(css, /\.signal-feed \.activity-entry time\{font-size:var\(--text-tag\)/);
-  assert.match(readCss('public/css/activity.css'), /\.activity-platform-tag\{[^}]*font-size:var\(--text-tag\)/);
+  assert.match(css, /\.signal-feed \.activity-entry p\{font-size:11px/);
+  assert.match(css, /\.signal-feed \.activity-entry time\{font-size:9px/);
+  assert.match(readCss('public/css/activity.css'), /\.activity-platform-tag\{[^}]*font-size:9px/);
 });
 
 test('landing footer links to the public repository without replacing the app', () => {
@@ -726,8 +726,8 @@ test('public release links retain crawlable URLs while opening in the Kat·a·lo
 
 test('public game details keep long titles at a compact dialog scale', () => {
   const css = readCss('public/css/katalog.css');
-  assert.match(css, /\.game-summary h1\{margin:0;color:#edf7f3;font-size:var\(--text-display\);line-height:1\.15/);
-  assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:var\(--text-display\)}/);
+  assert.match(css, /\.game-summary h1\{margin:0;color:#edf7f3;font-size:clamp\(18px,2vw,24px\);line-height:1\.15/);
+  assert.match(css, /@media \(max-width:680px\)[\s\S]*\.game-summary h1\{font-size:clamp\(17px,5vw,21px\)}/);
 });
 
 test('game descriptions, PEGI prose, and personal notes use justified long-form text', () => {
@@ -818,10 +818,10 @@ test('HLTB integration is native Node and exposes all four estimates', () => {
   assert.match(css, /\.card-hltb\{[^}]*display:grid/);
   assert.match(css, /\.game-card\{display:flex;flex-direction:column/);
   assert.match(css, /\.card-actions\{margin-top:auto/);
-  assert.match(css, /\.game-title\{font-size:var\(--text-title\);height:2\.44em/);
+  assert.match(css, /\.game-title\{font-size:14px;height:2\.44em/);
   assert.match(css, /\.badges\{height:46px;align-content:flex-start;overflow:hidden/);
   assert.match(css, /\.game-grid\.list-view \.card-hltb\{display:grid;grid-column:4;grid-row:1;margin:0/);
-  assert.match(css, /\.card-hltb dt\{[^}]*font-size:var\(--text-caption\)[^}]*white-space:nowrap/);
+  assert.match(css, /\.card-hltb dt\{[^}]*font-size:10px[^}]*white-space:nowrap/);
   assert.doesNotMatch(css, /\.card-hltb dt\{[^}]*min-height:/);
   assert.match(css, /\.card-hltb dd\{[^}]*font-size:13px/);
   assert.match(read('public/js/metadata/hltb-ui.js'), /card-hltb\$\{game\.hltbId \? '' : ' is-empty'\}/);
@@ -901,7 +901,7 @@ test('search fields use a themed clear control instead of browser-native cancel 
 test('private and public Kat·a·log searches share the compact field scale', () => {
   const privateCss = readCss('public/css/theme.css'); const publicCss = readCss('public/css/katalog.css');
   assert.match(privateCss, /\.search-wrap\{height:34px/);
-  assert.match(privateCss, /\.search-wrap input\{font-size:var\(--text-input\)/);
+  assert.match(privateCss, /\.search-wrap input\{font-size:11px/);
   assert.match(read('server/katalog-pages.js'), /class="filter-panel katalog-search"/);
   assert.match(read('server/katalog-pages.js'), /class="search-wrap"/);
   assert.match(read('server/katalog-pages.js'), /class="filters katalog-search-filters"/);

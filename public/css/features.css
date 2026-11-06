@@ -176,10 +176,10 @@
   margin-bottom: 7px;
 }
 .auth-promo h2 {
-  font-size: var(--text-heading);
+  font-size: 15px;
 }
 .auth-promo p {
-  font-size: var(--text-body);
+  font-size: 9px;
   line-height: 1.45;
   margin-top: 6px;
 }
@@ -211,7 +211,7 @@
   border: 1px solid #315446;
   background: #10231d;
   color: #67d6a1;
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
 }
 .promo-pegi b:nth-child(3), .promo-pegi b:nth-child(4) {
   border-color: #665327;
@@ -237,8 +237,8 @@
   border: 1px solid #21303a;
   background: #080d12;
   padding: 5px;
-  color: #728482;
-  font-size: var(--text-caption);
+  color: #6f817f;
+  font-size: 7px;
 }
 .promo-system span:last-child {
   grid-column: 1/-1;
@@ -275,8 +275,8 @@
   padding: 0 8px;
   border: 1px solid #19282f;
   background: #080d12;
-  color: #78848d;
-  font-size: var(--text-caption);
+  color: #52616d;
+  font-size: 7px;
   letter-spacing: 0.08em;
 }
 .auth-footer nav {
@@ -393,7 +393,7 @@
 .session-resume-screen small {
   margin-top: 5px;
   color: #5fddc0;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   letter-spacing: 0.05em;
 }
 .resuming-session .session-resume-screen {
@@ -414,7 +414,7 @@ html.resuming-session, .resuming-session body {
 .action-message {
   margin: 3px 0 2px;
   color: #8d9aa8;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   line-height: 1.55;
 }
 .button.action-danger {
@@ -434,7 +434,7 @@ html.resuming-session, .resuming-session body {
 }
 /* Promo typography. */
 .auth-promo p {
-  font-size: var(--text-body);
+  font-size: 12px;
   line-height: 1.5;
   color: #92a0ae;
 }
@@ -449,14 +449,14 @@ html.resuming-session, .resuming-session body {
   white-space: nowrap;
 }
 .promo-system span {
-  font-size: var(--text-caption);
+  font-size: 6px;
 }
 @media (max-width: 580px) {
   .promo-library, .promo-covers, .promo-metadata, .promo-track, .promo-private {
     min-height: 170px;
   }
   .auth-promo p {
-    font-size: var(--text-small, 13px);
+    font-size: 12px;
   }
 }
 .integration-bulk .bulk-status {
@@ -483,7 +483,7 @@ html.resuming-session, .resuming-session body {
   background: #0a1916;
   box-shadow: 0 7px 18px #000b;
   color: #d9ebe5;
-  font-size: var(--text-small);
+  font-size: 10px;
   line-height: 1.25;
   opacity: 0;
   pointer-events: none;
@@ -525,7 +525,7 @@ html.resuming-session, .resuming-session body {
   border: 1px solid #3a4b59;
   background: #111923;
   color: #c4d0da;
-  font-size: var(--text-small);
+  font-size: 9px;
   line-height: 1.45;
   white-space: normal;
   box-shadow: 4px 7px 16px #000a;
@@ -544,12 +544,12 @@ html.resuming-session, .resuming-session body {
   color: #61e3c5;
 }
 .library-title {
-  font-size: var(--text-title);
+  font-size: 14px;
   margin: 0;
 }
 @media (max-width: 520px) {
   .library-title {
-    font-size: var(--text-small, 13px);
+    font-size: 12px;
   }
 }
 /* Expandable PEGI metadata. */
@@ -580,7 +580,7 @@ html.resuming-session, .resuming-session body {
   cursor: pointer;
   list-style: none;
   color: #64e8ca;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -608,7 +608,7 @@ html.resuming-session, .resuming-session body {
 .game-pegi-details summary small {
   margin-left: auto;
   color: #8293a2;
-  font-size: var(--text-caption);
+  font-size: 10px;
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -628,7 +628,7 @@ html.resuming-session, .resuming-session body {
   border: 1px solid #2c414e;
   background: #101b24;
   color: #b5c5d1;
-  font-size: var(--text-caption);
+  font-size: 10px;
 }
 .pegi-detail-tag.purchase {
   border-color: #695321;
@@ -659,13 +659,13 @@ html.resuming-session, .resuming-session body {
   display: block;
 }
 .pegi-purchase-warning strong {
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
   color: #f0c35d;
 }
 .pegi-purchase-warning small {
   margin-top: 2px;
   color: #b29a67;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
 }
 .pegi-detail-body section {
   padding: 11px 0 4px;
@@ -674,14 +674,14 @@ html.resuming-session, .resuming-session body {
 .pegi-detail-body h3 {
   margin: 0 0 6px;
   color: #91a2b1;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .pegi-detail-body p {
   margin: 0;
   color: #c3cdd6;
-  font-size: var(--text-small, 13px);
+  font-size: 12px;
   line-height: 1.65;
   text-align: justify;
   text-justify: inter-word;
@@ -699,13 +699,13 @@ html.resuming-session, .resuming-session body {
   padding: 6px 8px;
   background: #0d151d;
   color: #bac7d2;
-  font-size: var(--text-small, 13px);
+  font-size: 11px;
 }
 .pegi-source {
   display: inline-block;
   margin-top: 12px;
   color: #55d9bc;
-  font-size: var(--text-small, 13px);
+  font-size: 10px;
   text-decoration: none;
 }
 .pegi-source:hover {

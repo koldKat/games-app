@@ -313,7 +313,7 @@
   border-color: #2f7769;
   background: #0d1b20e6;
   color: #71dfc6;
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   text-decoration: none;
@@ -379,7 +379,7 @@
   position: relative;
   display: block;
   color: #44d9b8;
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   letter-spacing: 0.13em;
   margin-bottom: 10px;
 }
@@ -387,14 +387,14 @@
   position: relative;
   margin: 0;
   color: #e0e9ef;
-  font: 700 var(--text-heading)/1.08 ui-monospace, monospace;
+  font: 700 17px/1.08 ui-monospace, monospace;
   letter-spacing: -0.035em;
 }
 .auth-promo p {
   position: relative;
   margin: 8px 0 0;
-  color: #748391;
-  font-size: var(--text-small, 13px);
+  color: #71808f;
+  font-size: 9px;
   line-height: 1.55;
 }
 .promo-library {
@@ -410,7 +410,7 @@
 .promo-platforms span {
   padding: 1px 0;
   color: #568a7e;
-  font-size: var(--text-small, 13px);
+  font-size: 7px;
 }
 .promo-platforms span + span:before {
   content: "/";
@@ -446,7 +446,7 @@
   box-shadow: 0 6px 0 #61d9bc22;
 }
 .promo-query {
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
 }
 .promo-command {
   position: relative;
@@ -454,7 +454,7 @@
   background: #060b0f;
   padding: 8px;
   color: #8494a3;
-  font-size: var(--text-small, 13px);
+  font-size: 9px;
   margin-bottom: 7px;
 }
 .promo-command b {
@@ -467,8 +467,8 @@
   align-items: center;
   gap: 7px;
   padding: 4px 1px;
-  color: #74828f;
-  font-size: var(--text-small, 13px);
+  color: #657482;
+  font-size: 7px;
 }
 .promo-result span {
   display: flex;
@@ -483,7 +483,7 @@
   background: #1c2b32;
 }
 .promo-result strong {
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   color: #b5c3cc;
   font-weight: 600;
 }
@@ -620,7 +620,7 @@
   box-shadow: 0 0 8px #36c7a760;
 }
 .promo-progress b {
-  font-size: var(--text-small, 13px);
+  font-size: 8px;
   color: #72a99c;
   white-space: nowrap;
 }
