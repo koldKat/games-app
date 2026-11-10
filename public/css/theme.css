@@ -1479,8 +1479,7 @@ dialog::backdrop {
   height:100%;
   width:0;
   background:#4bd9b9;
-  box-shadow:0 0 8px #4bd9b966;
-  transition:width .2s ease
+  box-shadow:0 0 8px #4bd9b966
 }
 .account-progression small {
   color:#78958d;

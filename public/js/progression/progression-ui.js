@@ -1,12 +1,12 @@
 import { UI_LOCALE, UI_TIMING } from '../core/ui-policy.js';
 
-function formatXp(value) { return Number(value || 0).toLocaleString(UI_LOCALE); }
+function formatXp(value) { return Math.floor(Number(value || 0)).toLocaleString(UI_LOCALE); }
 function progressAt(xp, target) {
-  const value = Math.max(0, Math.round(Number(xp) || 0));
+  const value = Math.max(0, Number(xp) || 0);
   const level = Math.min(100, Math.floor((-1 + Math.sqrt(1 + (8 * value) / 1000)) / 2));
   const currentLevelXp = 1000 * level * (level + 1) / 2;
   const nextLevelXp = level >= 100 ? currentLevelXp : 1000 * (level + 1) * (level + 2) / 2;
-  return { ...target, xp: value, level, currentLevelXp, nextLevelXp, progress: nextLevelXp === currentLevelXp ? 100 : Math.round((value - currentLevelXp) / (nextLevelXp - currentLevelXp) * 100) };
+  return { ...target, xp: value, level, currentLevelXp, nextLevelXp, progress: nextLevelXp === currentLevelXp ? 100 : (value - currentLevelXp) / (nextLevelXp - currentLevelXp) * 100 };
 }
 
 export function createProgressionUi({ api }) {
@@ -25,7 +25,9 @@ export function createProgressionUi({ api }) {
   }
   function render(next = progress) {
     progress = next || progress; if (!progress) return;
-    const percent = Math.max(0, Math.min(100, progress.progress || 0));
+    const span = Number(progress.nextLevelXp) - Number(progress.currentLevelXp);
+    const fraction = span > 0 ? (Number(progress.xp) - Number(progress.currentLevelXp)) / span * 100 : progress.progress;
+    const percent = Math.max(0, Math.min(100, fraction || 0));
     const root = document.getElementById('account-progression');
     if (root) {
       root.hidden = false;
@@ -33,7 +35,7 @@ export function createProgressionUi({ api }) {
       root.querySelector('[data-progress-title]').textContent = progress.title;
       root.querySelector('[data-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
       root.querySelector('[data-progress-meter]').style.width = `${percent}%`;
-      root.querySelector('[data-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached.' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to level ${progress.level + 1}`;
+      root.querySelector('[data-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached.' : `${formatXp(Math.ceil(Math.max(0, progress.nextLevelXp - progress.xp)))} XP to level ${progress.level + 1}`;
     }
     const header = document.getElementById('header-progression');
     if (header) {
@@ -42,7 +44,7 @@ export function createProgressionUi({ api }) {
       header.querySelector('[data-header-progress-title]').textContent = progress.title;
       header.querySelector('[data-header-progress-xp]').textContent = `${formatXp(progress.xp)} XP`;
       header.querySelector('[data-header-progress-meter]').value = percent;
-      header.querySelector('[data-header-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached' : `${formatXp(Math.max(0, progress.nextLevelXp - progress.xp))} XP to LV ${progress.level + 1}`;
+      header.querySelector('[data-header-progress-next]').textContent = progress.level >= 100 ? 'Maximum level reached' : `${formatXp(Math.ceil(Math.max(0, progress.nextLevelXp - progress.xp)))} XP to LV ${progress.level + 1}`;
     }
   }
   function hydrate(next) {

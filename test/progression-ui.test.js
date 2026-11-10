@@ -13,7 +13,7 @@ function fixture(api = async () => ({})) {
     .replace(/^import[^\n]*\n/, '').replace(/^export /gm, '');
   const factory = vm.runInNewContext(source + '\ncreateProgressionUi', {
     UI_LOCALE: 'en-US', UI_TIMING: { progressionMsPerLevel: 100, progressionRetryMs: 10 },
-    document: { getElementById: id => id === 'header-progression' ? header : null },
+    document: { getElementById: id => ['header-progression', 'account-progression'].includes(id) ? header : null },
     performance: { now: () => 0 }, setTimeout, clearTimeout,
     requestAnimationFrame(callback) { frames.set(++sequence, callback); return sequence; },
     cancelAnimationFrame(id) { frames.delete(id); },
@@ -39,4 +39,23 @@ test('a late progression response cannot overwrite the next session or a newer l
   const next = app.ui.load(); app.ui.handleEvent({ progress: progress(2100) });
   resolve(progress(2000)); await next;
   assert.equal(app.frames.size, 1);
+});
+
+
+test('small XP awards retain fractional progress on every animation frame and at rest', () => {
+  const app = fixture(); app.ui.hydrate(progress(1501));
+  const meter = app.fields.get('[data-header-progress-meter]');
+  assert(Math.abs(meter.value - 25.05) < 1e-9);
+  app.ui.handleEvent({ progress: progress(1521) });
+  let previous = meter.value;
+  for (const now of [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]) {
+    const [id, frame] = app.frames.entries().next().value; app.frames.delete(id); frame(now);
+    assert(meter.value > previous);
+    assert.equal(parseFloat(app.fields.get('[data-progress-meter]').style.width), meter.value);
+    assert(Math.abs(meter.value - (25.05 + now / 100)) < 1e-9);
+    previous = meter.value;
+  }
+  assert.equal(app.frames.size, 0);
+  assert.equal(app.fields.get('[data-header-progress-xp]').textContent, '1,521 XP');
+  assert(Math.abs(meter.value - 26.05) < 1e-9);
 });
