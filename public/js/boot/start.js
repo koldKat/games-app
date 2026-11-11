@@ -6,7 +6,7 @@ import { showAuth, enterApp } from '../account/session.js';
 import { api } from '../core/api.js';
 
 export function restoreSession() {
-  (async function boot() {
+  return (async function boot() {
     setAuthMode('login');
     activityFeed.start();
     loadConfig();
@@ -14,6 +14,6 @@ export function restoreSession() {
     const resetToken = new URLSearchParams(window.location.search).get('reset');
     if (resetToken) { history.replaceState({}, '', window.location.pathname); showAuth(); showPasswordResetComplete(resetToken); return; }
     try { const result = await api('/api/auth/me'); await enterApp(result.user, result.preferences, result.progress); }
-    catch { showAuth(); }
+    catch (error) { if (error.status === 401) showAuth(); else throw error; }
   })();
 }

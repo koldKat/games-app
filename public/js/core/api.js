@@ -7,13 +7,13 @@ function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char
 
 async function api(url, options) {
   const generation = runtime.sessionGeneration;
-  const response = await fetch(url, { credentials: 'same-origin', ...options });
+  const response = await fetch(url, { credentials: 'same-origin', ...options, signal: options?.signal ?? (globalThis.appStartup?.pending ? AbortSignal.timeout(20000) : undefined) });
   const body = await response.json().catch(() => ({}));
   if (response.status === 401 && generation === runtime.sessionGeneration && !AUTH_ROUTES_WITHOUT_EXPIRY_NOTICE.has(url)) {
     runtime.sessionGeneration++;
     showAuth('Your session expired. Authenticate again.');
   }
-  if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+  if (!response.ok) { const error = new Error(body.error || `Request failed (${response.status})`); error.status = response.status; throw error; }
   return body;
 }
 

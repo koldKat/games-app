@@ -977,3 +977,6 @@ dialog::backdrop {
     transition: none !important;
   }
 }
+
+/* Keep startup recovery inactive until a retry is needed. */
+#app-startup-retry[hidden] { display: none !important; }

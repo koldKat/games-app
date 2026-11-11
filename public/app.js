@@ -1,3 +1,3 @@
 import { initializeApp } from './js/boot/init.js';
 
-initializeApp();
+Promise.resolve().then(initializeApp).catch(() => globalThis.appStartup?.fail());

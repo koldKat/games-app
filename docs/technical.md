@@ -4,6 +4,8 @@
 
 ## Architecture
 
+`public/startup-recovery.js` starts before the module graph. Failed startup retries after 2/5/10 seconds, waits for connectivity when offline, and then offers manual retry. Startup API requests have a 20-second timeout. Transient failures preserve the saved session; successful startup disposes recovery listeners and timers.
+
 Public UI typography uses the original compact operator theme and monospace font stack. Existing component sizes are explicit; shared defaults for newer components are `--text-caption` (10px), `--text-small` (11px), `--text-tag` (9px), `--text-body` (14px), and `--text-input` (14px). Signal entries use 11px text on desktop and 10px on mobile, with 9px timestamps. Small mobile form inputs retain the 16px focus-zoom safeguard. Browser-flow checks cover compact captions, ratings, and form behavior.
 
 The mobile action dock and add-game control track `visualViewport` resize and scroll events so browser chrome and the on-screen keyboard cannot hide them below the visible viewport. Safe-area insets remain applied, and the dock can wrap within the available width without overlapping the add-game control. Browsers without `visualViewport` retain fixed positioning. The browser fixture explicitly loads the standalone dock module and checks reduced-height and narrow viewport bounds; desktop window resizing alone does not exercise mobile browser chrome.

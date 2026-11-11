@@ -29,7 +29,7 @@ function applySaveProgress(result) {
   if (result?.progression?.awards?.length) progressionUi.handleEvent({ progress: result.progression.progress });
 }
 
-function endSessionResume() { document.documentElement.classList.remove('resuming-session'); }
+function endSessionResume() { document.documentElement.classList.remove('resuming-session'); globalThis.appStartup?.ready(); }
 
 export function initializeBootServices() {
   coverProviderSettings = createCoverProviderSettings({
