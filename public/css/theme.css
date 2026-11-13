@@ -177,10 +177,15 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 .shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   width: min(1600px, 100%);
   padding: 0 16px 28px;
 }
 .app-footer {
+  margin-top: auto;
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
   align-items: center;
