@@ -6,18 +6,23 @@ function position(trigger) {
   const image = trigger.querySelector(':scope > img');
   const profile = trigger.querySelector(':scope > .activity-preview-profile');
   const rect = trigger.getBoundingClientRect();
-  const imageHeight = image?.getBoundingClientRect().height || 0;
-  const profileHeight = profile?.getBoundingClientRect().height || 0;
-  const width = Math.max(image?.getBoundingClientRect().width || 0, profile?.getBoundingClientRect().width || 0);
-  const height = imageHeight + profileHeight + (image && profile ? 6 : 0);
+  const imageRect = image?.getBoundingClientRect();
+  const profileRect = profile?.getBoundingClientRect();
+  const imageHeight = imageRect?.height || 0;
+  const profileHeight = profileRect?.height || 0;
+  const width = Math.max(imageRect?.width || 0, profileRect?.width || 0);
+  const gap = image && profile ? 3 : 0;
+  const height = imageHeight + profileHeight + gap;
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = document.documentElement.clientHeight;
   const avatar = trigger.classList.contains('activity-preview-trigger--avatar');
   const left = Math.max(8, Math.min(avatar ? rect.right + 8 : rect.left, viewportWidth - width - 8));
   const top = Math.max(8, Math.min(avatar ? rect.bottom + 8 : rect.top - height - 8, viewportHeight - height - 12));
-  trigger.style.setProperty('--activity-preview-left', `${left}px`);
-  trigger.style.setProperty('--activity-profile-top', `${top}px`);
-  trigger.style.setProperty('--activity-image-top', `${top + (profile ? profileHeight + 6 : 0)}px`);
+  // Match the Gamebooks player preview: avatar first, centered caption below.
+  trigger.style.setProperty('--activity-image-left', `${left + (width - (imageRect?.width || width)) / 2}px`);
+  trigger.style.setProperty('--activity-profile-left', `${left + (width - (profileRect?.width || width)) / 2}px`);
+  trigger.style.setProperty('--activity-image-top', `${top}px`);
+  trigger.style.setProperty('--activity-profile-top', `${top + imageHeight + gap}px`);
 }
 
 export function bindActivityPreviews() {

@@ -92,7 +92,7 @@
   position: fixed;
   z-index: 30;
   top: var(--activity-image-top, 8px);
-  left: var(--activity-preview-left, 8px);
+  left: var(--activity-image-left, 8px);
   display: block;
   width: 138px;
   max-width: calc(100vw - 16px);
@@ -108,6 +108,8 @@
   visibility: hidden;
 }
 .activity-preview-trigger--avatar > img {
+  box-sizing: border-box;
+  border-radius: 6px;
   width: 112px;
   height: 112px;
   max-height: calc(100dvh - 16px);
@@ -116,7 +118,7 @@
   position: fixed;
   z-index: 31;
   top: var(--activity-profile-top, 8px);
-  left: var(--activity-preview-left, 8px);
+  left: var(--activity-profile-left, 8px);
   display: flex;
   align-items: center;
   justify-content: center;

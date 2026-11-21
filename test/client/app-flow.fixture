@@ -252,7 +252,20 @@ try {
   feedHost.append(preview);preview.querySelector('button').focus();preview.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));
   const previewBounds=preview.querySelector('.activity-preview-profile').getBoundingClientRect();
   check(previewBounds.right<=innerWidth-7&&previewBounds.bottom<=innerHeight-7,'Player preview stays inside viewport near right and bottom edges');
-  check(getComputedStyle(preview.querySelector('.activity-preview-profile')).position==='fixed','Previews never enlarge the document');preview.remove();
+  check(getComputedStyle(preview.querySelector('.activity-preview-profile')).position==='fixed','Previews never enlarge the document');
+  const avatar=document.createElement('img');avatar.alt='Fixture avatar';avatar.src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="112" height="112"/%3E';preview.prepend(avatar);
+  preview.querySelector('small').textContent='Legendary Cartridge Collector';
+  for(const [label,style] of [['normal','position:fixed;left:20px;top:60px'],['edge','position:fixed;right:1px;bottom:1px']]){
+    preview.style.cssText=style;preview.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));
+    await waitFor(()=>{
+      const image=avatar.getBoundingClientRect(),caption=preview.querySelector('.activity-preview-profile').getBoundingClientRect();
+      return Math.abs(caption.top-image.bottom-3)<1;
+    },`${label}: player level/title stays below avatar`);
+    const image=avatar.getBoundingClientRect(),caption=preview.querySelector('.activity-preview-profile').getBoundingClientRect();
+    check(Math.abs((image.left+image.right-caption.left-caption.right)/2)<1,`${label}: long level/title caption is centered beneath avatar`);
+    for(const bounds of [image,caption])check(bounds.left>=7&&bounds.top>=7&&bounds.right<=document.documentElement.clientWidth-7&&bounds.bottom<=document.documentElement.clientHeight-7,`${label}: complete player preview fits viewport`);
+  }
+  preview.remove();
 
   const RealDate=window.Date,realSetTimeout=window.setTimeout;let rollover;
   window.setTimeout=(callback,delay,...args)=>{if(delay>60000){rollover=callback;return 0;}return realSetTimeout(callback,delay,...args);};
