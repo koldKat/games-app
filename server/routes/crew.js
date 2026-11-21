@@ -1,7 +1,12 @@
 // Crew invitation endpoints expose only the authenticated player's membership.
-function createCrewRoutes({db,events,readJson,sendJson}) {
+function createCrewRoutes({db,auth,events,readJson,sendJson}) {
+  function snapshot(userId) {
+    const result=db.crews.snapshot(userId);
+    result.members=result.members.map(member=>({...member,badges:auth.roleBadges(member.username,undefined,member.sidekick)}));
+    return result;
+  }
   return async function crewRoutes(request,response,url,user) {
-    if (url.pathname==='/api/crew' && request.method==='GET') return sendJson(response,200,db.crews.snapshot(user.id));
+    if (url.pathname==='/api/crew' && request.method==='GET') return sendJson(response,200,snapshot(user.id));
     let result;
     try {
       if(url.pathname==='/api/crew/invites' && request.method==='POST') result=db.crews.invite(user.id,(await readJson(request)).username);
@@ -16,7 +21,7 @@ function createCrewRoutes({db,events,readJson,sendJson}) {
         events.publish(id,'crew-changed',{});
         events.publish(id,'library-changed',{});
       }
-      return sendJson(response,200,db.crews.snapshot(user.id));
+      return sendJson(response,200,snapshot(user.id));
     } catch(error) { return sendJson(response,400,{error:error.message}); }
   };
 }

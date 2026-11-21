@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const dbPath = path.join('/tmp', `games-site-stats-test-${process.pid}.db`);
+const dbPath = path.join(require('node:os').tmpdir(), `games-site-stats-test-${process.pid}.db`);
 process.env.DB_PATH = dbPath;
 const data = require('../server/db');
 require('../server/katalog-runtime');
@@ -126,4 +126,15 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(mobileDock, /media\.addEventListener\('change', placeActions\)/);
   assert.match(read('public/css/theme.css'), /#app-shell\[hidden\] ~ \.mobile-action-dock/);
   assert.match(read('server/katalog-pages.js'), /if \(!user\)[\s\S]*header-community-actions[\s\S]*statsButton\(\)[\s\S]*header-library-actions/);
+});
+
+test('rating statistics count personal votes on crew-shared entries',()=>{
+ const collector=data.db.prepare("SELECT id FROM users WHERE username='stats_collector'").get();
+ const partner=data.db.prepare("SELECT id FROM users WHERE username='stats_second'").get();
+ const invite=data.crews.invite(collector.id,'stats_second');data.crews.accept(partner.id,invite.id);
+ const game=data.listGames(collector.id).find(game=>game.platform==='Nintendo Switch');
+ data.updateGame(partner.id,game.id,{...data.getGame(partner.id,game.id),rating:5});
+ const stats=createSiteStats(data.db,{root:path.join(__dirname,'..')}).snapshot();
+ assert.equal(stats.ratingsTotal,3);assert.ok(Math.abs(stats.ratingAverage-12.5/3)<0.000001);
+ assert.equal(stats.ratingDistribution.find(row=>row.rating===5).count,1);
 });

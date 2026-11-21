@@ -207,7 +207,7 @@ function adminStats() {
 function listAccounts() {
   const accounts = db.prepare(`SELECT u.id, u.username, COALESCE(u.email,'') email, u.created_at AS createdAt,
     u.last_country AS country, u.last_city AS city,
-    u.admin_locked AS adminLocked, u.locked_until AS lockedUntil,
+    u.admin_locked AS adminLocked, u.locked_until AS lockedUntil, u.is_sidekick AS sidekick,
     COUNT(DISTINCT g.id) games, COALESCE(SUM(CASE WHEN g.cover_url<>'' THEN 1 ELSE 0 END),0) covered,
     COALESCE(u.last_active_at, MAX(CAST(strftime('%s',g.updated_at) AS INTEGER)), CAST(strftime('%s',u.created_at) AS INTEGER)) lastActiveAt,
     (SELECT COUNT(*) FROM sessions s WHERE s.user_id=u.id AND s.expires_at>strftime('%s','now')) activeSessions
@@ -366,6 +366,17 @@ async function handleApi(request, response, url) {
       const account = auth.setAccountLocked(Number(match[1]), (await readJson(request)).locked === true);
       return account ? sendJson(response, 200, { account }) : sendJson(response, 404, { error: 'Account not found.' });
     } catch (error) { return sendJson(response, error.status || 400, { error: error.message }); }
+  }
+  match = pathname.match(/^\/api\/admin\/accounts\/(\d+)\/sidekick$/);
+  if (request.method === 'PATCH' && match) {
+    try {
+      const account=auth.setSidekick(Number(match[1]),(await readJson(request)).enabled);
+      if(!account)return sendJson(response,404,{error:'Account not found.'});
+      events.publish(account.id,'roles-updated',{userId:account.id,badges:account.badges});
+      for(const memberId of require('./db').crews.memberIds(account.id))events.publish(memberId,'crew-changed',{});
+      events.publishPublicActivity();events.publishPublicForum();
+      return sendJson(response,200,{account});
+    } catch(error){return sendJson(response,error.status||400,{error:error.message});}
   }
   if (request.method === 'GET' && pathname === '/api/admin/games') return sendJson(response, 200, listKatalog(url.searchParams.get('q')));
   if (request.method === 'GET' && pathname === '/api/admin/catalogue') {

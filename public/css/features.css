@@ -823,6 +823,12 @@ html:has(dialog[open]) {
   visibility: hidden;
 }
 .account-button #account-name:has(.role-badge) { overflow: visible; }
+.account-button #account-name > .role-badge {
+  align-self: center;
+  top: -1px;
+  vertical-align: middle;
+}
+
 .top-actions .role-badge > .role-badge-tooltip {
   top: calc(100% + 8px);
   bottom: auto;
@@ -831,3 +837,10 @@ html:has(dialog[open]) {
   transform: translateY(3px);
 }
 .top-actions .role-badge:is(:hover, :focus-visible) > .role-badge-tooltip { transform: translateY(0); }
+
+.role-badge.role-badge--sidekick {
+  color: #d6b574;
+  width: .85em;
+  font-size: inherit;
+  flex-shrink: 0;
+}

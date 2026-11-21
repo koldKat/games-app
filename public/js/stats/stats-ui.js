@@ -45,7 +45,14 @@ function ratingRows(stats) {
     ['Ratings given', formatCount(stats.ratingsTotal)],
     ['Average rating', stats.ratingsTotal ? `${Number(stats.ratingAverage).toFixed(1)} / 5` : 'N/A'],
   ];
-  for (const item of stats.ratingDistribution || []) rows.push([`${Number(item.rating).toFixed(1)} stars`, formatCount(item.count)]);
+  const distribution=stats.ratingDistribution||[];
+  const max=Math.max(0,...distribution.map(item=>Number(item.count)||0));
+  for(let rating=5;rating>=0.5;rating-=0.5){
+    const count=Number(distribution.find(item=>Number(item.rating)===rating)?.count)||0;
+    const votes=element('span','stats-rating-votes',formatCount(count));
+    votes.style.setProperty('--rating-fill',`${max?count/max*100:0}%`);
+    rows.push([`${rating.toFixed(1)} / 5`,votes]);
+  }
   return rows;
 }
 
@@ -104,8 +111,8 @@ function sections(stats) {
       ['Architecture', stats.cpuArch || 'Unknown'], ['System RAM', formatBytes(stats.totalRamBytes)],
     ] },
     { kind: 'app', label: 'The app', rows: [
-      ['App age', formatDuration(stats.appAgeSeconds)], ['Session uptime', formatDuration(stats.sessionUptimeSeconds)],
-      ['Total uptime', formatDuration(Math.max(0, stats.appAgeSeconds - stats.downtimeSeconds))],
+      ['App age', formatDuration(stats.appAgeSeconds, false)], ['Session uptime', formatDuration(stats.sessionUptimeSeconds, false)],
+      ['Total uptime', formatDuration(Math.max(0, stats.appAgeSeconds - stats.downtimeSeconds), false)],
       ['Uptime', formatPercent(stats.uptimePercent, 2)], ['Total downtime', formatDuration(stats.downtimeSeconds)],
       ['Lines of source', formatCount(stats.linesOfCode)], ['Source size', formatBytes(stats.codeBytes)],
       ['JavaScript modules', formatCount(stats.jsModules)], ['Database size', formatBytes(stats.databaseBytes)],

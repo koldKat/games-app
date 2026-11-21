@@ -425,3 +425,10 @@ Confirm port 3005 is free and that the device can reach the host machine.
 Persistent collection records live in `games.db`; durable cover binaries live separately in `public/covers/`. **Create backup** in the local admin panel intentionally archives the database only and does not include cover files. Do not copy only the main database file during active writes without also accounting for its WAL files.
 
 The application has no cloud synchronization. Fully enriched factual release metadata can enter the app's own public Kat·a·log under the conservative rules described above; personal tracking and account identity remain private. A manual PEGI lookup sends the typed title to PEGI. Starting the PEGI background scanner sends each eligible game's title to PEGI in turn. Cover lookup sends the title and platform to each configured artwork provider // shared SteamGridDB and IGDB application connections plus the account's optional TheGamesDB connection // and their individual background scans do the same for eligible games. Public Kat·a·log autocomplete is local to this server. When the IGDB application is connected, typed text is sent after the third character; the shared SteamGridDB connection is the remote fallback. Failed remote autocomplete remains invisible. Connecting Steam sends the supplied profile reference to Steam's Web API for resolution. Previewing or importing sends the resolved SteamID and returns that profile's owned titles, playtime snapshots, and last-played timestamps; the shared API key remains server-side.
+
+
+## Crew roles
+
+The blue star marks a **Gamekeeper**, who looks after the app. A gold controller marks a **Sidekick**, the junior-player role. Role badges appear with player names and use themed tooltips.
+
+Stats for Nerds includes muted bars beside each rating count. App age and uptime use days and hours; downtime keeps its finer detail.

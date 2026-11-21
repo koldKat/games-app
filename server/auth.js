@@ -25,12 +25,23 @@ class AccountLockedError extends Error {
   }
 }
 
-function roleBadges(username, owner = ownerUsername()) {
-  return owner && String(username || '').trim().toLocaleLowerCase() === owner.toLocaleLowerCase() ? ['admin'] : [];
+function roleBadges(username, owner = ownerUsername(), sidekick) {
+  const badges = owner && String(username || '').trim().toLocaleLowerCase() === owner.toLocaleLowerCase() ? ['admin'] : [];
+  const junior = sidekick === undefined ? db.prepare('SELECT is_sidekick FROM users WHERE username=? COLLATE NOCASE').get(String(username || ''))?.is_sidekick : sidekick;
+  if (junior) badges.push('sidekick');
+  return badges;
+}
+function setSidekick(userId, enabled) {
+  if(typeof enabled!=='boolean') throw new Error('Sidekick must be enabled or disabled.');
+  const account=db.prepare('SELECT * FROM users WHERE id=?').get(Number(userId));
+  if(!account)return null;
+  if(isProtectedUsername(account.username))throw protectedAccountError();
+  db.prepare('UPDATE users SET is_sidekick=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(enabled?1:0,account.id);
+  return publicUser({...account,is_sidekick:enabled?1:0});
 }
 
 function publicUser(row) {
-  return { id: row.id, username: row.username, badges: roleBadges(row.username), email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null,
+  return { id: row.id, username: row.username, badges: roleBadges(row.username, undefined, row.is_sidekick), email: row.email || '', avatarUrl: row.avatar_path ? `/avatars/${row.avatar_path}` : null,
     publicProfile: Boolean(row.public_profile), hideFromActivity: Boolean(row.hide_from_activity) };
 }
 
@@ -113,7 +124,7 @@ async function resetPassword(token, password) {
 }
 
 async function login(username, password) {
-  const row = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, password_hash, salt, failed_login_count, locked_until, admin_locked FROM users WHERE username=? COLLATE NOCASE').get(String(username || '').trim());
+  const row = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, is_sidekick, password_hash, salt, failed_login_count, locked_until, admin_locked FROM users WHERE username=? COLLATE NOCASE').get(String(username || '').trim());
   if (!row) return null;
   const now = Math.floor(Date.now() / 1000);
   if (row.admin_locked) throw new AccountLockedError('This account has been locked by an administrator.', { manual: true });
@@ -195,7 +206,7 @@ function authenticate(request, { touch = true } = {}) {
   const token = tokenFromRequest(request);
   if (!token) return null;
   const now = Math.floor(Date.now() / 1000);
-  const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path, u.public_profile, u.hide_from_activity FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
+  const row = db.prepare(`SELECT u.id, u.username, u.email, u.avatar_path, u.public_profile, u.hide_from_activity, u.is_sidekick FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>? AND u.admin_locked=0`).get(token, now);
   if (!row) return null;
   if (touch) {
     db.prepare('UPDATE sessions SET expires_at=? WHERE token=?').run(now + SESSION_SECONDS, token);
@@ -252,4 +263,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { roleBadges, ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { roleBadges, setSidekick, ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

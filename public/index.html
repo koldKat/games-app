@@ -395,12 +395,12 @@
       <footer class="modal-actions"><button type="button" class="button ghost" id="game-details-reroll" hidden>reroll()</button><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
     </section>
   </dialog>
-  <dialog id="crew-dialog">
+  <dialog id="crew-dialog" aria-labelledby="crew-title">
     <section class="modal-card crew-modal">
-      <header class="modal-head"><div><p class="kicker">Crew // shared shelf</p><h2>Your crew</h2></div><button type="button" class="close-button" data-crew-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
-      <p>One crew, one game shelf. Share game details while keeping your ratings and play status personal. Only creators can delete their entries.</p>
+      <header class="modal-head"><div><p class="kicker">Crew // shared shelf</p><h2 id="crew-title">Your crew</h2></div><button type="button" class="close-button" data-crew-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <p>Share one shelf. Ratings and play status stay yours; only the creator can delete an entry.</p>
       <ul id="crew-members" class="crew-list"></ul>
-      <form id="crew-invite-form" class="crew-invite-row"><label for="crew-username">Invite a player<input id="crew-username" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Player username" required></label><button class="button secondary" type="submit">Invite to crew</button></form>
+      <form id="crew-invite-form" class="form-grid crew-invite-row"><label for="crew-username"><span>Invite a player</span><input id="crew-username" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Player username" required></label><button class="button secondary" type="submit">Invite to crew</button></form>
       <section id="crew-incoming" hidden><h3>Incoming invitations</h3><ul id="crew-incoming-list" class="crew-list"></ul></section>
       <section id="crew-outgoing" hidden><h3>Sent invitations</h3><ul id="crew-outgoing-list" class="crew-list"></ul></section>
       <p id="crew-error" class="form-error" role="alert" hidden></p>

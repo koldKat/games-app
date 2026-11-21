@@ -60,7 +60,7 @@ function createCrewStore(database) {
   function snapshot(userId) {
     const id = crewId(userId);
     return {
-      members: database.prepare(`SELECT u.id,u.username,u.avatar_path AS avatarPath,m.joined_at AS joinedAt
+      members: database.prepare(`SELECT u.id,u.username,u.is_sidekick AS sidekick,u.avatar_path AS avatarPath,m.joined_at AS joinedAt
         FROM users u LEFT JOIN crew_members m ON m.user_id=u.id WHERE u.id IN ${memberIdsSql()} ORDER BY u.id`).all({userId})
         .map(({avatarPath,...member})=>({...member,avatarUrl:avatarPath?'/avatars/'+encodeURIComponent(avatarPath):null})),
       incoming: database.prepare(`SELECT i.id,i.created_at AS createdAt,u.username AS username

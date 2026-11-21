@@ -20,7 +20,7 @@ if (mode === 'mobile') {
   Object.defineProperty(window, 'visualViewport', { configurable: true, value: testViewport });
 }
 let signedIn = mode !== 'guest';
-const user = { id: 17, username: 'TestCollector', email: '', avatarUrl: null };
+const user = { id: 17, username: 'TestCollector', email: '', avatarUrl: null, badges:['admin'] };
 const progress = { xp: 500, level: 0, title: 'Collector', currentLevelXp: 0, nextLevelXp: 1000, progress: 50 };
 let games = [
   { id: 1, title: 'Portal 2', platform: 'Steam', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['digital'], rating: 3, pegiDescriptors: [], pegiReleases: [] },
@@ -40,7 +40,7 @@ window.fetch = async (target, options = {}) => {
   if (['/katalog', '/signal', '/forum'].includes(url.pathname)) return nativeFetch(`/fixtures${url.pathname}.html`);
   if (url.pathname === '/cover-showcase.json') return reply({ covers: [] });
   if (!url.pathname.startsWith('/api/')) return nativeFetch(target, options);
-  if (url.pathname === '/api/crew') return reply({members:[user],incoming:crewIncoming,outgoing:[]});
+  if (url.pathname === '/api/crew') return reply({members:[user,{id:18,username:'CrewMate',badges:['sidekick']}],incoming:crewIncoming,outgoing:[]});
   if (url.pathname === '/api/config') return reply({ version: 'test-version' });
   if (url.pathname === '/api/auth/me') return reply(signedIn ? { user, preferences: {}, progress } : { error: 'Unauthorized' }, signedIn ? 200 : 401);
   if (url.pathname === '/api/login') { signedIn = true; return reply({ user, preferences: {}, progress }); }
@@ -58,6 +58,7 @@ window.fetch = async (target, options = {}) => {
   }
   if (url.pathname === '/api/games') { libraryRequests++; return reply({ games, total: 1, page: 1, pages: 1 }); }
   if (/^\/api\/games\/\d+$/.test(url.pathname)) return reply(games.find(game => game.id === Number(url.pathname.split('/').at(-1))));
+  if (url.pathname === '/api/site-stats') return reply({ratingsTotal:6,ratingAverage:4.5,ratingDistribution:[{rating:5,count:4},{rating:4,count:1},{rating:3,count:1}],appAgeSeconds:101*86400+23*3600+600,sessionUptimeSeconds:10*86400+19*3600+2640,downtimeSeconds:3480});
   if (url.pathname === '/api/stats') return reply({ total: games.length });
   if (url.pathname === '/api/meta') return reply({ platforms: ['Steam', 'Nintendo Switch'], integrations: {}, user });
   if (url.pathname === '/api/showcase/covers') return reply({ covers: [] });
@@ -132,6 +133,12 @@ try {
     Object.assign(testViewport, { width: innerWidth, height: innerHeight, offsetLeft: 0, offsetTop: 0 });
     testViewport.dispatchEvent(new Event('resize'));
   }
+  if(!testViewport){
+    const name=document.querySelector('#account-name'),badge=name.querySelector('.role-badge');
+    check(badge?.getAttribute('aria-label')==='Gamekeeper','Gamekeeper role is shown');
+    const bounds=name.getBoundingClientRect(),star=badge.getBoundingClientRect();
+    check(Math.abs(star.top+star.height/2-bounds.top-bounds.height/2)<=1.5,'Role badge is vertically centered beside the name');
+  }
   const mountedHeader = document.querySelector('#app-shell .topbar');
   check(mountedHeader, 'Shared header is mounted');
   const { katalogNavigation } = await import('/js/boot/navigation.js');
@@ -169,7 +176,10 @@ try {
   document.querySelector('#crew-button').click();
   await waitFor(()=>document.querySelector('#crew-members').textContent.includes(user.username),'Crew members load');
   check(document.querySelector('#crew-dialog').open,'Crew opens');
+  check(document.querySelector('#crew-members .role-badge--sidekick')?.getAttribute('aria-label')==='Sidekick','Sidekick controller badge appears on crew members');
   check(document.querySelector('#crew-dialog').getBoundingClientRect().width<=innerWidth,'Crew dialog fits viewport');
+  check(getComputedStyle(document.querySelector('.crew-modal')).fontSize===getComputedStyle(document.documentElement).getPropertyValue('--text-small').trim(),'Crew body uses shared compact type');
+  check(getComputedStyle(document.querySelector('#crew-username')).backgroundColor===getComputedStyle(document.querySelector('#game-title')).backgroundColor,'Crew field uses shared themed input');
   const inviteInput=document.querySelector('#crew-username'),inviteButton=document.querySelector('#crew-invite-form button');
   check(Math.abs(inviteInput.getBoundingClientRect().height-inviteButton.getBoundingClientRect().height)<1,'Crew invitation input and button have matching heights');
   check(getComputedStyle(inviteButton).alignItems==='center'&&getComputedStyle(inviteButton).justifyContent==='center','Crew invitation label is centered');
@@ -178,6 +188,13 @@ try {
   check(document.querySelector('#account-dialog').open, 'Profile opens');
   check(document.activeElement.tagName !== 'INPUT', 'Profile does not focus a text input');
   document.querySelector('[data-account-close]').click();
+  const {openStats,closeStats}=await import('/js/stats/stats-ui.js');
+  await openStats(document.querySelector('[data-stats-open]'));
+  const bars=[...document.querySelectorAll('.stats-rating-votes')];
+  check(bars.length===10&&bars[0].textContent==='4'&&bars[0].style.getPropertyValue('--rating-fill')==='100%','Ratings have proportional distribution bars');
+  const ageRow=[...document.querySelectorAll('.stats-section--app tr')].find(row=>row.firstChild.textContent==='App age');
+  check(ageRow.lastChild.textContent==='101d 23h','App age omits minutes');
+  closeStats();
   boot.initializeApp();
   check(eventConnections === 1, 'Repeated bootstrap does not duplicate event streams');
   eventController.enqueue(new TextEncoder().encode('event: version-updated\ndata: {"version":"live-test"}\n\n'));

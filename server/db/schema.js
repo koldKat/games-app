@@ -188,6 +188,7 @@ function initializeSchema(db) {
   if (!userColumns.includes('admin_locked')) db.exec('ALTER TABLE users ADD COLUMN admin_locked INTEGER NOT NULL DEFAULT 0');
   if (!userColumns.includes('hide_from_activity')) db.exec('ALTER TABLE users ADD COLUMN hide_from_activity INTEGER NOT NULL DEFAULT 0');
   if (!userColumns.includes('public_profile')) db.exec('ALTER TABLE users ADD COLUMN public_profile INTEGER NOT NULL DEFAULT 0');
+  if (!userColumns.includes('is_sidekick')) db.exec('ALTER TABLE users ADD COLUMN is_sidekick INTEGER NOT NULL DEFAULT 0 CHECK(is_sidekick IN(0,1))');
   if (!userColumns.includes('last_country')) db.exec('ALTER TABLE users ADD COLUMN last_country TEXT');
   if (!userColumns.includes('last_city')) db.exec('ALTER TABLE users ADD COLUMN last_city TEXT');
   if (!userColumns.includes('location_updated_at')) db.exec('ALTER TABLE users ADD COLUMN location_updated_at INTEGER');

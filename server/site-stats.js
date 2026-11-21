@@ -64,6 +64,7 @@ function cpuInfo(currentMs) {
 
 function createSiteStats(database, { root = path.join(__dirname, '..'), now = () => Date.now(), resourceAverages = getResourceAverages, trafficStats = getTrafficStats } = {}) {
   const source = codeStats(root);
+  const ratingsSource=database.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='game_player_state'").get()?'game_player_state':'games';
   const scalar = (sql, params = []) => Number(database.prepare(sql).get(...params)?.n || 0);
   const setting = key => database.prepare('SELECT value FROM runtime_settings WHERE key=?').get(key)?.value || '';
   let cached = null; let cachedAt = 0;
@@ -138,9 +139,9 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       hltbExtraHours: hltbTotal('mainExtra'),
       hltbCompletionistHours: hltbTotal('completionist'),
       hltbAllStylesHours: hltbTotal('allStyles'),
-      ratingsTotal: scalar('SELECT COUNT(*) n FROM games WHERE rating IS NOT NULL'),
-      ratingAverage: Number(database.prepare('SELECT AVG(rating) n FROM games WHERE rating IS NOT NULL').get()?.n || 0),
-      ratingDistribution: database.prepare('SELECT rating, COUNT(*) count FROM games WHERE rating IS NOT NULL GROUP BY rating ORDER BY rating DESC').all(),
+      ratingsTotal: scalar(`SELECT COUNT(*) n FROM ${ratingsSource} WHERE rating IS NOT NULL`),
+      ratingAverage: Number(database.prepare(`SELECT AVG(rating) n FROM ${ratingsSource} WHERE rating IS NOT NULL`).get()?.n || 0),
+      ratingDistribution: database.prepare(`SELECT rating, COUNT(*) count FROM ${ratingsSource} WHERE rating IS NOT NULL GROUP BY rating ORDER BY rating DESC`).all(),
       totalXp,
       appLevel,
       appTitle: titleForLevel(appLevel),

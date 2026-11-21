@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const dbPath = path.join('/tmp', `games-role-badges-${process.pid}.db`);
+const dbPath = path.join(require('node:os').tmpdir(), `games-role-badges-${process.pid}.db`);
 process.env.DB_PATH = dbPath;
 process.env.OWNER_USERNAME = 'koldKat';
 const data = require('../server/db');
@@ -28,4 +28,23 @@ test('only the configured owner receives the admin badge across session, profile
   activity.recordJoin(owner.id); activity.recordJoin(regular.id);
   assert.deepEqual(activity.list().find(entry => entry.username === 'koldKat').badges, ['admin']);
   assert.deepEqual(activity.list().find(entry => entry.username === 'collector').badges, []);
+});
+
+test('Sidekick is admin-assigned, appears across identities, and grants no owner privileges',async()=>{
+ const child=await auth.register('junior','password-junior');
+ assert.deepEqual(child.badges,[]);
+ const assigned=auth.setSidekick(child.id,true);assert.deepEqual(assigned.badges,['sidekick']);
+ assert.equal(auth.isProtectedUsername(child.username),false);
+ const session=auth.createSession(child.id);
+ assert.deepEqual(auth.authenticate({headers:{authorization:`Bearer ${session}`}}).badges,['sidekick']);
+ assert.deepEqual((await auth.login(child.username,'password-junior')).badges,['sidekick']);
+ await auth.updateAccount(child.id,{currentPassword:'password-junior',publicProfile:true,is_sidekick:false});
+ assert.deepEqual(profiles.get(child.username).badges,['sidekick']);
+ activity.recordJoin(child.id);assert.deepEqual(activity.list().find(row=>row.username===child.username).badges,['sidekick']);
+ const forum=require('../server/forum-data');
+ const thread=forum.createThread(child.id,{categoryId:forum.categories()[0].id,title:'A junior adventure',body:'My first shelf.'});
+ assert.ok(forum.thread(thread.thread.id).thread.badges.includes('sidekick'));
+ assert.deepEqual(auth.setSidekick(child.id,false).badges,[]);
+ assert.throws(()=>auth.setSidekick(child.id,'true'));
+ const owner=data.db.prepare("SELECT id FROM users WHERE username='koldKat'").get();assert.throws(()=>auth.setSidekick(owner.id,true));
 });

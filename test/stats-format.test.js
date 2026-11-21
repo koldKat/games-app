@@ -29,3 +29,10 @@ test('uptime can retain enough precision to reveal small amounts of downtime', a
   assert.equal(formatPercent(99.9753643487, 2), '99.98%');
   assert.equal(formatPercent(99.9753643487), '100.0%');
 });
+
+test('app age and uptime can omit minutes without losing precise downtime',async()=>{
+ const {formatDuration}=await formatModule();
+ assert.equal(formatDuration(101*86400+23*3600+600,false),'101d 23h');
+ assert.equal(formatDuration(10*86400+19*3600+2640,false),'10d 19h');
+ assert.equal(formatDuration(1200,false),'0h');assert.equal(formatDuration(1200),'20m');
+});

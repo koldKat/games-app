@@ -1,3 +1,4 @@
+import {roleBadgesMarkup} from './role-badges.js';
 // Manage the player's shared game crew and invitation attention.
 import {api,escapeHtml,toast} from '../core/api.js';
 import {state} from '../core/runtime.js';
@@ -9,7 +10,7 @@ function paintCrew(data) {
   button.classList.toggle('has-invites',count>0);badge.hidden=!count;badge.textContent=String(count);
   button.dataset.tooltip=count?`Crew: ${count} pending invitation${count===1?'':'s'}`:'Open your crew';
   button.setAttribute('aria-label',button.dataset.tooltip);
-  document.getElementById('crew-members').innerHTML=data.members.map(member=>`<li><strong>${escapeHtml(member.username)}</strong>${member.id===state.user?.id?' <span class="badge">You</span>':''}</li>`).join('');
+  document.getElementById('crew-members').innerHTML=data.members.map(member=>`<li><strong>${escapeHtml(member.username)}${roleBadgesMarkup(member)}</strong>${member.id===state.user?.id?' <span class="badge">You</span>':''}</li>`).join('');
   for(const direction of ['incoming','outgoing']) {
     const section=document.getElementById('crew-'+direction);section.hidden=!data[direction].length;
     section.querySelector('ul').innerHTML=data[direction].map(invite=>`<li><span>${escapeHtml(invite.username)}</span><span class="crew-invite-actions">${direction==='incoming'?`<button type="button" class="button secondary" data-crew-accept="${invite.id}">Join crew</button>`:''}<button type="button" class="button ghost" data-crew-cancel="${invite.id}">${direction==='incoming'?'Decline':'Cancel invitation'}</button></span></li>`).join('');

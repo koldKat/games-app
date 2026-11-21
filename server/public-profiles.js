@@ -4,7 +4,7 @@ const { db, crews } = require('./db');
 const { roleBadges } = require('./auth');
 const { progressForXp } = require('./progression-policy');
 
-const profileAccount = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, u.created_at AS createdAt,
+const profileAccount = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, u.created_at AS createdAt, u.is_sidekick AS sidekick,
     COALESCE(up.xp, 0) AS xp
   FROM users u LEFT JOIN user_progression up ON up.user_id=u.id
   WHERE u.username=? COLLATE NOCASE AND u.public_profile=1 AND u.admin_locked=0`);
@@ -31,7 +31,7 @@ function get(username) {
   const stats = collectionStats.get({userId:account.id});
   return {
     username: account.username,
-    badges: roleBadges(account.username),
+    badges: roleBadges(account.username,undefined,account.sidekick),
     avatarUrl: account.avatarPath ? `/avatars/${account.avatarPath}` : null,
     memberSince: account.createdAt,
     level: progress.level,

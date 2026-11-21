@@ -21,7 +21,7 @@ export function formatBytes(value) {
   return `${scaled.toFixed(precision)} ${units[tier]}`;
 }
 
-export function formatDuration(seconds) {
+export function formatDuration(seconds, includeMinutes = true) {
   const total = Math.max(0, Math.floor(Number(seconds) || 0));
   const days = Math.floor(total / 86_400);
   const hours = Math.floor((total % 86_400) / 3_600);
@@ -29,7 +29,8 @@ export function formatDuration(seconds) {
   const parts = [];
   if (days) parts.push(`${days}d`);
   if (days || hours) parts.push(`${hours}h`);
-  parts.push(`${minutes}m`);
+  if(includeMinutes) parts.push(`${minutes}m`);
+  else if(!parts.length) parts.push('0h');
   return parts.join(' ');
 }
 

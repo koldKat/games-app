@@ -1,31 +1,43 @@
 /* Crew membership and invitation controls. */
+#crew-dialog {
+  width: min(560px, calc(100% - 16px));
+}
 .crew-modal {
-  max-width: 600px;
+  font-size: var(--text-small);
+}
+.crew-modal h3 {
+  margin: 10px 0 4px;
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--muted);
 }
 .crew-modal > p {
+  margin: 8px 0 10px;
   color: var(--muted);
   line-height: 1.5;
 }
 .crew-list {
   list-style: none;
   padding: 0;
-  margin: 12px 0;
+  margin: 8px 0;
 }
 .crew-list li {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 7px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--line, #25303a);
 }
 .crew-invite-row {
   display: flex;
   align-items: end;
   gap: 10px;
-  margin: 16px 0;
+  margin: 10px 0;
 }
 .crew-invite-row label {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
 }
@@ -73,8 +85,8 @@
 }
 .crew-invite-row > button,
 .crew-invite-row input {
-  height: 34px;
-  min-height: 34px;
+  height: 30px;
+  min-height: 30px;
   box-sizing: border-box;
 }
 .crew-invite-row > button {
@@ -94,4 +106,10 @@
     padding-inline: 3px;
     font-size: 10px;
   }
+}
+.crew-list strong {
+  font-weight: 600;
+}
+.crew-list .badge {
+  font-size: var(--text-caption);
 }

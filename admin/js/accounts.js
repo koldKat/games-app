@@ -57,7 +57,11 @@ function renderAccount(body, account) {
   if (account.protected) {
     remove.textContent = 'Protected'; remove.classList.add('themed-tooltip'); remove.dataset.tooltip = 'This account cannot be deleted.'; remove.removeAttribute('title');
   }
-  actionGroup.append(revoke, lock, remove); actions.append(actionGroup);
+  const sidekick=button(account.sidekick?'Remove Sidekick':'Make Sidekick','',async()=>{
+    await busy(sidekick,async()=>{await api('PATCH',`/api/admin/accounts/${account.id}/sidekick`,{enabled:!account.sidekick});toast(account.sidekick?'Sidekick role removed.':'Sidekick role assigned.');await loadAccounts();});
+  });
+  sidekick.disabled=Boolean(account.protected);
+  actionGroup.append(sidekick,revoke, lock, remove); actions.append(actionGroup);
 }
 
 export async function loadAccounts() {

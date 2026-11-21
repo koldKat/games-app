@@ -14,7 +14,7 @@ import {
   renderCoverStatus, renderPegiBulkStatus, renderHltbBulkStatus, renderDescriptionBulkStatus,
   loadCoverStatus, loadPegiStatus, loadHltbStatus, loadDescriptionStatus,
 } from '../metadata/bulk-ui.js';
-import { showAuth } from '../account/session.js';
+import { showAuth, updateAvatarUI } from '../account/session.js';
 
 function applyGamePatch(game) {
   if (!game?.id) return;
@@ -44,6 +44,7 @@ function connectEventStream() {
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (generation !== runtime.sessionGeneration || !state.user) return;
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'roles-updated') {if(data.userId===state.user.id){state.user={...state.user,badges:data.badges};updateAvatarUI();}}
     else if (event === 'crew-changed') { void refreshCrew(); }
     else if (event === 'library-changed') {
       clearTimeout(runtime.groupFilterRefreshTimer);

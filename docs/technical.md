@@ -833,3 +833,8 @@ The database and generated cover files are excluded from Git. Source code, gener
 Authenticated `/api/crew` routes expose membership and invite, accept and cancel operations. Crew and library SSE notifications target affected accounts; peers reload their own projection rather than receiving another member’s personal state. Public release averages count each player once; private release averages are restricted to the crew. The rating control remains independent of the aggregate.
 
 Database ZIP backups run once per local calendar day, including a missing-current-day check on startup, and retain 30 days. Legacy hourly archives remain readable until their retention expires.
+
+
+## Display roles
+
+The protected operator retains the internal `admin` role and is displayed as Gamekeeper. `users.is_sidekick` stores the separately assignable Sidekick display role; it grants no operator authorization. The loopback-only administrator account API assigns or removes it through `PATCH /api/admin/accounts/:id/sidekick` with a boolean `enabled` field. Session projections, profiles, crews, Signal and forum identities use server-provided badge metadata. Shared SVG symbols live in `public/assets/role-icons.svg`. Role changes notify the player through SSE and refresh crew membership displays and public activity.

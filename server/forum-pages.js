@@ -1,4 +1,5 @@
 'use strict';
+const {roleBadgesMarkup}=require('./role-badges');
 
 const { SITE_URL, escapeHtml, pageShell } = require('./katalog-pages');
 const { UI_LOCALE } = require('./constants');
@@ -6,12 +7,12 @@ const { UI_LOCALE } = require('./constants');
 function formatBody(value) { return escapeHtml(value).replace(/\n/g, '<br>'); }
 function timestamp(value) { return String(value || '').replace(' ', 'T') + 'Z'; }
 function when(value) { return value ? new Intl.DateTimeFormat(UI_LOCALE, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp(value))) : ''; }
-function author(item) { return `<span class="forum-author">${escapeHtml(item.username)}</span>`; }
+function author(item) { return `<span class="forum-author">${escapeHtml(item.username)}${roleBadgesMarkup(item.badges)}</span>`; }
 function level(xp) { return Math.min(100, Math.floor((-1 + Math.sqrt(1 + (8 * Math.max(0, Number(xp) || 0)) / 1000)) / 2)); }
 function authorPanel(item) {
   const name = escapeHtml(item.username || 'Deleted account'); const initial = escapeHtml(String(item.username || '?').slice(0, 1).toLocaleUpperCase());
   const portrait = item.avatarUrl ? `<img src="${escapeHtml(item.avatarUrl)}" alt="" loading="lazy">` : `<span class="forum-user-initial">${initial}</span>`;
-  return `<aside class="forum-user-card">${portrait}<b>${name}</b><small>LV ${level(item.xp)}</small></aside>`;
+  return `<aside class="forum-user-card">${portrait}<b>${name}${roleBadgesMarkup(item.badges)}</b><small>LV ${level(item.xp)}</small></aside>`;
 }
 function threadRow(item) {
   const tags = `${item.pinned ? '<span>PINNED</span>' : ''}${item.locked ? '<span>LOCKED</span>' : ''}`;

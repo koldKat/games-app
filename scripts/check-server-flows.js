@@ -70,6 +70,13 @@ async function run() {
     const crewAccount=await request('/api/register','POST',{username:'CrewPartner',password:'test-password-456',passwordConfirm:'test-password-456'});
     assert.equal(crewAccount.status,201);
     const secondCookie=cookie;
+    const partner=await (await request('/api/auth/me')).json();
+    cookie=firstCookie;
+    const role=await request(`/api/admin/accounts/${partner.user.id}/sidekick`,'PATCH',{enabled:true});
+    assert.equal(role.status,200);assert.deepEqual((await role.json()).account.badges,['sidekick']);
+    cookie=secondCookie;
+    assert.deepEqual((await (await request('/api/auth/me')).json()).user.badges,['sidekick']);
+
     assert.equal((await request(`/api/games/${game.id}`)).status,404);
     cookie=firstCookie;
     const sent=await request('/api/crew/invites','POST',{username:'CrewPartner'});assert.equal(sent.status,200);

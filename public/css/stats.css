@@ -138,3 +138,10 @@
   .stats-sections { column-count: 1; }
   .stats-table td { font-size: 11px; }
 }
+
+.stats-rating-votes {
+  display: block;
+  min-width: 84px;
+  padding-inline: 4px;
+  background: linear-gradient(to left, rgb(224 180 91 / 0.12) var(--rating-fill), transparent var(--rating-fill));
+}

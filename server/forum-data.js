@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('./db');
+const auth = require('./auth');
 
 const TITLE_MAX = 180;
 const BODY_MAX = 12_000;
@@ -16,7 +17,7 @@ const DEFAULT_CATEGORIES = [
 function cleanText(value, maximum) { return String(value || '').trim().slice(0, maximum); }
 function cleanSlug(value) { return String(value || '').trim().toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 56); }
 function avatarUrl(path) { return path ? `/avatars/${path}` : null; }
-function authorFields(alias = 'u', progressionAlias = 'up') { return `${alias}.username AS username, ${alias}.avatar_path AS avatarPath, COALESCE(${progressionAlias}.xp, 0) AS xp`; }
+function authorFields(alias = 'u', progressionAlias = 'up') { return `${alias}.username AS username, ${alias}.is_sidekick AS sidekick, ${alias}.avatar_path AS avatarPath, COALESCE(${progressionAlias}.xp, 0) AS xp`; }
 
 function seedCategories() {
   const statement = db.prepare(`INSERT INTO forum_categories (name, slug, description, sort_order)
@@ -37,13 +38,13 @@ function threads(categoryId) {
   return db.prepare(`SELECT t.id, t.title, t.reply_count AS replyCount, t.is_locked AS locked, t.is_pinned AS pinned,
     t.created_at AS createdAt, t.last_post_at AS lastPostAt, ${authorFields('u')}
     FROM forum_threads t JOIN users u ON u.id=t.user_id LEFT JOIN user_progression up ON up.user_id=u.id WHERE t.category_id=?
-    ORDER BY t.is_pinned DESC, t.last_post_at DESC, t.id DESC`).all(Number(categoryId)).map(row => ({ ...row, locked: Boolean(row.locked), pinned: Boolean(row.pinned), avatarUrl: avatarUrl(row.avatarPath) }));
+    ORDER BY t.is_pinned DESC, t.last_post_at DESC, t.id DESC`).all(Number(categoryId)).map(row => ({ ...row, locked: Boolean(row.locked), pinned: Boolean(row.pinned), avatarUrl: avatarUrl(row.avatarPath), badges:auth.roleBadges(row.username,undefined,row.sidekick) }));
 }
 function recentThreads(limit = 8) {
   return db.prepare(`SELECT t.id, t.title, t.reply_count AS replyCount, t.is_locked AS locked, t.is_pinned AS pinned,
     t.created_at AS createdAt, t.last_post_at AS lastPostAt, c.name AS categoryName, c.slug AS categorySlug, ${authorFields('u')}
     FROM forum_threads t JOIN users u ON u.id=t.user_id LEFT JOIN user_progression up ON up.user_id=u.id JOIN forum_categories c ON c.id=t.category_id
-    ORDER BY t.is_pinned DESC, t.last_post_at DESC, t.id DESC LIMIT ?`).all(Math.max(1, Math.min(30, Number(limit) || 8))).map(row => ({ ...row, locked: Boolean(row.locked), pinned: Boolean(row.pinned), avatarUrl: avatarUrl(row.avatarPath) }));
+    ORDER BY t.is_pinned DESC, t.last_post_at DESC, t.id DESC LIMIT ?`).all(Math.max(1, Math.min(30, Number(limit) || 8))).map(row => ({ ...row, locked: Boolean(row.locked), pinned: Boolean(row.pinned), avatarUrl: avatarUrl(row.avatarPath), badges:auth.roleBadges(row.username,undefined,row.sidekick) }));
 }
 function thread(id) {
   const item = db.prepare(`SELECT t.id, t.category_id AS categoryId, t.user_id AS userId, t.title, t.body,
@@ -53,8 +54,8 @@ function thread(id) {
   if (!item) return null;
   const posts = db.prepare(`SELECT p.id, p.user_id AS userId, p.body, p.is_deleted AS deleted, p.created_at AS createdAt,
     p.edited_at AS editedAt, ${authorFields('u')} FROM forum_posts p JOIN users u ON u.id=p.user_id LEFT JOIN user_progression up ON up.user_id=u.id WHERE p.thread_id=? ORDER BY p.created_at, p.id`).all(item.id)
-    .map(post => ({ ...post, deleted: Boolean(post.deleted), avatarUrl: avatarUrl(post.avatarPath) }));
-  return { thread: { ...item, locked: Boolean(item.locked), pinned: Boolean(item.pinned), avatarUrl: avatarUrl(item.avatarPath) }, posts };
+    .map(post => ({ ...post, deleted: Boolean(post.deleted), avatarUrl: avatarUrl(post.avatarPath), badges:auth.roleBadges(post.username,undefined,post.sidekick) }));
+  return { thread: { ...item, locked: Boolean(item.locked), pinned: Boolean(item.pinned), avatarUrl: avatarUrl(item.avatarPath), badges:auth.roleBadges(item.username,undefined,item.sidekick) }, posts };
 }
 function createThread(userId, input) {
   const title = cleanText(input?.title, TITLE_MAX); const body = cleanText(input?.body, BODY_MAX); const categoryId = Number(input?.categoryId);

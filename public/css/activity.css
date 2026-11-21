@@ -320,3 +320,22 @@
   opacity: 0;
   visibility: hidden;
 }
+
+/* Username previews open below and right of the hovered identity. */
+.activity-preview-trigger--avatar > img {
+  top: calc(100% + 8px);
+  bottom: auto;
+  left: calc(100% + 8px);
+}
+.activity-preview-trigger--avatar > .activity-preview-profile {
+  top: calc(100% + 8px);
+  bottom: auto;
+  left: calc(100% + 8px);
+  transform: translateY(4px);
+}
+.activity-preview-trigger--avatar:not(.activity-preview-dismissed):is(:hover, :focus-within) > .activity-preview-profile {
+  transform: translateY(0);
+}
+.activity-preview-trigger--avatar:has(> .activity-preview-profile) > img {
+  top: calc(100% + 30px);
+}
