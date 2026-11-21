@@ -79,7 +79,7 @@ const CONTRIBUTION_COLLAPSE_THRESHOLD = 6;
 const SIGNAL_MOBILE_QUERY = '(max-width: 760px)';
 const KATALOG_ACTIVITY_TYPES = new Set(['catalogue_contribution']);
 function activityLane(entry) {
-  if (entry.type === 'announcement') return dayLabel(entry.createdAt)==='Today'?'announcement':'katalog';
+  if (entry.type === 'announcement') return entry.featured ? 'announcement' : 'katalog';
   return KATALOG_ACTIVITY_TYPES.has(entry.type) ? 'katalog' : 'collector';
 }
 function contributionGroup(entry, entries, id, groupKey) {

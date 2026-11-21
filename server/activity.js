@@ -184,7 +184,11 @@ function list(limit = null) {
 
 function feed() {
   const pinned = db.prepare('SELECT * FROM announcements WHERE is_draft=0 AND pinned=1 LIMIT 1').get();
-  const announcements = db.prepare("SELECT * FROM announcements WHERE is_draft=0 AND pinned=0 AND published_at >= datetime('now', ?) ORDER BY published_at DESC, id DESC").all(`-${FEED_DAYS} days`).map(feedAnnouncement);
+  const announcements = db.prepare(`SELECT * FROM announcements
+    WHERE is_draft=0 AND pinned=0 AND (published_at >= datetime('now', ?) OR id=(
+      SELECT id FROM announcements WHERE is_draft=0 AND pinned=0 ORDER BY published_at DESC, id DESC LIMIT 1
+    )) ORDER BY published_at DESC, id DESC`).all(`-${FEED_DAYS} days`)
+    .map((row, index) => ({ ...feedAnnouncement(row), featured: index === 0 }));
   const entries = [...list(), ...announcements].sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)) || Number(right.id) - Number(left.id));
   return { entries, pinned: pinned ? feedAnnouncement(pinned) : null };
 }

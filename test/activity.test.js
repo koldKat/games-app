@@ -85,3 +85,39 @@ test('admin announcements stay drafts until published and a pinned notice leads 
   assert.equal(activity.unpinAnnouncement(draft.id).pinned, false);
   assert.equal(activity.unpublishAnnouncement(draft.id).draft, true);
 });
+
+
+test('the latest published announcement stays featured beyond the normal feed window', () => {
+  data.db.prepare('DELETE FROM announcements').run();
+  const old = activity.createAnnouncement({ title: 'Older release', body: 'Still current.' });
+  activity.publishAnnouncement(old.id);
+  data.db.prepare("UPDATE announcements SET published_at=datetime('now','-45 days') WHERE id=?").run(old.id);
+  activity.createAnnouncement({ title: 'Unpublished replacement', body: 'Not ready.' });
+  let entries = activity.feed().entries.filter(entry => entry.type === 'announcement');
+  assert.deepEqual(entries.map(entry => [entry.id, entry.featured]), [[old.id, true]]);
+  activity.updateAnnouncement(old.id, { title: 'Edited older release', body: 'Still current.' });
+  entries = activity.feed().entries.filter(entry => entry.type === 'announcement');
+  assert.equal(entries[0].featured, true);
+  assert.equal(entries[0].title, 'Edited older release');
+});
+
+test('publishing replaces the feature immediately while older news stays in Updates', () => {
+  data.db.prepare('DELETE FROM announcements').run();
+  const old = activity.createAnnouncement({ title: 'Previous release', body: 'Previous.' });
+  activity.publishAnnouncement(old.id);
+  data.db.prepare("UPDATE announcements SET published_at=datetime('now','-1 day') WHERE id=?").run(old.id);
+  const latest = activity.createAnnouncement({ title: 'New release', body: 'New.' });
+  activity.publishAnnouncement(latest.id);
+  let feed = activity.feed();
+  assert.deepEqual(feed.entries.filter(entry => entry.type === 'announcement').map(entry => [entry.id, entry.featured]), [[latest.id, true], [old.id, false]]);
+  activity.pinAnnouncement(latest.id);
+  feed = activity.feed();
+  assert.equal(feed.pinned.id, latest.id);
+  assert.deepEqual(feed.entries.filter(entry => entry.type === 'announcement').map(entry => [entry.id, entry.featured]), [[old.id, true]]);
+  activity.unpinAnnouncement(latest.id);
+  assert.equal(activity.feed().entries.find(entry => entry.featured).id, latest.id);
+  activity.unpublishAnnouncement(latest.id);
+  assert.equal(activity.feed().entries.find(entry => entry.featured).id, old.id);
+  activity.deleteAnnouncement(old.id);
+  assert.equal(activity.feed().entries.some(entry => entry.featured), false);
+});

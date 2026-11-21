@@ -31,8 +31,9 @@ let activityPayload={entries:[]};
 let eventController;
 let eventConnections = 0;
 let libraryRequests = 0;
-window.EventSource = class {
-  addEventListener() {}
+const activitySources = [];
+window.EventSource = class extends EventTarget {
+  constructor() { super(); activitySources.push(this); }
   close() {}
 };
 window.fetch = async (target, options = {}) => {
@@ -232,18 +233,18 @@ try {
   await new Promise(resolve => setTimeout(resolve, 100));
   check(errors.length === 0, errors.join('\n'));
   const { activityFeed } = await import('/js/boot/services.js');
-  const today=new Date(),yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+  const today=new Date(),yesterday=new Date(today),earlier=new Date(today);yesterday.setDate(today.getDate()-1);earlier.setDate(today.getDate()-2);
   const stamp=date=>date.toISOString().slice(0,19).replace('T',' ');
   activityPayload={pinned:{id:99,type:'announcement',title:'Pinned fixture',body:'Pinned',createdAt:stamp(yesterday)},entries:[
-    {id:1,type:'announcement',title:'Today fixture',body:'Today',createdAt:stamp(today)},
-    {id:2,type:'announcement',title:'Yesterday fixture',body:'Yesterday',createdAt:stamp(yesterday)}
+    {id:1,type:'announcement',title:'Latest fixture',body:'Latest',featured:true,createdAt:stamp(yesterday)},
+    {id:2,type:'announcement',title:'Earlier fixture',body:'Earlier',featured:false,createdAt:stamp(earlier)}
   ]};
   const feedHost=document.createElement('div');feedHost.dataset.activityFeed='';feedHost.dataset.activityLayout='newspaper';feedHost.dataset.activityLimit='all';document.body.append(feedHost);
   await activityFeed.load({force:true});
   if(mode!=='mobile'){
-    check(feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Today fixture'),'Today announcement is featured');
-    check(!feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Yesterday fixture'),'Yesterday announcement leaves featured area');
-    check(feedHost.querySelector('.activity-column--katalog')?.textContent.includes('Yesterday fixture'),'Yesterday announcement moves to Updates');
+    check(feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Latest fixture'),'Latest announcement is featured despite its older date');
+    check(!feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Earlier fixture'),'Earlier announcement leaves featured area');
+    check(feedHost.querySelector('.activity-column--katalog')?.textContent.includes('Earlier fixture'),'Earlier announcement moves to Updates');
   }
   check(feedHost.textContent.includes('Pinned fixture'),'Pinned announcement remains visible');
   const preview=document.createElement('span');preview.className='activity-preview-trigger activity-preview-trigger--avatar';
@@ -258,8 +259,19 @@ try {
   activityFeed.start();
   window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[RealDate.now()+86400000]));}static now(){return RealDate.now()+86400000;}};
   rollover();
-  if(mode!=='mobile')check(!feedHost.querySelector('.activity-newspaper-announcements'),'Announcements roll into Updates at midnight without reload');
-  window.Date=RealDate;window.setTimeout=realSetTimeout;feedHost.remove();
+  if(mode!=='mobile')check(feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Latest fixture'),'Latest announcement stays featured across midnight');
+  window.Date=RealDate;window.setTimeout=realSetTimeout;
+  activityPayload.entries[0].featured=false;
+  activityPayload.entries.unshift({id:3,type:'announcement',title:'Replacement fixture',body:'Replacement',featured:true,createdAt:stamp(today)});
+  activitySources.at(-1).dispatchEvent(new Event('activity-changed'));
+  await waitFor(()=>feedHost.textContent.includes('Replacement fixture'),'New announcement arrives through SSE');
+  if(mode!=='mobile'){
+    check(feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Replacement fixture'),'New publication replaces the feature');
+    check(!feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Latest fixture'),'Replaced announcement leaves featured area');
+    check(feedHost.querySelector('.activity-column--katalog')?.textContent.includes('Latest fixture'),'Replaced announcement moves into Updates');
+  }
+  check(feedHost.querySelector('.activity-entry--announcement')?.textContent.includes('Replacement fixture'),'Latest announcement leads desktop and mobile feeds');
+  feedHost.remove();
   const { state } = await import('/js/core/runtime.js');
   state.stopEvents?.(); activityFeed.stop();
   await nativeFetch('/report', { method: 'POST', body: JSON.stringify({ ok: true, mode }) });
