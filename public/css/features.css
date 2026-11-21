@@ -493,6 +493,12 @@ html.resuming-session, .resuming-session body {
   visibility: hidden;
   white-space: normal;
 }
+:is(button, a).themed-tooltip::after {
+  white-space: nowrap;
+  max-width: none;
+  box-sizing: border-box;
+  margin-left: var(--button-tooltip-offset, 0px);
+}
 .themed-tooltip:hover::after, .themed-tooltip:focus-visible::after {
   opacity: 1;
   transform: translate(-50%, 0);

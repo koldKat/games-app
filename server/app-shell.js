@@ -1,13 +1,13 @@
 'use strict';
 
-const APP_VIEW_PATH = /^\/(?:signal|katalog|forum(?:\/|$)|game\/)/;
+const APP_VIEW_PATH = /^\/(?:library$|signal|katalog|forum(?:\/|$)|game\/)/;
 
 function isAppViewPath(pathname) {
   return APP_VIEW_PATH.test(String(pathname || ''));
 }
 
 function wantsAuthenticatedShell(request, url, user) {
-  if (!user || request.method !== 'GET' || !isAppViewPath(url.pathname)) return false;
+  if ((!user && url.pathname !== '/library') || request.method !== 'GET' || !isAppViewPath(url.pathname)) return false;
   if (request.headers['x-gamekat-partial'] === '1') return false;
   const destination = String(request.headers['sec-fetch-dest'] || '').toLocaleLowerCase();
   const acceptsHtml = String(request.headers.accept || '').toLocaleLowerCase().includes('text/html');

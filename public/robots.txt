@@ -8,6 +8,7 @@ Allow: /forum
 Allow: /game/
 Allow: /covers/
 Disallow: /api/
+Disallow: /library
 Disallow: /admin/
 Disallow: /avatars/
 Disallow: /backups/

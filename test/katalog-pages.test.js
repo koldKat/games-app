@@ -128,7 +128,7 @@ test('an authenticated catalogue page uses the same account-aware header vocabul
   assert.match(html, /Your collection, one place/);
   assert.match(html, /avatars\/koldkat\.jpg/);
   assert.match(html, /My Kat·a·log/);
-  assert.match(html, /class="button library-button themed-tooltip header-tooltip" href="\/"[\s\S]*header-nav-label">My Kat·a·log/);
+  assert.match(html, /class="button library-button themed-tooltip header-tooltip" href="\/library"[\s\S]*header-nav-label">My Kat·a·log/);
   assert.match(html, /class="button katalog-button themed-tooltip header-tooltip(?: active)?" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log/);
   assert.match(html, /button-label">Game/);
   assert.match(html, /class="button signal-button themed-tooltip header-tooltip" href="\/signal"[\s\S]*header-nav-label">Signal/);
@@ -179,7 +179,7 @@ test('a signed-in user with the release already in their library cannot add it a
   const html = renderGame({ entry, user: { username: 'koldKat' }, libraryGame: { id: 9, title: entry.title, platform: entry.platform, ownership: 'owned' } });
   assert.match(html, /Owned in your Kat·a·log/);
   assert.match(html, /Open my Kat·a·log/);
-  assert.match(html, /data-katalog-destination="library-game" data-library-game-id="9" href="\/\?game=9"/);
+  assert.match(html, /data-katalog-destination="library-game" data-library-game-id="9" href="\/library\?game=9"/);
   assert.doesNotMatch(html, /data-katalog-add/);
 });
 

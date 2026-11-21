@@ -703,7 +703,7 @@ Cover, PEGI, and HLTB workers publish account-targeted progress plus `game-updat
 
 1. Show the neutral session-resume surface before first paint.
 2. Call `/api/auth/me`; the browser supplies any HttpOnly session cookie automatically.
-3. Show authentication on absence/failure, or apply the returned account preferences and mount the library on success.
+3. Show authentication on absence/failure, or apply the returned account preferences and mount the requested workspace on success, defaulting to Signal at `/`. The private collection uses `/library`, which serves the authentication shell for signed-out visitors as well.
 4. Load games, statistics, and metadata in parallel using those preferences.
 
 An HTTP 401 on a protected request made from an active application advances the client session generation, returns to login, and reports that the session expired. A 401 from the initial `/api/auth/me` probe is treated as an ordinary logged-out visit and does not show that warning. No browser-stored token needs to be removed.

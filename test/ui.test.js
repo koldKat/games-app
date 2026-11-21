@@ -496,7 +496,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   assert.match(navigation, /window\.history\.pushState/);
   assert.match(navigation, /event\.stopImmediatePropagation\(\);/);
   assert.match(navigation, /\}, \{ capture: true \}\);/);
-  assert.match(html, /header-community-actions[\s\S]*class="button signal-button themed-tooltip header-tooltip" href="\/signal"[\s\S]*header-nav-label">Signal[\s\S]*class="button forum-button themed-tooltip header-tooltip" href="\/forum"[\s\S]*header-nav-label">Forum[\s\S]*header-progression[\s\S]*header-library-actions[\s\S]*class="button katalog-button themed-tooltip header-tooltip" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log[\s\S]*class="button library-button themed-tooltip header-tooltip" href="\/"[\s\S]*header-nav-label">My Kat·a·log/);
+  assert.match(html, /header-community-actions[\s\S]*class="button signal-button themed-tooltip header-tooltip" href="\/signal"[\s\S]*header-nav-label">Signal[\s\S]*class="button forum-button themed-tooltip header-tooltip" href="\/forum"[\s\S]*header-nav-label">Forum[\s\S]*header-progression[\s\S]*header-library-actions[\s\S]*class="button katalog-button themed-tooltip header-tooltip" href="\/katalog"[\s\S]*header-nav-label">Kat·a·log[\s\S]*class="button library-button themed-tooltip header-tooltip" href="\/library"[\s\S]*header-nav-label">My Kat·a·log/);
   assert.match(navigation, /libraryButton\.classList\.toggle\('active', libraryOpen\)/);
   assert.match(navigation, /katalogButton\.classList\.toggle\('active', katalogOpen\)/);
   assert.doesNotMatch(navigation, /toggle\.textContent/);

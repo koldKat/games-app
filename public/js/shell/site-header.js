@@ -1,3 +1,5 @@
+import './button-tooltips.js';
+
 const source = new EventSource('/api/site/stream');
 document.addEventListener('click', event => {
   const current = event.target.closest('.top-actions a.active');

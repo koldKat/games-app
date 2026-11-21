@@ -90,6 +90,16 @@ try {
   }
   await waitFor(() => !document.querySelector('#app-shell').hidden && document.querySelector('.game-card'), 'Authenticated library did not mount');
   await waitFor(() => !document.documentElement.classList.contains('resuming-session'), 'Session resume did not finish');
+  const { katalogNavigation } = await import('/js/boot/navigation.js');
+  await waitFor(() => document.querySelector('#library-view').hidden && !document.querySelector('#katalog-view').hidden, 'Signed-in home opens Signal');
+  check(document.querySelector('.signal-button').classList.contains('active'), 'Signal is the active home view');
+  document.querySelector('.library-button').click();
+  check(location.pathname === '/library' && !document.querySelector('#library-view').hidden, 'My Kat·a·log has an explicit collection route');
+  document.querySelector('.brand').click();
+  await waitFor(() => document.querySelector('.signal-button').classList.contains('active'), 'Brand returns to Signal');
+  katalogNavigation.showLibrary();
+  await katalogNavigation.restoreCurrent();
+  check(!document.querySelector('#library-view').hidden, 'Collection route stays open on restoration');
   check(getComputedStyle(document.documentElement).overflowY !== 'hidden', 'Startup restores normal page scrolling');
   check(getComputedStyle(document.body).position !== 'fixed', 'Startup releases the temporary body lock');
   check(document.querySelector('#header-progression [data-header-progress-meter]').value === 50, 'XP fill restored');
@@ -150,9 +160,19 @@ try {
   };
   checkPageScroll('Library');
   if(mode!=='mobile')check(parseFloat(getComputedStyle(document.querySelector('#app-shell')).paddingBottom)===8,'Desktop bottom spacing is compact');
+  if (!testViewport) {
+    for (const button of document.querySelectorAll('.top-actions .header-tooltip')) {
+      button.dispatchEvent(new Event('pointerover', { bubbles: true }));
+      const hint = getComputedStyle(button, '::after');
+      check(hint.whiteSpace === 'nowrap', 'Button hints do not wrap');
+      const bounds = button.getBoundingClientRect();
+      const width = parseFloat(hint.width);
+      const left = bounds.left + bounds.width / 2 - width / 2 + parseFloat(hint.marginLeft);
+      check(left >= 7 && left + width <= innerWidth - 7, 'Button hint fits inside the screen');
+    }
+  }
   const mountedHeader = document.querySelector('#app-shell .topbar');
   check(mountedHeader, 'Shared header is mounted');
-  const { katalogNavigation } = await import('/js/boot/navigation.js');
   await katalogNavigation.open('/katalog');
   checkPageScroll('Kat·a·log');
   if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Public katalog fits the phone viewport');

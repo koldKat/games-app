@@ -87,9 +87,9 @@ function headerActions(user, progress = null, currentView = '') {
     ${headerProgression(progress)}
     <div class="header-library-actions">
     ${headerNav('katalog', 'Kat·a·log', '/katalog', currentView === 'catalogue')}
-    ${headerNav('library', 'My Kat·a·log', '/', currentView === 'library')}
-    <a class="button primary desktop-add themed-tooltip header-tooltip" href="/" data-tooltip="Track an owned game or add one to your wishlist."><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
-    <a class="button account-button themed-tooltip header-tooltip" href="/" data-tooltip="Return to your collection and account settings." aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
+    ${headerNav('library', 'My Kat·a·log', '/library', currentView === 'library')}
+    <a class="button primary desktop-add themed-tooltip header-tooltip" href="/library" data-tooltip="Track an owned game or add one to your wishlist."><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
+    <a class="button account-button themed-tooltip header-tooltip" href="/library" data-tooltip="Return to your collection and account settings." aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
     </div>
   </div>`;
 }
@@ -281,7 +281,7 @@ function addToLibraryPanel(entry, user, libraryGame) {
     const state = owned ? 'Owned' : libraryGame.ownership === 'wanted' ? 'Wishlisted' : 'Saved';
     return `<aside class="katalog-add katalog-added">
       <div><strong>${state} in your Kat·a·log</strong><span><b class="katalog-owned-platform" data-platform-theme="${escapeHtml(libraryGame.platform || entry.platform)}">${platform}</b> · ${title}</span></div>
-      <a data-katalog-destination="library-game" data-library-game-id="${Number(libraryGame.id)}" href="/?game=${Number(libraryGame.id)}">Open my Kat·a·log</a>
+      <a data-katalog-destination="library-game" data-library-game-id="${Number(libraryGame.id)}" href="/library?game=${Number(libraryGame.id)}">Open my Kat·a·log</a>
     </aside>`;
   }
   if (user) return `<form class="katalog-add" data-katalog-add="${entry.id}">

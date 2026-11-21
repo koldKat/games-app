@@ -80,7 +80,7 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
     });
     view = 'library'; library.hidden = false; katalog.hidden = true;
     setHeader(view); document.title = libraryTitle;
-    if (push && window.location.pathname !== '/') window.history.pushState({ appView: 'library' }, '', '/');
+    if (push && window.location.pathname !== '/library') window.history.pushState({ appView: 'library' }, '', '/library');
     onLibraryVisible();
     if (Number(gameId) > 0) void onLibraryGameOpen(Number(gameId));
   }
@@ -172,8 +172,9 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
     if (view !== 'forum') void open('/forum');
   }, { capture: true });
   brand.addEventListener('click', event => {
-    if (view === 'library' || !isPrimaryNavigation(event)) return;
-    event.preventDefault(); showLibrary();
+    if (!isPrimaryNavigation(event)) return;
+    event.preventDefault();
+    if (view !== 'signal') void open('/signal');
   });
   katalog.addEventListener('click', event => {
     const link = event.target.closest('a[href]');
@@ -198,7 +199,8 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
     else void open(`${target.pathname}${target.search}${target.hash}`);
   });
   window.addEventListener('popstate', () => {
-    if (KATALOG_PATH.test(window.location.pathname)) void open(`${window.location.pathname}${window.location.search}`, { push: false });
+    if (window.location.pathname === '/') void restoreCurrent();
+    else if (KATALOG_PATH.test(window.location.pathname)) void open(`${window.location.pathname}${window.location.search}`, { push: false });
     else showLibrary({ push: false });
   });
 
@@ -210,6 +212,8 @@ export function createKatalogNavigation({ onLibraryVisible = () => {}, onLibrary
       return resumeGame(returnTo, returnView);
     }
     if (returnTo) return open(returnTo);
+    if (window.location.pathname === '/library' || (window.location.pathname === '/' && params.has('game'))) return Promise.resolve(showLibrary({ push: false }));
+    if (window.location.pathname === '/' && !params.has('game')) return open('/signal', { push: false });
     if (!KATALOG_PATH.test(window.location.pathname)) return Promise.resolve();
     return open(`${window.location.pathname}${window.location.search}${window.location.hash}`, { push: false });
   }

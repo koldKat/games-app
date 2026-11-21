@@ -65,9 +65,9 @@ async function enterApp(user, savedPreferences, progress = null) {
   if (!progress) void progressionUi.load();
   await Promise.all([dataReady, routeReady]);
   if (state.user?.id !== user.id) return;
-  const linkedGameId = window.location.pathname === '/' ? Number(new URLSearchParams(window.location.search).get('game')) : 0;
+  const linkedGameId = ['/', '/library'].includes(window.location.pathname) ? Number(new URLSearchParams(window.location.search).get('game')) : 0;
   if (linkedGameId > 0) {
-    window.history.replaceState({ appView: 'library' }, '', '/');
+    window.history.replaceState({ appView: 'library' }, '', '/library');
     try { openDetails(await api(`/api/games/${linkedGameId}`)); }
     catch (error) { toast(error.message); }
   }

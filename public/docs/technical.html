@@ -413,7 +413,7 @@
 <ol>
 <li>Show the neutral session-resume surface before first paint.</li>
 <li>Call <code>/api/auth/me</code>; the browser supplies any HttpOnly session cookie automatically.</li>
-<li>Show authentication on absence/failure, or apply the returned account preferences and mount the library on success.</li>
+<li>Show authentication on absence/failure, or apply the returned account preferences and mount the requested workspace on success, defaulting to Signal at <code>/</code>. The private collection uses <code>/library</code>, which serves the authentication shell for signed-out visitors as well.</li>
 <li>Load games, statistics, and metadata in parallel using those preferences.</li>
 </ol>
 <p>An HTTP 401 on a protected request made from an active application advances the client session generation, returns to login, and reports that the session expired. A 401 from the initial <code>/api/auth/me</code> probe is treated as an ordinary logged-out visit and does not show that warning. No browser-stored token needs to be removed.</p>
