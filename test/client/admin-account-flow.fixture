@@ -1,0 +1,29 @@
+// Exercise account details in a disposable admin page without touching live accounts.
+const nativeFetch=window.fetch.bind(window);
+const check=(condition,message)=>{if(!condition)throw new Error(message);};
+const waitFor=async condition=>{for(let i=0;i<100;i++){if(condition())return;await new Promise(r=>setTimeout(r,20));}throw new Error('Admin interaction timed out');};
+let saved=0;
+let account={id:1,username:'PlayerOne',email:'player@example.com',badges:[],sidekick:false,protected:false,publicProfile:false,hideFromActivity:false,daysInactive:0,games:2,covered:2,activeSessions:1};
+window.fetch=async(target,options={})=>{
+ if(!String(target).startsWith('/api/'))return nativeFetch(target,options);
+ if(options.method==='PATCH'){saved++;account={...account,...JSON.parse(options.body)};}
+ return new Response(JSON.stringify(String(target)==='/api/admin/accounts'?[account]:{account}),{headers:{'Content-Type':'application/json'}});
+};
+try{
+ const {loadAccounts}=await import('/admin/js/accounts.js');await loadAccounts();
+ const cell=document.querySelector('.accounts-actions');check(cell.children.length===1&&cell.textContent==='Details','Account rows contain only Details');
+ cell.querySelector('button').click();await waitFor(()=>document.querySelector('#account-edit-dialog').open);
+ const form=document.querySelector('#account-edit-form');check(form.elements.email.value==='player@example.com','Details loads editable fields');
+ form.elements.sidekick.checked=true;form.elements.email.value='edited@example.com';form.requestSubmit();
+ await waitFor(()=>!document.querySelector('#account-edit-dialog').open);
+ check(saved===1&&account.sidekick&&account.email==='edited@example.com','Details saves role and email together');
+ account={...account,protected:true,username:'sashii'};await loadAccounts();document.querySelector('.accounts-actions button').click();await waitFor(()=>document.querySelector('#account-edit-dialog').open);
+ check(form.elements.username.readOnly,'Protected username cannot be edited');
+ const buttons=[...document.querySelectorAll('#account-edit-actions button')];
+ check(buttons.every(b=>b.type==='button'),'Access actions never submit account edits');
+ check(buttons.find(b=>b.textContent==='Lock account').disabled,'Protected account cannot be locked');
+ check(buttons.find(b=>b.textContent==='Delete account').disabled,'Protected account cannot be deleted');
+ check(!form.elements.sidekick.disabled,'Protected player display role remains editable');
+ document.querySelector('[data-account-edit-close]').click();
+ await nativeFetch('/report',{method:'POST',body:JSON.stringify({ok:true,mode:'admin'})});
+}catch(error){await nativeFetch('/report',{method:'POST',body:JSON.stringify({ok:false,error:error.stack})});}

@@ -311,3 +311,39 @@ test('a reset link is not invalidated until its email has been accepted for deli
   await auth.resetPassword(current.token, 'new-password');
   assert.ok(await auth.login('delivery_account', 'new-password'));
 });
+
+
+test('administrator account details validate edits without exposing or replacing credentials', async () => {
+  const user = await auth.register('editable_account', 'unchanged-password', 'edit@example.com');
+  const token = auth.createSession(user.id);
+  const before = data.db.prepare('SELECT password_hash,salt FROM users WHERE id=?').get(user.id);
+  const edited = auth.updateAccountDetails(user.id, { username: 'edited_account', email: 'New@Example.com', sidekick: true, publicProfile: true, hideFromActivity: true });
+  assert.equal(edited.username, 'edited_account');
+  assert.equal(edited.email, 'new@example.com');
+  assert.deepEqual(edited.badges, ['sidekick']);
+  assert.equal(edited.publicProfile, true);
+  assert.equal(edited.hideFromActivity, true);
+  assert.equal(edited.password_hash, undefined);
+  assert.equal(edited.salt, undefined);
+  assert.deepEqual(data.db.prepare('SELECT password_hash,salt FROM users WHERE id=?').get(user.id), before);
+  assert.equal(auth.authenticate({ headers: { authorization: `Bearer ${token}` } }).username, 'edited_account');
+  assert.throws(() => auth.updateAccountDetails(user.id, { username: 'bad name' }), /Username/);
+  assert.throws(() => auth.updateAccountDetails(user.id, { email: 'invalid' }), /valid email/);
+  assert.throws(() => auth.updateAccountDetails(user.id, { sidekick: 'true' }), /Invalid account/);
+  assert.throws(() => auth.updateAccountDetails(user.id, { username: 'koldKat' }), /already in use/);
+  assert.deepEqual(auth.updateAccountDetails(user.id, { sidekick: false }).badges, []);
+  assert.equal(auth.accountDetails(999999), null);
+});
+
+test('additional protected accounts cannot be renamed or locked but their display role can change', async () => {
+  for (const username of ['slanchoff', 'sashii']) {
+    const user = await auth.register(username, 'protected-password');
+    assert.equal(auth.accountDetails(user.id).protected, true);
+    assert.throws(() => auth.setAccountLocked(user.id, true), error => error.status === 403);
+    assert.throws(() => auth.updateAccountDetails(user.id, { username: `${username}2` }), error => error.status === 403);
+    assert.deepEqual(auth.updateAccountDetails(user.id, { sidekick: true }).badges, ['sidekick']);
+    assert.deepEqual(auth.updateAccountDetails(user.id, { sidekick: false }).badges, []);
+  }
+  const owner=data.db.prepare("SELECT id FROM users WHERE username='koldKat'").get();
+  assert.throws(() => auth.updateAccountDetails(owner.id, { sidekick: true }), error => error.status === 403);
+});

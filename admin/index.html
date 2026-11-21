@@ -227,6 +227,22 @@
       <footer><button id="katalog-edit-cancel" class="button" type="button">Cancel</button><button class="button primary" type="submit">Save factual changes</button></footer>
     </form>
   </dialog>
+  <dialog id="account-edit-dialog" class="katalog-edit-dialog account-edit-dialog" aria-labelledby="account-edit-title">
+    <form id="account-edit-form" class="katalog-edit-card">
+      <header><div><span>IDENTITY CONTROL</span><h2 id="account-edit-title">Account details</h2></div><button type="button" class="dialog-close" data-account-edit-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <p id="account-edit-info"></p>
+      <div class="edit-grid">
+        <label><span>Username</span><input name="username" autocomplete="off" required maxlength="32"></label>
+        <label><span>Email</span><input name="email" type="email" autocomplete="off" maxlength="254"></label>
+        <label class="account-edit-check"><input name="publicProfile" type="checkbox"> Public profile</label>
+        <label class="account-edit-check"><input name="hideFromActivity" type="checkbox"> Hide from activity</label>
+        <label class="account-edit-check wide"><input name="sidekick" type="checkbox"> Sidekick</label>
+      </div>
+      <p id="account-edit-error" class="error" role="alert" hidden></p>
+      <div class="account-edit-actions" id="account-edit-actions"></div>
+      <footer><button type="button" class="button" data-account-edit-close>Cancel</button><button class="button primary" type="submit">Save changes</button></footer>
+    </form>
+  </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module" src="/admin/js/boot.js"></script>
 </body>

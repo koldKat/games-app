@@ -70,6 +70,10 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/' || url.pathname === '/signal') {
     res.setHeader('Content-Type', 'text/html'); res.end(html.replace('</body>', '<script type="module" src="/flow.js"></script></body>')); return;
   }
+  if (url.pathname === '/admin-fixture') {
+    res.setHeader('Content-Type','text/html');res.end(fs.readFileSync(path.join(root,'admin/index.html'),'utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace('</body>','<script type="module" src="/admin-flow.js"></script></body>'));return;
+  }
+  if (url.pathname === '/admin-flow.js') {res.setHeader('Content-Type','application/javascript');res.end(fs.readFileSync(path.join(root,'test/client/admin-account-flow.fixture')));return;}
   if (url.pathname === '/flow.js') { res.setHeader('Content-Type', 'application/javascript'); res.end(fixture); return; }
   if (url.pathname === '/startup') {
     res.setHeader('Content-Type', 'text/html');
@@ -82,8 +86,8 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (fixtures[url.pathname]) { res.setHeader('Content-Type', 'text/html'); res.end(fixtures[url.pathname]); return; }
-  const filename = path.resolve(root, 'public', '.' + url.pathname);
-  if (!filename.startsWith(path.join(root, 'public') + path.sep)) { res.writeHead(403); res.end(); return; }
+  const filename = url.pathname.startsWith('/admin/')?path.resolve(root,'.'+url.pathname):path.resolve(root, 'public', '.' + url.pathname);
+  if (!filename.startsWith(path.join(root, 'public') + path.sep)&&!filename.startsWith(path.join(root,'admin')+path.sep)) { res.writeHead(403); res.end(); return; }
   fs.readFile(filename, (error, contents) => {
     if (error) { res.writeHead(404); res.end(); return; }
     res.setHeader('Content-Type', filename.endsWith('.js') ? 'application/javascript' : filename.endsWith('.css') ? 'text/css' : 'image/svg+xml'); res.end(contents);
@@ -94,7 +98,7 @@ async function run() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
   try {
-    for (const [mode, pathname, size] of [['startup-mobile', '/startup', '390,844'], ['guest', '/', '1440,1000'], ['restored', '/signal', '1440,1000'], ['mobile', '/', '390,844']]) {
+    for (const [mode, pathname, size] of [['startup-mobile', '/startup', '390,844'], ['admin', '/admin-fixture', '1440,1000'], ['guest', '/', '1440,1000'], ['restored', '/signal', '1440,1000'], ['mobile', '/', '390,844']]) {
       const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'gamekat-browser-'));
       const report = new Promise(resolve => { resolveReport = resolve; });
       const url = `http://127.0.0.1:${port}${pathname}?mode=${mode}`;

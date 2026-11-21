@@ -44,6 +44,7 @@ function connectEventStream() {
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (generation !== runtime.sessionGeneration || !state.user) return;
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'account-updated') {if(data.user?.id===state.user.id){state.user={...state.user,...data.user};updateAvatarUI();}}
     else if (event === 'roles-updated') {if(data.userId===state.user.id){state.user={...state.user,badges:data.badges};updateAvatarUI();}}
     else if (event === 'crew-changed') { void refreshCrew(); }
     else if (event === 'library-changed') {

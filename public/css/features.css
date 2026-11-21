@@ -355,6 +355,7 @@
   box-shadow: 4px 7px 12px #0009;
 }
 .app-cover-field {
+  overflow: clip;
   position: fixed;
   z-index: 0;
   inset: 0;

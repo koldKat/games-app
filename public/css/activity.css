@@ -89,13 +89,14 @@
   position: relative;
 }
 .activity-preview-trigger > img {
-  position: absolute;
+  position: fixed;
   z-index: 30;
-  bottom: calc(100% + 9px);
-  left: 0;
+  top: var(--activity-image-top, 8px);
+  left: var(--activity-preview-left, 8px);
   display: block;
   width: 138px;
-  max-height: 192px;
+  max-width: calc(100vw - 16px);
+  max-height: min(192px, calc(100dvh - 16px));
   opacity: 0;
   pointer-events: none;
   border: 1px solid #4b9788;
@@ -109,13 +110,13 @@
 .activity-preview-trigger--avatar > img {
   width: 112px;
   height: 112px;
-  max-height: none;
+  max-height: calc(100dvh - 16px);
 }
 .activity-preview-profile {
-  position: absolute;
+  position: fixed;
   z-index: 31;
-  top: -6px;
-  left: 56px;
+  top: var(--activity-profile-top, 8px);
+  left: var(--activity-preview-left, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,6 +124,7 @@
   box-sizing: border-box;
   width: max-content;
   min-width: 112px;
+  max-width: calc(100vw - 16px);
   padding: 2px 5px;
   border: 1px solid #3a7165;
   border-radius: 4px;
@@ -133,7 +135,7 @@
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 3px);
+  transform: translateY(3px);
   transition: opacity .12s ease, transform .12s ease;
   visibility: hidden;
   white-space: nowrap;
@@ -153,7 +155,7 @@
 }
 .activity-preview-trigger:not(.activity-preview-dismissed):hover > .activity-preview-profile, .activity-preview-trigger:not(.activity-preview-dismissed):focus-within > .activity-preview-profile {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
   visibility: visible;
 }
 .activity-entry time {
@@ -321,21 +323,4 @@
   visibility: hidden;
 }
 
-/* Username previews open below and right of the hovered identity. */
-.activity-preview-trigger--avatar > img {
-  top: calc(100% + 8px);
-  bottom: auto;
-  left: calc(100% + 8px);
-}
-.activity-preview-trigger--avatar > .activity-preview-profile {
-  top: calc(100% + 8px);
-  bottom: auto;
-  left: calc(100% + 8px);
-  transform: translateY(4px);
-}
-.activity-preview-trigger--avatar:not(.activity-preview-dismissed):is(:hover, :focus-within) > .activity-preview-profile {
-  transform: translateY(0);
-}
-.activity-preview-trigger--avatar:has(> .activity-preview-profile) > img {
-  top: calc(100% + 30px);
-}
+/* Preview positions are clamped to the viewport by activity-previews.js. */

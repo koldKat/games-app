@@ -506,7 +506,7 @@ tbody tr:last-child td {
 #accounts-table th:nth-child(9) { width:142px }
 #accounts-table th:nth-child(10) { width:78px }
 #accounts-table th:nth-child(11) { width:142px }
-#accounts-table th:nth-child(12) { width:278px; text-align:right }
+#accounts-table th:nth-child(12) { width:88px; text-align:right }
 #accounts-table td:nth-child(12) { text-align:right }
 #accounts-table td:nth-child(2),
 #accounts-table td:nth-child(3),
@@ -1072,4 +1072,24 @@ html:has(dialog[open]) {
   .cover-replace>div .button {
     width:100%
   }
+}
+
+.account-edit-dialog {
+  width: min(560px, calc(100% - 18px));
+}
+.account-edit-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.edit-grid .account-edit-check input {
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+.account-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }

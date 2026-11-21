@@ -35,7 +35,7 @@ function setSidekick(userId, enabled) {
   if(typeof enabled!=='boolean') throw new Error('Sidekick must be enabled or disabled.');
   const account=db.prepare('SELECT * FROM users WHERE id=?').get(Number(userId));
   if(!account)return null;
-  if(isProtectedUsername(account.username))throw protectedAccountError();
+  if(roleBadges(account.username).includes('admin'))throw protectedAccountError();
   db.prepare('UPDATE users SET is_sidekick=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').run(enabled?1:0,account.id);
   return publicUser({...account,is_sidekick:enabled?1:0});
 }
@@ -57,10 +57,15 @@ async function verifyPassword(password, storedHash, salt) {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
-function validateCredentials(username, password) {
+function validateUsername(username) {
   const clean = String(username || '').trim();
   if (clean.length < ACCOUNT_LIMITS.usernameMin || clean.length > ACCOUNT_LIMITS.usernameMax) throw new Error(`Username must be ${ACCOUNT_LIMITS.usernameMin}–${ACCOUNT_LIMITS.usernameMax} characters.`);
   if (!/^[\p{L}\p{N}_.-]+$/u.test(clean)) throw new Error('Username may contain letters, numbers, dot, dash, and underscore.');
+  return clean;
+}
+
+function validateCredentials(username, password) {
+  const clean = validateUsername(username);
   if (String(password || '').length < ACCOUNT_LIMITS.passwordMin || String(password).length > ACCOUNT_LIMITS.passwordMax) throw new Error(`Password must be at least ${ACCOUNT_LIMITS.passwordMin} characters.`);
   return clean;
 }
@@ -149,13 +154,14 @@ function ownerUsername() {
 }
 function isProtectedUsername(username) {
   const owner = ownerUsername();
-  return Boolean(owner) && String(username || '').trim().toLocaleLowerCase() === owner.toLocaleLowerCase();
+  const name=String(username || '').trim().toLocaleLowerCase();
+  return ['slanchoff','sashii',String(owner||'').toLocaleLowerCase()].includes(name);
 }
 function operatorUserId() {
   const owner = ownerUsername();
   return owner ? db.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE').get(owner)?.id || null : null;
 }
-function protectedAccountError() { return Object.assign(new Error('The protected owner account cannot be changed by admin controls.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
+function protectedAccountError() { return Object.assign(new Error('This action is unavailable for a protected account.'), { status: 403, code: 'PROTECTED_ACCOUNT' }); }
 
 function setAccountLocked(userId, locked) {
   const account = db.prepare('SELECT id, username, email, avatar_path, public_profile, hide_from_activity, admin_locked, locked_until FROM users WHERE id=?').get(Number(userId));
@@ -224,7 +230,7 @@ async function updateAccount(userId, input) {
   const row = db.prepare('SELECT * FROM users WHERE id=?').get(userId);
   if (!row || !await verifyPassword(String(input.currentPassword || ''), row.password_hash, row.salt)) throw new Error('Current password is incorrect.');
   const username = input.username == null ? row.username : validateCredentials(input.username, input.newPassword || input.currentPassword);
-  if (isProtectedUsername(row.username) && username.toLocaleLowerCase() !== row.username.toLocaleLowerCase()) throw new Error('The protected owner account cannot be renamed.');
+  if (isProtectedUsername(row.username) && username.toLocaleLowerCase() !== row.username.toLocaleLowerCase()) throw new Error('This protected account cannot be renamed.');
   const email = input.email == null ? row.email : normalizeEmail(input.email);
   let passwordHash = row.password_hash;
   let salt = row.salt;
@@ -246,6 +252,26 @@ async function updateAccount(userId, input) {
   return { ...publicUser({ id: userId, username, email, avatar_path: row.avatar_path, public_profile: publicProfile, hide_from_activity: hideFromActivity }), sessionInvalidated: Boolean(input.newPassword) };
 }
 
+function accountDetails(userId) {
+  const row=db.prepare('SELECT * FROM users WHERE id=?').get(Number(userId));
+  return row?{...publicUser(row),sidekick:Boolean(row.is_sidekick),protected:isProtectedUsername(row.username),
+    adminLocked:Boolean(row.admin_locked),lockedUntil:row.locked_until,createdAt:row.created_at}:null;
+}
+function updateAccountDetails(userId,input) {
+  const account=accountDetails(userId);if(!account)return null;
+  const username=validateUsername(input.username??account.username);
+  if(account.protected&&username!==account.username)throw protectedAccountError();
+  const email=normalizeEmail(input.email??account.email);
+  for(const key of ['sidekick','publicProfile','hideFromActivity'])if(input[key]!==undefined&&typeof input[key]!=='boolean')throw new Error('Invalid account setting.');
+  const sidekick=input.sidekick??account.sidekick;
+  if(account.badges.includes('admin')&&sidekick)throw protectedAccountError();
+  try {
+    db.prepare('UPDATE users SET username=?,email=?,public_profile=?,hide_from_activity=?,is_sidekick=?,updated_at=CURRENT_TIMESTAMP WHERE id=?')
+      .run(username,email,(input.publicProfile??account.publicProfile)?1:0,(input.hideFromActivity??account.hideFromActivity)?1:0,sidekick?1:0,Number(userId));
+  }catch(error){if(String(error.code).includes('SQLITE_CONSTRAINT_UNIQUE'))throw new Error('Username or email already in use.');throw error;}
+  return accountDetails(userId);
+}
+
 function avatarPath(userId) { return db.prepare('SELECT avatar_path FROM users WHERE id=?').get(userId)?.avatar_path || null; }
 function updateAvatar(userId, filename) {
   db.prepare('UPDATE users SET avatar_path=?, updated_at=CURRENT_TIMESTAMP WHERE id=?').run(filename || null, userId);
@@ -263,4 +289,4 @@ function clearFailures(ip) { failures.delete(ip); }
 function clientIp(request) { return String(request.headers['x-forwarded-for'] || request.socket.remoteAddress || '').split(',')[0].trim(); }
 function purgeExpiredSessions() { db.prepare("DELETE FROM sessions WHERE expires_at<=strftime('%s','now')").run(); }
 
-module.exports = { roleBadges, setSidekick, ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };
+module.exports = { roleBadges, setSidekick, accountDetails, updateAccountDetails, ACCOUNT_FAILURE_LIMIT, ACCOUNT_LOCK_SECONDS, PASSWORD_RESET_SECONDS, AccountLockedError, hashPassword, verifyPassword, register, preparePasswordReset, storePasswordReset, createPasswordReset, resetPassword, login, createSession, authenticate, logout, sessionCookie, clearSessionCookie, refreshSessionCookie, updateAccount, avatarPath, updateAvatar, isProtectedUsername, operatorUserId, ownerUsername, setAccountLocked, isRateLimited, recordFailure, clearFailures, clientIp, purgeExpiredSessions };

@@ -122,8 +122,8 @@ test('admin accounts use a fitted desktop table with aligned actions and locatio
   const html = read('admin/index.html'); const css = readCss('admin/style.css'); const accounts = read('admin/js/accounts.js');
   assert.match(html, /id="accounts-table"[\s\S]*<th>LOCATION<\/th><th>LAST ACTIVE<\/th><th>INACTIVE<\/th><th>CREATED<\/th><th>ACTIONS<\/th>/);
   assert.match(css, /\.accounts-table-shell\{overflow-x:hidden}/);
-  assert.match(css, /#accounts-table th:nth-child\(12\)\{width:278px;text-align:right}/);
-  assert.match(accounts, /className = 'row-actions'/);
+  assert.match(css, /#accounts-table th:nth-child\(12\)\{width:88px;text-align:right}/);
+  assert.match(accounts, /openAccountEditor\(account\.id,loadAccounts\)/);
   assert.match(css, /@media\(max-width:1280px\)[\s\S]*\.accounts-table-shell\{overflow-x:auto}/);
   assert.match(accounts, /geoLocation\(account\.country, account\.city\)/);
   assert.match(accounts, /Show \$\{inactive\.length\} inactive user/);
@@ -685,12 +685,12 @@ test('only public catalogue candidates offer the Publish action', () => {
 });
 
 test('admin account controls show access state and protect koldKat from lock or deletion', () => {
-  const html = read('admin/index.html'); const accounts = read('admin/js/accounts.js'); const adminServer = read('server/admin.js'); const authServer = read('server/auth.js');
+  const html = read('admin/index.html'); const accounts = read('admin/js/accounts.js'); const editor = read('admin/js/account-editor.js'); const adminServer = read('server/admin.js'); const authServer = read('server/auth.js');
   assert.match(html, /<th>ACCESS<\/th>/);
   assert.match(accounts, /account\.protected \? 'PROTECTED'/);
-  assert.match(accounts, /\/api\/admin\/accounts\/\$\{account\.id\}\/lock/);
-  assert.match(accounts, /lock\.disabled = Boolean\(account\.protected\)/);
-  assert.match(accounts, /remove\.disabled = Boolean\(account\.protected\)/);
+  assert.match(editor, /\/api\/admin\/accounts\/\$\{id\}\/lock/);
+  assert.match(editor, /form\.elements\.username\.readOnly=account\.protected/);
+  assert.match(editor, /account\.protected\);/);
   assert.match(adminServer, /auth\.setAccountLocked/);
   assert.match(authServer, /ACCOUNT_FAILURE_LIMIT = 5/);
   assert.match(authServer, /isProtectedUsername/);

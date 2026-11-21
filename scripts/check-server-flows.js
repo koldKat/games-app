@@ -61,7 +61,7 @@ async function run() {
     ]) {
       const result = await request(target); assert.equal(result.status, 200, `${target}: ${await result.text()}`);
     }
-    for (const target of ['/app.js', '/js/boot/init.js', '/js/library/platforms.js', '/js/covers/decorations.js', '/js/stats/stats-ui.js', '/js/community/activity-feed.js', '/admin/js/boot.js']) {
+    for (const target of ['/app.js', '/js/boot/init.js', '/js/library/platforms.js', '/js/covers/decorations.js', '/js/stats/stats-ui.js', '/js/community/activity-feed.js', '/admin/js/boot.js', '/admin/js/account-editor.js']) {
       const result = await request(target); assert.equal(result.status, 200, target);
       assert.match(result.headers.get('content-type'), /javascript/);
     }
@@ -74,6 +74,18 @@ async function run() {
     cookie=firstCookie;
     const role=await request(`/api/admin/accounts/${partner.user.id}/sidekick`,'PATCH',{enabled:true});
     assert.equal(role.status,200);assert.deepEqual((await role.json()).account.badges,['sidekick']);
+    const detail=await request(`/api/admin/accounts/${partner.user.id}`);
+    assert.equal(detail.status,200);assert.equal((await detail.json()).account.password_hash,undefined);
+    const edit=await request(`/api/admin/accounts/${partner.user.id}`,'PATCH',{email:'Crew@Example.com',publicProfile:true});
+    assert.equal(edit.status,200);assert.equal((await edit.json()).account.email,'crew@example.com');
+    assert.equal((await request('/api/admin/accounts/999999')).status,404);
+    for(const username of ['slanchoff','sashii']){
+      const protectedUser=await (await request('/api/register','POST',{username,password:'test-password-789',passwordConfirm:'test-password-789'})).json();
+      const accountId=protectedUser.user.id;
+      assert.equal((await request(`/api/admin/accounts/${accountId}`,'DELETE')).status,403);
+      assert.equal((await request(`/api/admin/accounts/${accountId}/lock`,'PATCH',{locked:true})).status,403);
+      assert.equal((await request(`/api/admin/accounts/${accountId}`,'PATCH',{username:username+'2'})).status,403);
+    }
     cookie=secondCookie;
     assert.deepEqual((await (await request('/api/auth/me')).json()).user.badges,['sidekick']);
 

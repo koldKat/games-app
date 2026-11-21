@@ -41,7 +41,7 @@
 }
 .katalog-shell {
   margin: 0 auto;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
 }
 .katalog-shell > .topbar,.katalog-shell > .katalog-main,.katalog-shell > .app-footer {
   position: relative;
@@ -997,7 +997,7 @@
 }
 @media (max-width: 680px) {
   .katalog-shell {
-    padding-bottom: 10px;
+    padding-bottom: 8px;
   }
   .katalog-search {
     grid-template-columns: 1fr;

@@ -36,6 +36,7 @@ const adminFiles = new Map([
   ['/admin/js/forum.js', ['js/forum.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/patch.js', ['js/patch.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/core.js', ['js/core.js', 'application/javascript; charset=utf-8']],
+  ['/admin/js/account-editor.js', ['js/account-editor.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/admin-policy.js', ['js/admin-policy.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/dashboard.js', ['js/dashboard.js', 'application/javascript; charset=utf-8']],
   ['/admin/js/accounts.js', ['js/accounts.js', 'application/javascript; charset=utf-8']],
@@ -220,7 +221,7 @@ function deleteAccount(id) {
   const account = db.prepare(`SELECT u.id, u.username, u.avatar_path AS avatarPath, COUNT(g.id) games
     FROM users u LEFT JOIN games g ON g.user_id=u.id WHERE u.id=? GROUP BY u.id`).get(Number(id));
   if (!account) return null;
-  if (auth.isProtectedUsername(account.username)) throw Object.assign(new Error('The protected owner account cannot be deleted.'), { status: 403, code: 'PROTECTED_ACCOUNT' });
+  if (auth.isProtectedUsername(account.username)) throw Object.assign(new Error('This protected account cannot be deleted.'), { status: 403, code: 'PROTECTED_ACCOUNT' });
   const coverUrls = db.prepare("SELECT cover_url AS coverUrl FROM games WHERE user_id=? AND cover_url LIKE '/covers/%'").all(account.id);
   const result = db.prepare('DELETE FROM users WHERE id=?').run(account.id);
   if (result.changes) canonical.pruneOrphans();
@@ -354,6 +355,20 @@ async function handleApi(request, response, url) {
     return sendJson(response, 200, { cleared: result.changes });
   }
   match = pathname.match(/^\/api\/admin\/accounts\/(\d+)$/);
+  if(match && request.method==='GET') {
+    const account=auth.accountDetails(Number(match[1]));
+    return account?sendJson(response,200,{account}):sendJson(response,404,{error:'Account not found.'});
+  }
+  if(match && request.method==='PATCH') {
+    try {
+      const account=auth.updateAccountDetails(Number(match[1]),await readJson(request));
+      if(!account)return sendJson(response,404,{error:'Account not found.'});
+      events.publish(account.id,'account-updated',{user:account});
+      for(const id of require('./db').crews.memberIds(account.id))events.publish(id,'crew-changed',{});
+      events.publishPublicActivity();events.publishPublicForum();
+      return sendJson(response,200,{account});
+    }catch(error){return sendJson(response,error.status||400,{error:error.message});}
+  }
   if (request.method === 'DELETE' && match) {
     try {
       const account = deleteAccount(Number(match[1]));

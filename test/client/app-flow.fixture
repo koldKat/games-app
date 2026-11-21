@@ -27,6 +27,7 @@ let games = [
   { id: 2, title: 'Portal 2', platform: 'Nintendo Switch', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['physical'], pegiDescriptors: [], pegiReleases: [] },
 ];
 let crewIncoming=[];
+let activityPayload={entries:[]};
 let eventController;
 let eventConnections = 0;
 let libraryRequests = 0;
@@ -62,7 +63,7 @@ window.fetch = async (target, options = {}) => {
   if (url.pathname === '/api/stats') return reply({ total: games.length });
   if (url.pathname === '/api/meta') return reply({ platforms: ['Steam', 'Nintendo Switch'], integrations: {}, user });
   if (url.pathname === '/api/showcase/covers') return reply({ covers: [] });
-  if (url.pathname === '/api/activity') return reply({ entries: [] });
+  if (url.pathname === '/api/activity') return reply(activityPayload);
   if (url.pathname === '/api/progression') return reply(progress);
   if (url.pathname === '/api/titles/autocomplete') return reply({ existing: [], catalogue: [], suggestions: [] });
   if (url.pathname === '/api/ping') return reply({ threads: [], unread: 0 });
@@ -139,17 +140,30 @@ try {
     const bounds=name.getBoundingClientRect(),star=badge.getBoundingClientRect();
     check(Math.abs(star.top+star.height/2-bounds.top-bounds.height/2)<=1.5,'Role badge is vertically centered beside the name');
   }
+  const background=document.querySelector('.app-cover-field');
+  const overflowCover=document.createElement('i');overflowCover.style.cssText='position:absolute;top:100%;left:100%;width:80px;height:100px;transform:rotate(20deg)';background.append(overflowCover);
+  const checkPageScroll=label=>{
+    check(getComputedStyle(document.body).overflowY==='visible',label+' uses document scrolling, not a second body scrollbar');
+    check(document.documentElement.scrollWidth<=document.documentElement.clientWidth,label+' has no horizontal page overflow');
+    check(getComputedStyle(background).overflow==='clip',label+' clips background covers to viewport');
+  };
+  checkPageScroll('Library');
+  if(mode!=='mobile')check(parseFloat(getComputedStyle(document.querySelector('#app-shell')).paddingBottom)===8,'Desktop bottom spacing is compact');
   const mountedHeader = document.querySelector('#app-shell .topbar');
   check(mountedHeader, 'Shared header is mounted');
   const { katalogNavigation } = await import('/js/boot/navigation.js');
   await katalogNavigation.open('/katalog');
+  checkPageScroll('Kat·a·log');
   if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Public katalog fits the phone viewport');
   check(textSize('.katalog-search input') >= 11 && textSize('.katalog-search input') <= 16, 'Public search shares the compact readable scale');
   check(document.querySelector('#library-view').hidden, 'Public view switches content');
   check(document.querySelector('#app-shell .topbar') === mountedHeader, 'Header preserved across navigation');
   await katalogNavigation.open('/signal');
+  checkPageScroll('Signal');
   if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Signal fits the phone viewport');
   await katalogNavigation.open('/forum');
+  checkPageScroll('Forum');
+  overflowCover.remove();
   if (testViewport) check(document.documentElement.scrollWidth <= 390, 'Forum fits the phone viewport');
   document.querySelector('[data-add-game]').click();
   check(document.querySelector('#game-dialog').open, 'Add game opens from another view');
@@ -218,6 +232,34 @@ try {
   await new Promise(resolve => setTimeout(resolve, 100));
   check(errors.length === 0, errors.join('\n'));
   const { activityFeed } = await import('/js/boot/services.js');
+  const today=new Date(),yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+  const stamp=date=>date.toISOString().slice(0,19).replace('T',' ');
+  activityPayload={pinned:{id:99,type:'announcement',title:'Pinned fixture',body:'Pinned',createdAt:stamp(yesterday)},entries:[
+    {id:1,type:'announcement',title:'Today fixture',body:'Today',createdAt:stamp(today)},
+    {id:2,type:'announcement',title:'Yesterday fixture',body:'Yesterday',createdAt:stamp(yesterday)}
+  ]};
+  const feedHost=document.createElement('div');feedHost.dataset.activityFeed='';feedHost.dataset.activityLayout='newspaper';feedHost.dataset.activityLimit='all';document.body.append(feedHost);
+  await activityFeed.load({force:true});
+  if(mode!=='mobile'){
+    check(feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Today fixture'),'Today announcement is featured');
+    check(!feedHost.querySelector('.activity-newspaper-announcements')?.textContent.includes('Yesterday fixture'),'Yesterday announcement leaves featured area');
+    check(feedHost.querySelector('.activity-column--katalog')?.textContent.includes('Yesterday fixture'),'Yesterday announcement moves to Updates');
+  }
+  check(feedHost.textContent.includes('Pinned fixture'),'Pinned announcement remains visible');
+  const preview=document.createElement('span');preview.className='activity-preview-trigger activity-preview-trigger--avatar';
+  preview.style.cssText='position:fixed;right:1px;bottom:1px';preview.innerHTML='<button>Edge player</button><span class="activity-preview-profile"><b>LV 10</b><small>Collector</small></span>';
+  feedHost.append(preview);preview.querySelector('button').focus();preview.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));
+  const previewBounds=preview.querySelector('.activity-preview-profile').getBoundingClientRect();
+  check(previewBounds.right<=innerWidth-7&&previewBounds.bottom<=innerHeight-7,'Player preview stays inside viewport near right and bottom edges');
+  check(getComputedStyle(preview.querySelector('.activity-preview-profile')).position==='fixed','Previews never enlarge the document');preview.remove();
+
+  const RealDate=window.Date,realSetTimeout=window.setTimeout;let rollover;
+  window.setTimeout=(callback,delay,...args)=>{if(delay>60000){rollover=callback;return 0;}return realSetTimeout(callback,delay,...args);};
+  activityFeed.start();
+  window.Date=class extends RealDate{constructor(...args){super(...(args.length?args:[RealDate.now()+86400000]));}static now(){return RealDate.now()+86400000;}};
+  rollover();
+  if(mode!=='mobile')check(!feedHost.querySelector('.activity-newspaper-announcements'),'Announcements roll into Updates at midnight without reload');
+  window.Date=RealDate;window.setTimeout=realSetTimeout;feedHost.remove();
   const { state } = await import('/js/core/runtime.js');
   state.stopEvents?.(); activityFeed.stop();
   await nativeFetch('/report', { method: 'POST', body: JSON.stringify({ ok: true, mode }) });

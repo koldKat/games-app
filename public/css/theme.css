@@ -19,6 +19,7 @@ html {
   overflow-x: clip;
 }
 body {
+  overflow-x: clip;
   background: #080b10;
   color: var(--ink);
 }
@@ -181,7 +182,7 @@ input[type="checkbox"]:focus-visible {
   display: flex;
   flex-direction: column;
   width: min(1600px, 100%);
-  padding: 0 16px 28px;
+  padding: 0 16px 8px;
 }
 .app-footer {
   margin-top: auto;
@@ -189,7 +190,7 @@ input[type="checkbox"]:focus-visible {
   display: grid;
   grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
   align-items: center;
-  padding: 12px 0 0;
+  padding: 8px 0 0;
   color: #9ca3af;
   font: 400 11px/1.4 ui-monospace, monospace;
 }
