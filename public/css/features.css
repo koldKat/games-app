@@ -830,11 +830,6 @@ html:has(dialog[open]) {
   visibility: hidden;
 }
 .account-button #account-name:has(.role-badge) { overflow: visible; }
-.account-button #account-name > .role-badge {
-  align-self: center;
-  top: -1px;
-  vertical-align: middle;
-}
 
 .top-actions .role-badge > .role-badge-tooltip {
   top: calc(100% + 8px);

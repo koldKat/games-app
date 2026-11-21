@@ -148,8 +148,11 @@ try {
   if(!testViewport){
     const name=document.querySelector('#account-name'),badge=name.querySelector('.role-badge');
     check(badge?.getAttribute('aria-label')==='Gamekeeper','Gamekeeper role is shown');
-    const bounds=name.getBoundingClientRect(),star=badge.getBoundingClientRect();
-    check(Math.abs(star.top+star.height/2-bounds.top-bounds.height/2)<=1.5,'Role badge is vertically centered beside the name');
+    const username = document.createRange();
+    username.selectNodeContents(name.firstChild);
+    const text = username.getBoundingClientRect();
+    const icon = badge.getBoundingClientRect();
+    check(icon.top + icon.height / 2 < text.top + text.height / 2 - 2, 'Header badge sits above the username midpoint like the feed badge');
   }
   const background=document.querySelector('.app-cover-field');
   const overflowCover=document.createElement('i');overflowCover.style.cssText='position:absolute;top:100%;left:100%;width:80px;height:100px;transform:rotate(20deg)';background.append(overflowCover);
