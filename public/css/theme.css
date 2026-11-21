@@ -1287,7 +1287,7 @@ dialog::backdrop {
   padding-bottom: 0;
   line-height: 1;
 }
-.top-actions .katalog-button,.top-actions .library-button,.top-actions .forum-button {
+.top-actions .katalog-button,.top-actions .library-button,.top-actions .forum-button,.top-actions .crew-button {
   width:auto;
   min-width:0;
   padding-inline:11px;
@@ -1566,7 +1566,7 @@ dialog::backdrop {
   .header-progression {
     display:none
   }
-  .top-actions .katalog-button,.top-actions .library-button,.top-actions .forum-button,.top-actions .signal-button {
+  .top-actions .katalog-button,.top-actions .library-button,.top-actions .forum-button,.top-actions .signal-button,.top-actions .crew-button {
     width:38px;
     min-width:38px;
     padding:0;

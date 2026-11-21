@@ -154,7 +154,7 @@ The terminal-style admin provides:
 
 ## Backups and durable files
 
-The server creates a compressed SQLite backup at startup and then on every hour. Archives are retained for 15 days in the Git-ignored `backups/` directory.
+The server creates a compressed SQLite backup at startup and then on once daily. Archives are retained for 30 days in the Git-ignored `backups/` directory.
 
 Backups intentionally contain the database only. Durable cover binaries in `public/covers/` and avatars in `public/avatars/` must be handled separately if the host itself is being backed up.
 

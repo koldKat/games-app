@@ -1,6 +1,6 @@
 'use strict';
 
-const { db } = require('./db');
+const { db, crews } = require('./db');
 const { roleBadges } = require('./auth');
 const { progressForXp } = require('./progression-policy');
 
@@ -17,18 +17,18 @@ const collectionStats = db.prepare(`SELECT COUNT(*) AS total,
     COALESCE(SUM(play_status='playing'), 0) AS playing,
     COALESCE(SUM(favorite=1), 0) AS favorites,
     COUNT(DISTINCT platform) AS platforms
-  FROM games WHERE user_id=? AND hidden=0`);
+  FROM ${crews.gameSource()} WHERE hidden=0`);
 const publicContributions = db.prepare(`SELECT COUNT(DISTINCT id) AS count FROM catalogue_entries
   WHERE submitted_by_user_id=? AND status='public'`);
-const ownedPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM games
-  WHERE user_id=? AND hidden=0 AND ownership='owned'
+const ownedPlatforms = db.prepare(`SELECT platform, COUNT(*) AS count FROM ${crews.gameSource()}
+  WHERE hidden=0 AND ownership='owned'
   GROUP BY platform ORDER BY count DESC, platform COLLATE NOCASE`);
 
 function get(username) {
   const account = profileAccount.get(String(username || '').trim());
   if (!account) return null;
   const progress = progressForXp(account.xp);
-  const stats = collectionStats.get(account.id);
+  const stats = collectionStats.get({userId:account.id});
   return {
     username: account.username,
     badges: roleBadges(account.username),
@@ -41,7 +41,7 @@ function get(username) {
       wishlisted: Number(stats.wishlisted), completed: Number(stats.completed), playing: Number(stats.playing),
       favorites: Number(stats.favorites), platforms: Number(stats.platforms), contributions: Number(publicContributions.get(account.id).count),
     },
-    platforms: ownedPlatforms.all(account.id).map(row => ({ platform: row.platform, count: Number(row.count) })),
+    platforms: ownedPlatforms.all({userId:account.id}).map(row => ({ platform: row.platform, count: Number(row.count) })),
   };
 }
 

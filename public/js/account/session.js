@@ -1,3 +1,4 @@
+import { refreshCrew, resetCrew } from './crew.js';
 import { renderIdentityName } from './role-badges.js';
 import { selectedCopyIds, $$, $ } from '../core/dom.js';
 import { runtime, state, filters } from '../core/runtime.js';
@@ -15,6 +16,7 @@ import { api, toast } from '../core/api.js';
 import { cancelPendingLibrarySearch } from '../library/filters.js';
 
 function showAuth(message = '') {
+  resetCrew();
   cancelPendingLibrarySearch();
   progressionUi.reset();
   katalogNavigation.suspend();
@@ -57,6 +59,7 @@ async function enterApp(user, savedPreferences, progress = null) {
   $('#app-shell').hidden = false;
   if (progress) progressionUi.hydrate(progress);
   connectEventStream();
+  void refreshCrew();
   const routeReady = katalogNavigation.restoreCurrent().catch(() => {});
   void patchUi.refreshUnread();
   if (!progress) void progressionUi.load();

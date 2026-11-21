@@ -1,3 +1,4 @@
+const { createCrewRoutes } = require('./crew');
 const { createPublicRoutes } = require('./public');
 const { createAuthenticationRoutes } = require('./authentication');
 const { createAccountRoutes } = require('./account');
@@ -12,6 +13,7 @@ function createApiRouter(context) {
   const publicRoutes = createPublicRoutes(context);
   const authenticationRoutes = createAuthenticationRoutes(context);
   const accountRoutes = createAccountRoutes(context);
+  const crewRoutes = createCrewRoutes(context);
   const importsRoutes = createImportsRoutes(context);
   const coversRoutes = createCoversRoutes(context);
   const titlesRoutes = createTitlesRoutes(context);
@@ -28,7 +30,8 @@ function createApiRouter(context) {
     const refreshedCookie = auth.refreshSessionCookie(request);
     if (refreshedCookie) response.setHeader('Set-Cookie', refreshedCookie);
 
-    const routes = url.pathname.startsWith('/api/steam/') || url.pathname.startsWith('/api/gog/') ? importsRoutes
+    const routes = url.pathname.startsWith('/api/crew') ? crewRoutes
+      : url.pathname.startsWith('/api/steam/') || url.pathname.startsWith('/api/gog/') ? importsRoutes
       : url.pathname.startsWith('/api/covers/') || url.pathname.startsWith('/api/cover-providers/') ? coversRoutes
       : url.pathname.startsWith('/api/titles/') || url.pathname.startsWith('/api/igdb/') ? titlesRoutes
       : url.pathname.startsWith('/api/games') || ['/api/stats', '/api/meta'].includes(url.pathname) ? libraryRoutes

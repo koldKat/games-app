@@ -482,11 +482,11 @@ body {
   -webkit-line-clamp: 2;
 }
 .badge {
-  font-size: 9px;
+  font-size: 11px;
 }
 .game-card .badge {
   padding: 1px 3px;
-  font-size: calc(var(--text-tag) - 1px);
+  font-size: var(--text-tag);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;

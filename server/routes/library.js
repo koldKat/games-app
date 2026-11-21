@@ -1,7 +1,11 @@
 function createLibraryRoutes({
   progression, providerCredentials, syncKatalogAndRecordProgress, sendJson, readJson,
-  prepareGameCover, finishGameCoverChange, db, igdb, coverStorage, readVersion,
+  prepareGameCover, finishGameCoverChange, db, igdb, coverStorage, readVersion, events,
 }) {
+
+  function notifyCrew(userId) {
+    for (const memberId of db.crews?.memberIds(userId) || [userId]) events?.publish(memberId,'library-changed',{});
+  }
 
   return async function handleLibrary(request, response, url, user) {
     if (request.method === 'GET' && url.pathname === '/api/games') {
@@ -22,6 +26,7 @@ function createLibraryRoutes({
         prepared = await prepareGameCover(await readJson(request));
         const game = db.createGame(user.id, prepared.input);
         const progressionResult = syncKatalogAndRecordProgress(user.id, game, { created: true });
+        notifyCrew(user.id);
         return sendJson(response, 201, { ...game, progression: progressionResult });
       }
       catch (error) {
@@ -44,6 +49,7 @@ function createLibraryRoutes({
         if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
         finishGameCoverChange(existing, game);
         const progressionResult = syncKatalogAndRecordProgress(user.id, game, { previous: existing });
+        notifyCrew(user.id);
         return sendJson(response, 200, { ...game, progression: progressionResult });
       } catch (error) {
         if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);
@@ -52,8 +58,9 @@ function createLibraryRoutes({
     }
     if (match && request.method === 'DELETE') {
       const existing = db.getGame(user.id, Number(match[1]));
+      if (existing?.canDelete === false) return sendJson(response,403,{error:'Only the player who added this game can delete it.'});
       if (!existing || !db.deleteGame(user.id, Number(match[1]))) return sendJson(response, 404, { error: 'Game not found.' });
-      coverStorage.removeLocal(existing.coverUrl); return sendJson(response, 200, { ok: true });
+      coverStorage.removeLocal(existing.coverUrl); notifyCrew(user.id); return sendJson(response, 200, { ok: true });
     }
 
   };

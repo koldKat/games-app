@@ -1,4 +1,4 @@
-const selectFields = `id, title, platform, pegi, ownership,
+const selectFields = `id, user_id AS ownerUserId, title, platform, pegi, ownership,
   CASE WHEN hidden=1 THEN 'hidden' ELSE play_status END AS playStatus,
   CASE WHEN format_physical=1 AND format_digital=1 THEN 'both'
     WHEN format_physical=1 THEN 'physical' WHEN format_digital=1 THEN 'digital' ELSE 'unknown' END AS mediaFormat,

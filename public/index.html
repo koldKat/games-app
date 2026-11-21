@@ -48,6 +48,7 @@
   <link rel="stylesheet" href="/css/patch.css">
   <link rel="stylesheet" href="/css/stats.css">
   <link rel="stylesheet" href="/css/library-import.css">
+  <link rel="stylesheet" href="/css/crew.css">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -198,6 +199,7 @@
           <a class="button katalog-button themed-tooltip header-tooltip" href="/katalog" data-tooltip="Kat·a·log"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h4M9 12h6M9 16h6"/></svg><span class="header-nav-label">Kat·a·log</span></a>
           <a class="button library-button themed-tooltip header-tooltip" href="/" data-tooltip="My Kat·a·log"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20H5v-8.5Z"/><path d="M10 20v-5h4v5"/></svg><span class="header-nav-label">My Kat·a·log</span></a>
           <button class="button primary desktop-add themed-tooltip header-tooltip" data-add-game data-tooltip="Add a game"><span class="button-icon">+</span><span class="button-label">Game</span></button>
+          <button type="button" class="button crew-button themed-tooltip header-tooltip" id="crew-button" data-tooltip="Open your crew" aria-label="Open your crew"><svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v2"/></svg><span class="header-nav-label">Crew</span><span id="crew-invite-count" class="badge" hidden></span></button>
           <button class="button account-button themed-tooltip header-tooltip" id="account-button" data-tooltip="Open profile"><span class="nav-avatar" id="nav-avatar">?</span><span id="account-name">account</span></button>
         </div>
       </div>
@@ -391,6 +393,18 @@
       <header class="modal-head"><div><p class="kicker">Library record</p><h2 id="game-details-title">Game details</h2></div><button type="button" class="close-button" data-details-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
       <div id="game-details-content"></div>
       <footer class="modal-actions"><button type="button" class="button ghost" id="game-details-reroll" hidden>reroll()</button><button type="button" class="button ghost" data-details-close>Close</button><button type="button" class="button primary" id="game-details-edit">Edit details</button></footer>
+    </section>
+  </dialog>
+  <dialog id="crew-dialog">
+    <section class="modal-card crew-modal">
+      <header class="modal-head"><div><p class="kicker">Crew // shared shelf</p><h2>Your crew</h2></div><button type="button" class="close-button" data-crew-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <p>One crew, one game shelf. Share game details while keeping your ratings and play status personal. Only creators can delete their entries.</p>
+      <ul id="crew-members" class="crew-list"></ul>
+      <form id="crew-invite-form" class="crew-invite-row"><label for="crew-username">Invite a player<input id="crew-username" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Player username" required></label><button class="button secondary" type="submit">Invite to crew</button></form>
+      <section id="crew-incoming" hidden><h3>Incoming invitations</h3><ul id="crew-incoming-list" class="crew-list"></ul></section>
+      <section id="crew-outgoing" hidden><h3>Sent invitations</h3><ul id="crew-outgoing-list" class="crew-list"></ul></section>
+      <p id="crew-error" class="form-error" role="alert" hidden></p>
+      <footer class="modal-actions"><button type="button" class="button ghost" data-crew-close>Close</button></footer>
     </section>
   </dialog>
   <dialog id="account-dialog">

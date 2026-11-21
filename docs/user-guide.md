@@ -39,6 +39,14 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ---
 
+## Your Crew
+
+Open **Crew** in the header to invite a player by username or respond to an invitation. Joining combines both crews’ existing collections into one shared, editable shelf. Each entry keeps its original creator; only that player can delete it.
+
+Your rating, play status, favorites, hidden games, and saved filters stay personal. The stars always show your own rating. A separate average uses all app ratings for public Kat·a·log releases and your crew’s ratings for other games. Shared edits and invitation updates arrive in your open tabs automatically.
+
+---
+
 ## Public Kat·a·log
 
 Signing in from a public game's details returns to that same game with its dialog open. When opened from a filtered public Kat·a·log page or Signal, that view remains underneath the dialog, so closing it resumes your browsing. Creating an account follows the same return behavior.
@@ -378,7 +386,7 @@ The compact terminal-style panel provides:
 - Patch queue triage, unread state, private replies delivered through Ping, and thread removal.
 - An arbitrary release-string editor. Saving writes directly to `VERSION`; reload the main app to see the new string in its header.
 - SQLite WAL checkpoint, query-planner optimization, and vacuum actions.
-- Hourly compressed live backups stored in the ignored `backups/` directory. One runs at startup and then on the hour; archives are retained for 15 days.
+- Daily compressed live backups stored in the ignored `backups/` directory. One runs at startup and then at local midnight; archives are retained for 30 days.
 
 The admin panel is not a normal user account and has no public login screen. Its security boundary is the local machine itself. If remote administration is ever needed, use an explicitly secured tunnel rather than publishing `/admin/` in nginx.
 

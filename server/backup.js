@@ -6,16 +6,16 @@ const { execFile } = require('node:child_process');
 const { db } = require('./db');
 
 const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '..', 'backups');
-const KEEP_HOURS = 15 * 24;
-const INTERVAL_MS = 60 * 60 * 1000;
+const KEEP_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 let activeBackup = null;
 let started = false;
 
 function pad(value) { return String(value).padStart(2, '0'); }
-function hourlyName(now = new Date()) {
-  return `backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}h.zip`;
+function dailyName(now = new Date()) {
+  return `backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.zip`;
 }
-function validName(filename) { return /^backup-\d{4}-\d{2}-\d{2}_\d{2}h\.zip$/.test(filename); }
+function validName(filename) { return /^backup-\d{4}-\d{2}-\d{2}(?:_\d{2}h)?\.zip$/.test(filename); }
 
 function zipFile(source, destination) {
   return new Promise((resolve, reject) => {
@@ -25,7 +25,7 @@ function zipFile(source, destination) {
 
 function prune(now = Date.now()) {
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
-  const cutoff = Number(now) - KEEP_HOURS * INTERVAL_MS;
+  const cutoff = Number(now) - KEEP_DAYS * DAY_MS;
   let deleted = 0;
   for (const filename of fs.readdirSync(BACKUP_DIR)) {
     if (!validName(filename)) continue;
@@ -40,7 +40,7 @@ function prune(now = Date.now()) {
 
 async function performBackup(now = new Date()) {
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
-  const name = hourlyName(now);
+  const name = dailyName(now);
   const archivePath = path.join(BACKUP_DIR, name);
   prune(now.getTime());
   if (fs.existsSync(archivePath)) return { name, created: false };
@@ -86,8 +86,8 @@ function deleteBackup(name) {
   catch (error) { if (error.code === 'ENOENT') return false; throw error; }
 }
 
-function millisecondsUntilNextHour(now = new Date()) {
-  const next = new Date(now); next.setMinutes(0, 0, 0); next.setHours(next.getHours() + 1);
+function millisecondsUntilNextDay(now = new Date()) {
+  const next = new Date(now); next.setHours(24, 0, 0, 0);
   return next.getTime() - now.getTime();
 }
 
@@ -97,9 +97,9 @@ function start() {
   runBackup().then(result => console.log(`[backup] ${result.created ? 'created' : 'current'} ${result.name}`)).catch(error => console.error('[backup] startup run failed:', error.message));
   const first = setTimeout(function tick() {
     runBackup().then(result => console.log(`[backup] ${result.created ? 'created' : 'current'} ${result.name}`)).catch(error => console.error('[backup] scheduled run failed:', error.message));
-    const next = setTimeout(tick, INTERVAL_MS); next.unref();
-  }, millisecondsUntilNextHour());
+    const next = setTimeout(tick, millisecondsUntilNextDay()); next.unref();
+  }, millisecondsUntilNextDay());
   first.unref();
 }
 
-module.exports = { BACKUP_DIR, KEEP_HOURS, deleteBackup, hourlyName, listBackups, millisecondsUntilNextHour, prune, runBackup, start, validName };
+module.exports = { BACKUP_DIR, KEEP_DAYS, deleteBackup, dailyName, listBackups, millisecondsUntilNextDay, prune, runBackup, start, validName };

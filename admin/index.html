@@ -147,7 +147,7 @@
         </article>
         <article class="block tool-block wide">
           <header><span>RECOVERY</span><b>LOCAL BACKUPS</b><button id="create-backup" class="button primary">Create backup</button></header>
-          <p>Hourly ZIP snapshots kept for 15 days under <code>backups/</code>. A backup runs at startup and then on the hour; the directory is excluded from Git.</p>
+          <p>Daily ZIP snapshots kept for 30 days under <code>backups/</code>. A backup runs at startup and then at local midnight; the directory is excluded from Git.</p>
           <div class="table-shell compact backup-table-shell"><table><thead><tr><th>FILE</th><th>SIZE</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody id="backups-body"></tbody></table></div>
         </article>
         <article class="block tool-block wide">

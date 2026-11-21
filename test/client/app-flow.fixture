@@ -39,6 +39,7 @@ window.fetch = async (target, options = {}) => {
   if (['/katalog', '/signal', '/forum'].includes(url.pathname)) return nativeFetch(`/fixtures${url.pathname}.html`);
   if (url.pathname === '/cover-showcase.json') return reply({ covers: [] });
   if (!url.pathname.startsWith('/api/')) return nativeFetch(target, options);
+  if (url.pathname === '/api/crew') return reply({members:[user],incoming:[],outgoing:[]});
   if (url.pathname === '/api/config') return reply({ version: 'test-version' });
   if (url.pathname === '/api/auth/me') return reply(signedIn ? { user, preferences: {}, progress } : { error: 'Unauthorized' }, signedIn ? 200 : 401);
   if (url.pathname === '/api/login') { signedIn = true; return reply({ user, preferences: {}, progress }); }
@@ -155,6 +156,17 @@ try {
   card.querySelector('[data-action="edit"]').click();
   check(document.querySelector('#game-dialog').open && document.querySelector('#game-id').value === '2', 'Selected platform opens in editor');
   document.querySelector('[data-close]').click();
+  const crewButton=document.querySelector('#crew-button'),libraryButton=document.querySelector('.library-button');
+  check(crewButton.getBoundingClientRect().height===libraryButton.getBoundingClientRect().height,'Crew matches header button height');
+  check(crewButton.getBoundingClientRect().width<=libraryButton.getBoundingClientRect().width,'Crew uses compact header width');
+  document.querySelector('#crew-button').click();
+  await waitFor(()=>document.querySelector('#crew-members').textContent.includes(user.username),'Crew members load');
+  check(document.querySelector('#crew-dialog').open,'Crew opens');
+  check(document.querySelector('#crew-dialog').getBoundingClientRect().width<=innerWidth,'Crew dialog fits viewport');
+  const inviteInput=document.querySelector('#crew-username'),inviteButton=document.querySelector('#crew-invite-form button');
+  check(Math.abs(inviteInput.getBoundingClientRect().height-inviteButton.getBoundingClientRect().height)<1,'Crew invitation input and button have matching heights');
+  check(getComputedStyle(inviteButton).alignItems==='center'&&getComputedStyle(inviteButton).justifyContent==='center','Crew invitation label is centered');
+  document.querySelector('[data-crew-close]').click();
   document.querySelector('#account-button').click();
   check(document.querySelector('#account-dialog').open, 'Profile opens');
   check(document.activeElement.tagName !== 'INPUT', 'Profile does not focus a text input');

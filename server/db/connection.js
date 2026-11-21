@@ -14,5 +14,5 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 for (const suffix of ['', '-wal', '-shm']) restrictDatabaseFile(`${DB_PATH}${suffix}`);
 
-const { canonical, progression } = initializeSchema(db);
-module.exports = { db, canonical, progression };
+const { canonical, progression, crews } = initializeSchema(db);
+module.exports = { db, canonical, progression, crews };

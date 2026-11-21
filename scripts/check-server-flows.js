@@ -39,6 +39,7 @@ async function run() {
       return result;
     }
     assert.equal((await request('/api/auth/me')).status, 401);
+    assert.equal((await request('/api/crew')).status, 401);
     assert.equal((await request('/api/config')).status, 200);
     const registered = await request('/api/register', 'POST', { username: 'TestCollector', password: 'test-password-123', passwordConfirm: 'test-password-123' });
     assert.equal(registered.status, 201, await registered.text());
@@ -64,6 +65,24 @@ async function run() {
       const result = await request(target); assert.equal(result.status, 200, target);
       assert.match(result.headers.get('content-type'), /javascript/);
     }
+    const firstCookie=cookie;
+    cookie='';
+    const crewAccount=await request('/api/register','POST',{username:'CrewPartner',password:'test-password-456',passwordConfirm:'test-password-456'});
+    assert.equal(crewAccount.status,201);
+    const secondCookie=cookie;
+    assert.equal((await request(`/api/games/${game.id}`)).status,404);
+    cookie=firstCookie;
+    const sent=await request('/api/crew/invites','POST',{username:'CrewPartner'});assert.equal(sent.status,200);
+    const invitation=(await sent.json()).outgoing[0].id;
+    cookie=secondCookie;
+    assert.equal((await request(`/api/crew/invites/${invitation}/accept`,'POST')).status,200);
+    const shared=await (await request(`/api/games/${game.id}`)).json();
+    assert.equal(shared.rating,null);assert.equal(shared.canDelete,false);
+    assert.equal((await request(`/api/games/${game.id}`,'DELETE')).status,403);
+    assert.equal((await request(`/api/games/${game.id}`,'PUT',{...shared,title:'Crew Portal',rating:1.5,playStatus:'completed'})).status,200);
+    cookie=firstCookie;
+    const originalOwner=await (await request(`/api/games/${game.id}`)).json();
+    assert.equal(originalOwner.title,'Crew Portal');assert.equal(originalOwner.rating,4.5);assert.equal(originalOwner.playStatus,'backlog');
     assert.equal((await request(`/api/games/${game.id}`, 'DELETE')).status, 200);
     assert.equal((await request('/api/logout', 'POST')).status, 200);
     assert.equal((await request('/api/auth/me')).status, 401);

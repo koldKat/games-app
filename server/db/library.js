@@ -1,18 +1,19 @@
-const { db } = require('./connection');
+const { db, crews } = require('./connection');
 const { selectFields, hydrateGame } = require('./record');
 const { normalizeSearchText, gameGroupTitleKey, searchPattern } = require('./values');
 const { GAME_LIMITS } = require('../validation-policy');
 const { MULTIPLATFORM_FILTER_VALUE, OWNERSHIP_FILTER_VALUES, TITLE_LOOKUP_MIN_LENGTH } = require('../constants');
+const { decorateGames } = require('./player-state');
 const searchTitles = db.prepare(`
   SELECT id, title, platform, ownership, igdb_id AS igdbId, canonical_game_id AS canonicalGameId FROM games
-  WHERE user_id=? AND search_normalize(title) LIKE ? ESCAPE '\\'
-  ORDER BY CASE WHEN search_normalize(title) = ? THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
-  LIMIT ?
+  WHERE user_id IN ${crews.memberIdsSql('@userId')} AND search_normalize(title) LIKE @pattern ESCAPE '\\'
+  ORDER BY CASE WHEN search_normalize(title) = @normalized THEN 0 ELSE 1 END, title COLLATE NOCASE, platform COLLATE NOCASE
+  LIMIT @limit
 `);
-const accountTitles = db.prepare('SELECT id, title, platform, ownership, igdb_id AS igdbId, canonical_game_id AS canonicalGameId FROM games WHERE user_id=?');
+const accountTitles = db.prepare(`SELECT id, title, platform, ownership, igdb_id AS igdbId, canonical_game_id AS canonicalGameId FROM games WHERE user_id IN ${crews.memberIdsSql()}`);
 
 function gameListQuery(userId, filters = {}) {
-  const clauses = ['user_id = @userId'];
+  const clauses = [];
   const params = { userId };
   const hiddenFilter = filters.ownership === 'hidden' || filters.playStatus === 'hidden';
   if (filters.q) {
@@ -30,8 +31,8 @@ function gameListQuery(userId, filters = {}) {
       WHEN game_group_key(title)<>'' THEN 'title-'||game_group_key(title) ELSE 'game-'||id END) IN (
         SELECT CASE WHEN sibling.canonical_game_id IS NOT NULL THEN 'canonical-'||sibling.canonical_game_id
           WHEN game_group_key(sibling.title)<>'' THEN 'title-'||game_group_key(sibling.title) ELSE 'game-'||sibling.id END AS identity
-        FROM games AS sibling
-        WHERE sibling.user_id=@userId AND sibling.hidden=@multiplatformHidden
+        FROM (SELECT * FROM ${crews.gameSource()}) AS sibling
+        WHERE sibling.hidden=@multiplatformHidden
         GROUP BY identity
         HAVING COUNT(DISTINCT sibling.platform COLLATE NOCASE)>1
       )`);
@@ -89,13 +90,13 @@ function gameListQuery(userId, filters = {}) {
     igdb_critic_desc: `igdb_critic_rating IS NULL, igdb_critic_rating DESC, ${titleAsc}`,
     cartridge: `cartridge_number IS NULL, cartridge_number ASC, ${titleAsc}`,
   };
-  const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+  const where = `WHERE ${clauses.length ? clauses.join(' AND ') : '1=1'}`;
   return { where, params, orderBy: sortMap[filters.sort] || sortMap.title };
 }
 
 function listGames(userId, filters = {}) {
   const { where, params, orderBy } = gameListQuery(userId, filters);
-  return db.prepare(`SELECT ${selectFields} FROM games ${where} ORDER BY ${orderBy}`).all(params).map(hydrateGame);
+  return decorateGames(userId, db.prepare(`SELECT ${selectFields} FROM ${crews.gameSource()} ${where} ORDER BY ${orderBy}`).all(params).map(hydrateGame));
 }
 
 function listProgressionGames(userId) {
@@ -115,7 +116,7 @@ function listGamesPage(userId, filters = {}) {
   const requestedPage = Math.max(1, Number.parseInt(filters.page, 10) || 1);
   const splitPlatforms = Boolean(filters.platform && filters.platform !== MULTIPLATFORM_FILTER_VALUE);
   const identities = db.prepare(`SELECT id, title, canonical_game_id AS canonicalGameId
-    FROM games ${where} ORDER BY ${orderBy}`).all(params);
+    FROM ${crews.gameSource()} ${where} ORDER BY ${orderBy}`).all(params);
   const groups = [];
   if (splitPlatforms) {
     for (const row of identities) groups.push([row.id]);
@@ -133,10 +134,11 @@ function listGamesPage(userId, filters = {}) {
   const page = Math.min(requestedPage, pages);
   const ids = groups.slice((page - 1) * pageSize, page * pageSize).flat();
   if (!ids.length) return { games: [], total, page, pageSize, pages };
-  const placeholders = ids.map(() => '?').join(',');
-  const byId = new Map(db.prepare(`SELECT ${selectFields} FROM games WHERE id IN (${placeholders})`)
-    .all(...ids).map(hydrateGame).map(game => [game.id, game]));
-  return { games: ids.map(id => byId.get(id)).filter(Boolean), total, page, pageSize, pages };
+  const placeholders = ids.map((_, i) => '@id' + i).join(',');
+  const bindings = Object.fromEntries(ids.map((id, i) => ['id' + i, id]));
+  const byId = new Map(db.prepare(`SELECT ${selectFields} FROM ${crews.gameSource()} WHERE id IN (${placeholders})`)
+    .all({ ...bindings, userId }).map(hydrateGame).map(game => [game.id, game]));
+  return { games: decorateGames(userId, ids.map(id => byId.get(id)).filter(Boolean)), total, page, pageSize, pages };
 }
 
 function randomGame(userId, filters = {}, random = Math.random) {
@@ -145,12 +147,12 @@ function randomGame(userId, filters = {}, random = Math.random) {
   const identity = `CASE WHEN canonical_game_id IS NOT NULL THEN 'canonical-'||canonical_game_id
     WHEN game_group_key(title)<>'' THEN 'title-'||game_group_key(title) ELSE 'game-'||id END`;
   const candidates = splitPlatforms
-    ? `SELECT id, 'game-'||id AS identity FROM games ${where}`
-    : `SELECT MIN(id) AS id, identity FROM (SELECT id, ${identity} AS identity FROM games ${where}) GROUP BY identity`;
+    ? `SELECT id, 'game-'||id AS identity FROM ${crews.gameSource()} ${where}`
+    : `SELECT MIN(id) AS id, identity FROM (SELECT id, ${identity} AS identity FROM ${crews.gameSource()} ${where}) GROUP BY identity`;
   let excludedIdentity = '';
   const excludedId = Number.parseInt(filters.excludeId, 10);
   if (Number.isInteger(excludedId) && excludedId > 0) {
-    const excluded = db.prepare(`SELECT id, ${identity} AS identity FROM games WHERE id=? AND user_id=?`).get(excludedId, userId);
+    const excluded = db.prepare(`SELECT id, ${identity} AS identity FROM ${crews.gameSource()} WHERE id=@id`).get({id:excludedId,userId});
     if (excluded) excludedIdentity = splitPlatforms ? `game-${excluded.id}` : excluded.identity;
   }
   const exclusion = excludedIdentity ? 'WHERE identity<>@excludedIdentity' : '';
@@ -166,23 +168,23 @@ function randomGame(userId, filters = {}, random = Math.random) {
   if (!selected) return null;
   const game = getGame(userId, selected.id);
   if (!game || splitPlatforms) return game;
-  const versions = db.prepare(`SELECT ${selectFields} FROM games ${where} AND ${identity}=@selectedIdentity ORDER BY id`)
+  const versions = db.prepare(`SELECT ${selectFields} FROM ${crews.gameSource()} ${where} AND ${identity}=@selectedIdentity ORDER BY id`)
     .all({ ...params, selectedIdentity: selected.identity }).map(hydrateGame);
-  return { ...game, versions };
+  return { ...game, versions: decorateGames(userId, versions) };
 }
 
-function getGame(userId, id) { return hydrateGame(db.prepare(`SELECT ${selectFields} FROM games WHERE id=? AND user_id=?`).get(id, userId)); }
+function getGame(userId, id) { return decorateGames(userId, [hydrateGame(db.prepare(`SELECT ${selectFields} FROM ${crews.gameSource()} WHERE id=@id`).get({id,userId}))].filter(Boolean))[0]; }
 function allGamesForKatalog() {
   return db.prepare(`SELECT user_id AS userId, ${selectFields} FROM games WHERE user_id IS NOT NULL AND hidden=0 ORDER BY id`).all().map(hydrateGame);
 }
 function searchGameTitles(userId, query, limit = GAME_LIMITS.titleSearchDefault) {
   const clean = String(query || '').trim().slice(0, GAME_LIMITS.titleMax);
   if (clean.length < TITLE_LOOKUP_MIN_LENGTH) return [];
-  return searchTitles.all(userId, searchPattern(clean), normalizeSearchText(clean), Math.max(1, Math.min(GAME_LIMITS.titleSearchMax, Number(limit) || GAME_LIMITS.titleSearchDefault)));
+  return searchTitles.all({userId,pattern:searchPattern(clean),normalized:normalizeSearchText(clean),limit:Math.max(1, Math.min(GAME_LIMITS.titleSearchMax, Number(limit) || GAME_LIMITS.titleSearchDefault))});
 }
 
 const normalizeIdentity = normalizeSearchText;
-function accountGameIdentities(userId) { return accountTitles.all(userId); }
+function accountGameIdentities(userId) { return accountTitles.all({userId}); }
 function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGameId = null, candidates = null) {
   const wantedTitle = normalizeIdentity(title); const wantedPlatform = normalizeIdentity(platform);
   if (!wantedTitle || !wantedPlatform) return [];

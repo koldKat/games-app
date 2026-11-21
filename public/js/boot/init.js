@@ -1,3 +1,5 @@
+import { initializeCrew } from '../account/crew.js';
+import { refreshLibraryPage } from '../library/data.js';
 import { initializeBootShell } from './shell.js';
 import { initializeCoreRuntime } from '../core/runtime.js';
 import { initializeBootServices } from './services.js';
@@ -50,6 +52,7 @@ export function initializeApp() {
   bindMetadataLookups();
   initializeEditorCovers();
   initializeAccountProfile();
+  initializeCrew({onCollectionChanged:refreshLibraryPage});
   initializeMetadataBulkUi();
   bindProfileMutationsAndLifecycle();
   return restoreSession();

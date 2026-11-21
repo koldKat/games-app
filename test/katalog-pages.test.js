@@ -45,14 +45,14 @@ test('catalogue page is crawlable server-rendered HTML', () => {
 test('catalogue cards summarize platform variants and release dialogs expose each edition', () => {
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
   const catalogue = renderKatalog({ result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 }, platforms: [] });
-  assert.match(catalogue, /data-platform-theme="Steam">Steam<\/span><i>·<\/i><span[^>]*data-platform-theme="PlayStation 5">PlayStation 5<\/span>/);
+  assert.match(catalogue, /data-platform-theme="Steam">Steam<\/span><span class="badge pegi pegi-12">PEGI 12<\/span><i>·<\/i><span[^>]*data-platform-theme="PlayStation 5">PlayStation 5<\/span>/);
   assert.doesNotMatch(catalogue, /2 platforms/);
   const detail = renderGame({ entry: { ...entry, releases, releaseCount: 2 } });
   assert.match(detail, /PLATFORM RELEASES/);
   assert.match(detail, /portal-2-ps5/);
 });
 
-test('catalogue preview cards omit ownership, PEGI and main playtime', () => {
+test('catalogue cards show platform PEGI but keep ownership and detailed playtime in the preview', () => {
   const releases = [entry, { ...entry, id: 4, slug: 'portal-2-ps5', platform: 'PlayStation 5' }];
   const html = renderKatalog({
     result: { entries: [{ ...entry, releases, releaseCount: 2 }], total: 1, page: 1, pages: 1 },
@@ -61,10 +61,10 @@ test('catalogue preview cards omit ownership, PEGI and main playtime', () => {
   });
   const cards = html.match(/<article class="katalog-card">[\s\S]*?<\/article>/g);
   assert.equal(cards.length, 1);
-  for (const card of cards) assert.doesNotMatch(card.replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-library-pill|katalog-chips|Owned|PEGI|Valve|2011|8h main/);
+  for (const card of cards) assert.doesNotMatch(card.replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-library-pill|katalog-chips|Owned|Valve|2011|8h main/);
   assert.match(cards[0], /<template data-katalog-preview>[\s\S]*Owned[\s\S]*Valve[\s\S]*2011[\s\S]*PEGI[\s\S]*8h · Main story/);
   const guest = renderKatalog({ result: { entries: [entry], total: 1, page: 1, pages: 1 }, platforms: [] });
-  assert.doesNotMatch(guest.match(/<article class="katalog-card">[\s\S]*?<\/article>/)[0].replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-chips|PEGI|Valve|2011|8h main/);
+  assert.doesNotMatch(guest.match(/<article class="katalog-card">[\s\S]*?<\/article>/)[0].replace(/<template[\s\S]*?<\/template>/g, ''), /katalog-chips|Valve|2011|8h main/);
 });
 
 test('catalogue preview playtime falls back to the first positive recorded estimate', () => {
@@ -100,7 +100,7 @@ test('Nintendo Entertainment System names use recognizable display aliases witho
     result: { entries: [{ ...nes, releases: [nes, snes], releaseCount: 2 }], total: 1, page: 1, pages: 1 },
     platforms: [{ platform: nes.platform, count: 1 }, { platform: snes.platform, count: 1 }],
   });
-  assert.match(html, /data-platform-theme="Nintendo Entertainment System">NES<\/span><i>·<\/i><span[^>]*data-platform-theme="Super Nintendo Entertainment System">SNES<\/span>/);
+  assert.match(html, /data-platform-theme="Nintendo Entertainment System">NES<\/span><span class="badge pegi pegi-12">PEGI 12<\/span><i>·<\/i><span[^>]*data-platform-theme="Super Nintendo Entertainment System">SNES<\/span>/);
   assert.match(html, /value="Nintendo Entertainment System">NES \(1\)<\/option>/);
   assert.match(html, /value="Super Nintendo Entertainment System">SNES \(1\)<\/option>/);
   assert.doesNotMatch(html, />Nintendo Entertainment System · Super Nintendo Entertainment System</);

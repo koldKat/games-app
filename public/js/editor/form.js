@@ -40,7 +40,7 @@ function openForm(game = null) {
   setMediaFormatInputs(game, $('#game-format-physical'), $('#game-format-digital'));
   $('#game-cartridge').value = formValue(game, 'cartridgeNumber'); $('#game-publisher').value = formValue(game, 'publisher');
   $('#game-year').value = formValue(game, 'releaseYear'); setRating(formValue(game, 'rating')); $('#game-description').value = formValue(game, 'description'); $('#game-notes').value = formValue(game, 'notes'); $('#game-favorite').checked = Boolean(game?.favorite);
-  $('#delete-game').hidden = !game; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); igdbLookup.load(game); renderCoverSelection(); renderPegiDetails();
+  $('#delete-game').hidden = !game || game.canDelete === false; $('#pegi-results').hidden = true; $('#pegi-results').innerHTML = ''; $('#cover-results').hidden = true; $('#cover-results').innerHTML = ''; $('#description-results').hidden = true; $('#description-results').innerHTML = ''; $('#form-error').hidden = true; titleAutocomplete.updateWarning(); hltbLookup.load(game); igdbLookup.load(game); renderCoverSelection(); renderPegiDetails();
   if (!dialog.open) dialog.showModal();
   setTimeout(() => $('#game-title').focus(), UI_TIMING.formFocusDelayMs);
 }

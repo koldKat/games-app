@@ -1,14 +1,20 @@
-const { db, canonical } = require('./connection');
+const { db, canonical, crews } = require('./connection');
 const { getGame } = require('./library');
 const { normalizeGame } = require('./normalize');
 const { safeText, safeList, validReleaseYear, hltbHours } = require('./values');
 const { GAME_LIMITS } = require('../validation-policy');
 const { PEGI_RATINGS } = require('../constants');
-function gamesMissingCovers(userId) { return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND cover_url='' ORDER BY title COLLATE NOCASE`).all(userId); }
+function gamesMissingCovers(userId) {
+  return db.prepare(`SELECT id,title,platform FROM ${crews.gameSource()} WHERE hidden=0 AND cover_url='' ORDER BY title COLLATE NOCASE`).all({userId});
+}
+
 function updateGameCover(userId, id, cover) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const result = db.prepare(`UPDATE games SET cover_url=?, cover_source=?, cover_match_title=?, updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND user_id=? AND hidden=0 AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
-  return result.changes ? getGame(userId, id) : null;
+    WHERE id=? AND user_id=? AND cover_url=''`).run(cover.url || '', cover.source || '', cover.matchTitle || '', id, userId);
+  return result.changes ? getGame(actorId, id) : null;
 }
 function gamesWithRemoteCovers() {
   return db.prepare(`SELECT id, user_id AS userId, cover_url AS coverUrl FROM games
@@ -22,20 +28,22 @@ function coverUrlReferenceCount(coverUrl) {
   return db.prepare('SELECT COUNT(*) AS count FROM games WHERE cover_url=?').get(coverUrl).count;
 }
 function replaceGameCoverUrl(userId, id, expectedUrl, localUrl) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const result = db.prepare(`UPDATE games SET cover_url=?
     WHERE id=? AND user_id=? AND cover_url=?`).run(localUrl, id, userId, expectedUrl);
-  return result.changes ? getGame(userId, id) : null;
+  return result.changes ? getGame(actorId, id) : null;
 }
 
 function gamesMissingPegiMetadata(userId) {
-  return db.prepare(`SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0
-    AND pegi_url=''
-    AND pegi_descriptors='[]' AND pegi_releases='[]' AND pegi_advice=''
-    AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''
-    ORDER BY title COLLATE NOCASE`).all(userId);
+  return db.prepare(`SELECT id,title,platform FROM ${crews.gameSource()} WHERE hidden=0 AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]' AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues='' ORDER BY title COLLATE NOCASE`).all({userId});
 }
 
 function updateGamePegiMetadata(userId, id, metadata = {}) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const ratingValue = metadata.pegi ?? metadata.rating;
   const yearValue = metadata.releaseYear ?? metadata.year;
   const pegi = PEGI_RATINGS.includes(Number(ratingValue)) ? Number(ratingValue) : null;
@@ -46,7 +54,7 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
     pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline,
     pegi_content_issues=@pegiContentIssues, pegi_other_issues=@pegiOtherIssues,
-    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId
     AND pegi_url='' AND pegi_descriptors='[]' AND pegi_releases='[]'
     AND pegi_advice='' AND pegi_outline='' AND pegi_content_issues='' AND pegi_other_issues=''`).run({
       id, userId, pegi, releaseYear,
@@ -57,22 +65,25 @@ function updateGamePegiMetadata(userId, id, metadata = {}) {
       pegiContentIssues: safeText(metadata.contentIssues), pegiOtherIssues: safeText(metadata.otherIssues),
     });
   if (!result.changes) return null;
-  canonical.syncGameById(id); return getGame(userId, id);
+  canonical.syncGameById(id); return getGame(actorId, id);
 }
 
 function gamesMissingHltb(userId) {
-  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND hltb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
+  return db.prepare(`SELECT id,title,platform FROM ${crews.gameSource()} WHERE hidden=0 AND hltb_id IS NULL ORDER BY title COLLATE NOCASE`).all({userId});
 }
 
 function gamesMissingDescriptions(userId) {
-  return db.prepare("SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND description='' ORDER BY title COLLATE NOCASE").all(userId);
+  return db.prepare(`SELECT id,title,platform FROM ${crews.gameSource()} WHERE hidden=0 AND description='' ORDER BY title COLLATE NOCASE`).all({userId});
 }
 
 function gamesMissingIgdb(userId) {
-  return db.prepare('SELECT id, title, platform FROM games WHERE user_id=? AND hidden=0 AND igdb_id IS NULL ORDER BY title COLLATE NOCASE').all(userId);
+  return db.prepare(`SELECT id,title,platform FROM ${crews.gameSource()} WHERE hidden=0 AND igdb_id IS NULL ORDER BY title COLLATE NOCASE`).all({userId});
 }
 
 function updateGameIgdb(userId, id, metadata = {}) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const igdbId = Number.isInteger(Number(metadata.igdbId ?? metadata.id)) && Number(metadata.igdbId ?? metadata.id) > 0
     ? Number(metadata.igdbId ?? metadata.id) : null;
   if (!igdbId) return null;
@@ -90,7 +101,7 @@ function updateGameIgdb(userId, id, metadata = {}) {
     description=CASE WHEN description='' AND @description<>'' THEN @description ELSE description END,
     description_source=CASE WHEN description='' AND @description<>'' THEN 'IGDB' ELSE description_source END,
     description_source_url=CASE WHEN description='' AND @description<>'' THEN @igdbUrl ELSE description_source_url END,
-    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0 AND igdb_id IS NULL`).run({
+    updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND igdb_id IS NULL`).run({
       id, userId, igdbId, igdbSlug: safeText(metadata.slug ?? metadata.igdbSlug, GAME_LIMITS.igdbSlugMax),
       igdbUrl: safeText(metadata.sourceUrl ?? metadata.igdbUrl, GAME_LIMITS.urlMax),
       igdbRating: score(metadata.rating ?? metadata.igdbRating), igdbRatingCount: count(metadata.ratingCount ?? metadata.igdbRatingCount),
@@ -102,22 +113,28 @@ function updateGameIgdb(userId, id, metadata = {}) {
       releaseYear: validReleaseYear(metadata.releaseYear) ? Number(metadata.releaseYear) : null, description,
     });
   if (!result.changes) return null;
-  canonical.syncGameById(id); return getGame(userId, id);
+  canonical.syncGameById(id); return getGame(actorId, id);
 }
 
 function updateGameDescription(userId, id, metadata = {}) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const description = safeText(metadata.description, GAME_LIMITS.descriptionMax);
   if (!description) return null;
   const result = db.prepare(`UPDATE games SET description=@description, description_source=@descriptionSource,
-    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND hidden=0 AND description=''`).run({
+    description_source_url=@descriptionSourceUrl, updated_at=CURRENT_TIMESTAMP WHERE id=@id AND user_id=@userId AND description=''`).run({
     id, userId, description, descriptionSource: safeText(metadata.source, GAME_LIMITS.coverSourceMax),
     descriptionSourceUrl: safeText(metadata.url || metadata.sourceUrl, GAME_LIMITS.urlMax),
   });
   if (!result.changes) return null;
-  canonical.syncGameById(id); return getGame(userId, id);
+  canonical.syncGameById(id); return getGame(actorId, id);
 }
 
 function updateGameHltb(userId, id, metadata = {}) {
+  const actorId=userId, accessible=getGame(actorId,id);
+  if(!accessible || accessible.playStatus==='hidden')return null;
+  userId=accessible.ownerUserId;
   const normalized = normalizeGame({ title: 'placeholder', platform: 'placeholder', ...metadata,
     hltbId: metadata.hltbId ?? metadata.id, hltbTitle: metadata.hltbTitle ?? metadata.title,
     hltbUrl: metadata.hltbUrl ?? metadata.url, hltbMainStory: metadata.hltbMainStory ?? metadata.mainStory,
@@ -130,8 +147,8 @@ function updateGameHltb(userId, id, metadata = {}) {
     hltb_main_story=@hltbMainStory, hltb_main_extra=@hltbMainExtra,
     hltb_completionist=@hltbCompletionist, hltb_all_styles=@hltbAllStyles,
     hltb_updated_at=@hltbUpdatedAt, updated_at=CURRENT_TIMESTAMP
-    WHERE id=@id AND user_id=@userId AND hidden=0 AND hltb_id IS NULL`).run({ id, userId, ...normalized });
-  return result.changes ? getGame(userId, id) : null;
+    WHERE id=@id AND user_id=@userId AND hltb_id IS NULL`).run({ id, userId, ...normalized });
+  return result.changes ? getGame(actorId, id) : null;
 }
 
 module.exports = {

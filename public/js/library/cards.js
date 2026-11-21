@@ -79,6 +79,7 @@ function gameCard(game) {
     <h3 class="game-title">${escapeHtml(game.title)}</h3><div class="game-meta${meta ? ' themed-tooltip' : ''}"${meta ? ` data-tooltip="${escapeHtml(meta)}" tabindex="0"` : ''}>${escapeHtml(meta || mediaFormatLabel(game, labels))}</div>
     <div class="badges">${badge(game.pegi ? `PEGI ${game.pegi}` : 'Unrated', pegiClass)}${descriptorBadges}${badge(labels[game.ownership], game.ownership)}${badge(labels[game.playStatus], game.playStatus)}${game.favorite ? badge('Favorite') : ''}${coverCredit(game.coverSource)}</div>
     ${cardTimes(game, escapeHtml)}
+    ${game.ratingCount ? `<small class="crew-rating-average">${game.ratingScope === 'app' ? 'App' : 'Crew'} avg. ${Number(game.ratingAverage).toFixed(1)} / 5 · ${game.ratingCount} rating${game.ratingCount===1?'':'s'}</small>` : ''}
     ${cardRatingControl(game)}<div class="card-actions"><button type="button" class="edit-button" data-action="edit">Edit details</button>${quick}</div>
   </article>`;
 }

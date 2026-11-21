@@ -1,3 +1,4 @@
+const { createCrewStore } = require('../crew-store');
 const { createCanonicalStore } = require('../canonical-store');
 const { createProgressionStore } = require('../progression-store');
 const { MEDIA_FORMAT_VALUES, OWNERSHIP_VALUES, PEGI_RATINGS, PLAY_STATUS_VALUES, STORED_PLAY_STATUS_VALUES } = require('../constants');
@@ -264,6 +265,7 @@ function initializeSchema(db) {
     CREATE INDEX IF NOT EXISTS idx_patch_messages_thread ON patch_messages(thread_id, created_at);
   `);
 
-  return { canonical, progression };
+  const crews = createCrewStore(db);
+  return { canonical, progression, crews };
 }
 module.exports = { initializeSchema };

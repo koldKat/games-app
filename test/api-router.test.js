@@ -25,7 +25,7 @@ function fixture() {
     preferences: { get: () => ({ sort: 'title' }) }, progression: { info: () => ({ xp: 100, level: 0 }) },
     showcasePool: { owned: (_, id) => [`owned-${id}`], shared: () => ['public'] },
     siteStats: { snapshot: () => ({ users: 1 }) }, activity: { feed: () => ({ entries: [] }) },
-    events: { subscribe: (req, res, id) => sendJson(res, 200, { subscribed: id }) },
+    events: { publish: (...args)=>calls.push(['event',...args]), subscribe: (req, res, id) => sendJson(res, 200, { subscribed: id }) },
     db: {
       listGamesPage: (id, filters) => ({ games: [], account: id, ...filters }),
       getGame: (id, gameId) => gameId === 1 ? { id: 1, userId: id } : null,
@@ -67,7 +67,8 @@ test('authenticated dispatch retains account scope, pagination, progress, and se
   assert.equal((await app.request('/api/events')).body.subscribed, 17);
   const created = await app.request('/api/games', 'POST', { title: 'Portal 2', platform: 'Steam' });
   assert.equal(created.status, 201); assert.equal(created.body.title, 'Portal 2');
-  assert.deepEqual(app.calls.at(-1), ['progress', 17, 2]);
+  assert.deepEqual(app.calls.find(call=>call[0]==='progress'), ['progress', 17, 2]);
+  assert.ok(app.calls.some(call=>call[0]==='event'&&call[1]===17&&call[2]==='library-changed'));
   assert.equal((await app.request('/api/games/99')).status, 404);
   assert.equal((await app.request('/api/unknown')).status, 404);
 });

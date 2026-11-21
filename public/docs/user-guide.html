@@ -6,6 +6,7 @@
 </style></head><body><header><strong>GAME KAT·A·LOG // DOCS</strong><span>User Guide</span><nav><a href="/">APP</a><a href="/docs/">INDEX</a><a href="/docs/user-guide.html">USER</a><a href="/docs/technical.html">TECH</a><a href="/docs/platform-colors.html">COLORS</a></nav></header><div class="layout"><aside class="toc"><b>CONTENTS</b><a class="toc-2" href="#getting-started">Getting started</a>
 <a class="toc-3" href="#creating-an-account">Creating an account</a>
 <a class="toc-3" href="#signing-in-and-out">Signing in and out</a>
+<a class="toc-2" href="#your-crew">Your Crew</a>
 <a class="toc-2" href="#public-kat-a-log">Public Kat·a·log</a>
 <a class="toc-2" href="#dashboard">Dashboard</a>
 <a class="toc-2" href="#stats-for-nerds">Stats for Nerds</a>
@@ -73,6 +74,10 @@
 <li>Select <strong>Forgot?</strong> to replace the sign-in form with the reset-request panel, then enter a username or email. The branded email has a clickable <strong>Reset password</strong> button and a linked fallback address; it opens a dedicated new-password panel. Links expire after one hour and all existing sessions are signed out after a successful reset. An account needs an email address and the local administrator must have configured SMTP delivery.</li>
 </ul>
 <p>During refresh, a compact <strong>Mounting authenticated library…</strong> screen remains visible only while the secure session cookie is checked. The app then appears immediately in its loading state; a green-outline controller marks an empty grid while library data arrives, and header and background covers fill in afterward. Existing cards remain visible during later refreshes instead of being replaced by the loader. The public login and registration interface is shown only if that session is absent or invalid.</p>
+<hr>
+<h2 id="your-crew">Your Crew<a class="anchor" href="#your-crew" aria-label="Link to section">#</a></h2>
+<p>Open <strong>Crew</strong> in the header to invite a player by username or respond to an invitation. Joining combines both crews’ existing collections into one shared, editable shelf. Each entry keeps its original creator; only that player can delete it.</p>
+<p>Your rating, play status, favorites, hidden games, and saved filters stay personal. The stars always show your own rating. A separate average uses all app ratings for public Kat·a·log releases and your crew’s ratings for other games. Shared edits and invitation updates arrive in your open tabs automatically.</p>
 <hr>
 <h2 id="public-kat-a-log">Public Kat·a·log<a class="anchor" href="#public-kat-a-log" aria-label="Link to section">#</a></h2>
 <p>Signing in from a public game&#39;s details returns to that same game with its dialog open. When opened from a filtered public Kat·a·log page or Signal, that view remains underneath the dialog, so closing it resumes your browsing. Creating an account follows the same return behavior.</p>
@@ -265,7 +270,7 @@
 <li>Patch queue triage, unread state, private replies delivered through Ping, and thread removal.</li>
 <li>An arbitrary release-string editor. Saving writes directly to <code>VERSION</code>; reload the main app to see the new string in its header.</li>
 <li>SQLite WAL checkpoint, query-planner optimization, and vacuum actions.</li>
-<li>Hourly compressed live backups stored in the ignored <code>backups/</code> directory. One runs at startup and then on the hour; archives are retained for 15 days.</li>
+<li>Daily compressed live backups stored in the ignored <code>backups/</code> directory. One runs at startup and then at local midnight; archives are retained for 30 days.</li>
 </ul>
 <p>The admin panel is not a normal user account and has no public login screen. Its security boundary is the local machine itself. If remote administration is ever needed, use an explicitly secured tunnel rather than publishing <code>/admin/</code> in nginx.</p>
 <hr>

@@ -203,7 +203,7 @@ function renderKatalogMain({ result, platforms, query = '', platform = '', detai
   const cards = result.entries.map(entry => {
     const releases = entry.releases || [entry];
     const visibleReleases = platform ? [entry] : releases;
-    const platformLabel = visibleReleases.map(release => `<span class="katalog-platform-token" data-platform-theme="${escapeHtml(release.platform)}">${escapeHtml(platformDisplayName(release.platform))}</span>`).join('<i>·</i>');
+    const platformLabel = visibleReleases.map(release => `<span class="katalog-platform-token" data-platform-theme="${escapeHtml(release.platform)}">${escapeHtml(platformDisplayName(release.platform))}</span><span class="badge pegi pegi-${release.pegi || 'none'}">${release.pegi ? 'PEGI ' + release.pegi : 'Unrated'}</span>`).join('<i>·</i>');
     return `<article class="katalog-card">
     <a class="katalog-cover" href="/game/${encodeURIComponent(entry.slug)}"><img src="${escapeHtml(entry.coverUrl)}" alt="${escapeHtml(`${entry.title} cover`)}" loading="lazy">${communityRating(entry)}</a>
     <div class="katalog-card-body"><span class="katalog-platform">${platformLabel}</span><h2><a class="katalog-title" data-katalog-title data-full-title="${escapeHtml(entry.title)}" href="/game/${encodeURIComponent(entry.slug)}"><span>${escapeHtml(entry.title)}</span></a></h2>

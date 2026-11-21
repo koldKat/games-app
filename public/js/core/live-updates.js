@@ -1,7 +1,8 @@
+import { refreshCrew } from '../account/crew.js';
 import { state, filters, runtime } from './runtime.js';
 import { gameMatchesFilters, renderGames } from '../library/render.js';
 import { compareGames } from '../library/game-sorting.js';
-import { loadGames } from '../library/data.js';
+import { loadGames, refreshLibraryPage } from '../library/data.js';
 import { UI_TIMING } from './ui-policy.js';
 import { openEventStream } from './events.js';
 import {
@@ -43,6 +44,11 @@ function connectEventStream() {
   state.stopEvents = openEventStream({ onEvent(event, data) {
     if (generation !== runtime.sessionGeneration || !state.user) return;
     if (event === 'game-updated') applyGamePatch(data.game);
+    else if (event === 'crew-changed') { void refreshCrew(); }
+    else if (event === 'library-changed') {
+      clearTimeout(runtime.groupFilterRefreshTimer);
+      runtime.groupFilterRefreshTimer = setTimeout(() => { void refreshLibraryPage(state.page); }, UI_TIMING.libraryGroupRefreshDebounceMs);
+    }
     else if (event === 'games-imported') { void refreshAfterLibraryImport(); }
     else if (event === 'version-updated') $('#app-version').textContent = data.version || 'dev';
     else if (event === 'progression-updated') progressionUi.handleEvent(data);

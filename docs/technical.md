@@ -6,7 +6,7 @@
 
 `public/startup-recovery.js` starts before the module graph. Failed startup retries after 2/5/10 seconds, waits for connectivity when offline, and then offers manual retry. Startup API requests have a 20-second timeout. Transient failures preserve the saved session; successful startup disposes recovery listeners and timers.
 
-Public UI typography uses the original compact operator theme and monospace font stack. Existing component sizes are explicit; shared defaults for newer components are `--text-caption` (10px), `--text-small` (11px), `--text-tag` (9px), `--text-body` (14px), and `--text-input` (14px). Signal entries use 11px text on desktop and 10px on mobile, with 9px timestamps. Small mobile form inputs retain the 16px focus-zoom safeguard. Browser-flow checks cover compact captions, ratings, and form behavior.
+Public UI typography uses the original compact operator theme and monospace font stack. Existing component sizes are explicit; shared defaults for newer components are `--text-caption` (10px), `--text-small` (11px), `--text-tag` (11px), `--text-body` (14px), and `--text-input` (14px). Signal entries use 11px text on desktop and 10px on mobile, with 9px timestamps. Small mobile form inputs retain the 16px focus-zoom safeguard. Browser-flow checks cover compact captions, ratings, and form behavior.
 
 The mobile action dock and add-game control track `visualViewport` resize and scroll events so browser chrome and the on-screen keyboard cannot hide them below the visible viewport. Safe-area insets remain applied, and the dock can wrap within the available width without overlapping the add-game control. Browsers without `visualViewport` retain fixed positioning. The browser fixture explicitly loads the standalone dock module and checks reduced-height and narrow viewport bounds; desktop window resizing alone does not exercise mobile browser chrome.
 
@@ -38,7 +38,7 @@ games-app/
     user-activity.js        throttled last-active persistence for admin accounts
     request-url.js          fail-closed HTTP request-target parsing and path decoding
     traffic-metrics.js      persistent inbound/outbound HTTP byte counters
-    backup.js               hourly compressed SQLite snapshots and retention
+    backup.js               daily compressed SQLite snapshots and retention
     activity.js             public-safe Signal ledger plus announcement draft/publish/pin projection
     public-profiles.js      opt-in aggregate collector-profile projection
     patch-data.js           private Patch-thread storage and read/unread lifecycle
@@ -136,7 +136,7 @@ games-app/
     technical.md            this file
   test/
     auth.test.js            sessions, password changes, isolation
-    backup.test.js          hourly ZIP creation and scheduling
+    backup.test.js          daily ZIP creation and scheduling
     pegi.test.js            PEGI result parsing
     pegi-bulk.test.js       exact-title matching, skips, and job notifications
     cover-providers.test.js provider parsing, image URLs and platform aliases
@@ -234,7 +234,7 @@ Environment variables:
 | `PUBLIC_URL` | `https://gamekat.net` | Absolute origin for canonical pages, sitemap entries, email actions, and SMTP greeting identity |
 | `OWNER_USERNAME` | oldest account | Optional protected operator account override used by Patch/Ping; matching is case-insensitive |
 | `VERSION_FILE` | `./VERSION` | Release-string file; primarily useful for isolated tests or custom deployments |
-| `BACKUP_DIR` | `./backups` | Hourly ZIP backup destination |
+| `BACKUP_DIR` | `./backups` | Daily ZIP backup destination |
 | `STEAMGRIDDB_API_KEY` | blank | Optional shared SteamGridDB application-key fallback |
 | `THEGAMESDB_API_KEY` | blank | Optional server-wide TheGamesDB key |
 | `IGDB_CLIENT_ID` | blank | Optional server-wide IGDB/Twitch application Client ID |
@@ -559,7 +559,7 @@ The Dashboard mirrors the Gamebooks refresh cadence: collection and Kat·a·log 
 
 Admin static files and API responses use restrictive security headers. Backup names are server-generated and deletion accepts only that exact filename shape. Backups are stored in `backups/`, which is excluded from Git.
 
-`server/backup.js` creates one consistent SQLite snapshot at process startup and then exactly on each hour. The snapshot is compressed with the host `zip` command, published by atomic rename, and its temporary raw SQLite file is always removed. A second attempt in the same hour is a no-op. Archives older than 15 days are pruned during each run.
+`server/backup.js` creates one consistent SQLite snapshot at process startup and then exactly on each hour. The snapshot is compressed with the host `zip` command, published by atomic rename, and its temporary raw SQLite file is always removed. A second attempt in the same hour is a no-op. Archives older than 30 days are pruned during each run.
 
 ### Version file
 
@@ -782,7 +782,7 @@ npm run docs:check   # fail if generated HTML is stale
 | `test/katalog-store.test.js` | Identity deduplication, public projection privacy, search, and sticky rejection |
 | `test/katalog-service.test.js` | Independent covers, private-copy defaults, duplicate rejection, and fail-closed sync |
 | `test/katalog-pages.test.js` | SSR metadata, escaping, safe links, and dynamic sitemap output |
-| `test/backup.test.js` | Hourly ZIP creation, deduplication, cleanup, and scheduler timing |
+| `test/backup.test.js` | Daily ZIP creation, deduplication, cleanup, and scheduler timing |
 | `test/version.test.js` | Version-file persistence and input validation |
 | `test/site-stats.test.js` | Public aggregate accuracy, privacy boundaries, modular UI wiring, and responsive dialog behavior |
 | `test/stats-format.test.js` | Aggregate HLTB hours converted into compact year, day, and hour durations |
@@ -800,7 +800,7 @@ The authentication test uses a disposable SQLite database under `/tmp` and remov
 
 Stop with `Ctrl+C` or send SIGTERM. The server closes SQLite before exiting.
 
-The server automatically creates compressed, consistent live database backups at startup and hourly, retaining 15 days. Cover binaries under `public/covers/` are deliberately excluded from those ZIP files. The admin **Tools** tab lists, triggers, and removes the database archives and can checkpoint the WAL. For a simple offline database backup:
+The server automatically creates compressed, consistent live database backups at startup and daily, retaining 30 days. Cover binaries under `public/covers/` are deliberately excluded from those ZIP files. The admin **Tools** tab lists, triggers, and removes the database archives and can checkpoint the WAL. For a simple offline database backup:
 
 1. Stop the server.
 2. Copy `games.db` to a dated backup location.
@@ -824,3 +824,12 @@ The database and generated cover files are excluded from Git. Source code, gener
 - GOG import depends on undocumented Galaxy-client endpoints. It stores revocable account tokens server-side, imports an explicit snapshot from both ordinary and GOG-hidden collections, and does not continuously synchronize later purchases.
 - Browser authentication uses an HttpOnly, SameSite cookie and all persistent workspace settings live in SQLite. Production access should still use HTTPS so the cookie also receives the `Secure` attribute.
 - The public client retains one orchestration entry point, with stable data registries split into focused modules. The admin client is divided by panel plus shared utilities.
+
+
+## Shared crews
+
+`server/crew-store.js` stores crew membership, consent-based invitations and per-player game state. Acceptance merges existing crews transactionally without changing `games.user_id`; deletion remains creator-only. Shared library reads use a membership-scoped source with the signed-in player’s rating, status, favorite and hidden values. Existing owner values are migrated once into `game_player_state`.
+
+Authenticated `/api/crew` routes expose membership and invite, accept and cancel operations. Crew and library SSE notifications target affected accounts; peers reload their own projection rather than receiving another member’s personal state. Public release averages count each player once; private release averages are restricted to the crew. The rating control remains independent of the aggregate.
+
+Database ZIP backups run once per local calendar day, including a missing-current-day check on startup, and retain 30 days. Legacy hourly archives remain readable until their retention expires.

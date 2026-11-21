@@ -424,7 +424,7 @@ test('authenticated library carries the family copyright notice with a rolling y
   assert.match(policy, /COPYRIGHT_START_YEAR = 2026/);
   assert.match(application, /copyrightYear > COPYRIGHT_START_YEAR \? `© \$\{COPYRIGHT_START_YEAR\}-\$\{copyrightYear\}`/);
   assert.match(css, /\.app-footer-brand\{color:#f5a623;font-weight:600\}/);
-  assert.match(css, /\.app-footer\{display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/);
+  assert.match(css, /\.app-footer\{[^}]*display:grid;grid-template-columns:minmax\(0,1fr\) auto minmax\(0,1fr\)/);
   assert.match(html, /footer-studio-links[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net[\s\S]*target="_blank"/);
   assert.match(css, /\.footer-studio:hover \.footer-studio-links,.footer-studio:focus-within \.footer-studio-links/);
   assert.match(catalogue, /function footerMarkup\(copyright\)[\s\S]*https:\/\/pathmap\.net[\s\S]*https:\/\/biseri\.net/);
@@ -517,7 +517,7 @@ test('catalogue navigation keeps the authenticated shell mounted and swaps only 
   const themeCss = readCss('public/css/theme.css');
   assert.match(themeCss, /\.header-community-actions,\.header-library-actions\{display:flex;align-items:center;gap:6px\}/);
   assert.match(themeCss, /\.header-progression\{flex:0 0 300px;width:300px;min-width:300px;/);
-  assert.match(themeCss, /\.top-actions \.katalog-button,\.top-actions \.library-button,\.top-actions \.forum-button\{width:auto;min-width:0;/);
+  assert.match(themeCss, /\.top-actions \.katalog-button,\.top-actions \.library-button,\.top-actions \.forum-button,\.top-actions \.crew-button\{width:auto;min-width:0;/);
   assert.match(themeCss, /\.button\{[\s\S]*text-decoration:none/);
   assert.match(themeCss, /@media \(max-width:680px\)\{[\s\S]*\.brand strong\{font-size:13px;white-space:nowrap\}/);
   assert.match(themeCss, /\.brand strong em\{display:none\}/);

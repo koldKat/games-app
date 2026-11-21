@@ -8,7 +8,7 @@ const ENTRY_STATUSES = Object.freeze(['candidate', 'public', 'rejected']);
 // Ten desktop rows at eight columns.
 const PEGI_RATINGS = new Set(require('./constants').PEGI_RATINGS);
 
-const storedFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
+const legacyStoredFields = `id, slug, title, title_key AS titleKey, platform, pegi, publisher, release_year AS releaseYear,
   canonical_game_id AS canonicalGameId, canonical_release_id AS canonicalReleaseId,
   pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson, pegi_releases AS pegiReleasesJson,
   pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
@@ -87,6 +87,9 @@ function optionalNumber(value, { min = 0, max = Number.MAX_SAFE_INTEGER, integer
 }
 
 function createKatalogStore(database, { canonical: suppliedCanonical = null } = {}) {
+  const { catalogueRatingSql } = require('./rating-queries');
+  const hasPlayerState = Boolean(database.prepare("SELECT 1 FROM sqlite_master WHERE name='game_player_state'").get());
+  const storedFields = hasPlayerState ? legacyStoredFields.replace(/\(SELECT AVG\(g.rating\)[\s\S]*?AS ratingAverage,/, catalogueRatingSql('average') + ' AS ratingAverage,').replace(/\(SELECT COUNT\(g.rating\)[\s\S]*?AS ratingCount,/, catalogueRatingSql('count') + ' AS ratingCount,') : legacyStoredFields;
   const canonical = suppliedCanonical || createCanonicalStore(database);
   database.exec(`
     CREATE TABLE IF NOT EXISTS catalogue_entries (

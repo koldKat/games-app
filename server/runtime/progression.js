@@ -1,3 +1,4 @@
+const { crews } = require('../db');
 function createProgressionBridge({ progression, katalog, activity, events }) {
   function isKatalogContribution(userId, game, result) {
     const entry = result?.entry;
@@ -10,6 +11,9 @@ function createProgressionBridge({ progression, katalog, activity, events }) {
   function publishAppEvent(userId, event, payload) {
     if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game);
     events.publish(userId, event, payload);
+    if(event==='game-updated') for(const memberId of crews.memberIds(userId)) {
+      if(memberId!==userId)events.publish(memberId,'library-changed',{});
+    }
   }
   function publishProgression(userId, result, { compact = false } = {}) {
     if (!result?.awards?.length) return;

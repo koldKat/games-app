@@ -1,4 +1,4 @@
-const { db, canonical } = require('./connection');
+const { db, canonical, crews } = require('./connection');
 const { normalizeGame } = require('./normalize');
 const { getGame, findDuplicateGames } = require('./library');
 const { GAME_LIMITS } = require('../validation-policy');
@@ -23,9 +23,9 @@ const insert = db.prepare(`
 `);
 const update = db.prepare(`
   UPDATE games SET title=@title, platform=@platform, pegi=@pegi, ownership=@ownership,
-    play_status=CASE WHEN @hidden=1 THEN play_status ELSE @playStatus END, hidden=@hidden,
+    play_status=CASE WHEN user_id<>@actorId OR @hidden=1 THEN play_status ELSE @playStatus END, hidden=CASE WHEN user_id=@actorId THEN @hidden ELSE hidden END,
     media_format=@mediaFormat, format_physical=@formatPhysical, format_digital=@formatDigital, cartridge_number=@cartridgeNumber,
-    publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=@rating, favorite=@favorite,
+    publisher=@publisher, release_year=@releaseYear, notes=@notes, rating=CASE WHEN user_id=@actorId THEN @rating ELSE rating END, favorite=CASE WHEN user_id=@actorId THEN @favorite ELSE favorite END,
     pegi_url=@pegiUrl, pegi_descriptors=@pegiDescriptorsJson, pegi_releases=@pegiReleasesJson,
     pegi_advice=@pegiAdvice, pegi_outline=@pegiOutline, pegi_content_issues=@pegiContentIssues,
     pegi_other_issues=@pegiOtherIssues, hltb_id=@hltbId, hltb_title=@hltbTitle, hltb_url=@hltbUrl,
@@ -45,18 +45,19 @@ const update = db.prepare(`
 
 function createGame(userId, input) {
   const game = normalizeGame(input); const id = insert.run({ ...game, userId }).lastInsertRowid;
-  canonical.syncGameById(id); return getGame(userId, id);
+  crews.savePlayerState(userId,Number(id),game); canonical.syncGameById(id); return getGame(userId, id);
 }
 function updateGame(userId, id, input) {
-  const existing = db.prepare(`SELECT steam_app_id AS steamAppId,steam_playtime_minutes AS steamPlaytimeMinutes,
-    steam_last_played_at AS steamLastPlayedAt,gog_product_id AS gogProductId FROM games WHERE id=? AND user_id=?`).get(id, userId);
+  const existing = getGame(userId,id);
+  if (!existing) return null;
   const game = normalizeGame({ ...input,
     steamAppId: input.steamAppId === undefined ? existing?.steamAppId : input.steamAppId,
     steamPlaytimeMinutes: input.steamPlaytimeMinutes === undefined ? existing?.steamPlaytimeMinutes : input.steamPlaytimeMinutes,
     steamLastPlayedAt: input.steamLastPlayedAt === undefined ? existing?.steamLastPlayedAt : input.steamLastPlayedAt,
     gogProductId: input.gogProductId === undefined ? existing?.gogProductId : input.gogProductId,
-  }); const result = update.run({ ...game, id, userId });
+  }); const result = update.run({ ...game, id, userId:existing.ownerUserId, actorId:userId });
   if (!result.changes) return null;
+  crews.savePlayerState(userId,id,game);
   canonical.syncGameById(id); return getGame(userId, id);
 }
 

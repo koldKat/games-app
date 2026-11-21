@@ -428,8 +428,8 @@
   align-items: center;
   gap: 4px;
   overflow: hidden;
-  font-size: 9px;
-  letter-spacing: .09em;
+  font-size: 11px;
+  letter-spacing: .03em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
@@ -625,12 +625,12 @@
   line-height: 1;
 }
 .community-rating b {
-  font-size: 10px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 .community-rating small {
-  color: #9eacb4;
-  font-size: 9px;
+  color: #b3bec6;
+  font-size: 10px;
 }
 .katalog-pagination {
   display: grid;
@@ -1033,4 +1033,12 @@
   .game-metadata {
     grid-template-columns: 1fr;
   }
+}
+
+.katalog-platform .badge {
+  flex-shrink: 0;
+  padding: 2px 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0;
 }
