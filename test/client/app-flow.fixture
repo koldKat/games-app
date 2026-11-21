@@ -26,6 +26,7 @@ let games = [
   { id: 1, title: 'Portal 2', platform: 'Steam', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['digital'], rating: 3, pegiDescriptors: [], pegiReleases: [] },
   { id: 2, title: 'Portal 2', platform: 'Nintendo Switch', ownership: 'owned', playStatus: 'backlog', pegi: 12, mediaFormats: ['physical'], pegiDescriptors: [], pegiReleases: [] },
 ];
+let crewIncoming=[];
 let eventController;
 let eventConnections = 0;
 let libraryRequests = 0;
@@ -39,7 +40,7 @@ window.fetch = async (target, options = {}) => {
   if (['/katalog', '/signal', '/forum'].includes(url.pathname)) return nativeFetch(`/fixtures${url.pathname}.html`);
   if (url.pathname === '/cover-showcase.json') return reply({ covers: [] });
   if (!url.pathname.startsWith('/api/')) return nativeFetch(target, options);
-  if (url.pathname === '/api/crew') return reply({members:[user],incoming:[],outgoing:[]});
+  if (url.pathname === '/api/crew') return reply({members:[user],incoming:crewIncoming,outgoing:[]});
   if (url.pathname === '/api/config') return reply({ version: 'test-version' });
   if (url.pathname === '/api/auth/me') return reply(signedIn ? { user, preferences: {}, progress } : { error: 'Unauthorized' }, signedIn ? 200 : 401);
   if (url.pathname === '/api/login') { signedIn = true; return reply({ user, preferences: {}, progress }); }
@@ -159,6 +160,12 @@ try {
   const crewButton=document.querySelector('#crew-button'),libraryButton=document.querySelector('.library-button');
   check(crewButton.getBoundingClientRect().height===libraryButton.getBoundingClientRect().height,'Crew matches header button height');
   check(crewButton.getBoundingClientRect().width<=libraryButton.getBoundingClientRect().width,'Crew uses compact header width');
+  crewIncoming=[{id:11,username:'CrewMate'}];
+  const {refreshCrew}=await import('/js/account/crew.js');await refreshCrew();
+  const crewBadge=document.querySelector('#crew-invite-count'),badgeStyle=getComputedStyle(crewBadge);
+  check(!crewBadge.hidden&&crewBadge.textContent==='1','Crew invitation count is visible');
+  check(parseFloat(badgeStyle.fontSize)>=10&&crewBadge.getBoundingClientRect().height>=16,'Crew invitation count is readable');
+  check(badgeStyle.backgroundColor==='rgb(121, 213, 176)','Crew notification uses a distinct green badge');
   document.querySelector('#crew-button').click();
   await waitFor(()=>document.querySelector('#crew-members').textContent.includes(user.username),'Crew members load');
   check(document.querySelector('#crew-dialog').open,'Crew opens');

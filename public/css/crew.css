@@ -38,8 +38,9 @@
   flex-wrap: wrap;
 }
 #crew-button.has-invites {
-  color: #69c99a;
+  color: #b4ead6;
   border-color: #69c99a;
+  background: #14372c;
 }
 .crew-rating-average {
   display: inline-block;
@@ -57,11 +58,18 @@
   }
 }
 #crew-invite-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  padding: 1px 3px;
-  min-width: 14px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #79d5b0;
+  color: #092219;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
 }
 .crew-invite-row > button,
 .crew-invite-row input {
@@ -75,4 +83,15 @@
   justify-content: center;
   padding: 0 10px;
   line-height: 1;
+}
+@media (max-width: 680px) {
+  #crew-invite-count {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 16px;
+    height: 16px;
+    padding-inline: 3px;
+    font-size: 10px;
+  }
 }

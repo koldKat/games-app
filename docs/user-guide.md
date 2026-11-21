@@ -41,7 +41,7 @@ During refresh, a compact **Mounting authenticated library…** screen remains v
 
 ## Your Crew
 
-Open **Crew** in the header to invite a player by username or respond to an invitation. Joining combines both crews’ existing collections into one shared, editable shelf. Each entry keeps its original creator; only that player can delete it.
+Open **Crew** in the header to invite a player by username or respond to an invitation. Its badge shows the number of pending invitations. Joining combines both crews’ existing collections into one shared, editable shelf. Each entry keeps its original creator; only that player can delete it.
 
 Your rating, play status, favorites, hidden games, and saved filters stay personal. The stars always show your own rating. A separate average uses all app ratings for public Kat·a·log releases and your crew’s ratings for other games. Shared edits and invitation updates arrive in your open tabs automatically.
 

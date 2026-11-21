@@ -8,6 +8,7 @@ function paintCrew(data) {
   const count=data.incoming.length, button=document.getElementById('crew-button'),badge=document.getElementById('crew-invite-count');
   button.classList.toggle('has-invites',count>0);badge.hidden=!count;badge.textContent=String(count);
   button.dataset.tooltip=count?`Crew: ${count} pending invitation${count===1?'':'s'}`:'Open your crew';
+  button.setAttribute('aria-label',button.dataset.tooltip);
   document.getElementById('crew-members').innerHTML=data.members.map(member=>`<li><strong>${escapeHtml(member.username)}</strong>${member.id===state.user?.id?' <span class="badge">You</span>':''}</li>`).join('');
   for(const direction of ['incoming','outgoing']) {
     const section=document.getElementById('crew-'+direction);section.hidden=!data[direction].length;
