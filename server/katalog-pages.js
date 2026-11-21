@@ -54,8 +54,14 @@ function navIcon(kind) {
   };
   return `<svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[kind]}</svg>`;
 }
-function headerNav(kind, label, href, active = false) { return `<a class="button ${kind}-button themed-tooltip header-tooltip${active ? ' active' : ''}" href="${href}" data-tooltip="${escapeHtml(label)}">${navIcon(kind)}<span class="header-nav-label">${label}</span></a>`; }
-function statsButton() { return `<button class="button stats-button themed-tooltip header-tooltip" type="button" data-stats-open data-tooltip="Stats for nerds">${navIcon('stats')}<span class="header-nav-label">Stats</span></button>`; }
+const headerHints = {
+  signal: 'Public game additions, player milestones, and app news.',
+  forum: 'Discuss games, share ideas, and ask the community.',
+  katalog: 'Browse games shared publicly by the community.',
+  library: 'Manage your games, wishlist, ratings, and play status.',
+};
+function headerNav(kind, label, href, active = false) { return `<a class="button ${kind}-button themed-tooltip header-tooltip${active ? ' active' : ''}" href="${href}" data-tooltip="${escapeHtml(headerHints[kind])}">${navIcon(kind)}<span class="header-nav-label">${label}</span></a>`; }
+function statsButton() { return `<button class="button stats-button themed-tooltip header-tooltip" type="button" data-stats-open data-tooltip="Explore collection totals, ratings, and app activity.">${navIcon('stats')}<span class="header-nav-label">Stats</span></button>`; }
 
 function headerActions(user, progress = null, currentView = '') {
   if (!user) return `<div class="top-actions">
@@ -63,11 +69,11 @@ function headerActions(user, progress = null, currentView = '') {
     ${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}
     ${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}
     ${statsButton()}
-    <button class="button patch-button themed-tooltip header-tooltip" type="button" data-patch-open data-tooltip="Send a Patch">Patch</button>
+    <button class="button patch-button themed-tooltip header-tooltip" type="button" data-patch-open data-tooltip="Report bugs, correct game details, or suggest improvements.">Patch</button>
     </div>
     <div class="header-library-actions">
     ${headerNav('katalog', 'Kat·a·log', '/katalog', currentView === 'catalogue')}
-    <a class="button primary themed-tooltip header-tooltip" href="/" data-tooltip="Sign in">Sign in</a>
+    <a class="button primary themed-tooltip header-tooltip" href="/" data-tooltip="Access your saved collection and shared crew.">Sign in</a>
     </div>
   </div>`;
   return `<div class="top-actions">
@@ -75,15 +81,15 @@ function headerActions(user, progress = null, currentView = '') {
     ${headerNav('signal', 'Signal', '/signal', currentView === 'signal')}
     ${headerNav('forum', 'Forum', '/forum', currentView === 'forum')}
     ${statsButton()}
-    <button class="button patch-button themed-tooltip header-tooltip" type="button" data-patch-open data-tooltip="Send a Patch">Patch</button>
-    <button class="button ping-button themed-tooltip header-tooltip" type="button" data-ping-open data-tooltip="Open Ping">Ping <b class="ping-badge" data-ping-badge hidden></b></button>
+    <button class="button patch-button themed-tooltip header-tooltip" type="button" data-patch-open data-tooltip="Report bugs, correct game details, or suggest improvements.">Patch</button>
+    <button class="button ping-button themed-tooltip header-tooltip" type="button" data-ping-open data-tooltip="Read and reply to your support conversations.">Ping <b class="ping-badge" data-ping-badge hidden></b></button>
     </div>
     ${headerProgression(progress)}
     <div class="header-library-actions">
     ${headerNav('katalog', 'Kat·a·log', '/katalog', currentView === 'catalogue')}
     ${headerNav('library', 'My Kat·a·log', '/', currentView === 'library')}
-    <a class="button primary desktop-add themed-tooltip header-tooltip" href="/" data-tooltip="Add a game"><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
-    <a class="button account-button themed-tooltip header-tooltip" href="/" data-tooltip="Open profile" aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
+    <a class="button primary desktop-add themed-tooltip header-tooltip" href="/" data-tooltip="Track an owned game or add one to your wishlist."><span class="button-icon" aria-hidden="true">+</span><span class="button-label">Game</span></a>
+    <a class="button account-button themed-tooltip header-tooltip" href="/" data-tooltip="Return to your collection and account settings." aria-label="Open ${escapeHtml(user.username)}'s library"><span class="nav-avatar">${avatarMarkup(user)}</span><span id="account-name">${escapeHtml(user.username)}</span></a>
     </div>
   </div>`;
 }

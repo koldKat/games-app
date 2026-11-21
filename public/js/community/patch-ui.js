@@ -79,7 +79,7 @@ export function createPatchUi({ api, toast, getUser }) {
       const empty = Number(count) === 0;
       button.disabled = empty;
       button.setAttribute('aria-disabled', String(empty));
-      button.dataset.tooltip = empty ? 'No Ping conversations yet.' : 'Open Ping';
+      button.dataset.tooltip = empty ? 'Send a Patch to start a support conversation.' : 'Read and reply to your support conversations.';
       button.removeAttribute('title');
     });
   }

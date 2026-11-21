@@ -20,7 +20,7 @@ test('Patch and Ping remain private, modular, and locally triaged', () => {
   assert.match(read('admin/index.html'), /data-tab="patch"/);
   assert.match(read('admin/index.html'), /id="panel-patch"/);
   assert.match(ui, /function updateBadge/); assert.match(ui, /data-ping-badge/); assert.match(ui, /ping-attention/);
-  assert.match(ui, /function updateAvailability/); assert.match(ui, /No Ping conversations yet/);
+  assert.match(ui, /function updateAvailability/); assert.match(ui, /Send a Patch to start a support conversation/);
   assert.match(read('public/js/community/patch-page.js'), /openEventStream/);
   assert.match(ui, /closeFromTrueBackdrop/); assert.match(admin, /Reply delivered to Ping/);
   assert.doesNotMatch(ui + admin, /\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/);

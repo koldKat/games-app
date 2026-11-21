@@ -265,11 +265,11 @@ test('desktop header actions use below-control themed tooltips without mobile ov
   const patchUi = read('public/js/community/patch-ui.js');
   const features = readCss('public/css/features.css');
   const siteHeader = read('public/js/shell/site-header.js');
-  for (const name of ['Signal', 'Forum', 'Stats for nerds', 'Send a Patch', 'Open Ping', 'Kat·a·log', 'My Kat·a·log', 'Add a game', 'Open profile']) {
+  for (const name of ['Public game additions, player milestones, and app news.', 'Discuss games, share ideas, and ask the community.', 'Explore collection totals, ratings, and app activity.', 'Report bugs, correct game details, or suggest improvements.', 'Read and reply to your support conversations.', 'Browse games shared publicly by the community.', 'Manage your games, wishlist, ratings, and play status.', 'Track an owned game or add one to your wishlist.', 'Edit your profile, account details, and preferences.']) {
     assert.match(html, new RegExp(`themed-tooltip header-tooltip[^>]*data-tooltip="${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`), name);
   }
   assert.match(pages, /themed-tooltip header-tooltip/);
-  assert.match(patchUi, /button\.dataset\.tooltip = empty \? 'No Ping conversations yet\.' : 'Open Ping'/);
+  assert.match(patchUi, /button\.dataset\.tooltip = empty \? 'Send a Patch to start a support conversation\.' : 'Read and reply to your support conversations\.'/);
   assert.match(features, /@media \(min-width:761px\)[\s\S]*\.top-actions \.header-tooltip::after\{top:calc\(100% \+ 6px\);bottom:auto/);
   assert.match(features, /@media \(max-width:760px\)[\s\S]*\.top-actions \.header-tooltip::after\{display:none}/);
   assert.match(siteHeader, /closest\('\.top-actions a\.active'\)[\s\S]*event\.preventDefault\(\)/);
@@ -864,8 +864,8 @@ test('mobile always uses the card view and browser-native tooltips are not used'
   assert.match(readCss('public/css/library.css'), /@media \(max-width:680px\)[\s\S]*\.view-buttons\{display:none\}/);
   assert.match(application, /compactViewMedia = window\.matchMedia\('\(max-width: 680px\)'\)/);
   assert.match(application, /state\.view === 'list' && !compactViewMedia\.matches/);
-  assert.match(html, /id="grid-view" data-tooltip="Card view"/);
-  assert.match(html, /id="list-view" data-tooltip="Compact view"/);
+  assert.match(html, /id="grid-view" data-tooltip="Show cover art and details in a card grid\."/);
+  assert.match(html, /id="list-view" data-tooltip="Fit more games on screen in compact rows\."/);
   assert.match(readPublicCss(), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
   assert.match(readCss('admin/style.css'), /\.themed-tooltip::after\{content:attr\(data-tooltip\)/);
   assert.doesNotMatch(application, /element\.title\s*=/);
