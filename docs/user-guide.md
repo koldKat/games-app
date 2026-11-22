@@ -431,6 +431,6 @@ The application has no cloud synchronization. Fully enriched factual release met
 
 ## Crew roles
 
-The blue star marks a **Gamekeeper**, who looks after the app. A gold controller marks a **Sidekick**, the junior-player role. Role badges appear with player names and use themed tooltips.
+The blue star marks a **Gamekeeper**, who looks after the app. A gold shield marks a **Sidekick**, the junior-player role. Role badges appear with player names and use themed tooltips.
 
 Stats for Nerds includes muted bars beside each rating count. App age and uptime use days and hours; downtime keeps its finer detail.

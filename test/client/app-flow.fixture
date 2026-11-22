@@ -214,7 +214,7 @@ try {
   document.querySelector('#crew-button').click();
   await waitFor(()=>document.querySelector('#crew-members').textContent.includes(user.username),'Crew members load');
   check(document.querySelector('#crew-dialog').open,'Crew opens');
-  check(document.querySelector('#crew-members .role-badge--sidekick')?.getAttribute('aria-label')==='Sidekick','Sidekick controller badge appears on crew members');
+  check(document.querySelector('#crew-members .role-badge--sidekick')?.getAttribute('aria-label')==='Sidekick','Sidekick shield badge appears on crew members');
   check(document.querySelector('#crew-dialog').getBoundingClientRect().width<=innerWidth,'Crew dialog fits viewport');
   check(getComputedStyle(document.querySelector('.crew-modal')).fontSize===getComputedStyle(document.documentElement).getPropertyValue('--text-small').trim(),'Crew body uses shared compact type');
   check(getComputedStyle(document.querySelector('#crew-username')).backgroundColor===getComputedStyle(document.querySelector('#game-title')).backgroundColor,'Crew field uses shared themed input');

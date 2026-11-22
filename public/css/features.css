@@ -842,7 +842,7 @@ html:has(dialog[open]) {
 
 .role-badge.role-badge--sidekick {
   color: #d6b574;
-  width: .85em;
+  width: 1em;
   font-size: inherit;
   flex-shrink: 0;
 }
