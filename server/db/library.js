@@ -107,6 +107,20 @@ function listProgressionGames(userId) {
     format_physical AS formatPhysical, format_digital AS formatDigital FROM games WHERE user_id=?`).all(userId);
 }
 
+// Milestones use the same visible crew collection as the library, without rating decoration.
+const milestoneGames = db.prepare(`SELECT title, platform, canonical_game_id AS canonicalGameId, ownership,
+  play_status AS playStatus, format_physical AS formatPhysical, format_digital AS formatDigital,
+  cover_url AS coverUrl, pegi, pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson,
+  pegi_releases AS pegiReleasesJson, pegi_advice AS pegiAdvice, pegi_outline AS pegiOutline,
+  pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
+  hltb_id AS hltbId, hltb_main_story AS hltbMainStory, hltb_main_extra AS hltbMainExtra,
+  hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles, description
+  FROM ${crews.gameSource()} WHERE hidden=0 ORDER BY search_normalize(title), id`);
+
+function listLibraryMilestoneGames(userId) {
+  return milestoneGames.all({ userId }).map(hydrateGame);
+}
+
 function listUserIds() { return db.prepare('SELECT id FROM users ORDER BY id').all().map(row => row.id); }
 
 function listGamesPage(userId, filters = {}) {
@@ -198,6 +212,6 @@ function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGam
 }
 
 module.exports = {
-  listGames, listProgressionGames, listUserIds, listGamesPage, randomGame, getGame,
+  listGames, listProgressionGames, listLibraryMilestoneGames, listUserIds, listGamesPage, randomGame, getGame,
   allGamesForKatalog, searchGameTitles, accountGameIdentities, findDuplicateGames,
 };

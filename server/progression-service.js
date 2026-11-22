@@ -16,7 +16,7 @@ function isEnriched(game) { return hasDurableCover(game) && hasPegiMetadata(game
 function createProgressionService({ store, data }) {
   function award(userId, event, ref, awarded) { const result = store.award(userId, event, ref); if (result.awarded) awarded.push({ event, ref, amount: result.amount, levels: result.levels }); return result; }
   function awardCollectionMilestones(userId, give) {
-    const games = data.listGames(userId, {});
+    const games = data.listLibraryMilestoneGames ? data.listLibraryMilestoneGames(userId) : data.listGames(userId, {});
     const enriched = games.filter(isEnriched).length;
     const completed = games.filter(item => item.playStatus === 'completed').length;
     for (const count of GAME_MILESTONES) if (games.length >= count) give(`game_count_${count}`, count);

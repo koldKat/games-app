@@ -47,7 +47,7 @@ function createGame(userId, input) {
   const game = normalizeGame(input); const id = insert.run({ ...game, userId }).lastInsertRowid;
   crews.savePlayerState(userId,Number(id),game); canonical.syncGameById(id); return getGame(userId, id);
 }
-function updateGame(userId, id, input) {
+const updateGame = db.transaction(function updateGame(userId, id, input) {
   const existing = getGame(userId,id);
   if (!existing) return null;
   const game = normalizeGame({ ...input,
@@ -59,7 +59,7 @@ function updateGame(userId, id, input) {
   if (!result.changes) return null;
   crews.savePlayerState(userId,id,game);
   canonical.syncGameById(id); return getGame(userId, id);
-}
+});
 
 function linkSteamGame(userId, id, steamGame = {}) {
   const appId = Number(steamGame.appId); if (!Number.isInteger(appId) || appId <= 0) return null;
