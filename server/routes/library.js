@@ -49,7 +49,7 @@ function createLibraryRoutes({
         if (!game) { if (prepared.createdUrl) coverStorage.removeLocal(prepared.createdUrl); return sendJson(response, 404, { error: 'Game not found.' }); }
         finishGameCoverChange(existing, game);
         const progressionResult = syncKatalogAndRecordProgress(user.id, game, { previous: existing });
-        notifyCrew(user.id);
+        notifyCrew(game.ownerUserId ?? user.id);
         return sendJson(response, 200, { ...game, progression: progressionResult });
       } catch (error) {
         if (prepared?.createdUrl) coverStorage.removeLocal(prepared.createdUrl);

@@ -397,14 +397,25 @@
   </dialog>
   <dialog id="crew-dialog" aria-labelledby="crew-title">
     <section class="modal-card crew-modal">
-      <header class="modal-head"><div><p class="kicker">Crew // shared shelf</p><h2 id="crew-title">Your crew</h2></div><button type="button" class="close-button" data-crew-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
-      <p>Share one shelf. Ratings and play status stay yours; only the creator can delete an entry.</p>
+      <header class="modal-head"><div><p class="kicker">Crew // shared shelf</p><h2 id="crew-title">Your Crews</h2></div><button type="button" class="close-button" data-crew-close aria-label="Close"><svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg></button></header>
+      <p>Share a shelf with each Crew. Your ratings and play status stay personal.</p>
+      <label id="crew-picker" for="crew-selected" hidden><span>Crew</span><select id="crew-selected"></select></label>
       <ul id="crew-members" class="crew-list"></ul>
       <form id="crew-invite-form" class="form-grid crew-invite-row"><label for="crew-username"><span>Invite a player</span><input id="crew-username" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Player username" required></label><button class="button secondary" type="submit">Invite to crew</button></form>
       <section id="crew-incoming" hidden><h3>Incoming invitations</h3><ul id="crew-incoming-list" class="crew-list"></ul></section>
       <section id="crew-outgoing" hidden><h3>Sent invitations</h3><ul id="crew-outgoing-list" class="crew-list"></ul></section>
+      <details id="crew-create">
+        <summary>Create a Crew</summary>
+        <form id="crew-create-form" class="form-grid crew-invite-row">
+          <label for="crew-name"><span>Crew name</span><input id="crew-name" maxlength="60" autocomplete="off" required></label>
+          <button class="button secondary" type="submit">Create Crew</button>
+        </form>
+      </details>
       <p id="crew-error" class="form-error" role="alert" hidden></p>
-      <footer class="modal-actions"><button type="button" class="button ghost" data-crew-close>Close</button></footer>
+      <footer class="modal-actions">
+        <button type="button" class="button ghost" id="crew-leave" hidden>Leave Crew</button>
+        <button type="button" class="button ghost" data-crew-close>Close</button>
+      </footer>
     </section>
   </dialog>
   <dialog id="account-dialog">

@@ -828,7 +828,7 @@ The database and generated cover files are excluded from Git. Source code, gener
 
 ## Shared crews
 
-`server/crew-store.js` stores crew membership, consent-based invitations and per-player game state. Acceptance merges existing crews transactionally without changing `games.user_id`; deletion remains creator-only. Shared library reads use a membership-scoped source with the signed-in player’s rating, status, favorite and hidden values. Existing owner values are migrated once into `game_player_state`.
+`server/crew-store.js` stores crew membership, consent-based invitations and per-player game state. Each membership links a player to a single Crew. Players can have multiple memberships, and accepting an invitation adds a membership to the selected Crew. Shared library reads include direct Crew peers and use the signed-in player’s rating, status, favorite and hidden values. Games retain their creator, who controls deletion. Existing owner values are migrated once into `game_player_state`.
 
 Authenticated `/api/crew` routes expose membership and invite, accept and cancel operations. Crew and library SSE notifications target affected accounts; peers reload their own projection rather than receiving another member’s personal state. Public release averages count each player once; private release averages are restricted to the crew. The rating control remains independent of the aggregate.
 

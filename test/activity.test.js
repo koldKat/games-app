@@ -16,6 +16,7 @@ test.after(() => { data.db.close(); for (const suffix of ['', '-shm', '-wal']) f
 test('activity templates are database-backed and joins respect the global hide setting', async () => {
   assert.equal(data.db.prepare("SELECT COUNT(*) count FROM activity_templates WHERE type='join'").get().count, 10);
   assert.equal(data.db.prepare("SELECT COUNT(*) count FROM activity_templates WHERE type='level_up'").get().count, 10);
+  assert.equal(data.db.prepare("SELECT COUNT(*) count FROM activity_templates WHERE type='crew_join'").get().count, 10);
   const user = await auth.register('signal_user', 'password-one');
   assert.equal(activity.recordJoin(user.id), true);
   assert.equal(activity.recordJoin(user.id), false);

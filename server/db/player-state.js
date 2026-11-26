@@ -7,7 +7,7 @@ function decorateGames(userId,games) {
   const hasCatalogue=Boolean(db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='catalogue_entries'").get());
   const averages=new Map();
   return games.map(game=>{
-    const key=game.canonicalReleaseId?'release:'+game.canonicalReleaseId:'game:'+game.id;
+    const key=game.canonicalReleaseId?`release:${game.canonicalReleaseId}:${game.ownerUserId}`:'game:'+game.id;
     let average=averages.get(key);
     if (!average) {
       const entry=hasCatalogue ? db.prepare(`SELECT id FROM catalogue_entries WHERE status='public' AND
@@ -20,9 +20,9 @@ function decorateGames(userId,games) {
         const result=db.prepare(`SELECT AVG(rating) AS average,COUNT(*) AS count FROM (
           SELECT ps.rating,ROW_NUMBER() OVER(PARTITION BY ps.user_id ORDER BY ps.updated_at DESC,ps.game_id DESC) AS position
           FROM game_player_state ps JOIN games g ON g.id=ps.game_id
-          WHERE ps.rating IS NOT NULL AND ps.user_id IN ${crews.memberIdsSql()} AND g.user_id IN ${crews.memberIdsSql()}
+          WHERE ps.rating IS NOT NULL AND ps.user_id IN ${crews.memberIdsSql('@userId', '@ownerId')} AND g.user_id IN ${crews.memberIdsSql('@userId', '@ownerId')}
           AND ((g.canonical_game_id=@canonicalId AND @canonicalId IS NOT NULL) OR g.id=@gameId)) WHERE position=1`)
-          .get({userId,canonicalId:game.canonicalGameId??null,gameId:game.id});
+          .get({userId,ownerId:game.ownerUserId,canonicalId:game.canonicalGameId??null,gameId:game.id});
         average={ratingAverage:result.average,ratingCount:result.count,ratingScope:'crew'};
       }
       averages.set(key,average);

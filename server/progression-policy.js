@@ -1,6 +1,7 @@
 'use strict';
 
 const XP_EVENTS = Object.freeze({
+  crew_joined: { amount: 100, label: 'Joined a crew' },
   game_added: { amount: 50, label: 'Added a game' },
   cover_added: { amount: 15, label: 'Added box art' },
   pegi_added: { amount: 20, label: 'Recorded PEGI details' },

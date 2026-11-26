@@ -130,7 +130,7 @@ function newspaperCards(entries) {
     : '';
   return `${announcementMarkup}<div class="activity-newspaper">
     ${laneMarkup(entries, 'katalog', 'KAT·A·LOG // UPDATES', 'Games and news from the shared index.')}
-    ${laneMarkup(entries, 'collector', 'COLLECTORS // SIGNAL', 'New curators, levels, and titles.')}
+    ${laneMarkup(entries, 'collector', 'COLLECTORS // SIGNAL', 'New curators, crews, levels, and titles.')}
   </div>`;
 }
 export function createActivityFeed() {

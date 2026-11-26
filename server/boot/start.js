@@ -60,6 +60,9 @@ function startServer() {
     setImmediate(() => {
       try {
         for (const result of progression.backfillCollectionAchievementsForAll()) publishProgression(result.userId, result);
+        for (const { userId, crewId } of db.crews.acceptedMemberships()) {
+          publishProgression(userId, progression.recordCrewJoin(userId, crewId));
+        }
       }
       catch (error) { console.error('[progression] collection achievement backfill failed:', error.message); }
     });

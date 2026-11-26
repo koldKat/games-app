@@ -33,26 +33,41 @@ const LEVEL_TEMPLATES = [
   '{name} is now operating at LV {level}.',
 ];
 
+const CREW_JOIN_TEMPLATES = [
+  '{name} joined a Crew.',
+  '{name} found a Crew to roll with.',
+  '{name} took a seat on a Crew.',
+  '{name} signed on with a Crew.',
+  '{name} brought their controller to a Crew.',
+  '{name} teamed up with a Crew.',
+  '{name} jumped into co-op with a Crew.',
+  '{name} stocked up on snacks and joined a Crew.',
+  '{name} picked a Crew for the next round.',
+  '{name} now has a Crew in their corner.',
+];
+
+const templateTable = (name) => `CREATE TABLE ${name} (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK (type IN ('join', 'level_up', 'crew_join')),
+  template TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+  UNIQUE(type, template)
+)`;
+const eventTable = (name, templates) => `CREATE TABLE ${name} (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK (type IN ('join', 'level_up', 'catalogue_contribution', 'crew_join')),
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  game_id INTEGER REFERENCES games(id) ON DELETE SET NULL,
+  event_ref TEXT NOT NULL DEFAULT '',
+  template_id INTEGER REFERENCES ${templates}(id) ON DELETE SET NULL,
+  data_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(type, user_id, game_id)
+)`;
+
 db.exec(`
-  CREATE TABLE IF NOT EXISTS activity_templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL CHECK (type IN ('join', 'level_up')),
-    template TEXT NOT NULL,
-    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
-    UNIQUE(type, template)
-  );
-  CREATE TABLE IF NOT EXISTS activity_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL CHECK (type IN ('join', 'level_up', 'catalogue_contribution')),
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    game_id INTEGER REFERENCES games(id) ON DELETE SET NULL,
-    event_ref TEXT NOT NULL DEFAULT '',
-    template_id INTEGER REFERENCES activity_templates(id) ON DELETE SET NULL,
-    data_json TEXT NOT NULL DEFAULT '{}',
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(type, user_id, game_id)
-  );
-  CREATE INDEX IF NOT EXISTS idx_activity_events_recent ON activity_events(created_at DESC);
+  ${templateTable('IF NOT EXISTS activity_templates')};
+  ${eventTable('IF NOT EXISTS activity_events', 'activity_templates')};
   CREATE TABLE IF NOT EXISTS announcements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -66,11 +81,38 @@ db.exec(`
 `);
 const activityColumns = db.pragma('table_info(activity_events)').map(column => column.name);
 if (!activityColumns.includes('event_ref')) db.exec("ALTER TABLE activity_events ADD COLUMN event_ref TEXT NOT NULL DEFAULT ''");
-db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_activity_events_once ON activity_events(type, user_id, event_ref)');
+const schema = db.prepare("SELECT sql FROM sqlite_master WHERE name='activity_events'").pluck().get();
+if (!schema.includes("'crew_join'")) {
+  db.transaction(() => {
+    const sequences = db.prepare("SELECT name,seq FROM sqlite_sequence WHERE name IN ('activity_events','activity_templates')").all();
+    db.exec(`
+      ${templateTable('activity_templates_next')};
+      ${eventTable('activity_events_next', 'activity_templates_next')};
+      INSERT INTO activity_templates_next SELECT id,type,template,active FROM activity_templates;
+      INSERT INTO activity_events_next(id,type,user_id,game_id,event_ref,template_id,data_json,created_at)
+        SELECT id,type,user_id,game_id,event_ref,template_id,data_json,created_at FROM activity_events;
+      DROP TABLE activity_events;
+      DROP TABLE activity_templates;
+      ALTER TABLE activity_templates_next RENAME TO activity_templates;
+      ALTER TABLE activity_events_next RENAME TO activity_events;
+    `);
+    const clearSequence = db.prepare('DELETE FROM sqlite_sequence WHERE name=?');
+    const restoreSequence = db.prepare('INSERT INTO sqlite_sequence(name,seq) VALUES (?,?)');
+    for (const {name,seq} of sequences) {
+      clearSequence.run(name);
+      restoreSequence.run(name,seq);
+    }
+  })();
+}
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_activity_events_recent ON activity_events(created_at DESC);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_activity_events_once ON activity_events(type, user_id, event_ref);
+`);
 
 const insertTemplate = db.prepare('INSERT OR IGNORE INTO activity_templates(type, template) VALUES (?, ?)');
 for (const template of JOIN_TEMPLATES) insertTemplate.run('join', template);
 for (const template of LEVEL_TEMPLATES) insertTemplate.run('level_up', template);
+for (const template of CREW_JOIN_TEMPLATES) insertTemplate.run('crew_join', template);
 
 function templateFor(type) { return db.prepare('SELECT id FROM activity_templates WHERE type=? AND active=1 ORDER BY RANDOM() LIMIT 1').get(type)?.id || null; }
 function write(type, { userId = null, gameId = null, ref = '', templateId = null, data = {} } = {}) {
@@ -79,6 +121,9 @@ function write(type, { userId = null, gameId = null, ref = '', templateId = null
   return Boolean(result.changes);
 }
 function recordJoin(userId) { return write('join', { userId, ref: 'joined', templateId: templateFor('join') }); }
+function recordCrewJoin(userId, invitationId) {
+  return write('crew_join', { userId, ref: `accept:${invitationId}`, templateId: templateFor('crew_join') });
+}
 function recordLevelUp(userId, level, title, previousTitle) {
   return write('level_up', { userId, ref: `level:${level}`, templateId: templateFor('level_up'), data: { level, title, titleGained: Boolean(title && title !== previousTitle) } });
 }
@@ -193,4 +238,4 @@ function feed() {
   return { entries, pinned: pinned ? feedAnnouncement(pinned) : null };
 }
 
-module.exports = { FEED_DAYS, ANNOUNCEMENT_BODY_MAX_LENGTH, ANNOUNCEMENT_TITLE_MAX_LENGTH, backfillContributions, backfillLevelUps, createAnnouncement, deleteAnnouncement, feed, list, listAnnouncements, pinAnnouncement, publishAnnouncement, recordContribution, recordJoin, recordLevelUp, unpinAnnouncement, unpublishAnnouncement, updateAnnouncement };
+module.exports = { FEED_DAYS, ANNOUNCEMENT_BODY_MAX_LENGTH, ANNOUNCEMENT_TITLE_MAX_LENGTH, backfillContributions, backfillLevelUps, createAnnouncement, deleteAnnouncement, feed, list, listAnnouncements, pinAnnouncement, publishAnnouncement, recordContribution, recordCrewJoin, recordJoin, recordLevelUp, unpinAnnouncement, unpublishAnnouncement, updateAnnouncement };

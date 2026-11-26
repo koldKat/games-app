@@ -11,7 +11,7 @@ function createProgressionBridge({ progression, katalog, activity, events }) {
   function publishAppEvent(userId, event, payload, options) {
     if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game, options);
     events.publish(userId, event, payload);
-    if(event==='game-updated') for(const memberId of crews.memberIds(userId)) {
+    if(event==='game-updated') for(const memberId of crews.memberIds(payload?.game?.ownerUserId ?? userId)) {
       if(memberId!==userId)events.publish(memberId,'library-changed',{});
     }
   }

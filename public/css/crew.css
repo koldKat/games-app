@@ -113,3 +113,27 @@
 .crew-list .badge {
   font-size: var(--text-caption);
 }
+
+#crew-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+#crew-picker select {
+  width: 100%;
+}
+#crew-create {
+  margin: 8px 0;
+}
+#crew-create summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+.crew-invite-name {
+  display: grid;
+  gap: 2px;
+}
+.crew-invite-name small {
+  color: var(--muted);
+}

@@ -39,11 +39,13 @@ test('members edit shared details but ratings, status, favorites and deletion ow
   assert.equal(data.randomGame(bob,{playStatus:'completed'}).id,original.id);
   assert.ok(data.searchGameTitles(bob,'Edited').some(g=>g.id===original.id));
 });
-test('joining combines both crews without changing owners or ratings',()=>{
+test('joining another Crew keeps the two memberships independent',()=>{
   const invite=data.crews.invite(carol,'Dan');data.crews.accept(dan,invite.id);
   const other=data.createGame(carol,input('Carol adventure',{rating:5}));
   const merge=data.crews.invite(alice,'Carol');data.crews.accept(carol,merge.id);
-  assert.deepEqual(data.crews.memberIds(dan),users);
+  assert.deepEqual(data.crews.memberIds(dan),[carol,dan]);
+  assert.equal(data.crews.snapshot(carol).crews.length,2);
+  assert.equal(data.getGame(dan,original.id),undefined);
   assert.equal(data.getGame(dan,other.id).ownerUserId,carol);
   assert.equal(data.getGame(dan,other.id).rating,null);
   assert.equal(data.getGame(carol,other.id).rating,5);

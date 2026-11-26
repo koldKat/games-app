@@ -111,6 +111,11 @@ function createProgressionService({ store, data }) {
     if (milestones) awardCollectionMilestones(userId, give);
     return { progress: latest.progress, awards };
   }
+  function recordCrewJoin(userId, crewId) {
+    const awards = [];
+    const result = award(userId, 'crew_joined', `crew:${crewId}`, awards);
+    return { progress: result.progress, awards };
+  }
   function recordAvatar(userId) { const awards = []; const result = award(userId, 'avatar_added', 'first-avatar', awards); return { progress: result.progress, awards }; }
   function recordForumThread(userId, threadId) { const awards = []; const result = award(userId, 'forum_thread', `thread-${threadId}`, awards); return { progress: result.progress, awards }; }
   function recordForumReply(userId, threadId, postId) { const awards = []; const result = award(userId, 'forum_reply', `post-${postId || threadId}`, awards); return { progress: result.progress, awards }; }
@@ -122,6 +127,6 @@ function createProgressionService({ store, data }) {
     return { progress, awards };
   }
   function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {}).filter(game => isPersonalGame(userId, game))) { const next = recordGame(userId, game, { created: true }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
-  return { backfill, backfillCollectionAchievements, backfillCollectionAchievementsForAll, backfillKatalogContributions, info: store.info, recordAvatar, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame, recordImportedGames };
+  return { backfill, backfillCollectionAchievements, backfillCollectionAchievementsForAll, backfillKatalogContributions, info: store.info, recordAvatar, recordCrewJoin, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame, recordImportedGames };
 }
 module.exports = { COLLECTION_ACHIEVEMENTS_BACKFILL, PLATFORM_SPECIALIST_COUNT, createProgressionService, isEnriched };

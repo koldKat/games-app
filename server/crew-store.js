@@ -1,11 +1,14 @@
 // Shared collection membership and invitations; game ownership remains with its creator.
+const membershipTable = name => `CREATE TABLE ${name}(
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  crew_id INTEGER NOT NULL REFERENCES crews(id) ON DELETE CASCADE,
+  joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(user_id,crew_id))`;
 function createCrewStore(database) {
   database.exec(`
-    CREATE TABLE IF NOT EXISTS crews(id INTEGER PRIMARY KEY, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS crew_members(
-      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      crew_id INTEGER NOT NULL REFERENCES crews(id) ON DELETE CASCADE,
-      joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS crews(
+      id INTEGER PRIMARY KEY, name TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    ${membershipTable('IF NOT EXISTS crew_members')};
     CREATE INDEX IF NOT EXISTS idx_crew_members_crew ON crew_members(crew_id,user_id);
     CREATE TABLE IF NOT EXISTS crew_invites(
       id INTEGER PRIMARY KEY, crew_id INTEGER NOT NULL REFERENCES crews(id) ON DELETE CASCADE,
@@ -25,6 +28,18 @@ function createCrewStore(database) {
       PRIMARY KEY(game_id,user_id));
     CREATE INDEX IF NOT EXISTS idx_game_player_state_user ON game_player_state(user_id,game_id);
   `);
+  if (!database.pragma('table_info(crews)').some(column => column.name === 'name')) {
+    database.exec("ALTER TABLE crews ADD COLUMN name TEXT NOT NULL DEFAULT ''");
+  }
+  if (!database.pragma('table_info(crew_members)').some(column => column.name === 'crew_id' && column.pk)) {
+    database.transaction(() => database.exec(`
+      ${membershipTable('crew_members_next')};
+      INSERT INTO crew_members_next SELECT user_id,crew_id,joined_at FROM crew_members;
+      DROP TABLE crew_members;
+      ALTER TABLE crew_members_next RENAME TO crew_members;
+      CREATE INDEX idx_crew_members_crew ON crew_members(crew_id,user_id);
+    `))();
+  }
   if (!database.prepare("SELECT 1 FROM runtime_settings WHERE key='crew-personal-state-v1'").get()) {
     database.transaction(() => {
       database.exec(`INSERT OR IGNORE INTO game_player_state(game_id,user_id,rating,play_status,hidden,favorite)
@@ -34,9 +49,11 @@ function createCrewStore(database) {
   }
   const columns = database.prepare('PRAGMA table_info(games)').all().map(row => row.name);
   const personal = new Set(['rating','play_status','hidden','favorite']);
-  function memberIdsSql(parameter = '@userId') {
+  function memberIdsSql(parameter = '@userId', owner) {
     return `(SELECT peer.user_id FROM crew_members peer JOIN crew_members self ON self.crew_id=peer.crew_id
-      WHERE self.user_id=${parameter} UNION SELECT ${parameter})`;
+      WHERE self.user_id=${parameter}${owner ? ` AND EXISTS (
+        SELECT 1 FROM crew_members shelf WHERE shelf.crew_id=self.crew_id AND shelf.user_id=${owner})` : ''}
+      UNION SELECT ${parameter})`;
   }
   function gameSource(parameter = '@userId') {
     return `(SELECT ${columns.filter(column => !personal.has(column)).map(column => `g."${column}"`).join(',')},
@@ -45,67 +62,82 @@ function createCrewStore(database) {
       FROM games g LEFT JOIN game_player_state ps ON ps.game_id=g.id AND ps.user_id=${parameter}
       WHERE g.user_id IN ${memberIdsSql(parameter)}) AS games`;
   }
-  const crewId = userId => database.prepare('SELECT crew_id FROM crew_members WHERE user_id=?').get(userId)?.crew_id;
-  function ensureCrew(userId) {
-    let id = crewId(userId);
-    if (!id) {
-      id = Number(database.prepare('INSERT INTO crews DEFAULT VALUES').run().lastInsertRowid);
-      database.prepare('INSERT INTO crew_members(user_id,crew_id) VALUES(?,?)').run(userId,id);
-    }
-    return id;
-  }
+  const memberships = database.prepare(`SELECT c.id,c.name FROM crews c JOIN crew_members m ON m.crew_id=c.id
+    WHERE m.user_id=? ORDER BY c.id`);
+  const isMember = database.prepare('SELECT 1 FROM crew_members WHERE user_id=? AND crew_id=?');
+  const insertCrew = database.prepare('INSERT INTO crews(name) VALUES(?)');
+  const insertMember = database.prepare('INSERT INTO crew_members(user_id,crew_id) VALUES(?,?)');
+  const crewMemberIds = database.prepare('SELECT user_id AS id FROM crew_members WHERE crew_id=?');
+  const create = database.transaction((userId, name) => {
+    const clean = String(name ?? '').trim();
+    if (clean.length > 60) throw new Error('Crew names can be at most 60 characters.');
+    const id = Number(insertCrew.run(clean).lastInsertRowid);
+    insertMember.run(userId,id);
+    return { crewId:id, affectedUserIds:[userId] };
+  });
   function memberIds(userId) {
     return database.prepare(`SELECT id FROM users WHERE id IN ${memberIdsSql()} ORDER BY id`).all({ userId }).map(row => row.id);
   }
+  const crewMembers = database.prepare(`SELECT u.id,u.username,u.is_sidekick AS sidekick,u.avatar_path AS avatarPath,m.joined_at AS joinedAt
+    FROM crew_members m JOIN users u ON u.id=m.user_id WHERE m.crew_id=? ORDER BY u.id`);
   function snapshot(userId) {
-    const id = crewId(userId);
+    const crews = memberships.all(userId).map(crew => ({ ...crew,
+      members:crewMembers.all(crew.id).map(({avatarPath,...member})=>({...member,avatarUrl:avatarPath?'/avatars/'+encodeURIComponent(avatarPath):null})),
+    }));
     return {
-      members: database.prepare(`SELECT u.id,u.username,u.is_sidekick AS sidekick,u.avatar_path AS avatarPath,m.joined_at AS joinedAt
-        FROM users u LEFT JOIN crew_members m ON m.user_id=u.id WHERE u.id IN ${memberIdsSql()} ORDER BY u.id`).all({userId})
-        .map(({avatarPath,...member})=>({...member,avatarUrl:avatarPath?'/avatars/'+encodeURIComponent(avatarPath):null})),
-      incoming: database.prepare(`SELECT i.id,i.created_at AS createdAt,u.username AS username
-        FROM crew_invites i JOIN users u ON u.id=i.inviter_user_id
+      crews,
+      incoming: database.prepare(`SELECT i.id,i.created_at AS createdAt,u.username,c.name AS crewName
+        FROM crew_invites i JOIN users u ON u.id=i.inviter_user_id JOIN crews c ON c.id=i.crew_id
         WHERE i.invitee_user_id=? AND i.status='pending' ORDER BY i.id DESC`).all(userId),
-      outgoing: id ? database.prepare(`SELECT i.id,i.created_at AS createdAt,u.username AS username
-        FROM crew_invites i JOIN users u ON u.id=i.invitee_user_id
-        WHERE i.crew_id=? AND i.status='pending' ORDER BY i.id DESC`).all(id) : [],
+      outgoing: database.prepare(`SELECT i.id,i.created_at AS createdAt,u.username,c.id AS crewId,c.name AS crewName
+        FROM crew_invites i JOIN users u ON u.id=i.invitee_user_id JOIN crews c ON c.id=i.crew_id
+        JOIN crew_members m ON m.crew_id=c.id WHERE m.user_id=? AND i.status='pending' ORDER BY i.id DESC`).all(userId),
     };
   }
-  const invite = database.transaction((userId,username) => {
-    const clean = String(username || '').trim();
+  const invite = database.transaction((userId, username, crewId) => {
+    const clean = String(username ?? '').trim();
     if (!clean || clean.length>80) throw new Error('Enter a player username.');
     const target = database.prepare('SELECT id FROM users WHERE username=? COLLATE NOCASE').get(clean);
     if (!target) throw new Error('Player not found.');
-    if (memberIds(userId).includes(target.id)) throw new Error('That player is already in your crew.');
-    const id = ensureCrew(userId);
+    if (target.id === userId) throw new Error('You are already in your crew.');
+    const current = memberships.all(userId);
+    if (crewId == null && current.length > 1) throw new Error('Choose a crew to invite this player to.');
+    const id = crewId == null ? current[0]?.id ?? create(userId, '').crewId : Number(crewId);
+    if (!Number.isSafeInteger(id) || !isMember.get(userId,id)) throw new Error('Crew not found.');
+    if (isMember.get(target.id,id)) throw new Error('That player is already in this crew.');
     if (database.prepare("SELECT 1 FROM crew_invites WHERE crew_id=? AND invitee_user_id=? AND status='pending'").get(id,target.id)) throw new Error('An invitation is already pending.');
     const result = database.prepare('INSERT INTO crew_invites(crew_id,inviter_user_id,invitee_user_id) VALUES(?,?,?)').run(id,userId,target.id);
-    return {id:Number(result.lastInsertRowid),affectedUserIds:[...memberIds(userId),target.id]};
+    return {id:Number(result.lastInsertRowid),affectedUserIds:[...crewMemberIds.all(id).map(row=>row.id),target.id]};
   });
-  const accept = database.transaction((userId,inviteId) => {
+  const accept = database.transaction((userId,inviteId,onAccept) => {
     const invitation = database.prepare("SELECT * FROM crew_invites WHERE id=? AND invitee_user_id=? AND status='pending'").get(inviteId,userId);
-    if (!invitation) throw new Error('Invitation not found.');
-    const source = crewId(userId), target = invitation.crew_id;
-    const pendingRecipients=database.prepare("SELECT invitee_user_id AS id FROM crew_invites WHERE status='pending' AND (crew_id=? OR crew_id=?)").all(source??target,target).map(row=>row.id);
+    if (!invitation || isMember.get(userId,invitation.crew_id)) throw new Error('Invitation not found.');
+    const crewId = invitation.crew_id;
+    insertMember.run(userId,crewId);
     database.prepare("UPDATE crew_invites SET status='accepted',responded_at=CURRENT_TIMESTAMP WHERE id=?").run(inviteId);
-    if (source && source!==target) {
-      // Cancel duplicates before moving pending invitations to the combined crew.
-      database.prepare(`UPDATE crew_invites SET status='cancelled',responded_at=CURRENT_TIMESTAMP WHERE crew_id=? AND status='pending'
-        AND invitee_user_id IN(SELECT invitee_user_id FROM crew_invites WHERE crew_id=? AND status='pending')`).run(source,target);
-      database.prepare('UPDATE crew_members SET crew_id=? WHERE crew_id=?').run(target,source);
-      database.prepare('UPDATE crew_invites SET crew_id=? WHERE crew_id=?').run(target,source);
-      database.prepare('DELETE FROM crews WHERE id=?').run(source);
-    } else database.prepare('INSERT OR IGNORE INTO crew_members(user_id,crew_id) VALUES(?,?)').run(userId,target);
-    database.prepare(`UPDATE crew_invites SET status='cancelled',responded_at=CURRENT_TIMESTAMP
-      WHERE status='pending' AND invitee_user_id IN(SELECT user_id FROM crew_members WHERE crew_id=?)`).run(target);
-    return {affectedUserIds:[...new Set([...memberIds(userId),...pendingRecipients])]};
+    return {crewId,affectedUserIds:crewMemberIds.all(crewId).map(row=>row.id),...onAccept?.(crewId)};
+  });
+  const leave = database.transaction((userId,crewId) => {
+    if (!isMember.get(userId,crewId)) throw new Error('Crew not found.');
+    const affectedUserIds=crewMemberIds.all(crewId).map(row=>row.id);
+    database.prepare('DELETE FROM crew_members WHERE user_id=? AND crew_id=?').run(userId,crewId);
+    if (affectedUserIds.length === 1) {
+      const pending = database.prepare("SELECT invitee_user_id AS id FROM crew_invites WHERE crew_id=? AND status='pending'").all(crewId);
+      affectedUserIds.push(...pending.map(row=>row.id));
+      database.prepare("UPDATE crew_invites SET status='cancelled',responded_at=CURRENT_TIMESTAMP WHERE crew_id=? AND status='pending'").run(crewId);
+    }
+    return {affectedUserIds};
   });
   function cancel(userId,inviteId) {
     const row=database.prepare("SELECT * FROM crew_invites WHERE id=? AND status='pending'").get(inviteId);
-    if (!row || (row.invitee_user_id!==userId && row.crew_id!==crewId(userId))) throw new Error('Invitation not found.');
+    if (!row || (row.invitee_user_id!==userId && !isMember.get(userId,row.crew_id))) throw new Error('Invitation not found.');
     database.prepare("UPDATE crew_invites SET status=?,responded_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'")
       .run(row.invitee_user_id===userId?'declined':'cancelled',inviteId);
-    return {affectedUserIds:[...memberIds(row.inviter_user_id),row.invitee_user_id]};
+    return {affectedUserIds:[...crewMemberIds.all(row.crew_id).map(member=>member.id),row.invitee_user_id]};
+  }
+  function acceptedMemberships() {
+    return database.prepare(`SELECT DISTINCT invitee_user_id AS userId,crew_id AS crewId
+      FROM crew_invites WHERE status='accepted' ORDER BY userId,crewId`).all();
   }
   function savePlayerState(userId,gameId,input) {
     const row=database.prepare(`SELECT id FROM games WHERE id=@gameId AND user_id IN ${memberIdsSql()}`).get({userId,gameId});
@@ -116,6 +148,6 @@ function createCrewStore(database) {
       hidden=excluded.hidden,favorite=excluded.favorite,updated_at=CURRENT_TIMESTAMP`)
       .run({gameId,userId,rating:input.rating??null,playStatus:input.playStatus,hidden:input.hidden?1:0,favorite:input.favorite?1:0});
   }
-  return {memberIdsSql,gameSource,memberIds,snapshot,invite,accept,cancel,savePlayerState};
+  return {memberIdsSql,gameSource,memberIds,snapshot,create,invite,accept,leave,cancel,acceptedMemberships,savePlayerState};
 }
 module.exports={createCrewStore};
