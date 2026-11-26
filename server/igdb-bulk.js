@@ -21,7 +21,7 @@ function createIgdbBulkManager({ data, lookup, saveCover = null, notify = () => 
           let cover = null;
           if (!game.coverUrl && match.coverUrl && saveCover) cover = await saveCover(userId, game, { url: match.coverUrl, gameTitle: match.title }, 'igdb');
           const updated = data.updateGameIgdb(userId, game.id, match);
-          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'igdb', game: cover ? { ...updated, coverUrl: cover.coverUrl, coverSource: cover.coverSource, coverMatchTitle: cover.coverMatchTitle } : updated }); }
+          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'igdb', game: cover ? { ...updated, coverUrl: cover.coverUrl, coverSource: cover.coverSource, coverMatchTitle: cover.coverMatchTitle } : updated }, { previous: game }); }
           else job.skipped++;
         }
         consecutiveErrors = 0;

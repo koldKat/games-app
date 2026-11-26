@@ -16,7 +16,7 @@ function createCoverJobRunner({ db, covers, coverJobs, storeMatchedCover, publis
         const match = await covers.bestExactCover(key, current.title);
         if (match) {
           const updated = await storeMatchedCover(userId, current, match, 'steamgriddb');
-          if (updated) { job.matched++; publishAppEvent(userId, 'game-updated', { source: 'covers', game: updated }); }
+          if (updated) { job.matched++; publishAppEvent(userId, 'game-updated', { source: 'covers', game: updated }, { previous: current }); }
           else job.skipped++;
         } else job.unmatched++;
         consecutiveErrors = 0;

@@ -20,7 +20,7 @@ function createCoverProviderBulkManager({ data, provider, label = provider, look
         const match = await lookup(credentials, game.title, game.platform);
         if (match) {
           const updated = await persist(userId, game, match, provider);
-          if (updated) { job.matched++; notify(userId, 'game-updated', { source: provider, game: updated }); } else job.skipped++;
+          if (updated) { job.matched++; notify(userId, 'game-updated', { source: provider, game: updated }, { previous: game }); } else job.skipped++;
         } else job.unmatched++;
         consecutiveErrors = 0;
       } catch (error) {

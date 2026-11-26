@@ -107,7 +107,7 @@ function listProgressionGames(userId) {
     format_physical AS formatPhysical, format_digital AS formatDigital FROM games WHERE user_id=?`).all(userId);
 }
 
-// Milestones use the same visible crew collection as the library, without rating decoration.
+// Collection milestones belong to the owner. Completed status belongs to the acting player.
 const milestoneGames = db.prepare(`SELECT title, platform, canonical_game_id AS canonicalGameId, ownership,
   play_status AS playStatus, format_physical AS formatPhysical, format_digital AS formatDigital,
   cover_url AS coverUrl, pegi, pegi_url AS pegiUrl, pegi_descriptors AS pegiDescriptorsJson,
@@ -115,7 +115,16 @@ const milestoneGames = db.prepare(`SELECT title, platform, canonical_game_id AS 
   pegi_content_issues AS pegiContentIssues, pegi_other_issues AS pegiOtherIssues,
   hltb_id AS hltbId, hltb_main_story AS hltbMainStory, hltb_main_extra AS hltbMainExtra,
   hltb_completionist AS hltbCompletionist, hltb_all_styles AS hltbAllStyles, description
-  FROM ${crews.gameSource()} WHERE hidden=0 ORDER BY search_normalize(title), id`);
+  FROM ${crews.gameSource()} WHERE user_id=@userId AND hidden=0 ORDER BY search_normalize(title), id`);
+
+const completedCrewGames = db.prepare(`SELECT COUNT(*) AS count
+  FROM game_player_state ps JOIN games g ON g.id=ps.game_id
+  WHERE ps.user_id=@userId AND ps.play_status='completed' AND ps.hidden=0
+  AND g.user_id IN ${crews.memberIdsSql()}`);
+
+function countCompletedCrewGames(userId) {
+  return completedCrewGames.get({ userId }).count;
+}
 
 function listLibraryMilestoneGames(userId) {
   return milestoneGames.all({ userId }).map(hydrateGame);
@@ -212,6 +221,6 @@ function findDuplicateGames(userId, title, platform, igdbId = null, canonicalGam
 }
 
 module.exports = {
-  listGames, listProgressionGames, listLibraryMilestoneGames, listUserIds, listGamesPage, randomGame, getGame,
+  listGames, listProgressionGames, listLibraryMilestoneGames, countCompletedCrewGames, listUserIds, listGamesPage, randomGame, getGame,
   allGamesForKatalog, searchGameTitles, accountGameIdentities, findDuplicateGames,
 };

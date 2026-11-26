@@ -64,7 +64,7 @@ function createPegiBulkManager({ data, lookup, pause = wait, notify = () => {} }
         const match = bestExactPegi(current, await lookup(current.title));
         if (match) {
           const updated = data.updateGamePegiMetadata(userId, game.id, match);
-          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'pegi', game: updated }); }
+          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'pegi', game: updated }, { previous: current }); }
           else job.skipped++;
         }
         else job.unmatched++;

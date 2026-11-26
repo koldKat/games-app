@@ -22,7 +22,7 @@ function createDescriptionBulkManager({ data, lookups, pause = wait, notify = ()
         if (!match && steamError) throw steamError;
         if (match) {
           const updated = data.updateGameDescription(userId, game.id, match);
-          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'description', game: updated }); } else job.skipped++;
+          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'description', game: updated }, { previous: game }); } else job.skipped++;
         } else job.unmatched++;
         consecutiveErrors = 0;
       } catch (error) {

@@ -8,8 +8,8 @@ function createProgressionBridge({ progression, katalog, activity, events }) {
     const katalogResult = katalog.syncGameSafely(userId, game);
     return recordGameProgress(userId, game, { ...options, katalogContribution: isKatalogContribution(userId, game, katalogResult) });
   }
-  function publishAppEvent(userId, event, payload) {
-    if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game);
+  function publishAppEvent(userId, event, payload, options) {
+    if (event === 'game-updated' && payload?.game) syncKatalogAndRecordProgress(userId, payload.game, options);
     events.publish(userId, event, payload);
     if(event==='game-updated') for(const memberId of crews.memberIds(userId)) {
       if(memberId!==userId)events.publish(memberId,'library-changed',{});

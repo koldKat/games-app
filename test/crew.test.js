@@ -100,20 +100,20 @@ test('personal-state migration runs once and does not restore cleared ratings',(
   assert.equal(data.getGame(alice,original.id).rating,4);
 });
 
-test('milestone games mirror the visible crew collection and use the current player’s statuses', () => {
+test('collection milestones use the player’s own library and completions use personal Crew status', () => {
   const { isEnriched } = require('../server/progression-service');
   const hidden = data.createGame(alice, input('Only hidden from Bob', { rating: 5 }));
   data.updateGame(bob, hidden.id, { ...data.getGame(bob, hidden.id), playStatus: 'hidden' });
 
   const milestones = data.listLibraryMilestoneGames(bob);
-  const library = data.listGames(bob);
+  const library = data.listGames(bob).filter(game => game.ownerUserId === bob);
   const facts = game => ({
     title: game.title, status: game.playStatus, owned: game.ownership,
     enriched: isEnriched(game), formatPhysical: game.formatPhysical, formatDigital: game.formatDigital,
   });
   assert.deepEqual(milestones.map(facts), library.map(facts));
-  assert.equal(milestones.find(game => game.title === 'Edited shared adventure').playStatus, 'completed');
-  assert.ok(milestones.some(game => game.title === 'Carol adventure'));
+  assert.equal(data.countCompletedCrewGames(bob), 1);
+  assert.equal(data.countCompletedCrewGames(alice), 0);
   assert.ok(!milestones.some(game => game.title === 'Only hidden from Bob'));
   assert.ok(data.listLibraryMilestoneGames(alice).some(game => game.title === 'Only hidden from Bob'));
 });

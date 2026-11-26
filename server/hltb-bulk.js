@@ -33,7 +33,7 @@ function createHltbBulkManager({ data, lookup, pause = wait, notify = () => {} }
         const match = bestExactHltb(current.title, await lookup(current.title));
         if (match) {
           const updated = data.updateGameHltb(userId, current.id, match);
-          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'hltb', game: updated }); }
+          if (updated) { job.matched++; notify(userId, 'game-updated', { source: 'hltb', game: updated }, { previous: current }); }
           else job.skipped++;
         } else job.unmatched++;
         consecutiveErrors = 0;

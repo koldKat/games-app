@@ -128,3 +128,34 @@ test('one owned record with both format flags earns the double-dip award', async
   assert.deepEqual(result.awards.filter(item => item.event === 'format_double_dip').map(item => item.amount), [30]);
   assert.equal(service.recordGame(user.id, game).awards.some(item => item.event === 'format_double_dip'), false);
 });
+
+test('Crew members earn personal XP without inheriting library achievements or metadata', async () => {
+  const owner = await auth.register('xp_crew_owner', 'password-twelve');
+  const member = await auth.register('xp_crew_member', 'password-thirteen');
+  const games = Array.from({ length: 25 }, (_, index) => data.createGame(owner.id, {
+    title: `Crew Game ${index}`, platform: 'PC', ownership: 'owned', description: 'Already filled in.',
+  }));
+  const invite = data.crews.invite(owner.id, 'xp_crew_member');
+  data.crews.accept(member.id, invite.id);
+  const service = createProgressionService({ store: data.progression, data });
+
+  const initial = data.getGame(member.id, games[0].id);
+  const playing = data.updateGame(member.id, initial.id, { ...initial, rating: 4, playStatus: 'playing' });
+  assert.deepEqual(service.recordGame(member.id, playing, { previous: initial }).awards.map(award => award.event),
+    ['rating_added', 'playing_started']);
+  const contributed = data.updateGame(member.id, initial.id, { ...playing, publisher: 'Newly recorded publisher' });
+  assert.deepEqual(service.recordGame(member.id, contributed, { previous: playing }).awards.map(award => award.event),
+    ['publisher_added']);
+  for (const game of games.slice(0, 9)) data.updateGame(member.id, game.id, { ...data.getGame(member.id, game.id), playStatus: 'completed' });
+  const last = data.updateGame(member.id, games[9].id, { ...data.getGame(member.id, games[9].id), playStatus: 'completed' });
+  assert.deepEqual(service.recordGame(member.id, last).awards.map(award => award.event),
+    ['game_completed', 'completed_count_10']);
+
+  const personalGame = data.createGame(member.id, { title: 'Member Game', platform: 'PC', ownership: 'owned' });
+  assert.deepEqual(service.recordGame(member.id, personalGame, { created: true }).awards.map(award => award.event),
+    ['game_added', 'platform_first']);
+  assert.equal(data.progression.info(member.id).xp, 420);
+  const ownerAwards = service.recordGame(owner.id, games[0]).awards.map(award => award.event);
+  assert.ok(ownerAwards.includes('game_count_25'));
+  assert.ok(ownerAwards.includes('platform_specialist'));
+});
