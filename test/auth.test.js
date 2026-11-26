@@ -12,7 +12,7 @@ const { createKatalogStore } = require('../server/katalog-store');
 createKatalogStore(data.db);
 const { createShowcasePool } = require('../server/showcase-pool');
 const { MULTIPLATFORM_FILTER_VALUE } = require('../server/constants');
-const showcasePool = createShowcasePool(data.db);
+const showcasePool = createShowcasePool(data.db, data.crews);
 
 test.after(() => {
   data.db.close();

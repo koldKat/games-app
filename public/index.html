@@ -404,6 +404,13 @@
       <form id="crew-invite-form" class="form-grid crew-invite-row"><label for="crew-username"><span>Invite a player</span><input id="crew-username" type="text" maxlength="80" autocomplete="off" spellcheck="false" placeholder="Player username" required></label><button class="button secondary" type="submit">Invite to crew</button></form>
       <section id="crew-incoming" hidden><h3>Incoming invitations</h3><ul id="crew-incoming-list" class="crew-list"></ul></section>
       <section id="crew-outgoing" hidden><h3>Sent invitations</h3><ul id="crew-outgoing-list" class="crew-list"></ul></section>
+      <details id="crew-rename" hidden>
+        <summary>Rename Crew</summary>
+        <form id="crew-rename-form" class="form-grid crew-invite-row">
+          <label for="crew-rename-name"><span>Crew name</span><input id="crew-rename-name" maxlength="60" autocomplete="off" required></label>
+          <button class="button secondary" type="submit">Save Name</button>
+        </form>
+      </details>
       <details id="crew-create">
         <summary>Create a Crew</summary>
         <form id="crew-create-form" class="form-grid crew-invite-row">

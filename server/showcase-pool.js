@@ -8,13 +8,13 @@ function boundedLimit(value) {
   return Math.max(1, Math.min(MAX_LIMIT, Number.parseInt(value, 10) || DEFAULT_LIMIT));
 }
 
-function createShowcasePool(database) {
+function createShowcasePool(database, crews) {
   function owned(limit = DEFAULT_LIMIT, userId = null) {
     const accountId = Number.parseInt(userId, 10) || 0;
     if (!accountId) return [];
-    return database.prepare(`SELECT cover_url AS coverUrl FROM games
-      WHERE user_id=? AND ownership='owned' AND hidden=0 AND ${COVER_PREDICATE}
-      GROUP BY cover_url ORDER BY RANDOM() LIMIT ?`).all(accountId, boundedLimit(limit)).map(row => row.coverUrl);
+    return database.prepare(`SELECT cover_url AS coverUrl FROM ${crews.gameSource()}
+      WHERE ownership='owned' AND hidden=0 AND ${COVER_PREDICATE}
+      GROUP BY cover_url ORDER BY RANDOM() LIMIT @count`).all({userId:accountId,count:boundedLimit(limit)}).map(row => row.coverUrl);
   }
 
   function publicCovers(limit = DEFAULT_LIMIT) {

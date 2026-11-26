@@ -1,3 +1,4 @@
+import { refreshHeroCovers } from '../covers/decorations.js';
 import { refreshCrew } from '../account/crew.js';
 import { state, filters, runtime } from './runtime.js';
 import { gameMatchesFilters, renderGames } from '../library/render.js';
@@ -46,7 +47,7 @@ function connectEventStream() {
     if (event === 'game-updated') applyGamePatch(data.game);
     else if (event === 'account-updated') {if(data.user?.id===state.user.id){state.user={...state.user,...data.user};updateAvatarUI();}}
     else if (event === 'roles-updated') {if(data.userId===state.user.id){state.user={...state.user,badges:data.badges};updateAvatarUI();}}
-    else if (event === 'crew-changed') { void refreshCrew(); }
+    else if (event === 'crew-changed') { void refreshCrew(); if (data.collectionChanged) refreshHeroCovers(); }
     else if (event === 'library-changed') {
       clearTimeout(runtime.groupFilterRefreshTimer);
       runtime.groupFilterRefreshTimer = setTimeout(() => { void refreshLibraryPage(state.page); }, UI_TIMING.libraryGroupRefreshDebounceMs);
@@ -61,7 +62,7 @@ function connectEventStream() {
     else if (event === 'steam-import-progress') steamImporter.handleEvent(data);
     else if (event === 'gog-import-progress') gogImporter.handleEvent(data);
     else if (event === 'ping-updated') patchUi.handleEvent(event, data);
-    else if (event === 'stream-reset') { loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
+    else if (event === 'stream-reset') { refreshHeroCovers(); loadGames(); loadCoverStatus(); coverProviderSettings.load(); loadPegiStatus(); loadHltbStatus(); loadDescriptionStatus(); }
     else coverProviderSettings.handleEvent(event, data);
   }, onUnauthorized() {
     if (generation !== runtime.sessionGeneration) return;

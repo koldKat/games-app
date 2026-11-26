@@ -30,11 +30,12 @@ function createCrewRoutes({ db, auth, activity, progression, publishProgression,
         }));
       } else if (invite && !invite[2] && method === 'DELETE') result = db.crews.cancel(user.id, Number(invite[1]));
       else if (crew && method === 'DELETE') result = db.crews.leave(user.id, Number(crew[1]));
+      else if (crew && method === 'PATCH') result = db.crews.rename(user.id, Number(crew[1]), (await readJson(request)).name);
       else return;
 
       for (const id of new Set(result.affectedUserIds)) {
-        events.publish(id, 'crew-changed', {});
-        events.publish(id, 'library-changed', {});
+        events.publish(id, 'crew-changed', { collectionChanged: Boolean(result.collectionChanged) });
+        if (result.collectionChanged) events.publish(id, 'library-changed', {});
       }
       if (result.progression) publishProgression(user.id, result.progression);
       if (result.signalChanged) events.publishPublicActivity();

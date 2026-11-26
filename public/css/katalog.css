@@ -174,9 +174,12 @@
 .signal-feed .activity-entry--catalogue_contribution {
   border-left:2px solid #3f9d87;
 }
-.signal-feed .activity-entry--join,
-.signal-feed .activity-entry--crew_join {
+.signal-feed .activity-entry--join {
   border-left:2px solid #5789a8;
+}
+.signal-feed .activity-entry--crew_join {
+  border-left: 2px solid #7f72a9;
+  background: #1d192b;
 }
 .signal-feed .activity-entry p {
   font-size: 11px;

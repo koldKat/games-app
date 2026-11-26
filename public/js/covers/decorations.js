@@ -61,23 +61,40 @@ async function loadAppBackgroundCovers(isCurrent) {
   await applyDecorativeCovers($$('.app-cover-field i'), covers, isCurrent);
 }
 
+let heroSequence = 0;
+
+function clearHeroCovers(slots) {
+  slots.forEach(slot => { slot.style.removeProperty('background-image'); slot.classList.remove('has-art'); });
+}
+
 async function loadHeroCovers(isCurrent) {
   const slots = $$('#library-view .hero-cover');
   const fan = $('#library-view .cover-fan');
   const poolKey = `owned:${state.user?.id || ''}`;
   if (fan?.dataset.coverPool !== poolKey) {
-    slots.forEach(slot => { slot.style.removeProperty('background-image'); slot.classList.remove('has-art'); });
+    clearHeroCovers(slots);
     if (fan) fan.dataset.coverPool = poolKey;
   }
   if (!slots.length || slots.every(slot => slot.classList.contains('has-art'))) return;
+  const request = ++heroSequence;
+  const stillCurrent = () => request === heroSequence && isCurrent();
   const showcase = await api('/api/showcase/covers?scope=owned');
-  if (!isCurrent()) return;
+  if (!stillCurrent()) return;
   const covers = uniqueArtworkUrls(showcase.covers || []);
   for (let index = covers.length - 1; index > 0; index--) {
     const swap = Math.floor(Math.random() * (index + 1));
     [covers[index], covers[swap]] = [covers[swap], covers[index]];
   }
-  await applyDecorativeCovers(slots, covers, isCurrent);
+  await applyDecorativeCovers(slots, covers, stillCurrent);
+}
+
+function refreshHeroCovers() {
+  heroSequence++;
+  clearHeroCovers($$('#library-view .hero-cover'));
+  const userId = state.user?.id;
+  if (userId && !$('#library-view')?.hidden) {
+    void loadHeroCovers(() => state.user?.id === userId).catch(() => {});
+  }
 }
 
 async function stageAppDecorations(userId) {
@@ -87,4 +104,4 @@ async function stageAppDecorations(userId) {
   await loadAppBackgroundCovers(isCurrent);
 }
 
-export { loadAuthCovers, stageAppDecorations, loadHeroCovers };
+export { loadAuthCovers, stageAppDecorations, loadHeroCovers, refreshHeroCovers };

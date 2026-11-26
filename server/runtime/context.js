@@ -50,7 +50,7 @@ function createRuntime() {
   fs.mkdirSync(AVATARS_DIR, { recursive: true });
   const coverJobs = new Map();
   const progression = createProgressionService({ store: db.progression, data: db });
-  const showcasePool = createShowcasePool(db.db);
+  const showcasePool = createShowcasePool(db.db, db.crews);
   const siteStats = createSiteStats(db.db, { root: ROOT });
   const externalCoverProviders = Object.freeze({
     thegamesdb: {

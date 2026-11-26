@@ -123,10 +123,12 @@
 #crew-picker select {
   width: 100%;
 }
-#crew-create {
+#crew-create,
+#crew-rename {
   margin: 8px 0;
 }
-#crew-create summary {
+#crew-create summary,
+#crew-rename summary {
   color: var(--muted);
   cursor: pointer;
 }

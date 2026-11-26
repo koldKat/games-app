@@ -14,6 +14,12 @@ const post = body => ({ method: 'POST', headers: { 'Content-Type': 'application/
 function paintMembers() {
   const crew = selectedCrew();
   element('crew-leave').hidden = !crew;
+  const rename = element('crew-rename');
+  rename.hidden = !crew?.canRename;
+  if (rename.dataset.crewId !== String(crew?.id ?? '')) {
+    rename.open = false;
+    rename.dataset.crewId = String(crew?.id ?? '');
+  }
   element('crew-members').innerHTML = (crew?.members ?? []).map(member =>
     `<li><strong>${escapeHtml(member.username)}${roleBadgesMarkup(member)}</strong>${member.id === state.user?.id ? '<span class="badge">You</span>' : ''}</li>`).join('');
 }
@@ -72,7 +78,7 @@ export function resetCrew() {
   element('crew-button')?.classList.remove('has-invites');
   const badge = element('crew-invite-count');
   if (badge) badge.hidden = true;
-  for (const id of ['crew-picker', 'crew-leave', 'crew-incoming', 'crew-outgoing']) element(id).hidden = true;
+  for (const id of ['crew-picker', 'crew-leave', 'crew-incoming', 'crew-outgoing', 'crew-rename']) element(id).hidden = true;
   for (const id of ['crew-selected', 'crew-members', 'crew-incoming-list', 'crew-outgoing-list']) element(id).replaceChildren();
 }
 
@@ -96,6 +102,20 @@ export function initializeCrew(options = {}) {
   dialog.querySelectorAll('[data-crew-close]').forEach(button => button.addEventListener('click', () => dialog.close()));
   closeOnTrueBackdrop(dialog, () => dialog.close());
   element('crew-selected').addEventListener('change', paintMembers);
+  element('crew-rename').addEventListener('toggle', event => {
+    if (event.currentTarget.open) element('crew-rename-name').value = selectedCrew()?.name ?? '';
+  });
+  element('crew-rename-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const crew = selectedCrew();
+    if (!crew?.canRename) return;
+    void submitCrew(event.submitter, async () => {
+      const options = post({ name: element('crew-rename-name').value });
+      paintCrew(await api(`/api/crew/${crew.id}`, { ...options, method: 'PATCH' }), crew.id);
+      element('crew-rename').open = false;
+      toast('Crew renamed.');
+    });
+  });
   element('crew-create-form').addEventListener('submit', event => {
     event.preventDefault();
     void submitCrew(event.submitter, async () => {

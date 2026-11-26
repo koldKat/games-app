@@ -7,7 +7,7 @@ const { createKatalogStore } = require('../server/katalog-store');
 const { createShowcasePool } = require('../server/showcase-pool');
 const { writeShowcase } = require('../server/showcase-covers');
 createKatalogStore(db.db);
-const showcasePool = createShowcasePool(db.db);
+const showcasePool = createShowcasePool(db.db, db.crews);
 
 storage.normalizeExistingCovers(db, {
   onError: (game, error) => console.error(`[covers] game ${game.id}: ${error.message}`),

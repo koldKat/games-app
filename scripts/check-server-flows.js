@@ -45,7 +45,9 @@ async function run() {
     assert.equal(registered.status, 201, await registered.text());
     assert.ok(cookie.startsWith('games_session='));
     assert.equal((await request('/api/auth/me')).status, 200);
-    const game = await (await request('/api/games', 'POST', { title: 'Portal 2', platform: 'Steam', ownership: 'owned', mediaFormats: ['digital'] })).json();
+    const png = await require('sharp')({ create: { width: 160, height: 240, channels: 3, background: '#224488' } }).png().toBuffer();
+    const game = await (await request('/api/games', 'POST', { title: 'Portal 2', platform: 'Steam', ownership: 'owned',
+      mediaFormats: ['digital'], coverUpload: 'data:image/png;base64,' + png.toString('base64') })).json();
     assert.ok(game.id, JSON.stringify(game));
     const updated = await request(`/api/games/${game.id}`, 'PUT', { ...game, favorite: true, rating: 4.5 });
     assert.equal(updated.status, 200, await updated.text());
@@ -90,6 +92,8 @@ async function run() {
     assert.deepEqual((await (await request('/api/auth/me')).json()).user.badges,['sidekick']);
 
     assert.equal((await request(`/api/games/${game.id}`)).status,404);
+    const headerCovers = async () => (await (await request('/api/showcase/covers?scope=owned')).json()).covers;
+    assert.deepEqual(await headerCovers(), []);
     cookie=firstCookie;
     const sent=await request('/api/crew/invites','POST',{username:'CrewPartner'});assert.equal(sent.status,200);
     const invitation=(await sent.json()).outgoing[0].id;
@@ -97,6 +101,15 @@ async function run() {
     const accepted=await request(`/api/crew/invites/${invitation}/accept`,'POST');
     assert.equal(accepted.status,200);
     const { crews: [joined] }=await accepted.json();
+    assert.deepEqual(await headerCovers(), [game.coverUrl]);
+    assert.equal(joined.canRename,false);
+    assert.equal((await request(`/api/crew/${joined.id}`,'PATCH',{name:'Blocked rename'})).status,400);
+    cookie=firstCookie;
+    const renamed=await request(`/api/crew/${joined.id}`,'PATCH',{name:'Private Test Crew'});
+    assert.equal(renamed.status,200);
+    assert.equal((await renamed.json()).crews[0].canRename,true);
+    cookie=secondCookie;
+    assert.equal((await (await request('/api/crew')).json()).crews[0].name,'Private Test Crew');
     assert.equal((await (await request('/api/progression')).json()).xp,100);
     const signal=await (await request('/api/activity')).json();
     const joinPost=signal.entries.find(item=>item.type==='crew_join');
@@ -108,6 +121,7 @@ async function run() {
 
     assert.equal((await request(`/api/crew/${joined.id}`,'DELETE')).status,200);
     assert.equal((await request(`/api/games/${game.id}`)).status,404);
+    assert.deepEqual(await headerCovers(), []);
     cookie=firstCookie;
     const resent=await (await request('/api/crew/invites','POST',{username:'CrewPartner',crewId:joined.id})).json();
     const secondInvitation=resent.outgoing[0].id;

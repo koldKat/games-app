@@ -7,5 +7,5 @@ const { createShowcasePool } = require('../server/showcase-pool');
 const { writeShowcase } = require('../server/showcase-covers');
 
 createKatalogStore(db.db);
-writeShowcase(createShowcasePool(db.db).public);
+writeShowcase(createShowcasePool(db.db, db.crews).public);
 db.db.close();
