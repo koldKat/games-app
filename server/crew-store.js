@@ -135,9 +135,9 @@ function createCrewStore(database) {
       .run(row.invitee_user_id===userId?'declined':'cancelled',inviteId);
     return {affectedUserIds:[...crewMemberIds.all(row.crew_id).map(member=>member.id),row.invitee_user_id]};
   }
-  function acceptedMemberships() {
-    return database.prepare(`SELECT DISTINCT invitee_user_id AS userId,crew_id AS crewId
-      FROM crew_invites WHERE status='accepted' ORDER BY userId,crewId`).all();
+  function acceptedInvitations() {
+    return database.prepare(`SELECT id,invitee_user_id AS userId,crew_id AS crewId,responded_at AS acceptedAt
+      FROM crew_invites WHERE status='accepted' ORDER BY id`).all();
   }
   function savePlayerState(userId,gameId,input) {
     const row=database.prepare(`SELECT id FROM games WHERE id=@gameId AND user_id IN ${memberIdsSql()}`).get({userId,gameId});
@@ -148,6 +148,6 @@ function createCrewStore(database) {
       hidden=excluded.hidden,favorite=excluded.favorite,updated_at=CURRENT_TIMESTAMP`)
       .run({gameId,userId,rating:input.rating??null,playStatus:input.playStatus,hidden:input.hidden?1:0,favorite:input.favorite?1:0});
   }
-  return {memberIdsSql,gameSource,memberIds,snapshot,create,invite,accept,leave,cancel,acceptedMemberships,savePlayerState};
+  return {memberIdsSql,gameSource,memberIds,snapshot,create,invite,accept,leave,cancel,acceptedInvitations,savePlayerState};
 }
 module.exports={createCrewStore};

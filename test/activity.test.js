@@ -25,6 +25,19 @@ test('activity templates are database-backed and joins respect the global hide s
   assert.equal(activity.list().some(entry => entry.username === 'signal_user'), false);
 });
 
+test('Crew joins use the original timestamp and never expose the Crew', async () => {
+  const user = await auth.register('crew_history', 'password-crew');
+  const timestamp = new Date(Date.now() - 86400000).toISOString().slice(0, 19).replace('T', ' ');
+  assert.equal(activity.recordCrewJoin(user.id, 123, timestamp), true);
+  assert.equal(activity.recordCrewJoin(user.id, 123), false);
+  const entry = activity.feed().entries.find(item => item.type === 'crew_join');
+  assert.equal(entry.username, user.username);
+  assert.equal(entry.createdAt, timestamp);
+  for (const field of ['crewId', 'crewName', 'members', 'invitationId']) assert.equal(entry[field], undefined);
+  await auth.updateAccount(user.id, { currentPassword: 'password-crew', hideFromActivity: true });
+  assert.equal(activity.feed().entries.some(item => item.type === 'crew_join'), false);
+});
+
 test('level-up messages retain a randomly selected template and newly gained title', async () => {
   const user = await auth.register('signal_level', 'password-two');
   assert.equal(activity.recordLevelUp(user.id, 5, 'Box Hunter', 'Cartridge Keeper'), true);

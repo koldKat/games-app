@@ -115,14 +115,14 @@ for (const template of LEVEL_TEMPLATES) insertTemplate.run('level_up', template)
 for (const template of CREW_JOIN_TEMPLATES) insertTemplate.run('crew_join', template);
 
 function templateFor(type) { return db.prepare('SELECT id FROM activity_templates WHERE type=? AND active=1 ORDER BY RANDOM() LIMIT 1').get(type)?.id || null; }
-function write(type, { userId = null, gameId = null, ref = '', templateId = null, data = {} } = {}) {
-  const result = db.prepare(`INSERT OR IGNORE INTO activity_events(type, user_id, game_id, event_ref, template_id, data_json)
-    VALUES (?, ?, ?, ?, ?, ?)`).run(type, userId, gameId, String(ref), templateId, JSON.stringify(data));
+function write(type, { userId = null, gameId = null, ref = '', templateId = null, data = {}, createdAt = null } = {}) {
+  const result = db.prepare(`INSERT OR IGNORE INTO activity_events(type, user_id, game_id, event_ref, template_id, data_json, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))`).run(type, userId, gameId, String(ref), templateId, JSON.stringify(data), createdAt);
   return Boolean(result.changes);
 }
 function recordJoin(userId) { return write('join', { userId, ref: 'joined', templateId: templateFor('join') }); }
-function recordCrewJoin(userId, invitationId) {
-  return write('crew_join', { userId, ref: `accept:${invitationId}`, templateId: templateFor('crew_join') });
+function recordCrewJoin(userId, invitationId, createdAt) {
+  return write('crew_join', { userId, ref: `accept:${invitationId}`, templateId: templateFor('crew_join'), createdAt });
 }
 function recordLevelUp(userId, level, title, previousTitle) {
   return write('level_up', { userId, ref: `level:${level}`, templateId: templateFor('level_up'), data: { level, title, titleGained: Boolean(title && title !== previousTitle) } });

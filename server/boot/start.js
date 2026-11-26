@@ -21,7 +21,7 @@ function startServer() {
   const PORT = Number(process.env.PORT || 3005);
   const HOST = process.env.HOST || '0.0.0.0';
   const context = createRuntime();
-  const { db, auth, events, progression, showcasePool, recordGameProgress, publishProgression } = context;
+  const { db, auth, events, activity, progression, showcasePool, recordGameProgress, publishProgression } = context;
   const katalog = require('../katalog-runtime');
   const handleApi = createApiRouter(context);
   const serveStatic = createStaticHandler(path.join(ROOT, 'public'));
@@ -60,9 +60,12 @@ function startServer() {
     setImmediate(() => {
       try {
         for (const result of progression.backfillCollectionAchievementsForAll()) publishProgression(result.userId, result);
-        for (const { userId, crewId } of db.crews.acceptedMemberships()) {
+        let crewSignalChanged = false;
+        for (const { id, userId, crewId, acceptedAt } of db.crews.acceptedInvitations()) {
+          if (acceptedAt && activity.recordCrewJoin(userId, id, acceptedAt)) crewSignalChanged = true;
           publishProgression(userId, progression.recordCrewJoin(userId, crewId));
         }
+        if (crewSignalChanged) events.publishPublicActivity();
       }
       catch (error) { console.error('[progression] collection achievement backfill failed:', error.message); }
     });
