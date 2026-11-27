@@ -14,6 +14,7 @@ const forum = require('./forum-data');
 const patch = require('./patch-data');
 const { KATALOG_LIMITS } = require('./validation-policy');
 const trafficMetrics = require('./traffic-metrics');
+const { createAdminStorageStats } = require('./site-stats');
 const covers = require('./covers');
 const igdb = require('./igdb');
 const appIntegrations = require('./app-integrations');
@@ -21,6 +22,7 @@ const steamLibrary = require('./steam-library');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN_DIR = path.join(ROOT, 'admin');
+const storageStats = createAdminStorageStats(ROOT);
 const JSON_BODY_MAX_LENGTH = 64 * 1024;
 const UPTIME_DOWNTIME_GRACE_SECONDS = 15;
 const startedAt = Math.floor(Date.now() / 1000);
@@ -177,7 +179,7 @@ function adminStats() {
   const pageCount = db.pragma('page_count', { simple: true });
   const pageSize = db.pragma('page_size', { simple: true });
   return {
-    version: readVersion(), ...uptimeStats(),
+    version: readVersion(), ...uptimeStats(), storage: storageStats(),
     users: scalar('SELECT COUNT(*) n FROM users'), games: scalar('SELECT COUNT(*) n FROM games'),
     covered: scalar("SELECT COUNT(*) n FROM games WHERE cover_url<>''"),
     missingCovers: scalar("SELECT COUNT(*) n FROM games WHERE cover_url=''"),

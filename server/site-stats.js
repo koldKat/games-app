@@ -6,7 +6,6 @@ const path = require('node:path');
 const { XP_EVENTS, computeLevel, titleForLevel } = require('./progression-policy');
 const { CPU_RELEASE_DATES } = require('./hardware-policy');
 const { getResourceAverages } = require('./resource-metrics');
-const { stats: getTrafficStats } = require('./traffic-metrics');
 const RUNTIME_POLICY = require('./runtime-policy');
 
 const SOURCE_EXTENSIONS = new Set(['.js', '.css', '.html', '.md']);
@@ -62,8 +61,22 @@ function cpuInfo(currentMs) {
   };
 }
 
-function createSiteStats(database, { root = path.join(__dirname, '..'), now = () => Date.now(), resourceAverages = getResourceAverages, trafficStats = getTrafficStats } = {}) {
-  const source = codeStats(root);
+function createAdminStorageStats(root) {
+  let source;
+  let covers;
+  let coversReadAt = 0;
+  return () => {
+    source ??= codeStats(root);
+    const now = Date.now();
+    if (!covers || now - coversReadAt >= 60_000) {
+      covers = storedCoverStats(root);
+      coversReadAt = now;
+    }
+    return { ...source, ...covers };
+  };
+}
+
+function createSiteStats(database, { now = () => Date.now(), resourceAverages = getResourceAverages } = {}) {
   const ratingsSource=database.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='game_player_state'").get()?'game_player_state':'games';
   const scalar = (sql, params = []) => Number(database.prepare(sql).get(...params)?.n || 0);
   const setting = key => database.prepare('SELECT value FROM runtime_settings WHERE key=?').get(key)?.value || '';
@@ -90,10 +103,6 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       MAX(hltb_completionist) completionist, MAX(hltb_all_styles) allStyles
       FROM games WHERE hltb_id IS NOT NULL GROUP BY COALESCE('canonical:'||canonical_game_id,'title:'||lower(trim(title)))`).all();
     const hltbTotal = key => Math.round(hltbRows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0) * 10) / 10;
-    const pageCount = database.pragma('page_count', { simple: true });
-    const pageSize = database.pragma('page_size', { simple: true });
-    const memory = process.memoryUsage();
-    const covers = storedCoverStats(root);
     const publicReleases = scalar("SELECT COUNT(*) n FROM catalogue_entries WHERE status='public'");
     const publicTitles = scalar("SELECT COUNT(DISTINCT COALESCE('canonical:'||canonical_game_id,'title:'||title_key)) n FROM catalogue_entries WHERE status='public'");
     const genres = database.prepare(`SELECT genre.value AS genre,
@@ -161,12 +170,6 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
       genres,
       ...cpuInfo(currentMs),
       ...resourceAverages(),
-      ...trafficStats(),
-      ...source,
-      ...covers,
-      databaseBytes: pageCount * pageSize,
-      heapUsedBytes: memory.heapUsed,
-      rssBytes: memory.rss,
       appAgeSeconds,
       sessionUptimeSeconds: Math.max(0, currentSeconds - sessionStarted),
       downtimeSeconds,
@@ -184,4 +187,4 @@ function createSiteStats(database, { root = path.join(__dirname, '..'), now = ()
   return { snapshot };
 }
 
-module.exports = { createSiteStats };
+module.exports = { createSiteStats, createAdminStorageStats };

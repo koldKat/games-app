@@ -63,7 +63,7 @@ function sections(stats) {
       ['Public profiles', formatCount(stats.publicProfiles)], ['With avatars', formatCount(stats.avatarUsers)],
       ['Public contributors', formatCount(stats.contributors)],
     ] },
-    { kind: 'libraries', label: 'Private libraries', rows: [
+    { kind: 'libraries', label: 'Game libraries', rows: [
       ['Library records', formatCount(stats.libraryRecords)], ['Unique titles', formatCount(stats.uniqueLibraryTitles)],
       ['Average library', formatDecimal(stats.averageLibrarySize)], ['Owned', formatCount(stats.owned)],
       ['Wishlisted', formatCount(stats.wishlisted)], ['Owned physical', formatCount(stats.physical)],
@@ -104,8 +104,8 @@ function sections(stats) {
     ] },
     { kind: 'genres', label: 'Top public genres', rows: (stats.genres || []).map(item => [item.genre, formatCount(item.count)]) },
     { kind: 'platforms', label: 'Top public platforms', rows: (stats.platforms || []).map(item => [platformLabel(item.platform), formatCount(item.count)]) },
-    { kind: 'server', label: 'Server', rows: [
-      ['Processor', stats.cpuModel || 'Unknown'], ['CPU cores', formatCount(stats.cpuCores)],
+    { kind: 'server', label: 'Hardware', rows: [
+      ['Processor', stats.cpuModel || 'Unknown'], ['Logical CPU cores', formatCount(stats.cpuCores)],
       ['CPU age', stats.cpuAgeYears == null ? 'N/A' : `${formatCount(stats.cpuAgeYears)}y`],
       ['CPU clock', stats.cpuGhz == null ? 'N/A' : `${formatDecimal(stats.cpuGhz)} GHz`],
       ['Architecture', stats.cpuArch || 'Unknown'], ['System RAM', formatBytes(stats.totalRamBytes)],
@@ -114,15 +114,11 @@ function sections(stats) {
       ['App age', formatDuration(stats.appAgeSeconds, false)], ['Session uptime', formatDuration(stats.sessionUptimeSeconds, false)],
       ['Total uptime', formatDuration(Math.max(0, stats.appAgeSeconds - stats.downtimeSeconds), false)],
       ['Uptime', formatPercent(stats.uptimePercent, 2)], ['Total downtime', formatDuration(stats.downtimeSeconds)],
-      ['Lines of source', formatCount(stats.linesOfCode)], ['Source size', formatBytes(stats.codeBytes)],
-      ['JavaScript modules', formatCount(stats.jsModules)], ['Database size', formatBytes(stats.databaseBytes)],
-      ['Stored covers', formatCount(stats.storedCovers)], ['Cover storage', formatBytes(stats.coverBytes)],
-      ['Traffic in', formatBytes(stats.trafficIn)], ['Traffic out', formatBytes(stats.trafficOut)],
       ...(Number(stats.avgSamples) > 0 ? [
-        ['Avg CPU (session)', `${Number(stats.avgCpu || 0).toFixed(1)}%`],
-        ['Avg heap used (session)', formatBytes(stats.avgHeapUsed)],
-        ['Avg heap total (session)', formatBytes(stats.avgHeapTotal)],
-        ['Avg RSS (session)', formatBytes(stats.avgRss)],
+        ['Average CPU', `${Number(stats.avgCpu || 0).toFixed(1)}%`],
+        ['Average heap used', formatBytes(stats.avgHeapUsed)],
+        ['Average heap allocated', formatBytes(stats.avgHeapTotal)],
+        ['Average process RAM', formatBytes(stats.avgRss)],
       ] : []),
     ] },
   ].filter(item => item.rows.length);
@@ -141,9 +137,8 @@ function ensureDialog() {
   dialog.setAttribute('aria-labelledby', 'stats-title');
   const card = element('section', 'stats-card modal-card');
   const header = element('header', 'stats-head');
-  const heading = element('div');
-  heading.append(element('p', 'kicker', 'PUBLIC // TELEMETRY'), element('h2', '', 'Stats for Nerds'));
-  heading.querySelector('h2').id = 'stats-title';
+  const heading = element('h2', '', 'Stats for Nerds');
+  heading.id = 'stats-title';
   const closeButton = element('button', 'close-button stats-close');
   closeButton.type = 'button'; closeButton.setAttribute('aria-label', 'Close');
   closeButton.innerHTML = '<svg viewBox="0 0 12 12" aria-hidden="true"><use href="/assets/ui-icons.svg#close"></use></svg>';

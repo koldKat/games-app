@@ -10,7 +10,7 @@ require('../server/katalog-runtime');
 require('../server/activity');
 const forum = require('../server/forum-data');
 const auth = require('../server/auth');
-const { createSiteStats } = require('../server/site-stats');
+const { createSiteStats, createAdminStorageStats } = require('../server/site-stats');
 
 test.after(() => {
   data.db.close();
@@ -48,9 +48,7 @@ test('public site stats aggregate game-focused facts without exposing private re
   data.db.prepare("INSERT INTO announcements(title,body,is_draft) VALUES ('Public notice','Visible',0)").run();
 
   const stats = createSiteStats(data.db, {
-    root: path.join(__dirname, '..'),
     resourceAverages: () => ({ avgCpu: 0.2, avgHeapUsed: 10, avgHeapTotal: 20, avgRss: 30, avgSamples: 60 }),
-    trafficStats: () => ({ trafficIn: 2_048, trafficOut: 4_096 }),
   }).snapshot();
   assert.equal(stats.users, 3);
   assert.equal(stats.libraryRecords, 3);
@@ -72,13 +70,19 @@ test('public site stats aggregate game-focused facts without exposing private re
   assert.equal(stats.avgCpu, 0.2);
   assert.equal(stats.avgHeapTotal, 20);
   assert.equal(stats.avgSamples, 60);
-  assert.equal(stats.trafficIn, 2_048);
-  assert.equal(stats.trafficOut, 4_096);
+  assert.ok(stats.cpuCores > 0);
+  assert.ok(stats.totalRamBytes > 0);
+  assert.ok(stats.uptimePercent >= 0);
+  for (const key of ['trafficIn', 'trafficOut', 'linesOfCode', 'codeBytes', 'jsModules', 'databaseBytes', 'storedCovers', 'coverBytes']) {
+    assert.equal(Object.hasOwn(stats, key), false, key);
+  }
   assert.equal(stats.forumThreads, 1);
   assert.equal(stats.signalEvents, 1);
   assert.equal(stats.announcements, 1);
-  assert.ok(stats.linesOfCode > 0);
-  assert.ok(stats.jsModules > 0);
+  const diagnostics = createAdminStorageStats(path.join(__dirname, '..'))();
+  assert.ok(diagnostics.linesOfCode > 0);
+  assert.ok(diagnostics.jsModules > 0);
+  assert.ok(diagnostics.coverBytes >= 0);
   const publicPayload = JSON.stringify(stats);
   assert.doesNotMatch(publicPayload, /stats_collector|private@example\.com|Private library description|Future Game/);
   assert.doesNotMatch(publicPayload, /stats_without_progression/);
@@ -87,10 +91,10 @@ test('public site stats aggregate game-focused facts without exposing private re
 test('stats UI is modular, public, responsive, and protected from false backdrop closes', () => {
   const root = path.join(__dirname, '..');
   const { readSource: read } = require('./helpers/source');
-  const server = read('server.js'); const markup = read('public/index.html');
+  const routes = read('server/routes/api.js'); const markup = read('public/index.html');
   const ui = read('public/js/stats/stats-ui.js'); const css = read('public/css/stats.css');
-  assert.match(server, /url\.pathname === '\/api\/site-stats'/);
-  assert.ok(server.indexOf("url.pathname === '/api/site-stats'") < server.indexOf('const user = auth.authenticate(request)'));
+  assert.match(routes, /url\.pathname === '\/api\/site-stats'/);
+  assert.ok(routes.indexOf("url.pathname === '/api/site-stats'") < routes.indexOf('const user = auth.authenticate(request)'));
   assert.match(markup, /data-stats-open/);
   assert.match(markup, /src="\/js\/stats\/stats-ui\.js"/);
   assert.match(markup, /src="\/js\/shell\/mobile-action-dock\.js"/);
@@ -101,11 +105,13 @@ test('stats UI is modular, public, responsive, and protected from false backdrop
   assert.match(ui, /pointerdown/);
   assert.match(ui, /pointerup/);
   assert.match(ui, /formatCount\(Math\.floor\(Number\(stats\.averageLevel\)/);
-  assert.match(ui, /Avg CPU \(session\)/);
+  assert.match(ui, /Average CPU/);
+  assert.match(ui, /Average heap used/);
+  assert.match(ui, /Total downtime/);
   assert.doesNotMatch(ui, /\['Process (?:heap|RSS)'/);
   assert.match(ui, /CPU age/);
-  assert.match(ui, /Traffic in/);
-  assert.match(ui, /Traffic out/);
+  assert.doesNotMatch(ui, /Lines of source|Cover storage|Traffic in|Traffic out|PUBLIC \/\/ TELEMETRY/);
+  assert.match(read('admin/index.html'), /Source &amp; storage/);
   assert.match(ui, /Top public genres/);
   assert.match(read('server.js'), /trafficMetrics\.trackRequest\(request, response\)/);
   assert.match(read('server.js'), /trafficMetrics\.flush\(\);[\s\S]*server\.close/);

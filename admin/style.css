@@ -362,6 +362,27 @@ main {
   background:var(--panel);
   padding:11px
 }
+.source-storage {
+  margin-top: 7px;
+}
+.source-storage summary {
+  color: var(--green);
+  cursor: pointer;
+}
+.source-storage dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0.5rem 0 0;
+}
+.source-storage dt {
+  color: #9aabba;
+  font-size: 0.78rem;
+}
+.source-storage dd {
+  margin: 0.15rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
 .block.wide {
   grid-column:1/-1
 }

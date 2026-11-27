@@ -32,6 +32,14 @@ export async function loadDashboard() {
     document.getElementById('metric-sessions').textContent = formatNumber(data.activeSessions);
     document.getElementById('metric-favorites').textContent = formatNumber(data.favorites);
     document.getElementById('metric-database').textContent = formatBytes(data.databaseBytes);
+    const storage = data.storage || {};
+    for (const [id, value, format] of [
+      ['metric-source-lines', storage.linesOfCode, formatNumber],
+      ['metric-source-size', storage.codeBytes, formatBytes],
+      ['metric-js-modules', storage.jsModules, formatNumber],
+      ['metric-stored-covers', storage.storedCovers, formatNumber],
+      ['metric-cover-storage', storage.coverBytes, formatBytes],
+    ]) document.getElementById(id).textContent = value == null ? '-' : format(value);
     document.getElementById('metric-uptime').textContent = `${Number(data.uptimePercent).toFixed(2)}%`;
     document.getElementById('metric-uptime-sub').textContent = data.downtimeSeconds ? `${formatDuration(data.downtimeSeconds)} downtime` : 'no recorded downtime';
     document.getElementById('metric-version').textContent = data.version;

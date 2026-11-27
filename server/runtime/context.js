@@ -51,7 +51,7 @@ function createRuntime() {
   const coverJobs = new Map();
   const progression = createProgressionService({ store: db.progression, data: db });
   const showcasePool = createShowcasePool(db.db, db.crews);
-  const siteStats = createSiteStats(db.db, { root: ROOT });
+  const siteStats = createSiteStats(db.db);
   const externalCoverProviders = Object.freeze({
     thegamesdb: {
       label: 'TheGamesDB', client: thegamesdb,
