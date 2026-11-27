@@ -1,3 +1,4 @@
+const { CREW_SHARES } = require('../crew-xp');
 const { crews } = require('../db');
 function createProgressionBridge({ progression, katalog, activity, events }) {
   function isKatalogContribution(userId, game, result) {
@@ -25,6 +26,17 @@ function createProgressionBridge({ progression, katalog, activity, events }) {
       if (award.event === 'catalogue_contribution') changed = activity.recordContribution(userId, award.ref || '') || changed;
     }
     if (changed) events.publishPublicActivity();
+
+    const recipients = new Map();
+    for (const award of result.awards) {
+      for (const { userId: recipientId, ...share } of award[CREW_SHARES] ?? []) {
+        if (!recipients.has(recipientId)) recipients.set(recipientId, []);
+        recipients.get(recipientId).push(share);
+      }
+    }
+    for (const [recipientId, awards] of recipients) {
+      publishProgression(recipientId, { progress: progression.info(recipientId), awards }, { compact });
+    }
   }
   function recordGameProgress(userId, game, options) {
     const result = progression.recordGame(userId, game, options); publishProgression(userId, result); return result;

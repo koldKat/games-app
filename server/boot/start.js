@@ -22,6 +22,7 @@ function startServer() {
   const HOST = process.env.HOST || '0.0.0.0';
   const context = createRuntime();
   const { db, auth, events, activity, progression, showcasePool, recordGameProgress, publishProgression } = context;
+  const crewXpBackfill = db.progression.backfillCrewXp();
   const katalog = require('../katalog-runtime');
   const handleApi = createApiRouter(context);
   const serveStatic = createStaticHandler(path.join(ROOT, 'public'));
@@ -59,6 +60,7 @@ function startServer() {
     backup.start();
     setImmediate(() => {
       try {
+        for (const result of crewXpBackfill) publishProgression(result.userId, result, { compact: true });
         for (const result of progression.backfillCollectionAchievementsForAll()) publishProgression(result.userId, result);
         let crewSignalChanged = false;
         for (const { id, userId, crewId, acceptedAt } of db.crews.acceptedInvitations()) {

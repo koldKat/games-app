@@ -1,6 +1,7 @@
 'use strict';
 
 const { hasPegiMetadata, hasHltbMetadata, hasDurableCover, normalizeKatalogText } = require('./katalog-policy');
+const { CREW_SHARES } = require('./crew-xp');
 const { mediaFormatsForGame } = require('./media-format-policy');
 
 const GAME_MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
@@ -24,7 +25,15 @@ const gameKey = game => Number(game.canonicalGameId) > 0 ? `canonical-${Number(g
 function isEnriched(game) { return hasDurableCover(game) && hasPegiMetadata(game) && hasHltbMetadata(game) && Boolean(String(game.description || '').trim()); }
 
 function createProgressionService({ store, data }) {
-  function award(userId, event, ref, awarded) { const result = store.award(userId, event, ref); if (result.awarded) awarded.push({ event, ref, amount: result.amount, levels: result.levels }); return result; }
+  function award(userId, event, ref, awarded, options) {
+    const result = store.award(userId, event, ref, options);
+    if (result.awarded) {
+      const entry = { event, ref, amount: result.amount, levels: result.levels };
+      if (result.crewShares?.length) Object.defineProperty(entry, CREW_SHARES, { value: result.crewShares });
+      awarded.push(entry);
+    }
+    return result;
+  }
   function awardCollectionMilestones(userId, give) {
     const games = data.listLibraryMilestoneGames
       ? data.listLibraryMilestoneGames(userId)
@@ -67,7 +76,7 @@ function createProgressionService({ store, data }) {
   function backfillCollectionAchievements(userId) {
     if (store.hasMigration?.(userId, COLLECTION_ACHIEVEMENTS_BACKFILL)) return { progress: store.info(userId), awards: [] };
     const awards = []; let latest = { progress: store.info(userId) };
-    const give = (event, ref) => { latest = award(userId, event, ref, awards); };
+    const give = (event, ref) => { latest = award(userId, event, ref, awards, { share: false }); };
     awardCollectionAchievements(collectionGames(userId), give);
     store.markMigration?.(userId, COLLECTION_ACHIEVEMENTS_BACKFILL);
     return { progress: latest.progress, awards };
@@ -76,10 +85,10 @@ function createProgressionService({ store, data }) {
     const userIds = typeof data.listUserIds === 'function' ? data.listUserIds() : [];
     return userIds.map(userId => ({ userId, ...backfillCollectionAchievements(userId) }));
   }
-  function recordGame(userId, game, { created = false, previous = null, katalogContribution = false } = {}) {
+  function recordGame(userId, game, { created = false, previous = null, katalogContribution = false, share = true } = {}) {
     if (!game?.id) return { progress: store.info(userId), awards: [] };
     const awards = []; let latest = { progress: store.info(userId) };
-    const give = (event, ref) => { latest = award(userId, event, ref, awards); };
+    const give = (event, ref) => { latest = award(userId, event, ref, awards, { share }); };
     const personalGame = isPersonalGame(userId, game);
     if (created && personalGame) give('game_added', game.id);
     for (const [event, hasMetadata] of SHARED_METADATA_AWARDS) {
@@ -122,11 +131,11 @@ function createProgressionService({ store, data }) {
   function recordForumReplyReceived(userId, threadId) { const awards = []; const result = award(userId, 'forum_reply_received', `thread-${threadId}`, awards); return { progress: result.progress, awards }; }
   function backfillKatalogContributions(contributions = []) {
     const awards = [];
-    for (const contribution of contributions) award(contribution.userId, 'catalogue_contribution', contribution.gameId, awards);
+    for (const contribution of contributions) award(contribution.userId, 'catalogue_contribution', contribution.gameId, awards, { share: false });
     const progress = contributions.length ? store.info(contributions[contributions.length - 1].userId) : null;
     return { progress, awards };
   }
-  function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {}).filter(game => isPersonalGame(userId, game))) { const next = recordGame(userId, game, { created: true }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
+  function backfill(userId) { if (store.isBackfilled(userId)) return { progress: store.info(userId), awards: [] }; let result = { progress: store.info(userId), awards: [] }; for (const game of data.listGames(userId, {}).filter(game => isPersonalGame(userId, game))) { const next = recordGame(userId, game, { created: true, share: false }); result = { progress: next.progress, awards: [...result.awards, ...next.awards] }; } store.markBackfilled(userId); return result; }
   return { backfill, backfillCollectionAchievements, backfillCollectionAchievementsForAll, backfillKatalogContributions, info: store.info, recordAvatar, recordCrewJoin, recordForumReply, recordForumReplyReceived, recordForumThread, recordGame, recordImportedGames };
 }
 module.exports = { COLLECTION_ACHIEVEMENTS_BACKFILL, PLATFORM_SPECIALIST_COUNT, createProgressionService, isEnriched };

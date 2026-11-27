@@ -159,3 +159,60 @@ test('Crew members earn personal XP without inheriting library achievements or m
   assert.ok(ownerAwards.includes('game_count_25'));
   assert.ok(ownerAwards.includes('platform_specialist'));
 });
+
+test('Crew XP matches earned XP once and deduplicates overlapping Crew members', async () => {
+  const actor = await auth.register('crew_xp_actor', 'crew-test-password');
+  const first = await auth.register('crew_xp_first', 'crew-test-password');
+  const second = await auth.register('crew_xp_second', 'crew-test-password');
+  const join = (member, crew) => data.crews.accept(member.id, data.crews.invite(actor.id, member.username, crew).id);
+  const crew = data.crews.create(actor.id, 'Crew XP test').crewId;
+  join(first, crew);
+  join(second, crew);
+  join(first, data.crews.create(actor.id, 'Overlapping crew').crewId);
+  const store = data.progression;
+  store.setConfig({ note_added: 1000, forum_reply: 5 });
+  try {
+    const earned = store.award(actor.id, 'note_added', 'shared-action');
+    assert.equal(earned.progress.xp, 1000);
+    assert.deepEqual(earned.crewShares.map(item => [item.userId, item.amount]), [[first.id, 500], [second.id, 500]]);
+    assert.deepEqual(store.award(actor.id, 'note_added', 'shared-action').crewShares, []);
+    const joinAward = store.award(first.id, 'crew_joined', String(crew));
+    assert.deepEqual(joinAward.crewShares, []);
+    store.award(actor.id, 'forum_reply', 'odd-1');
+    store.award(actor.id, 'forum_reply', 'odd-2');
+    assert.equal(store.info(first.id).xp, 605);
+    assert.equal(store.info(second.id).xp, 505);
+    assert.equal(store.info(actor.id).xp, 1010);
+    assert.equal(store.info(second.id).recent[0].label, 'Crew XP');
+    data.crews.leave(second.id, crew);
+    const afterLeave = store.award(actor.id, 'forum_reply', 'member-left');
+    assert.deepEqual(afterLeave.crewShares.map(item => [item.userId, item.amount]), [[first.id, 5]]);
+  } finally {
+    store.setConfig({ note_added: 5 });
+  }
+});
+
+test('Crew XP backfill uses recorded member join times and is idempotent', async () => {
+  const owner = await auth.register('crew_history_owner', 'crew-test-password');
+  const early = await auth.register('crew_history_early', 'crew-test-password');
+  const late = await auth.register('crew_history_late', 'crew-test-password');
+  const crew = data.crews.create(owner.id, 'Historical crew').crewId;
+  for (const member of [early, late]) data.crews.accept(member.id, data.crews.invite(owner.id, member.username, crew).id);
+  const join = data.db.prepare('UPDATE crew_members SET joined_at=? WHERE user_id=? AND crew_id=?');
+  join.run('2026-11-21 12:00:01', owner.id, crew);
+  join.run('2026-11-21 12:00:02', early.id, crew);
+  join.run('2026-11-21 12:00:04', late.id, crew);
+  const changeTime = data.db.prepare('UPDATE progression_events SET created_at=? WHERE user_id=? AND ref=?');
+  const store = data.progression;
+  for (const [ref, second] of [['before-peer', '01'], ['one-peer', '03'], ['two-peers', '05']]) {
+    store.award(owner.id, 'rating_added', ref, { share: false });
+    changeTime.run('2026-11-21 12:00:' + second, owner.id, ref);
+  }
+  const backfilled = store.backfillCrewXp();
+  assert.equal(backfilled.find(row => row.userId === early.id).progress.xp, 15);
+  assert.equal(backfilled.find(row => row.userId === late.id).progress.xp, 5);
+  assert.equal(store.info(owner.id).xp, 30);
+  assert.deepEqual(store.backfillCrewXp(), []);
+  assert.equal(store.info(early.id).xp, 15);
+  assert.equal(store.info(late.id).xp, 5);
+});

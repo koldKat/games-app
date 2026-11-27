@@ -267,6 +267,7 @@ function initializeSchema(db) {
   `);
 
   const crews = createCrewStore(db);
+  progression.enableCrewSharing();
   return { canonical, progression, crews };
 }
 module.exports = { initializeSchema };
